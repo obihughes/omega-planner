@@ -518,249 +518,260 @@ export default function DailyPlanner() {
               className={`relative h-full pt-8 ${isTargetCopyDay ? 'bg-blue-50 ring-1 ring-blue-300 cursor-copy' : ''}`}
               onClick={(e) => handleTimelineClick(dayOffset, e)}
           >
-             {/* Optional overlay when copying */} 
-             {isTargetCopyDay && <div className="absolute inset-0 top-8 bg-blue-500/5 flex items-center justify-center text-blue-600 font-medium z-40 pointer-events-none"><p className="bg-white p-2 rounded shadow">Click time to place copied task</p></div>}
+             {/* Grid Lines - Make them more visible */}
+             <div className="absolute inset-0 top-8 z-30 pointer-events-none">
+               {timelineHours.map((hour) => (
+                 <div key={`grid-${hour}-${dayOffset}`} 
+                      className="absolute top-0 bottom-0 border-l border-gray-300" 
+                      style={{ 
+                        left: `${(hour - startHour) * PIXELS_PER_HOUR}px`,
+                        borderLeftStyle: 'dashed'
+                      }} 
+                 />
+               ))}
+               <div key={`grid-end-${dayOffset}`} 
+                    className="absolute top-0 bottom-0 border-l border-gray-300" 
+                    style={{ 
+                      left: `${(endHour - startHour) * PIXELS_PER_HOUR}px`,
+                      borderLeftStyle: 'dashed'
+                    }}
+               />
+             </div>
 
-            {/* Grid Lines - Adjust top position */}
-            {timelineHours.map((hour) => (
-                <div key={`grid-${hour}-${dayOffset}`} className="absolute top-0 bottom-0 border-l border-gray-200" 
-                     style={{ left: `${(hour - startHour) * PIXELS_PER_HOUR}px`, top: `${TIMELINE_HEADER_HEIGHT_PX}px`}} />
-            ))}
-            <div key={`grid-end-${dayOffset}`} className="absolute top-0 bottom-0 border-l border-gray-200" 
-                 style={{ left: `${(endHour - startHour) * PIXELS_PER_HOUR}px`, top: `${TIMELINE_HEADER_HEIGHT_PX}px` }}></div>
+             {/* Tasks - Adjust z-index to be below grid lines */}
+             <div className="relative z-20">
+               {tasksToRender.map((task) => {
+                 const originalIndex = tasks.findIndex((t) => t.id === task.id);
+                 if (originalIndex === -1) return null; // Should not happen if state is consistent
 
-            {/* Render Tasks with Layout */}
-            {tasksToRender.map((task) => {
-              const originalIndex = tasks.findIndex((t) => t.id === task.id);
-              if (originalIndex === -1) return null; // Should not happen if state is consistent
+                 const color = task.color || colors[task.id % colors.length]; // Use task.color if available, fallback to index-based
+                 const isBeingDragged = draggingTask?.index === originalIndex;
+                 const isBeingResized = resizingTask?.index === originalIndex;
+                 const isBeingCopied = copyingTaskData?.id === task.id;
+                 const isEditing = editingTaskId === task.id;
 
-              const color = task.color || colors[task.id % colors.length]; // Use task.color if available, fallback to index-based
-              const isBeingDragged = draggingTask?.index === originalIndex;
-              const isBeingResized = resizingTask?.index === originalIndex;
-              const isBeingCopied = copyingTaskData?.id === task.id;
-              const isEditing = editingTaskId === task.id;
+                 // Calculate position (relative to the padded task area)
+                 // Adjust left position based on the startHour of this half
+                 const renderLeft = (task.startHour - startHour) * PIXELS_PER_HOUR;
+                 
+                 // Handle tasks that start before this section but continue into it
+                 const adjustedStartHour = Math.max(task.startHour, startHour);
+                 const adjustedEndHour = Math.min(task.startHour + task.duration, endHour);
+                 const visibleDuration = adjustedEndHour - adjustedStartHour;
+                 
+                 const renderWidth = Math.max(PIXELS_PER_MINUTE * 15, visibleDuration * PIXELS_PER_HOUR);
+                 const renderTop = TASK_BASE_TOP; // Position from the top of the padded container
+                 const renderHeight = TASK_HEIGHT;
+                 const zIndex = isEditing ? 110 : (isBeingDragged || isBeingResized ? 100 : 20);
+                 
+                 // Only render tasks that are visible in this time section
+                 if (renderWidth <= 0 || renderLeft < -renderWidth || renderLeft > (endHour - startHour) * PIXELS_PER_HOUR) {
+                   return null;
+                 }
 
-              // Calculate position (relative to the padded task area)
-              // Adjust left position based on the startHour of this half
-              const renderLeft = (task.startHour - startHour) * PIXELS_PER_HOUR;
-              
-              // Handle tasks that start before this section but continue into it
-              const adjustedStartHour = Math.max(task.startHour, startHour);
-              const adjustedEndHour = Math.min(task.startHour + task.duration, endHour);
-              const visibleDuration = adjustedEndHour - adjustedStartHour;
-              
-              const renderWidth = Math.max(PIXELS_PER_MINUTE * 15, visibleDuration * PIXELS_PER_HOUR);
-              const renderTop = TASK_BASE_TOP; // Position from the top of the padded container
-              const renderHeight = TASK_HEIGHT;
-              const zIndex = isEditing ? 110 : (isBeingDragged || isBeingResized ? 100 : 20);
-              
-              // Only render tasks that are visible in this time section
-              if (renderWidth <= 0 || renderLeft < -renderWidth || renderLeft > (endHour - startHour) * PIXELS_PER_HOUR) {
-                return null;
-              }
+                 return (
+                   <Card
+                     key={task.id}
+                     onMouseDown={(e) => {
+                         // Only start drag if click isn't on a button, input or resize handle
+                         const target = e.target as HTMLElement;
+                         const isButton = target.tagName === 'BUTTON' || 
+                                        target.closest('button') ||
+                                        target.tagName === 'INPUT' ||
+                                        target.classList.contains('cursor-ew-resize');
+                         
+                         // Prevent starting drag/resize when editing, copying, or clicking buttons
+                         if (!isEditing && !isBeingCopied && !isButton) {
+                             handleDragStart(originalIndex, e);
+                         }
+                     }}
+                     onClick={(e) => e.stopPropagation()}
+                     className={`absolute select-none transition-transform duration-100 ease-out hover:shadow-md ${color} ${
+                         isBeingDragged || isBeingResized ? 'opacity-80 shadow-lg scale-[1.01]' : 'shadow-sm'
+                     } ${ isBeingCopied ? 'ring-2 ring-offset-1 ring-blue-500' : '' }`}
+                     style={{
+                         left: `${renderLeft}px`,
+                         width: `${renderWidth}px`,
+                         top: `${renderTop}px`,
+                         height: `${renderHeight}px`,
+                         zIndex: zIndex,
+                         cursor: isBeingDragged ? 'grabbing' : (isBeingCopied ? 'default' : 'grab')
+                     }}
+                   >
+                     <CardContent className="p-1 px-2 text-xs h-full flex flex-col justify-between relative overflow-hidden">
+                       {/* Top Section: Name (or Edit Input) */} 
+                       <div> 
+                            {isEditing ? (
+                               <div className="flex gap-1 items-center mb-1"> {/* Input + Save/Cancel */} 
+                                   <Input 
+                                       type="text" 
+                                       value={editingTaskName}
+                                       onChange={(e) => setEditingTaskName(e.target.value)}
+                                       onKeyDown={(e) => {
+                                           if (e.key === 'Enter') {
+                                               handleSaveEdit();
+                                           } else if (e.key === 'Escape') {
+                                               handleCancelEdit();
+                                           }
+                                       }}
+                                       className="h-6 px-1 text-sm flex-grow" 
+                                       autoFocus
+                                       onClick={e => e.stopPropagation()} 
+                                       onMouseDown={e => e.stopPropagation()} 
+                                   />
+                                   <button
+                                       type="button"
+                                       className="h-6 w-6 p-0 text-green-600 hover:bg-green-100 flex-shrink-0"
+                                       onClick={(e)=>{
+                                           e.preventDefault();
+                                           e.stopPropagation();
+                                           console.log("Save button clicked");
+                                           handleSaveEdit();
+                                       }}
+                                       title="Save (Enter)"
+                                   >✓</button>
+                                   <button
+                                       type="button"
+                                       className="h-6 w-6 p-0 text-red-600 hover:bg-red-100 flex-shrink-0"
+                                       onClick={(e)=>{
+                                           e.preventDefault();
+                                           e.stopPropagation();
+                                           console.log("Cancel button clicked");
+                                           handleCancelEdit();
+                                       }}
+                                       title="Cancel (Esc)"
+                                   >×</button>
+                               </div>
+                           ) : (
+                               <span className="font-semibold text-sm leading-tight block truncate mb-0.5" title={task.name}>{task.name}</span>
+                           )}
+                           {/* Time Range (always visible) */} 
+                            <span className="text-[11px] text-gray-600 block">
+                                {formatTime(task.startHour)} - {formatTime(task.startHour + task.duration)}
+                            </span>
+                       </div>
 
-              return (
-                <Card
-                  key={task.id}
-                  onMouseDown={(e) => {
-                      // Only start drag if click isn't on a button, input or resize handle
-                      const target = e.target as HTMLElement;
-                      const isButton = target.tagName === 'BUTTON' || 
-                                     target.closest('button') ||
-                                     target.tagName === 'INPUT' ||
-                                     target.classList.contains('cursor-ew-resize');
-                      
-                      // Prevent starting drag/resize when editing, copying, or clicking buttons
-                      if (!isEditing && !isBeingCopied && !isButton) {
-                          handleDragStart(originalIndex, e);
-                      }
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                  className={`absolute select-none transition-transform duration-100 ease-out hover:shadow-md ${color} ${
-                      isBeingDragged || isBeingResized ? 'opacity-80 shadow-lg scale-[1.01]' : 'shadow-sm'
-                  } ${ isBeingCopied ? 'ring-2 ring-offset-1 ring-blue-500' : '' }`}
-                  style={{
-                      left: `${renderLeft}px`,
-                      width: `${renderWidth}px`,
-                      top: `${renderTop}px`,
-                      height: `${renderHeight}px`,
-                      zIndex: zIndex,
-                      cursor: isBeingDragged ? 'grabbing' : (isBeingCopied ? 'default' : 'grab')
-                  }}
-                >
-                  <CardContent className="p-1 px-2 text-xs h-full flex flex-col justify-between relative overflow-hidden">
-                    {/* Top Section: Name (or Edit Input) */} 
-                    <div> 
-                         {isEditing ? (
-                            <div className="flex gap-1 items-center mb-1"> {/* Input + Save/Cancel */} 
-                                <Input 
-                                    type="text" 
-                                    value={editingTaskName}
-                                    onChange={(e) => setEditingTaskName(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            handleSaveEdit();
-                                        } else if (e.key === 'Escape') {
-                                            handleCancelEdit();
-                                        }
-                                    }}
-                                    className="h-6 px-1 text-sm flex-grow" 
-                                    autoFocus
-                                    onClick={e => e.stopPropagation()} 
-                                    onMouseDown={e => e.stopPropagation()} 
-                                />
-                                <button
-                                    type="button"
-                                    className="h-6 w-6 p-0 text-green-600 hover:bg-green-100 flex-shrink-0"
-                                    onClick={(e)=>{
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        console.log("Save button clicked");
-                                        handleSaveEdit();
-                                    }}
-                                    title="Save (Enter)"
-                                >✓</button>
-                                <button
-                                    type="button"
-                                    className="h-6 w-6 p-0 text-red-600 hover:bg-red-100 flex-shrink-0"
-                                    onClick={(e)=>{
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        console.log("Cancel button clicked");
-                                        handleCancelEdit();
-                                    }}
-                                    title="Cancel (Esc)"
-                                >×</button>
+                       {/* Bottom Section: Duration & Action Buttons */} 
+                       <div className="flex justify-between items-center mt-auto pt-1"> {/* Pushes to bottom */} 
+                           <span className="text-[11px] text-gray-500">{formatDuration(task.duration)}</span>
+                           {/* Action Buttons Group */} 
+                           <div className={`flex items-center gap-1 ${isEditing ? 'opacity-0 pointer-events-none' : ''}`}> {/* Hide actions when editing */} 
+                               {/* Edit Button */} 
+                               {!isEditing && (
+                                   <Button
+                                       type="button"
+                                       variant="ghost"
+                                       size="icon"
+                                       className="h-7 w-7 p-0 hover:bg-gray-100"
+                                       onClick={(e) => { 
+                                           e.preventDefault();
+                                           e.stopPropagation(); 
+                                           console.log("Edit button clicked for task:", task.id);
+                                           handleStartEdit(task); 
+                                       }}
+                                       title="Edit Task Name"
+                                       disabled={isBeingCopied || !!draggingTask || !!resizingTask}
+                                   >
+                                       <span className="text-gray-600 hover:text-gray-900">✏️</span>
+                                   </Button>
+                               )}
+                               {/* Color Button */}
+                               <Button
+                                   type="button"
+                                   variant="ghost"
+                                   size="icon"
+                                   className="h-7 w-7 p-0 hover:bg-gray-100"
+                                   onClick={(e) => toggleColorPicker(e, task.id)}
+                                   title="Change Color"
+                                   disabled={isBeingCopied || !!draggingTask || !!resizingTask}
+                               >
+                                   <span className="text-gray-600 hover:text-gray-900">🎨</span>
+                               </Button>
+                               {/* Delete Button */} 
+                               <Button
+                                   type="button"
+                                   variant="ghost"
+                                   size="icon"
+                                   className="h-7 w-7 p-0 hover:bg-red-100"
+                                   onClick={(e) => { 
+                                       e.preventDefault();
+                                       e.stopPropagation(); 
+                                       console.log("Delete button clicked for task:", task.id);
+                                       handleDeleteTask(task.id); 
+                                   }}
+                                   title="Delete Task"
+                                   disabled={isBeingCopied || !!draggingTask || !!resizingTask}
+                               >
+                                   <span className="text-red-500 hover:text-red-700">🗑️</span>
+                               </Button>
+                               {/* Copy Button */} 
+                               <Button
+                                   type="button"
+                                   variant="ghost"
+                                   className="h-7 px-2 hover:bg-blue-100"
+                                   onClick={(e) => { 
+                                       e.preventDefault();
+                                       e.stopPropagation(); 
+                                       console.log("Copy button clicked for task:", task.id);
+                                       handleInitiateCopy(task); 
+                                   }}
+                                   title={isBeingCopied ? 'Cancel Copy (Esc)' : `Copy to ${task.dayOffset === topDay ? 'Bottom' : 'Top'} Day`}
+                                   disabled={isEditing || !!draggingTask || !!resizingTask}
+                               >
+                                   <span className={isBeingCopied ? "text-red-500" : "text-blue-500"}>
+                                       {isBeingCopied ? '❌' : '📋'}
+                                   </span>
+                                   <span className="ml-1 text-xs">{isBeingCopied ? 'Cancel' : 'Copy'}</span>
+                               </Button>
+                           </div>
+                       </div>
+
+                       {/* Resizing Handles (Hide if editing) */} 
+                       { !isEditing && ( 
+                            <> 
+                               <div 
+                                 className="absolute left-0 top-0 bottom-0 w-3 cursor-ew-resize hover:bg-blue-200/40 z-30"
+                                 onMouseDown={(e) => {
+                                   e.stopPropagation(); 
+                                   handleResizeStart(originalIndex, 'left', e);
+                                 }}
+                               ></div>
+                               <div 
+                                 className="absolute right-0 top-0 bottom-0 w-3 cursor-ew-resize hover:bg-blue-200/40 z-30"
+                                 onMouseDown={(e) => {
+                                   e.stopPropagation(); 
+                                   handleResizeStart(originalIndex, 'right', e);
+                                 }}
+                               ></div>
+                            </> 
+                        )} 
+
+                        {/* Color Picker Popup */}
+                        {showColorPicker === task.id && (
+                            <div 
+                                className="absolute bottom-full right-0 mb-1 bg-white p-1 rounded shadow-lg flex flex-wrap gap-1 w-24 z-50"
+                                onClick={e => e.stopPropagation()}
+                            >
+                                {TASK_COLORS.map(colorClass => (
+                                    <button
+                                        key={colorClass}
+                                        type="button"
+                                        className={`w-5 h-5 rounded-full ${colorClass} hover:ring-2 ring-gray-400`}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            handleColorChange(task.id, colorClass);
+                                        }}
+                                        title={colorClass.replace('bg-', '').replace('-100', '')}
+                                    />
+                                ))}
                             </div>
-                        ) : (
-                            <span className="font-semibold text-sm leading-tight block truncate mb-0.5" title={task.name}>{task.name}</span>
                         )}
-                        {/* Time Range (always visible) */} 
-                         <span className="text-[11px] text-gray-600 block">
-                             {formatTime(task.startHour)} - {formatTime(task.startHour + task.duration)}
-                         </span>
-                    </div>
-
-                    {/* Bottom Section: Duration & Action Buttons */} 
-                    <div className="flex justify-between items-center mt-auto pt-1"> {/* Pushes to bottom */} 
-                        <span className="text-[11px] text-gray-500">{formatDuration(task.duration)}</span>
-                        {/* Action Buttons Group */} 
-                        <div className={`flex items-center gap-1 ${isEditing ? 'opacity-0 pointer-events-none' : ''}`}> {/* Hide actions when editing */} 
-                            {/* Edit Button */} 
-                            {!isEditing && (
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-7 w-7 p-0 hover:bg-gray-100"
-                                    onClick={(e) => { 
-                                        e.preventDefault();
-                                        e.stopPropagation(); 
-                                        console.log("Edit button clicked for task:", task.id);
-                                        handleStartEdit(task); 
-                                    }}
-                                    title="Edit Task Name"
-                                    disabled={isBeingCopied || !!draggingTask || !!resizingTask}
-                                >
-                                    <span className="text-gray-600 hover:text-gray-900">✏️</span>
-                                </Button>
-                            )}
-                            {/* Color Button */}
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 p-0 hover:bg-gray-100"
-                                onClick={(e) => toggleColorPicker(e, task.id)}
-                                title="Change Color"
-                                disabled={isBeingCopied || !!draggingTask || !!resizingTask}
-                            >
-                                <span className="text-gray-600 hover:text-gray-900">🎨</span>
-                            </Button>
-                            {/* Delete Button */} 
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 p-0 hover:bg-red-100"
-                                onClick={(e) => { 
-                                    e.preventDefault();
-                                    e.stopPropagation(); 
-                                    console.log("Delete button clicked for task:", task.id);
-                                    handleDeleteTask(task.id); 
-                                }}
-                                title="Delete Task"
-                                disabled={isBeingCopied || !!draggingTask || !!resizingTask}
-                            >
-                                <span className="text-red-500 hover:text-red-700">🗑️</span>
-                            </Button>
-                            {/* Copy Button */} 
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                className="h-7 px-2 hover:bg-blue-100"
-                                onClick={(e) => { 
-                                    e.preventDefault();
-                                    e.stopPropagation(); 
-                                    console.log("Copy button clicked for task:", task.id);
-                                    handleInitiateCopy(task); 
-                                }}
-                                title={isBeingCopied ? 'Cancel Copy (Esc)' : `Copy to ${task.dayOffset === topDay ? 'Bottom' : 'Top'} Day`}
-                                disabled={isEditing || !!draggingTask || !!resizingTask}
-                            >
-                                <span className={isBeingCopied ? "text-red-500" : "text-blue-500"}>
-                                    {isBeingCopied ? '❌' : '📋'}
-                                </span>
-                                <span className="ml-1 text-xs">{isBeingCopied ? 'Cancel' : 'Copy'}</span>
-                            </Button>
-                        </div>
-                    </div>
-
-                    {/* Resizing Handles (Hide if editing) */} 
-                    { !isEditing && ( 
-                         <> 
-                            <div 
-                              className="absolute left-0 top-0 bottom-0 w-3 cursor-ew-resize hover:bg-blue-200/40 z-30"
-                              onMouseDown={(e) => {
-                                e.stopPropagation(); 
-                                handleResizeStart(originalIndex, 'left', e);
-                              }}
-                            ></div>
-                            <div 
-                              className="absolute right-0 top-0 bottom-0 w-3 cursor-ew-resize hover:bg-blue-200/40 z-30"
-                              onMouseDown={(e) => {
-                                e.stopPropagation(); 
-                                handleResizeStart(originalIndex, 'right', e);
-                              }}
-                            ></div>
-                         </> 
-                     )} 
-
-                     {/* Color Picker Popup */}
-                     {showColorPicker === task.id && (
-                         <div 
-                             className="absolute bottom-full right-0 mb-1 bg-white p-1 rounded shadow-lg flex flex-wrap gap-1 w-24 z-50"
-                             onClick={e => e.stopPropagation()}
-                         >
-                             {TASK_COLORS.map(colorClass => (
-                                 <button
-                                     key={colorClass}
-                                     type="button"
-                                     className={`w-5 h-5 rounded-full ${colorClass} hover:ring-2 ring-gray-400`}
-                                     onClick={(e) => {
-                                         e.preventDefault();
-                                         e.stopPropagation();
-                                         handleColorChange(task.id, colorClass);
-                                     }}
-                                     title={colorClass.replace('bg-', '').replace('-100', '')}
-                                 />
-                             ))}
-                         </div>
-                     )}
-                  </CardContent>
-                </Card>
-              );
-            })}
+                     </CardContent>
+                   </Card>
+                 );
+               })}
+            </div> {/* End Tasks */}
          </div> {/* End Task Area */}
       </div> {/* End Timeline & Task Area Container */}
     </div> // End Column Div
