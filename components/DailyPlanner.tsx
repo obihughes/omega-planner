@@ -451,10 +451,15 @@ export default function DailyPlanner() {
   const colors = ["bg-blue-100", "bg-green-100", "bg-yellow-100", "bg-red-100", "bg-purple-100", "bg-pink-100", "bg-indigo-100"];
 
   const renderColumn = (dayOffset: number, isSecondHalf: boolean = false) => {
-    const isTopDay = dayOffset === topDay;
+    // Determine the time range for this column
     const startHour = isSecondHalf ? TIMELINE_SPLIT_HOUR : TIMELINE_START_HOUR;
     const endHour = isSecondHalf ? TIMELINE_END_HOUR : TIMELINE_SPLIT_HOUR;
-    const timelineHours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
+    
+    // Generate the hour marks for the timeline
+    const timelineHours = Array.from(
+      { length: endHour - startHour },
+      (_, i) => startHour + i
+    );
     
     // Filter tasks for this time period
     const tasksToRender = tasks.filter(t => 
@@ -475,11 +480,11 @@ export default function DailyPlanner() {
         }`}
         onClick={(e) => handleTimelineClick(dayOffset, e)}
       >
-          {/* Optional overlay to indicate clickable area for copy? */}
-          {isTargetCopyDay && <div className="absolute inset-0 bg-blue-500/5 text-center pt-10 text-blue-600 font-medium z-40 pointer-events-none">Click to place copied task</div>}
+          {/* Optional overlay when copying */} 
+          {isTargetCopyDay && <div className="absolute inset-0 top-8 bg-blue-500/5 flex items-center justify-center text-blue-600 font-medium z-40 pointer-events-none"><p className="bg-white p-2 rounded shadow">Click time to place copied task</p></div>}
 
         {/* Add Task Input (only on Top Day morning section) */}
-        {isTopDay && !isSecondHalf && (
+        {dayOffset === topDay && !isSecondHalf && (
           <div className="flex gap-2 mb-4 relative z-10"> {/* Ensure input is clickable */}
             <Input 
               value={taskInput} 
@@ -517,256 +522,258 @@ export default function DailyPlanner() {
            <div
               className={`relative h-full pt-8 ${isTargetCopyDay ? 'bg-blue-50 ring-1 ring-blue-300 cursor-copy' : ''}`}
               onClick={(e) => handleTimelineClick(dayOffset, e)}
-          >
-             {/* Grid Lines - Make them more visible */}
-             <div className="absolute inset-0 top-8 z-30 pointer-events-none">
-               {timelineHours.map((hour) => (
-                 <div key={`grid-${hour}-${dayOffset}`} 
-                      className="absolute top-0 bottom-0 border-l border-gray-300" 
-                      style={{ 
-                        left: `${(hour - startHour) * PIXELS_PER_HOUR}px`,
-                        borderLeftStyle: 'dashed'
-                      }} 
-                 />
-               ))}
-               <div key={`grid-end-${dayOffset}`} 
-                    className="absolute top-0 bottom-0 border-l border-gray-300" 
-                    style={{ 
-                      left: `${(endHour - startHour) * PIXELS_PER_HOUR}px`,
-                      borderLeftStyle: 'dashed'
+              data-testid="timeline"
+           >
+              {/* Grid Lines - Adjust top position */}
+              {timelineHours.map((hour) => (
+                <div key={`grid-${hour}-${dayOffset}`} 
+                     className="absolute top-0 bottom-0 border-l-2 border-gray-300" 
+                     style={{ 
+                       left: `${(hour - startHour) * PIXELS_PER_HOUR}px`, 
+                       top: `${TIMELINE_HEADER_HEIGHT_PX}px`,
+                       borderLeftStyle: 'dashed',
+                       zIndex: 30
+                     }} 
+                />
+              ))}
+              <div key={`grid-end-${dayOffset}`} 
+                   className="absolute top-0 bottom-0 border-l-2 border-gray-300" 
+                   style={{ 
+                     left: `${(endHour - startHour) * PIXELS_PER_HOUR}px`, 
+                     top: `${TIMELINE_HEADER_HEIGHT_PX}px`,
+                     borderLeftStyle: 'dashed',
+                     zIndex: 30 
+                   }}
+              />
+
+              {/* Render Tasks with Layout */}
+              {tasksToRender.map((task) => {
+                const originalIndex = tasks.findIndex((t) => t.id === task.id);
+                if (originalIndex === -1) return null; // Should not happen if state is consistent
+
+                const color = task.color || colors[task.id % colors.length]; // Use task.color if available, fallback to index-based
+                const isBeingDragged = draggingTask?.index === originalIndex;
+                const isBeingResized = resizingTask?.index === originalIndex;
+                const isBeingCopied = copyingTaskData?.id === task.id;
+                const isEditing = editingTaskId === task.id;
+
+                // Calculate position (relative to the padded task area)
+                // Adjust left position based on the startHour of this half
+                const renderLeft = (task.startHour - startHour) * PIXELS_PER_HOUR;
+                
+                // Handle tasks that start before this section but continue into it
+                const adjustedStartHour = Math.max(task.startHour, startHour);
+                const adjustedEndHour = Math.min(task.startHour + task.duration, endHour);
+                const visibleDuration = adjustedEndHour - adjustedStartHour;
+                
+                const renderWidth = Math.max(PIXELS_PER_MINUTE * 15, visibleDuration * PIXELS_PER_HOUR);
+                const renderTop = TASK_BASE_TOP; // Position from the top of the padded container
+                const renderHeight = TASK_HEIGHT;
+                const zIndex = isEditing ? 110 : (isBeingDragged || isBeingResized ? 100 : 20);
+                
+                // Only render tasks that are visible in this time section
+                if (renderWidth <= 0 || renderLeft < -renderWidth || renderLeft > (endHour - startHour) * PIXELS_PER_HOUR) {
+                  return null;
+                }
+
+                return (
+                  <Card
+                    key={task.id}
+                    onMouseDown={(e) => {
+                        // Only start drag if click isn't on a button, input or resize handle
+                        const target = e.target as HTMLElement;
+                        const isButton = target.tagName === 'BUTTON' || 
+                                       target.closest('button') ||
+                                       target.tagName === 'INPUT' ||
+                                       target.classList.contains('cursor-ew-resize');
+                        
+                        // Prevent starting drag/resize when editing, copying, or clicking buttons
+                        if (!isEditing && !isBeingCopied && !isButton) {
+                            handleDragStart(originalIndex, e);
+                        }
                     }}
-               />
-             </div>
+                    onClick={(e) => e.stopPropagation()}
+                    className={`absolute select-none transition-transform duration-100 ease-out hover:shadow-md ${color} ${
+                        isBeingDragged || isBeingResized ? 'opacity-80 shadow-lg scale-[1.01]' : 'shadow-sm'
+                    } ${ isBeingCopied ? 'ring-2 ring-offset-1 ring-blue-500' : '' }`}
+                    style={{
+                        left: `${renderLeft}px`,
+                        width: `${renderWidth}px`,
+                        top: `${renderTop}px`,
+                        height: `${renderHeight}px`,
+                        zIndex: zIndex,
+                        cursor: isBeingDragged ? 'grabbing' : (isBeingCopied ? 'default' : 'grab')
+                    }}
+                  >
+                    <CardContent className="p-1 px-2 text-xs h-full flex flex-col justify-between relative overflow-hidden">
+                      {/* Top Section: Name (or Edit Input) */} 
+                      <div> 
+                           {isEditing ? (
+                              <div className="flex gap-1 items-center mb-1"> {/* Input + Save/Cancel */} 
+                                  <Input 
+                                      type="text" 
+                                      value={editingTaskName}
+                                      onChange={(e) => setEditingTaskName(e.target.value)}
+                                      onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                              handleSaveEdit();
+                                          } else if (e.key === 'Escape') {
+                                              handleCancelEdit();
+                                          }
+                                      }}
+                                      className="h-6 px-1 text-sm flex-grow" 
+                                      autoFocus
+                                      onClick={e => e.stopPropagation()} 
+                                      onMouseDown={e => e.stopPropagation()} 
+                                  />
+                                  <button
+                                      type="button"
+                                      className="h-6 w-6 p-0 text-green-600 hover:bg-green-100 flex-shrink-0"
+                                      onClick={(e)=>{
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          console.log("Save button clicked");
+                                          handleSaveEdit();
+                                      }}
+                                      title="Save (Enter)"
+                                  >✓</button>
+                                  <button
+                                      type="button"
+                                      className="h-6 w-6 p-0 text-red-600 hover:bg-red-100 flex-shrink-0"
+                                      onClick={(e)=>{
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          console.log("Cancel button clicked");
+                                          handleCancelEdit();
+                                      }}
+                                      title="Cancel (Esc)"
+                                  >×</button>
+                              </div>
+                          ) : (
+                              <span className="font-semibold text-sm leading-tight block truncate mb-0.5" title={task.name}>{task.name}</span>
+                          )}
+                          {/* Time Range (always visible) */} 
+                           <span className="text-[11px] text-gray-600 block">
+                               {formatTime(task.startHour)} - {formatTime(task.startHour + task.duration)}
+                           </span>
+                      </div>
 
-             {/* Tasks - Adjust z-index to be below grid lines */}
-             <div className="relative z-20">
-               {tasksToRender.map((task) => {
-                 const originalIndex = tasks.findIndex((t) => t.id === task.id);
-                 if (originalIndex === -1) return null; // Should not happen if state is consistent
+                      {/* Bottom Section: Duration & Action Buttons */} 
+                      <div className="flex justify-between items-center mt-auto pt-1"> {/* Pushes to bottom */} 
+                          <span className="text-[11px] text-gray-500">{formatDuration(task.duration)}</span>
+                          {/* Action Buttons Group */} 
+                          <div className={`flex items-center gap-1 ${isEditing ? 'opacity-0 pointer-events-none' : ''}`}> {/* Hide actions when editing */} 
+                              {/* Edit Button */} 
+                              {!isEditing && (
+                                  <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 p-0 hover:bg-gray-100"
+                                      onClick={(e) => { 
+                                          e.preventDefault();
+                                          e.stopPropagation(); 
+                                          console.log("Edit button clicked for task:", task.id);
+                                          handleStartEdit(task); 
+                                      }}
+                                      title="Edit Task Name"
+                                      disabled={isBeingCopied || !!draggingTask || !!resizingTask}
+                                  >
+                                      <span className="text-gray-600 hover:text-gray-900">✏️</span>
+                                  </Button>
+                              )}
+                              {/* Color Button */}
+                              <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 p-0 hover:bg-gray-100"
+                                  onClick={(e) => toggleColorPicker(e, task.id)}
+                                  title="Change Color"
+                                  disabled={isBeingCopied || !!draggingTask || !!resizingTask}
+                              >
+                                  <span className="text-gray-600 hover:text-gray-900">🎨</span>
+                              </Button>
+                              {/* Delete Button */} 
+                              <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 p-0 hover:bg-red-100"
+                                  onClick={(e) => { 
+                                      e.preventDefault();
+                                      e.stopPropagation(); 
+                                      console.log("Delete button clicked for task:", task.id);
+                                      handleDeleteTask(task.id); 
+                                  }}
+                                  title="Delete Task"
+                                  disabled={isBeingCopied || !!draggingTask || !!resizingTask}
+                              >
+                                  <span className="text-red-500 hover:text-red-700">🗑️</span>
+                              </Button>
+                              {/* Copy Button */} 
+                              <Button
+                                  type="button"
+                                  variant="ghost"
+                                  className="h-7 px-2 hover:bg-blue-100"
+                                  onClick={(e) => { 
+                                      e.preventDefault();
+                                      e.stopPropagation(); 
+                                      console.log("Copy button clicked for task:", task.id);
+                                      handleInitiateCopy(task); 
+                                  }}
+                                  title={isBeingCopied ? 'Cancel Copy (Esc)' : `Copy to ${task.dayOffset === topDay ? 'Bottom' : 'Top'} Day`}
+                                  disabled={isEditing || !!draggingTask || !!resizingTask}
+                              >
+                                  <span className={isBeingCopied ? "text-red-500" : "text-blue-500"}>
+                                      {isBeingCopied ? '❌' : '📋'}
+                                  </span>
+                                  <span className="ml-1 text-xs">{isBeingCopied ? 'Cancel' : 'Copy'}</span>
+                              </Button>
+                          </div>
+                      </div>
 
-                 const color = task.color || colors[task.id % colors.length]; // Use task.color if available, fallback to index-based
-                 const isBeingDragged = draggingTask?.index === originalIndex;
-                 const isBeingResized = resizingTask?.index === originalIndex;
-                 const isBeingCopied = copyingTaskData?.id === task.id;
-                 const isEditing = editingTaskId === task.id;
+                      {/* Resizing Handles (Hide if editing) */} 
+                      { !isEditing && ( 
+                           <> 
+                              <div 
+                                className="absolute left-0 top-0 bottom-0 w-3 cursor-ew-resize hover:bg-blue-200/40 z-30"
+                                onMouseDown={(e) => {
+                                  e.stopPropagation(); 
+                                  handleResizeStart(originalIndex, 'left', e);
+                                }}
+                              ></div>
+                              <div 
+                                className="absolute right-0 top-0 bottom-0 w-3 cursor-ew-resize hover:bg-blue-200/40 z-30"
+                                onMouseDown={(e) => {
+                                  e.stopPropagation(); 
+                                  handleResizeStart(originalIndex, 'right', e);
+                                }}
+                              ></div>
+                           </> 
+                       )} 
 
-                 // Calculate position (relative to the padded task area)
-                 // Adjust left position based on the startHour of this half
-                 const renderLeft = (task.startHour - startHour) * PIXELS_PER_HOUR;
-                 
-                 // Handle tasks that start before this section but continue into it
-                 const adjustedStartHour = Math.max(task.startHour, startHour);
-                 const adjustedEndHour = Math.min(task.startHour + task.duration, endHour);
-                 const visibleDuration = adjustedEndHour - adjustedStartHour;
-                 
-                 const renderWidth = Math.max(PIXELS_PER_MINUTE * 15, visibleDuration * PIXELS_PER_HOUR);
-                 const renderTop = TASK_BASE_TOP; // Position from the top of the padded container
-                 const renderHeight = TASK_HEIGHT;
-                 const zIndex = isEditing ? 110 : (isBeingDragged || isBeingResized ? 100 : 20);
-                 
-                 // Only render tasks that are visible in this time section
-                 if (renderWidth <= 0 || renderLeft < -renderWidth || renderLeft > (endHour - startHour) * PIXELS_PER_HOUR) {
-                   return null;
-                 }
-
-                 return (
-                   <Card
-                     key={task.id}
-                     onMouseDown={(e) => {
-                         // Only start drag if click isn't on a button, input or resize handle
-                         const target = e.target as HTMLElement;
-                         const isButton = target.tagName === 'BUTTON' || 
-                                        target.closest('button') ||
-                                        target.tagName === 'INPUT' ||
-                                        target.classList.contains('cursor-ew-resize');
-                         
-                         // Prevent starting drag/resize when editing, copying, or clicking buttons
-                         if (!isEditing && !isBeingCopied && !isButton) {
-                             handleDragStart(originalIndex, e);
-                         }
-                     }}
-                     onClick={(e) => e.stopPropagation()}
-                     className={`absolute select-none transition-transform duration-100 ease-out hover:shadow-md ${color} ${
-                         isBeingDragged || isBeingResized ? 'opacity-80 shadow-lg scale-[1.01]' : 'shadow-sm'
-                     } ${ isBeingCopied ? 'ring-2 ring-offset-1 ring-blue-500' : '' }`}
-                     style={{
-                         left: `${renderLeft}px`,
-                         width: `${renderWidth}px`,
-                         top: `${renderTop}px`,
-                         height: `${renderHeight}px`,
-                         zIndex: zIndex,
-                         cursor: isBeingDragged ? 'grabbing' : (isBeingCopied ? 'default' : 'grab')
-                     }}
-                   >
-                     <CardContent className="p-1 px-2 text-xs h-full flex flex-col justify-between relative overflow-hidden">
-                       {/* Top Section: Name (or Edit Input) */} 
-                       <div> 
-                            {isEditing ? (
-                               <div className="flex gap-1 items-center mb-1"> {/* Input + Save/Cancel */} 
-                                   <Input 
-                                       type="text" 
-                                       value={editingTaskName}
-                                       onChange={(e) => setEditingTaskName(e.target.value)}
-                                       onKeyDown={(e) => {
-                                           if (e.key === 'Enter') {
-                                               handleSaveEdit();
-                                           } else if (e.key === 'Escape') {
-                                               handleCancelEdit();
-                                           }
+                       {/* Color Picker Popup */}
+                       {showColorPicker === task.id && (
+                           <div 
+                               className="absolute bottom-full right-0 mb-1 bg-white p-1 rounded shadow-lg flex flex-wrap gap-1 w-24 z-50"
+                               onClick={e => e.stopPropagation()}
+                           >
+                               {TASK_COLORS.map(colorClass => (
+                                   <button
+                                       key={colorClass}
+                                       type="button"
+                                       className={`w-5 h-5 rounded-full ${colorClass} hover:ring-2 ring-gray-400`}
+                                       onClick={(e) => {
+                                           e.preventDefault();
+                                           e.stopPropagation();
+                                           handleColorChange(task.id, colorClass);
                                        }}
-                                       className="h-6 px-1 text-sm flex-grow" 
-                                       autoFocus
-                                       onClick={e => e.stopPropagation()} 
-                                       onMouseDown={e => e.stopPropagation()} 
+                                       title={colorClass.replace('bg-', '').replace('-100', '')}
                                    />
-                                   <button
-                                       type="button"
-                                       className="h-6 w-6 p-0 text-green-600 hover:bg-green-100 flex-shrink-0"
-                                       onClick={(e)=>{
-                                           e.preventDefault();
-                                           e.stopPropagation();
-                                           console.log("Save button clicked");
-                                           handleSaveEdit();
-                                       }}
-                                       title="Save (Enter)"
-                                   >✓</button>
-                                   <button
-                                       type="button"
-                                       className="h-6 w-6 p-0 text-red-600 hover:bg-red-100 flex-shrink-0"
-                                       onClick={(e)=>{
-                                           e.preventDefault();
-                                           e.stopPropagation();
-                                           console.log("Cancel button clicked");
-                                           handleCancelEdit();
-                                       }}
-                                       title="Cancel (Esc)"
-                                   >×</button>
-                               </div>
-                           ) : (
-                               <span className="font-semibold text-sm leading-tight block truncate mb-0.5" title={task.name}>{task.name}</span>
-                           )}
-                           {/* Time Range (always visible) */} 
-                            <span className="text-[11px] text-gray-600 block">
-                                {formatTime(task.startHour)} - {formatTime(task.startHour + task.duration)}
-                            </span>
-                       </div>
-
-                       {/* Bottom Section: Duration & Action Buttons */} 
-                       <div className="flex justify-between items-center mt-auto pt-1"> {/* Pushes to bottom */} 
-                           <span className="text-[11px] text-gray-500">{formatDuration(task.duration)}</span>
-                           {/* Action Buttons Group */} 
-                           <div className={`flex items-center gap-1 ${isEditing ? 'opacity-0 pointer-events-none' : ''}`}> {/* Hide actions when editing */} 
-                               {/* Edit Button */} 
-                               {!isEditing && (
-                                   <Button
-                                       type="button"
-                                       variant="ghost"
-                                       size="icon"
-                                       className="h-7 w-7 p-0 hover:bg-gray-100"
-                                       onClick={(e) => { 
-                                           e.preventDefault();
-                                           e.stopPropagation(); 
-                                           console.log("Edit button clicked for task:", task.id);
-                                           handleStartEdit(task); 
-                                       }}
-                                       title="Edit Task Name"
-                                       disabled={isBeingCopied || !!draggingTask || !!resizingTask}
-                                   >
-                                       <span className="text-gray-600 hover:text-gray-900">✏️</span>
-                                   </Button>
-                               )}
-                               {/* Color Button */}
-                               <Button
-                                   type="button"
-                                   variant="ghost"
-                                   size="icon"
-                                   className="h-7 w-7 p-0 hover:bg-gray-100"
-                                   onClick={(e) => toggleColorPicker(e, task.id)}
-                                   title="Change Color"
-                                   disabled={isBeingCopied || !!draggingTask || !!resizingTask}
-                               >
-                                   <span className="text-gray-600 hover:text-gray-900">🎨</span>
-                               </Button>
-                               {/* Delete Button */} 
-                               <Button
-                                   type="button"
-                                   variant="ghost"
-                                   size="icon"
-                                   className="h-7 w-7 p-0 hover:bg-red-100"
-                                   onClick={(e) => { 
-                                       e.preventDefault();
-                                       e.stopPropagation(); 
-                                       console.log("Delete button clicked for task:", task.id);
-                                       handleDeleteTask(task.id); 
-                                   }}
-                                   title="Delete Task"
-                                   disabled={isBeingCopied || !!draggingTask || !!resizingTask}
-                               >
-                                   <span className="text-red-500 hover:text-red-700">🗑️</span>
-                               </Button>
-                               {/* Copy Button */} 
-                               <Button
-                                   type="button"
-                                   variant="ghost"
-                                   className="h-7 px-2 hover:bg-blue-100"
-                                   onClick={(e) => { 
-                                       e.preventDefault();
-                                       e.stopPropagation(); 
-                                       console.log("Copy button clicked for task:", task.id);
-                                       handleInitiateCopy(task); 
-                                   }}
-                                   title={isBeingCopied ? 'Cancel Copy (Esc)' : `Copy to ${task.dayOffset === topDay ? 'Bottom' : 'Top'} Day`}
-                                   disabled={isEditing || !!draggingTask || !!resizingTask}
-                               >
-                                   <span className={isBeingCopied ? "text-red-500" : "text-blue-500"}>
-                                       {isBeingCopied ? '❌' : '📋'}
-                                   </span>
-                                   <span className="ml-1 text-xs">{isBeingCopied ? 'Cancel' : 'Copy'}</span>
-                               </Button>
+                               ))}
                            </div>
-                       </div>
-
-                       {/* Resizing Handles (Hide if editing) */} 
-                       { !isEditing && ( 
-                            <> 
-                               <div 
-                                 className="absolute left-0 top-0 bottom-0 w-3 cursor-ew-resize hover:bg-blue-200/40 z-30"
-                                 onMouseDown={(e) => {
-                                   e.stopPropagation(); 
-                                   handleResizeStart(originalIndex, 'left', e);
-                                 }}
-                               ></div>
-                               <div 
-                                 className="absolute right-0 top-0 bottom-0 w-3 cursor-ew-resize hover:bg-blue-200/40 z-30"
-                                 onMouseDown={(e) => {
-                                   e.stopPropagation(); 
-                                   handleResizeStart(originalIndex, 'right', e);
-                                 }}
-                               ></div>
-                            </> 
-                        )} 
-
-                        {/* Color Picker Popup */}
-                        {showColorPicker === task.id && (
-                            <div 
-                                className="absolute bottom-full right-0 mb-1 bg-white p-1 rounded shadow-lg flex flex-wrap gap-1 w-24 z-50"
-                                onClick={e => e.stopPropagation()}
-                            >
-                                {TASK_COLORS.map(colorClass => (
-                                    <button
-                                        key={colorClass}
-                                        type="button"
-                                        className={`w-5 h-5 rounded-full ${colorClass} hover:ring-2 ring-gray-400`}
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            handleColorChange(task.id, colorClass);
-                                        }}
-                                        title={colorClass.replace('bg-', '').replace('-100', '')}
-                                    />
-                                ))}
-                            </div>
-                        )}
+                       )}
                      </CardContent>
                    </Card>
                  );
@@ -774,106 +781,105 @@ export default function DailyPlanner() {
             </div> {/* End Tasks */}
          </div> {/* End Task Area */}
       </div> {/* End Timeline & Task Area Container */}
-    </div> // End Column Div
-  );
-};
+    );
+  };
 
-return (
-  // Main container with vertical flex and scroll
-  <div className="flex flex-col gap-8 p-4 overflow-x-auto">
-     {/* Today's Schedule */}
-     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-       <div className="flex flex-col mb-4">
-         <h2 className="text-xl font-bold mb-3">{getDateLabel(topDay, true)}</h2>
+  return (
+    // Main container with vertical flex and scroll
+    <div className="flex flex-col gap-8 p-4 overflow-x-auto">
+       {/* Today's Schedule */}
+       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+         <div className="flex flex-col mb-4">
+           <h2 className="text-xl font-bold mb-3">{getDateLabel(topDay, true)}</h2>
+           
+           {/* Day Navigation Buttons */}
+           <div className="flex flex-wrap gap-2">
+             <button 
+               type="button"
+               className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200 whitespace-nowrap"
+               onClick={() => setSafeCurrentDayOffset(topDay - 7)}
+             >← 1 Week</button>
+             <button 
+               type="button"
+               className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200 whitespace-nowrap"
+               onClick={() => setSafeCurrentDayOffset(topDay - 1)}
+             >← 1 Day</button>
+             <button 
+               type="button"
+               className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200 whitespace-nowrap"
+               onClick={() => setSafeCurrentDayOffset(0)}
+             >Today</button>
+             <button 
+               type="button" 
+               className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200 whitespace-nowrap"
+               onClick={() => setSafeCurrentDayOffset(topDay + 1)}
+             >1 Day →</button>
+             <button 
+               type="button"
+               className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200 whitespace-nowrap"
+               onClick={() => setSafeCurrentDayOffset(topDay + 7)}
+             >1 Week →</button>
+           </div>
+         </div>
          
-         {/* Day Navigation Buttons */}
-         <div className="flex flex-wrap gap-2">
-           <button 
-             type="button"
-             className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200 whitespace-nowrap"
-             onClick={() => setSafeCurrentDayOffset(topDay - 7)}
-           >← 1 Week</button>
-           <button 
-             type="button"
-             className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200 whitespace-nowrap"
-             onClick={() => setSafeCurrentDayOffset(topDay - 1)}
-           >← 1 Day</button>
-           <button 
-             type="button"
-             className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200 whitespace-nowrap"
-             onClick={() => setSafeCurrentDayOffset(0)}
-           >Today</button>
-           <button 
-             type="button" 
-             className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200 whitespace-nowrap"
-             onClick={() => setSafeCurrentDayOffset(topDay + 1)}
-           >1 Day →</button>
-           <button 
-             type="button"
-             className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200 whitespace-nowrap"
-             onClick={() => setSafeCurrentDayOffset(topDay + 7)}
-           >1 Week →</button>
+         <div className="flex flex-col gap-6">
+           <div className="bg-gray-50 rounded-lg p-4">
+             <h3 className="text-lg font-medium text-gray-700 mb-3">Morning/Afternoon (5AM-5PM)</h3>
+             {renderColumn(topDay, false)}
+           </div>
+           <div className="bg-gray-50 rounded-lg p-4">
+             <h3 className="text-lg font-medium text-gray-700 mb-3">Evening/Night (5PM-5AM)</h3>
+             {renderColumn(topDay, true)}
+           </div>
          </div>
        </div>
        
-       <div className="flex flex-col gap-6">
-         <div className="bg-gray-50 rounded-lg p-4">
-           <h3 className="text-lg font-medium text-gray-700 mb-3">Morning/Afternoon (5AM-5PM)</h3>
-           {renderColumn(topDay, false)}
+       {/* Tomorrow's Schedule */}
+       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+         <div className="flex flex-col mb-4">
+           <h2 className="text-xl font-bold mb-3">{getDateLabel(bottomDay, true)}</h2>
+           
+           {/* Day Navigation Buttons */}
+           <div className="flex flex-wrap gap-2">
+             <button 
+               type="button"
+               className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200 whitespace-nowrap"
+               onClick={() => setSafeLeftDayOffset(bottomDay - 7)}
+             >← 1 Week</button>
+             <button 
+               type="button"
+               className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200 whitespace-nowrap"
+               onClick={() => setSafeLeftDayOffset(bottomDay - 1)}
+             >← 1 Day</button>
+             <button 
+               type="button"
+               className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200 whitespace-nowrap"
+               onClick={() => setSafeLeftDayOffset(0)}
+             >Today</button>
+             <button 
+               type="button" 
+               className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200 whitespace-nowrap"
+               onClick={() => setSafeLeftDayOffset(bottomDay + 1)}
+             >1 Day →</button>
+             <button 
+               type="button"
+               className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200 whitespace-nowrap"
+               onClick={() => setSafeLeftDayOffset(bottomDay + 7)}
+             >1 Week →</button>
+           </div>
          </div>
-         <div className="bg-gray-50 rounded-lg p-4">
-           <h3 className="text-lg font-medium text-gray-700 mb-3">Evening/Night (5PM-5AM)</h3>
-           {renderColumn(topDay, true)}
-         </div>
-       </div>
-     </div>
-     
-     {/* Tomorrow's Schedule */}
-     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-       <div className="flex flex-col mb-4">
-         <h2 className="text-xl font-bold mb-3">{getDateLabel(bottomDay, true)}</h2>
          
-         {/* Day Navigation Buttons */}
-         <div className="flex flex-wrap gap-2">
-           <button 
-             type="button"
-             className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200 whitespace-nowrap"
-             onClick={() => setSafeLeftDayOffset(bottomDay - 7)}
-           >← 1 Week</button>
-           <button 
-             type="button"
-             className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200 whitespace-nowrap"
-             onClick={() => setSafeLeftDayOffset(bottomDay - 1)}
-           >← 1 Day</button>
-           <button 
-             type="button"
-             className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200 whitespace-nowrap"
-             onClick={() => setSafeLeftDayOffset(0)}
-           >Today</button>
-           <button 
-             type="button" 
-             className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200 whitespace-nowrap"
-             onClick={() => setSafeLeftDayOffset(bottomDay + 1)}
-           >1 Day →</button>
-           <button 
-             type="button"
-             className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200 whitespace-nowrap"
-             onClick={() => setSafeLeftDayOffset(bottomDay + 7)}
-           >1 Week →</button>
+         <div className="flex flex-col gap-6">
+           <div className="bg-gray-50 rounded-lg p-4">
+             <h3 className="text-lg font-medium text-gray-700 mb-3">Morning/Afternoon (5AM-5PM)</h3>
+             {renderColumn(bottomDay, false)}
+           </div>
+           <div className="bg-gray-50 rounded-lg p-4">
+             <h3 className="text-lg font-medium text-gray-700 mb-3">Evening/Night (5PM-5AM)</h3>
+             {renderColumn(bottomDay, true)}
+           </div>
          </div>
        </div>
-       
-       <div className="flex flex-col gap-6">
-         <div className="bg-gray-50 rounded-lg p-4">
-           <h3 className="text-lg font-medium text-gray-700 mb-3">Morning/Afternoon (5AM-5PM)</h3>
-           {renderColumn(bottomDay, false)}
-         </div>
-         <div className="bg-gray-50 rounded-lg p-4">
-           <h3 className="text-lg font-medium text-gray-700 mb-3">Evening/Night (5PM-5AM)</h3>
-           {renderColumn(bottomDay, true)}
-         </div>
-       </div>
-     </div>
-  </div>
-);
+    </div>
+  );
 } 
