@@ -7,6 +7,8 @@ import { Edit3, Copy, Pin, CopyPlus, Trash2, PinOff } from 'lucide-react'; // Ad
 import { formatDuration, formatTime } from '@/utils/formatters';
 import TaskStorage from '@/utils/storage';
 import { Task, PinnedTask } from '../../types/planner'; // Removed StorageData from this import
+import { TaskPoolSidebar } from './TaskPoolSidebar'; // IMPORT New Component
+import { PinnedTasksSidebar } from './PinnedTasksSidebar'; // IMPORT New Component
 
 // Style constants
 let taskIdCounter = 5;
@@ -110,16 +112,6 @@ const TaskCard: React.FC<TaskCardProps> = ({
   // Calculate end time for display
   const endTime = task.startHour + Number(task.duration);
   
-  // Format duration for display
-  const formatTaskDuration = (duration: number): string => {
-    const totalMinutes = Math.round(duration * 60);
-    const hrs = Math.floor(totalMinutes / 60);
-    const mins = totalMinutes % 60;
-    if (hrs === 0) return `${mins}m`;
-    if (mins === 0) return `${hrs}h`;
-    return `${hrs}h${mins}m`;
-  };
-  
   // Ensure the task color has dark mode variant with stronger contrast
   const color = task.color?.includes('dark:') 
     ? task.color 
@@ -203,7 +195,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                     {formatTime(task.startHour)} - {formatTime(endTime)}
                   </div>
                   <div className="text-[8px] text-gray-700 dark:text-gray-200 font-semibold mt-px mb-0.5">
-                    {formatTaskDuration(task.duration)}
+                    {formatDuration(task.duration)}
                   </div>
                 </>
               )}
@@ -459,10 +451,10 @@ export default function DailyPlanner() {
   const [poolTasks, setPoolTasks] = useState<Task[]>([]);
 
   // State for the new pool task form
-  const [showPoolTaskForm, setShowPoolTaskForm] = useState<boolean>(false);
-  const [newPoolTaskName, setNewPoolTaskName] = useState<string>("");
-  const [newPoolTaskDuration, setNewPoolTaskDuration] = useState<number>(1); // Default duration 1h
-  const [newPoolTaskColor, setNewPoolTaskColor] = useState<string>(TASK_COLORS[0]); // Default to first color
+  // const [showPoolTaskForm, setShowPoolTaskForm] = useState<boolean>(false);
+  // const [newPoolTaskName, setNewPoolTaskName] = useState<string>("");
+  // const [newPoolTaskDuration, setNewPoolTaskDuration] = useState<number>(1); // Default duration 1h
+  // const [newPoolTaskColor, setNewPoolTaskColor] = useState<string>(TASK_COLORS[0]); // Default to first color
 
   // State for Pinned Tasks
   const [pinnedTasks, setPinnedTasks] = useState<PinnedTask[]>([]);
@@ -815,6 +807,7 @@ export default function DailyPlanner() {
 
     // Check for conflict *before* updating state using the actual task ID
     if (!hasConflict(initialTask.id, initialTask.dayOffset, potentialNewStartHour, potentialNewDuration)) {
+        console.log(`🔄 Resizing task ${initialTask.id}: New StartH: ${potentialNewStartHour.toFixed(3)}, New Dur: ${potentialNewDuration.toFixed(3)}`); // ADDED LOG
         // Update state only if no conflict
         setTasks(currentTasks => currentTasks.map((task, i) =>
             i === index
@@ -906,14 +899,15 @@ export default function DailyPlanner() {
   // --- End Drag Functions ---
 
   // --- Formatting & Labels ---
-  const formatDuration = (duration: number): string => {
-    const totalMinutes = Math.round(duration * 60);
-    const hrs = Math.floor(totalMinutes / 60);
-    const mins = totalMinutes % 60;
-    if (hrs === 0) return `${mins}m`;
-    if (mins === 0) return `${hrs}h`;
-    return `${hrs}h${mins}m`;
-  };
+  // REMOVED local formatDuration function, as it's imported from @/utils/formatters
+  // const formatDuration = (duration: number): string => {
+  //   const totalMinutes = Math.round(duration * 60);
+  //   const hrs = Math.floor(totalMinutes / 60);
+  //   const mins = totalMinutes % 60;
+  //   if (hrs === 0) return `${mins}m`;
+  //   if (mins === 0) return `${hrs}h`;
+  //   return `${hrs}h${mins}m`;
+  // };
   // --- End Formatting ---
 
   // --- Rendering Logic ---
@@ -1325,49 +1319,66 @@ export default function DailyPlanner() {
   // Load tasks when component mounts
   useEffect(() => {
     console.log('🔄 Loading data from storage...');
-    const savedRegularTasks = TaskStorage.load();
-    const savedPoolTasks = TaskStorage.loadPoolTasks();
-    const savedPinnedTasks = TaskStorage.loadPinnedTasks();
+    const savedRegularTasksResult = TaskStorage.load();
+    const savedPoolTasksResult = TaskStorage.loadPoolTasks();
+    const savedPinnedTasksResult = TaskStorage.loadPinnedTasks();
 
     let currentMaxId = 0;
     const allLoadedTasksForIdCalc: Task[] = [];
 
-    if (savedRegularTasks.length > 0) {
-      allLoadedTasksForIdCalc.push(...savedRegularTasks);
+    // Populate tasks for ID calculation, ensuring they are not null
+    if (savedRegularTasksResult) {
+      allLoadedTasksForIdCalc.push(...savedRegularTasksResult);
     }
-    if (savedPoolTasks.length > 0) {
-      allLoadedTasksForIdCalc.push(...savedPoolTasks);
+    if (savedPoolTasksResult) {
+      allLoadedTasksForIdCalc.push(...savedPoolTasksResult);
+    }
+    if (savedPinnedTasksResult) {
+        savedPinnedTasksResult.forEach(pt => {
+             allLoadedTasksForIdCalc.push(pt as Task);
+        });
     }
 
     allLoadedTasksForIdCalc.forEach(task => {
-      const numId = parseInt(task.id);
-      if (!isNaN(numId) && numId > currentMaxId) {
-        currentMaxId = numId;
+      if (task && task.id) {
+        const numId = parseInt(task.id);
+        if (!isNaN(numId) && numId > currentMaxId) {
+          currentMaxId = numId;
+        }
       }
     });
 
-    if (savedRegularTasks.length === 0 && savedPoolTasks.length === 0 && savedPinnedTasks.length === 0) {
-      console.log('ℹ️ No saved tasks found, setting default tasks...');
-      const defaultTasks: Task[] = [
-        { id: "1", name: "Review notes", duration: 1, startHour: 9, dayOffset: 0, color: "bg-blue-200 dark:bg-blue-600" },
-        { id: "2", name: "Team sync", duration: 2, startHour: 10, dayOffset: 0, color: "bg-green-200 dark:bg-green-600" },
-        { id: "3", name: "Plan goals", duration: 1, startHour: 13, dayOffset: 0, color: "bg-yellow-200 dark:bg-yellow-600" },
-      ];
-      setTasks(defaultTasks);
-      setPoolTasks([]);
-      setPinnedTasks([]);
-      setTaskIdCounter(4);
-      console.log('✅ Default tasks set. Task counter to 4.');
-    } else {
-      console.log('✅ Found saved data, setting state...');
-      setTasks(savedRegularTasks);
-      setPoolTasks(savedPoolTasks);
-      setPinnedTasks(savedPinnedTasks);
-      setTaskIdCounter(currentMaxId + 1);
-      console.log(`📊 Loaded data. Task counter to: ${currentMaxId + 1}`);
-    }
-    // initialLoadComplete.current = true; // No longer needed with useEffectSkipFirstRender
-    // console.log('🚩 Initial load complete flag set.');
+    // Always load from storage, or use empty arrays if storage is null/empty.
+    // Default tasks are no longer loaded.
+    console.log('✅ Attempting to load from storage or initializing empty...');
+    
+    const regularTasksToSet = savedRegularTasksResult || [];
+    const poolTasksToSet = savedPoolTasksResult || [];
+    const pinnedTasksToSet = savedPinnedTasksResult || [];
+    
+    setTasks(regularTasksToSet);
+    setPoolTasks(poolTasksToSet);
+    setPinnedTasks(pinnedTasksToSet);
+    
+    // Recalculate currentMaxId one last time based on the actual tasks being set
+    // This is important if any of the *_savedResults were null and are now empty arrays.
+    currentMaxId = 0; 
+    const finalTasksForIdCalc: Task[] = [...regularTasksToSet, ...poolTasksToSet];
+    pinnedTasksToSet.forEach(pt => finalTasksForIdCalc.push(pt as Task));
+
+    finalTasksForIdCalc.forEach(task => {
+      if (task && task.id) {
+        const numId = parseInt(task.id);
+        if (!isNaN(numId) && numId > currentMaxId) {
+          currentMaxId = numId;
+        }
+      }
+    });
+
+    // Initialize taskIdCounter. If no tasks loaded (currentMaxId is 0), start counter at 1.
+    setTaskIdCounter(currentMaxId > 0 ? currentMaxId + 1 : 1);
+    console.log(`📊 Tasks processed. Initial Task counter to: ${currentMaxId > 0 ? currentMaxId + 1 : 1}`);
+    
   }, []);
 
   // Save tasks whenever they change - using custom hook
@@ -1605,29 +1616,20 @@ export default function DailyPlanner() {
     </div>
   )}
 
-  // Add new function to handle adding tasks directly to the pool
-  const handleAddPoolTask = useCallback(() => {
-    if (newPoolTaskName.trim() === "") return;
-
+  // MODIFIED function to handle adding tasks directly to the pool
+  // This will be called by TaskPoolSidebar
+  const handleActualAddPoolTask = useCallback((taskData: { name: string; duration: number; color: string }) => {
     const newTask: Task = {
       id: String(taskIdCounter),
-      name: newPoolTaskName.trim(),
-      duration: newPoolTaskDuration,
-      color: newPoolTaskColor,
-      // No startHour or dayOffset needed for pool tasks initially
-      startHour: 0, // Placeholder, not used by pool rendering logic directly
-      dayOffset: 0, // Placeholder, not used by pool rendering logic directly
+      name: taskData.name,
+      duration: taskData.duration,
+      color: taskData.color,
+      startHour: 0, // Placeholder for pool tasks
+      dayOffset: 0, // Placeholder for pool tasks
     };
-
     setPoolTasks(prevTasks => [...prevTasks, newTask]);
     setTaskIdCounter(prev => prev + 1);
-
-    // Reset form
-    setNewPoolTaskName("");
-    setNewPoolTaskDuration(1);
-    setNewPoolTaskColor(TASK_COLORS[0]);
-    setShowPoolTaskForm(false);
-  }, [taskIdCounter, newPoolTaskName, newPoolTaskDuration, newPoolTaskColor]);
+  }, [taskIdCounter]);
 
   // Function to handle pinning a task
   const handlePinTask = useCallback((taskToPin: Task) => {
@@ -1729,112 +1731,25 @@ export default function DailyPlanner() {
 
             {/* Conditional Content Area */}
             {activeSidebarTab === 'pool' && (
-              <div className="flex flex-col flex-grow overflow-hidden">
-                {/* Task Pool Header (Simplified) */}
-                <div className="p-2 border-b border-neutral-800 flex justify-end items-center"> {/* Removed justify-between, title removed */}
-                  <button
-                    type="button"
-                    className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded hover:bg-slate-800/50 transition-colors"
-                    onClick={() => setShowPoolTaskForm(true)}
-                    title="Add new task to pool"
-                  >
-                    + Add
-                  </button>
-                </div>
-                {/* Task Pool List Area */}
-                <div className="flex-grow overflow-y-auto p-1">
-                  {poolTasks.length === 0 ? (
-                    <div className="text-slate-400 text-xs p-2 text-center">
-                      No unscheduled tasks.
-                      <br />Move tasks here to save for later.
-                    </div>
-                  ) : (
-                    <div className="grid gap-1">
-                      {poolTasks.map(task => (
-                        <div 
-                          key={task.id}
-                          className={`${task.color || 'bg-blue-600'} opacity-60 hover:opacity-80 px-1.5 py-1 rounded text-white text-[11px] relative group transition-all duration-150`}
-                        >
-                          <div className="font-medium line-clamp-2 pr-6">{task.name}</div>
-                          <div className="text-[9px] opacity-80">{formatDuration(task.duration)}</div>
-                          <div className="absolute top-1 right-1 flex space-x-0.5">
-                            <button
-                              type="button"
-                              className="h-5 w-5 rounded bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-                              onClick={() => {
-                                const poolTask = poolTasks.find(t => t.id === task.id);
-                                if (poolTask) {
-                                  setCopyingTaskData({...poolTask});
-                                  setTargetCopyDayOffset(topDayOffset);
-                                }
-                              }}
-                              title="Copy to Schedule"
-                            >
-                              <CopyPlus className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              className="h-5 w-5 rounded bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-                              onClick={() => {
-                                setPoolTasks(prev => prev.filter(t => t.id !== task.id));
-                              }}
-                              title="Delete task"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                {/* Task Pool Footer */}
-                <div className="p-1 border-t border-slate-800 flex justify-between items-center text-[10px]">
-                  <button
-                    type="button"
-                    className="text-slate-400 hover:text-white px-2 py-1 rounded hover:bg-slate-800 transition-colors"
-                    onClick={() => setShowPoolTaskForm(true)}
-                    title="Add new task to pool"
-                  >
-                    Add Task
-                  </button>
-                  <button
-                    type="button"
-                    className="text-slate-400 hover:text-white px-2 py-1 rounded hover:bg-slate-800 transition-colors"
-                    onClick={() => setPoolTasks([])}
-                    disabled={poolTasks.length === 0}
-                  >
-                    Clear All
-                  </button>
-                </div>
-              </div>
+              <TaskPoolSidebar
+                poolTasks={poolTasks}
+                TASK_COLORS={TASK_COLORS}
+                activeTab={activeSidebarTab} // Or simply rely on parent's conditional rendering
+                topDayOffset={topDayOffset}
+                setPoolTasks={setPoolTasks}
+                setCopyingTaskData={setCopyingTaskData}
+                setTargetCopyDayOffset={setTargetCopyDayOffset}
+                onActualAddPoolTask={handleActualAddPoolTask}
+                formatDuration={formatDuration} // Ensure formatDuration is available in this scope (it is, via import)
+              />
             )}
 
             {activeSidebarTab === 'pinned' && (
-              <div className="flex flex-col flex-grow overflow-hidden">
-                {/* Pinned Tasks Header removed as tab serves as title */}
-                {/* Pinned Tasks List Area */}
-                <div className="p-3 space-y-2 overflow-y-auto flex-grow">
-                  {pinnedTasks.length === 0 ? (
-                    <p className="text-slate-400 text-sm text-center pt-2">No tasks pinned yet.</p> 
-                  ) : (
-                    pinnedTasks.map(pinnedTask => (
-                      <div key={pinnedTask.pinnedId} className={`relative px-1.5 py-1 rounded-md text-xs ${pinnedTask.color || 'bg-slate-800'}`}>
-                        <p className="font-medium text-white truncate pr-5">{pinnedTask.name}</p>
-                        <p className="text-[10px] text-slate-300">{formatTimeRemaining(new Date(pinnedTask.dueDate))}</p>
-                        <button
-                          type="button"
-                          className="absolute top-1 right-1 h-5 w-5 rounded bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-                          onClick={() => handleUnpinTask(pinnedTask.pinnedId)}
-                          title="Unpin task"
-                        >
-                          <PinOff className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
+              <PinnedTasksSidebar
+                pinnedTasks={pinnedTasks}
+                onUnpinTask={handleUnpinTask}
+                formatTimeRemaining={formatTimeRemaining}
+              />
             )}
           </div>
 
@@ -2189,81 +2104,8 @@ export default function DailyPlanner() {
               </div>
             )}
 
-            {/* New Pool Task Form Modal */}
-            {showPoolTaskForm && (
-              <div className="fixed inset-0 bg-black/30 dark:bg-black/50 flex items-center justify-center z-[60]"> {/* Ensure z-index is high enough */}
-                <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-xl max-w-sm w-full">
-                  <h3 className="text-xl font-bold mb-4 dark:text-white">Add Task to Pool</h3>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label htmlFor="newPoolTaskNameInput" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Task Name</label>
-                      <Input
-                        id="newPoolTaskNameInput"
-                        type="text"
-                        value={newPoolTaskName}
-                        onChange={(e) => setNewPoolTaskName(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
-                        placeholder="Enter task name"
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label htmlFor="newPoolTaskDurationSelect" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duration</label>
-                        <select
-                          id="newPoolTaskDurationSelect"
-                          value={newPoolTaskDuration}
-                          onChange={(e) => setNewPoolTaskDuration(parseFloat(e.target.value))}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
-                        >
-                          <option value="0.25">15m</option>
-                          <option value="0.5">30m</option>
-                          <option value="0.75">45m</option>
-                          <option value="1">1h</option>
-                          <option value="1.5">1h30m</option>
-                          <option value="2">2h</option>
-                          <option value="3">3h</option>
-                          <option value="4">4h</option>
-                        </select>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Color</label>
-                      <div className="grid grid-cols-8 gap-1.5">
-                        {TASK_COLORS.map((color) => (
-                          <button
-                            key={color}
-                            type="button"
-                            className={`w-6 h-6 rounded-full ${color} ${newPoolTaskColor === color ? 'ring-2 ring-offset-2 ring-blue-500 dark:ring-blue-400' : ''}`}
-                            onClick={() => setNewPoolTaskColor(color)}
-                            title={color.split(' ')[0].replace('bg-', '').replace('-200', '').replace('-300', '')}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-end mt-6 gap-2">
-                    <button
-                      type="button"
-                      className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
-                      onClick={() => setShowPoolTaskForm(false)}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
-                      onClick={handleAddPoolTask}
-                    >
-                      Add to Pool
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* New Pool Task Form Modal - REMOVED, now inside TaskPoolSidebar */}
+
           </div>
 
           {/* Far Right Column: Pinned Tasks Section - THIS ENTIRE DIV BLOCK IS REMOVED */}

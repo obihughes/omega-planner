@@ -30,10 +30,10 @@ const TaskStorage = {
   },
   
   // Load tasks from localStorage
-  load: (): Task[] => {
+  load: (): Task[] | null => {
     if (typeof window === 'undefined') return [];
     const savedData = localStorage.getItem(STORAGE_KEY);
-    if (!savedData) return [];
+    if (!savedData) return null;
 
     try {
       const data = JSON.parse(savedData);
@@ -66,10 +66,10 @@ const TaskStorage = {
   },
   
   // Load pool tasks from localStorage
-  loadPoolTasks: (): Task[] => {
+  loadPoolTasks: (): Task[] | null => {
     if (typeof window === 'undefined') return [];
     const savedData = localStorage.getItem(POOL_STORAGE_KEY);
-    if (!savedData) return [];
+    if (!savedData) return null;
 
     try {
       const data = JSON.parse(savedData);
@@ -102,10 +102,10 @@ const TaskStorage = {
   },
   
   // Load pinned tasks from localStorage
-  loadPinnedTasks: (): PinnedTask[] => {
+  loadPinnedTasks: (): PinnedTask[] | null => {
     if (typeof window === 'undefined') return [];
     const savedData = localStorage.getItem(PINNED_STORAGE_KEY);
-    if (!savedData) return [];
+    if (!savedData) return null;
 
     try {
       const data = JSON.parse(savedData);
@@ -124,17 +124,5 @@ const TaskStorage = {
     }
   }
 };
-
-// Add this utility function
-const formatDuration = (duration: number): string => {
-  const hours = Math.floor(duration);
-  const minutes = Math.round((duration - hours) * 60);
-  if (hours === 0) return `${minutes}m`;
-  if (minutes === 0) return `${hours}h`;
-  return `${hours}h ${minutes}m`;
-};
-
-// Export it along with the storage class
-export { formatDuration };
 
 export default TaskStorage; 
