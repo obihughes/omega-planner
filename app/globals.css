@@ -12,6 +12,21 @@ html, body {
   padding: 0 !important;
 }
 
+/* Resize operation styles */
+html.resize-active {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+html.resize-active * {
+  cursor: col-resize !important;
+  pointer-events: none;
+}
+
+html.resize-active .resize-handle {
+  pointer-events: auto !important;
+}
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;

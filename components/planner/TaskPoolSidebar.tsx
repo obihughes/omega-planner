@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Task } from '../../types/planner';
 import { Input } from "@/components/ui";
-import { CopyPlus, Trash2 } from 'lucide-react';
+import { CopyPlus, Trash2, Edit3 } from 'lucide-react';
 
 // Imported from DailyPlanner's constants, or pass as prop
 // For now, let's assume TASK_COLORS is passed as a prop.
@@ -26,6 +26,7 @@ interface TaskPoolSidebarProps {
   formatDuration: (duration: number) => string;
   onDeletePoolTask?: (taskId: string) => void;
   onClearPool?: () => void;
+  openEditModal: (task: Task, isFromPool?: boolean) => void;
 }
 
 export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
@@ -40,6 +41,7 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
   formatDuration,
   onDeletePoolTask,
   onClearPool,
+  openEditModal,
 }) => {
   const [showPoolTaskForm, setShowPoolTaskForm] = useState<boolean>(false);
   const [newPoolTaskName, setNewPoolTaskName] = useState<string>("");
@@ -127,6 +129,14 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
+                    <button
+                      type="button"
+                      className="h-5 w-5 rounded bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                      onClick={() => openEditModal(task, true)}
+                      title="Edit Pool Task"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -156,7 +166,7 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
 
       {/* New Pool Task Form Modal */}
       {showPoolTaskForm && (
-        <div className="fixed inset-0 bg-black/30 dark:bg-black/50 flex items-center justify-center z-[60]">
+        <div className="fixed inset-0 bg-black/30 dark:bg-black/50 flex items-center justify-center z-[130]">
           <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-xl max-w-sm w-full">
             <h3 className="text-xl font-bold mb-4 dark:text-white">Add Task to Pool</h3>
             <div className="space-y-4">

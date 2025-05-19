@@ -24,6 +24,11 @@ interface ResizingTaskState {
   // initialWidth?: number; // No longer strictly needed by the new resize logic
 }
 
+// Add a temporary marker to distinguish task source for modal
+interface ActiveModalTask extends Task {
+  isFromPool?: boolean;
+}
+
 export function useDailyPlanner() {
   // --- STATE ---
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -61,7 +66,7 @@ export function useDailyPlanner() {
   const timelineScrollRef = useRef<HTMLDivElement>(null);
   const initialLoadComplete = useRef<boolean>(false); // To prevent saving empty arrays on first render
   const [colorPickerState, setColorPickerState] = useState<{ taskId: string; x: number; y: number } | null>(null);
-  const [activeEditModalTask, setActiveEditModalTask] = useState<Task | null>(null);
+  const [activeEditModalTask, setActiveEditModalTask] = useState<ActiveModalTask | null>(null);
 
   // --- UTILITY FUNCTIONS (originally in DailyPlanner.tsx) ---
   const getDateLabel = useCallback((dayOffset: number): string => {
@@ -181,30 +186,36 @@ export function useDailyPlanner() {
     handleUpdateTask(taskId, { color: completedColor });
   }, [handleUpdateTask, TASK_COLORS]);
 
-  const openEditModal = useCallback((taskToEdit: Task) => {
-    setActiveEditModalTask(taskToEdit);
-    // setEditingTaskId(taskToEdit.id); // Set this if still needed for other UI elements
+  const openEditModal = useCallback((taskToEdit: Task, isFromPool: boolean = false) => {
+    setActiveEditModalTask({ ...taskToEdit, isFromPool });
   }, [setActiveEditModalTask]);
 
   const closeEditModal = useCallback(() => {
     setActiveEditModalTask(null);
-    // setEditingTaskId(null); // Clear this if it was set by openEditModal
   }, [setActiveEditModalTask]);
 
   const saveTaskFromModal = useCallback((updatedTaskData: Partial<Task> & { id: string }) => {
-    // Ensure only valid Task properties are passed to handleUpdateTask
-    const { id, name, startHour, duration, color, dayOffset } = updatedTaskData;
+    const { id, name, startHour, duration, color, dayOffset } = updatedTaskData; // dayOffset might not be relevant for pool tasks if not on timeline
     const taskToSave: Partial<Task> = {};
     if (name !== undefined) taskToSave.name = name;
-    if (startHour !== undefined) taskToSave.startHour = startHour;
+    // For pool tasks, startHour and dayOffset might not be directly editable or relevant in the same way
+    // If they are edited, they should persist on the pool task.
+    if (startHour !== undefined) taskToSave.startHour = startHour; 
     if (duration !== undefined) taskToSave.duration = duration;
     if (color !== undefined) taskToSave.color = color;
-    if (dayOffset !== undefined) taskToSave.dayOffset = dayOffset;
-    // Exclude 'notes' or any other non-Task properties
+    if (dayOffset !== undefined) taskToSave.dayOffset = dayOffset; // Keep if edited, though pool tasks usually have a special dayOffset
 
-    handleUpdateTask(id, taskToSave);
+    if (activeEditModalTask?.isFromPool) {
+      setPoolTasks(currentPoolTasks =>
+        currentPoolTasks.map(task =>
+          task.id === id ? { ...task, ...taskToSave } : task
+        )
+      );
+    } else {
+      handleUpdateTask(id, taskToSave); // This updates the main 'tasks' array
+    }
     closeEditModal();
-  }, [handleUpdateTask, closeEditModal]);
+  }, [handleUpdateTask, closeEditModal, setPoolTasks, activeEditModalTask]);
 
   // --- Conflict Detection (Moved here, before handleMouseUpGlobal) ---
   const hasConflict = useCallback((taskIdToExclude: string, dayOffset: number, startHour: number, duration: number): boolean => {
@@ -224,46 +235,88 @@ export function useDailyPlanner() {
   }, [tasks]);
 
   const handleMouseUpGlobal = useCallback(() => {
-    let taskToUpdate: Task | null = null;
+    let dragTaskToFinalize: Task | null = null;
 
     if (draggingTask && draggingTask.task) {
-      taskToUpdate = draggingTask.task;
-      // console.log('Finalizing dragged task:', taskToUpdate);
-      // Check for conflicts before finalizing (optional, depends on desired UX)
-      // if (hasConflict(taskToUpdate.id, taskToUpdate.dayOffset, taskToUpdate.startHour, taskToUpdate.duration)) {
-      //   console.warn('Conflict detected on drop, reverting or handling...');
-      //   // Option: Revert to original position (would need to store original in draggingTask)
-      //   // Option: Allow drop and show conflict (current behavior if no check)
-      //   // For now, we proceed with the drop.
-      // }
-    }
-
-    // For resizing, the update might have happened live in handleMouseMoveResize
-    // or could be finalized here if handleMouseMoveResize only updated resizingTask state.
-    // Based on current setup, resizingTask updates are live via setTasks in handleMouseMoveResize.
-    // So, we mainly need to clear the resizingTask state.
-
-    if (taskToUpdate) {
-      const finalTask = taskToUpdate; // Clarity
+      dragTaskToFinalize = draggingTask.task; // Dragging already provides snapped values in its task state
       setTasks(currentTasks =>
-        currentTasks.map(t => (t.id === finalTask.id ? { ...finalTask } : t))
+        currentTasks.map(t => (t.id === dragTaskToFinalize!.id ? { ...dragTaskToFinalize! } : t))
       );
-    }
-
-    if (draggingTask) {
       setDraggingTask(null);
     }
+
     if (resizingTask) {
-      // If resizing also needs finalization beyond what handleMouseMoveResize does,
-      // add logic here similar to draggingTask.
-      // For now, assuming handleMouseMoveResize handles the task update directly.
+      const { task: rawPreviewTask, edge, initialStartHour: rsInitialStartHour, initialDuration: rsInitialDuration } = resizingTask;
+      
+      // These are the final raw (but minimally constrained) values from the mouse movement
+      let finalRawStartHour = rawPreviewTask.startHour;
+      let finalRawDuration = rawPreviewTask.duration;
+
+      // --- Apply Snapping to the final raw values ---
+      let snappedStartHour = Math.round(finalRawStartHour * 4) / 4;
+      let snappedDuration = Math.round(finalRawDuration * 4) / 4;
+      
+      // --- Apply Full Set of Constraints and Safeguards ---
+      snappedDuration = Math.max(MIN_TASK_DURATION, snappedDuration); 
+
+      if (edge === 'start') {
+          const originalTaskEndHour = rsInitialStartHour + rsInitialDuration;
+          // Adjust start hour: cannot go beyond original end minus min_duration
+          snappedStartHour = Math.min(snappedStartHour, originalTaskEndHour - MIN_TASK_DURATION);
+          // And cannot go before timeline start
+          snappedStartHour = Math.max(TIMELINE_START_HOUR, snappedStartHour);
+          
+          // Recalculate duration based on adjusted start and original end
+          snappedDuration = originalTaskEndHour - snappedStartHour;
+          // Ensure duration is at least min_duration and also fits if start was pushed by TIMELINE_START_HOUR
+          // And that it doesn't extend beyond TIMELINE_END_HOUR from the new start
+          snappedDuration = Math.min(snappedDuration, TIMELINE_END_HOUR - snappedStartHour);
+          snappedDuration = Math.max(MIN_TASK_DURATION, snappedDuration);
+
+      } else { // edge === 'end'
+          // For end-edge resize, the start hour is anchored to the initial start hour of the resize operation.
+          snappedStartHour = rsInitialStartHour; 
+
+          // Adjust duration: cannot go beyond timeline end from the fixed start hour
+          snappedDuration = Math.min(snappedDuration, TIMELINE_END_HOUR - snappedStartHour);
+          // Ensure duration is at least min_duration
+          snappedDuration = Math.max(MIN_TASK_DURATION, snappedDuration);
+      }
+
+      // Safeguard pass: ensure everything is within bounds and respects min_duration after all logic.
+      snappedStartHour = Math.max(TIMELINE_START_HOUR, snappedStartHour);
+      snappedStartHour = Math.min(snappedStartHour, TIMELINE_END_HOUR - MIN_TASK_DURATION); // Ensure start allows for min_duration
+      
+      snappedDuration = Math.min(snappedDuration, TIMELINE_END_HOUR - snappedStartHour); // Duration cannot exceed remaining timeline
+      snappedDuration = Math.max(MIN_TASK_DURATION, snappedDuration);
+
+      // If constraints on duration forced it such that start + duration is still problematic, adjust start one last time.
+      // This is crucial if, for example, TIMELINE_END_HOUR - MIN_TASK_DURATION was the cap for start, 
+      // but duration was further reduced, start might need to shift left.
+      if (snappedStartHour + snappedDuration > TIMELINE_END_HOUR) {
+          snappedStartHour = TIMELINE_END_HOUR - snappedDuration;
+      }
+      // Final check on start hour after all adjustments.
+      snappedStartHour = Math.max(TIMELINE_START_HOUR, snappedStartHour);
+      // And one last check on duration to ensure it respects min_duration and fits from potentially adjusted startHour
+      snappedDuration = Math.max(MIN_TASK_DURATION, Math.min(snappedDuration, TIMELINE_END_HOUR - snappedStartHour));
+      
+      setTasks(currentTasks =>
+          currentTasks.map(t =>
+              t.id === rawPreviewTask.id ? { ...t, startHour: snappedStartHour, duration: snappedDuration } : t
+          )
+      );
       setResizingTask(null);
     }
 
+    // Reset cursor and global styles regardless of which operation (drag/resize) ended
     if (typeof document !== 'undefined') {
-        document.body.style.cursor = ''; // Reset cursor
+        document.body.style.cursor = ''; 
+        document.body.style.userSelect = ''; 
+        document.body.style.pointerEvents = ''; 
+        document.documentElement.classList.remove('resize-active');
     }
-  }, [draggingTask, resizingTask, setTasks, setDraggingTask, setResizingTask, hasConflict]);
+  }, [draggingTask, resizingTask, setTasks, setDraggingTask, setResizingTask, MIN_TASK_DURATION, TIMELINE_START_HOUR, TIMELINE_END_HOUR]); // Added back constants for constraints
 
   // --- Task Pool Functions ---
   const handleActualAddPoolTask = useCallback((taskData: { name: string; duration: number; color: string }) => {

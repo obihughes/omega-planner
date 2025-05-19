@@ -11,6 +11,18 @@ import { TaskPoolSidebar } from './TaskPoolSidebar';
 import { PinnedTasksSidebar } from './PinnedTasksSidebar';
 import { useDailyPlanner } from '../../hooks/useDailyPlannerState';
 
+// Helper function to check for task overlap
+const checkOverlap = (
+  task1Start: number, task1Duration: number,
+  task2Start: number, task2Duration: number
+): boolean => {
+  const task1End = task1Start + task1Duration;
+  const task2End = task2Start + task2Duration;
+  // Check if task1 overlaps task2.
+  // Tasks overlap if one starts before the other ends, AND one ends after the other starts.
+  return task1Start < task2End && task1End > task2Start;
+};
+
 export const TASK_COLORS = [
   "bg-red-300 dark:bg-red-700",
   "bg-red-200 dark:bg-red-600",     // Lighter Red
@@ -123,7 +135,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
     <>
       <div 
         className={`
-          flex flex-col p-0.5 rounded-sm
+          flex flex-col p-1.5 rounded-md
           ${color}
           hover:ring-1 hover:ring-gray-400 dark:hover:ring-gray-300
           transition-all duration-200
@@ -132,12 +144,12 @@ const TaskCard: React.FC<TaskCardProps> = ({
         `}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex flex-col h-full min-w-0">
-          <div className="flex flex-row justify-between items-start min-w-0 draggable-area h-full gap-1">
+        <div className="flex flex-col min-w-0 flex-grow">
+          <div className="flex flex-row justify-between items-start min-w-0 draggable-area h-full gap-1 px-1.5">
             <div className="flex-grow flex flex-col min-w-0">
               <div className={`
                 dark:text-white break-words
-                ${isCompressed ? 'text-[8px] writing-mode-vertical-lr transform h-full flex items-center justify-center overflow-hidden leading-tight' : 'text-[11px] line-clamp-2'} 
+                ${isCompressed ? 'text-[8px] writing-mode-vertical-lr transform h-full flex items-center justify-center overflow-hidden leading-tight' : 'text-xs line-clamp-2'}
                 font-bold
               `}
               onClick={(e) => { 
@@ -383,8 +395,10 @@ export default function DailyPlanner() {
   const [newTaskColor, setNewTaskColor] = useState<string>(TASK_COLORS[0]);
   const [newTaskDayOffset, setNewTaskDayOffset] = useState<number>(0);
 
+  const TIMELINE_COLUMN_HEIGHT = 100;
   const TASK_BASE_TOP = 2;
-  const TASK_HEIGHT = 60;
+  const TASK_BASE_BOTTOM_PADDING = 2;
+  const TASK_HEIGHT = TIMELINE_COLUMN_HEIGHT - TASK_BASE_TOP - TASK_BASE_BOTTOM_PADDING; // Now 96px
   const TIMELINE_SPLIT_HOUR_1 = 11;
   const TIMELINE_SPLIT_HOUR_2 = 18;
   const TIMELINE_HEADER_HEIGHT_PX = 28;
@@ -400,7 +414,13 @@ export default function DailyPlanner() {
     e.preventDefault();
     cancelCopy(); 
     setDraggingTask(null); 
+    
+    // Apply cursor style directly to document.body for consistency
     document.body.style.cursor = 'col-resize';
+    
+    // Add a class to the html element to prevent selection during resize
+    document.documentElement.classList.add('resize-active');
+    
     if (task) {
         setResizingTask({ 
              task: { ...task }, 
@@ -420,89 +440,110 @@ export default function DailyPlanner() {
     
     const dx = e.clientX - initialMouseX;
     const dHours = dx / PIXELS_PER_HOUR;
+    const SNAP_THRESHOLD_HOURS = 2 / 60; // 2 minutes
 
-    let newStartHourCandidate = initialStartHour;
-    let newDurationCandidate = initialDuration;
-
-    if (edge === 'start') {
-        newStartHourCandidate = initialStartHour + dHours;
-        newDurationCandidate = initialDuration - dHours;
-    } else { // edge === 'end'
-        newStartHourCandidate = initialStartHour; 
-        newDurationCandidate = initialDuration + dHours;
-    }
-
-    // Initial snapping and min duration
-    let finalNewStartHour = Math.round(newStartHourCandidate * 4) / 4;
-    let finalNewDuration = Math.round(newDurationCandidate * 4) / 4;
-    finalNewDuration = Math.max(MIN_TASK_DURATION, finalNewDuration);
+    let livePreviewStartHour = initialStartHour;
+    let livePreviewDuration = initialDuration;
 
     if (edge === 'start') {
-        const originalEndHour = initialStartHour + initialDuration;
-        // Adjust start hour: cannot go beyond original end minus min_duration
-        finalNewStartHour = Math.min(finalNewStartHour, originalEndHour - MIN_TASK_DURATION);
-        // And cannot go before timeline start
-        finalNewStartHour = Math.max(finalNewStartHour, TIMELINE_START_HOUR);
-        
-        // Recalculate duration based on adjusted start and original end
-        finalNewDuration = originalEndHour - finalNewStartHour;
-        // Ensure duration is at least min_duration and also fits if start was pushed by TIMELINE_START_HOUR
-        // And that it doesn't extend beyond TIMELINE_END_HOUR from the new start
-        finalNewDuration = Math.min(finalNewDuration, TIMELINE_END_HOUR - finalNewStartHour);
-        finalNewDuration = Math.max(MIN_TASK_DURATION, finalNewDuration);
+        let rawNewStartHour = initialStartHour + dHours;
+        const nearestSnapPoint = Math.round(rawNewStartHour * 4) / 4;
+        if (Math.abs(rawNewStartHour - nearestSnapPoint) <= SNAP_THRESHOLD_HOURS) {
+            rawNewStartHour = nearestSnapPoint;
+        }
+        livePreviewStartHour = rawNewStartHour;
+        livePreviewDuration = (initialStartHour + initialDuration) - livePreviewStartHour;
+
+        // Collision detection for start edge
+        const otherTasksOnSameDay = tasks.filter(t => 
+            t.id !== originalTaskAtResizeStart.id && 
+            t.dayOffset === originalTaskAtResizeStart.dayOffset
+        );
+
+        let maxEndTimeOfCollidingTasks = -Infinity;
+        for (const otherTask of otherTasksOnSameDay) {
+            if (checkOverlap(livePreviewStartHour, livePreviewDuration, otherTask.startHour, otherTask.duration)) {
+                 // We are trying to move the start edge to the left, potentially over otherTask
+                 // So, the new startHour cannot be less than the end of otherTask
+                if (livePreviewStartHour < (otherTask.startHour + otherTask.duration)) {
+                    maxEndTimeOfCollidingTasks = Math.max(maxEndTimeOfCollidingTasks, otherTask.startHour + otherTask.duration);
+                }
+            }
+        }
+        if (maxEndTimeOfCollidingTasks > -Infinity && livePreviewStartHour < maxEndTimeOfCollidingTasks) {
+            livePreviewStartHour = maxEndTimeOfCollidingTasks;
+            livePreviewDuration = (initialStartHour + initialDuration) - livePreviewStartHour;
+        }
 
     } else { // edge === 'end'
-        finalNewStartHour = initialStartHour; // Start hour is fixed
+        let rawNewEndHour = (initialStartHour + initialDuration) + dHours;
+        const nearestSnapPoint = Math.round(rawNewEndHour * 4) / 4;
+        if (Math.abs(rawNewEndHour - nearestSnapPoint) <= SNAP_THRESHOLD_HOURS) {
+            rawNewEndHour = nearestSnapPoint;
+        }
+        // livePreviewStartHour remains initialStartHour for end-edge resize
+        livePreviewDuration = rawNewEndHour - initialStartHour;
 
-        // Adjust duration: cannot go beyond timeline end from the fixed start hour
-        finalNewDuration = Math.min(finalNewDuration, TIMELINE_END_HOUR - finalNewStartHour);
-        // Ensure duration is at least min_duration (already done, but re-check after TIMELINE_END_HOUR constraint)
-        finalNewDuration = Math.max(MIN_TASK_DURATION, finalNewDuration);
+        // Collision detection for end edge
+        const otherTasksOnSameDay = tasks.filter(t => 
+            t.id !== originalTaskAtResizeStart.id && 
+            t.dayOffset === originalTaskAtResizeStart.dayOffset
+        );
+        let minStartTimeOfCollidingTasks = Infinity;
+        for (const otherTask of otherTasksOnSameDay) {
+            if (checkOverlap(livePreviewStartHour, livePreviewDuration, otherTask.startHour, otherTask.duration)) {
+                // We are trying to move the end edge to the right, potentially over otherTask
+                // So, the new end (start + duration) cannot be greater than the start of otherTask
+                if ((livePreviewStartHour + livePreviewDuration) > otherTask.startHour) {
+                    minStartTimeOfCollidingTasks = Math.min(minStartTimeOfCollidingTasks, otherTask.startHour);
+                }
+            }
+        }
+        if (minStartTimeOfCollidingTasks < Infinity && (livePreviewStartHour + livePreviewDuration) > minStartTimeOfCollidingTasks) {
+            livePreviewDuration = minStartTimeOfCollidingTasks - livePreviewStartHour;
+        }
     }
 
-    // Safeguard: Final pass to ensure everything is within bounds and respects min_duration.
-    // This primarily handles cases where initial values + delta were already OOB or edge cases from constraints.
-    finalNewStartHour = Math.max(TIMELINE_START_HOUR, finalNewStartHour);
-    finalNewStartHour = Math.min(finalNewStartHour, TIMELINE_END_HOUR - MIN_TASK_DURATION); // Ensure start allows for min_duration
-    
-    finalNewDuration = Math.min(finalNewDuration, TIMELINE_END_HOUR - finalNewStartHour); // Duration cannot exceed remaining timeline
-    finalNewDuration = Math.max(MIN_TASK_DURATION, finalNewDuration);
+    // --- Apply Minimal Constraints for Live Preview (to the potentially magnetically snapped AND collision-adjusted values) ---
+    livePreviewDuration = Math.max(MIN_TASK_DURATION, livePreviewDuration);
 
-    // If constraints on duration forced it such that start + duration is still problematic, adjust start one last time.
-    // This can happen if TIMELINE_END_HOUR - MIN_TASK_DURATION was the cap for start, but duration was further reduced.
-    if (finalNewStartHour + finalNewDuration > TIMELINE_END_HOUR) {
-        finalNewStartHour = TIMELINE_END_HOUR - finalNewDuration;
+    if (edge === 'start') {
+        const originalTaskEnd = initialStartHour + initialDuration;
+        livePreviewStartHour = Math.min(livePreviewStartHour, originalTaskEnd - MIN_TASK_DURATION);
+        livePreviewStartHour = Math.max(TIMELINE_START_HOUR, livePreviewStartHour);
+        livePreviewDuration = originalTaskEnd - livePreviewStartHour; // Recalculate duration based on constrained start
+        livePreviewDuration = Math.max(MIN_TASK_DURATION, livePreviewDuration);
+        livePreviewDuration = Math.min(livePreviewDuration, TIMELINE_END_HOUR - livePreviewStartHour);
+    } else { // edge === 'end'
+        livePreviewStartHour = initialStartHour; // Start is fixed
+        livePreviewDuration = Math.min(livePreviewDuration, TIMELINE_END_HOUR - livePreviewStartHour);
+        livePreviewDuration = Math.max(MIN_TASK_DURATION, livePreviewDuration);
     }
-    // Final check on start hour after all adjustments.
-    finalNewStartHour = Math.max(TIMELINE_START_HOUR, finalNewStartHour);
 
+    // Final boundary checks for start hour and resulting duration
+    livePreviewStartHour = Math.max(TIMELINE_START_HOUR, livePreviewStartHour);
+    livePreviewStartHour = Math.min(livePreviewStartHour, TIMELINE_END_HOUR - MIN_TASK_DURATION);
+    livePreviewDuration = Math.max(MIN_TASK_DURATION, Math.min(livePreviewDuration, TIMELINE_END_HOUR - livePreviewStartHour));
 
-    setTasks(currentTasks =>
-        currentTasks.map(t =>
-            t.id === originalTaskAtResizeStart.id ? { ...t, startHour: finalNewStartHour, duration: finalNewDuration } : t
-        )
-    );
-    
     setResizingTask(prev => {
       if (!prev) return null;
       return {
         ...prev, 
         task: { 
           ...prev.task, 
-          startHour: finalNewStartHour,
-          duration: finalNewDuration,
+          startHour: livePreviewStartHour,
+          duration: livePreviewDuration,
         }
       };
     });
 
-  }, [resizingTask, setTasks, PIXELS_PER_HOUR, MIN_TASK_DURATION, TIMELINE_START_HOUR, TIMELINE_END_HOUR, setResizingTask]);
+  }, [resizingTask, PIXELS_PER_HOUR, MIN_TASK_DURATION, TIMELINE_START_HOUR, TIMELINE_END_HOUR, setResizingTask]);
 
   const handleMouseMoveDrag = useCallback((e: MouseEvent) => {
     if (!draggingTask || !draggingTask.taskElement || !draggingTask.task) return;
     e.preventDefault();
 
     const { task: draggedTaskItem, taskElement, offsetX } = draggingTask;
-    // offsetX might be undefined if not set, default to 0
     const currentOffsetX = offsetX || 0;
 
     let targetDayOffset: number | null = null;
@@ -530,7 +571,6 @@ export default function DailyPlanner() {
         targetPeriod = periodAttr;
 
         const rect = dropZone.getBoundingClientRect();
-        // Adjust relativeX by the initial click offset within the task card
         relativeXInTimelineSegment = (e.clientX - rect.left) - currentOffsetX;
 
         switch (targetPeriod) {
@@ -549,19 +589,50 @@ export default function DailyPlanner() {
       newStartHour = Math.max(TIMELINE_START_HOUR, newStartHour);
       newStartHour = Math.min(TIMELINE_END_HOUR - taskDuration, newStartHour);
       
-      const snappedNewStartHour = Math.round(newStartHour * 4) / 4;
+      let snappedNewStartHour = Math.round(newStartHour * 4) / 4;
 
-      setDraggingTask(prev => {
-        if (!prev || !prev.task) return null;
-        return {
-          ...prev,
-          task: {
-            ...prev.task,
-            dayOffset: targetDayOffset as number,
-            startHour: snappedNewStartHour,
+      // Collision detection for dragging
+      const otherTasksOnSameDay = tasks.filter(t => 
+        t.id !== draggedTaskItem.id && 
+        t.dayOffset === targetDayOffset
+      );
+
+      let canMove = true;
+      for (const otherTask of otherTasksOnSameDay) {
+        if (checkOverlap(snappedNewStartHour, taskDuration, otherTask.startHour, otherTask.duration)) {
+          // Attempt to place the task adjacent to the colliding task if possible
+          // If the dragged task is to the left of the other task
+          if (snappedNewStartHour < otherTask.startHour) {
+            snappedNewStartHour = otherTask.startHour - taskDuration;
+          } else { // Dragged task is to the right of the other task
+            snappedNewStartHour = otherTask.startHour + otherTask.duration;
           }
-        };
-      });
+          // Re-check boundaries after adjustment attempt (though snapping might already handle this)
+          snappedNewStartHour = Math.max(TIMELINE_START_HOUR, snappedNewStartHour);
+          snappedNewStartHour = Math.min(TIMELINE_END_HOUR - taskDuration, snappedNewStartHour);
+          snappedNewStartHour = Math.round(snappedNewStartHour * 4) / 4; // Re-snap after adjustment
+
+          // Final check if the adjusted position is still overlapping (e.g. squeezed between two tasks)
+          if (checkOverlap(snappedNewStartHour, taskDuration, otherTask.startHour, otherTask.duration)) {
+             canMove = false; // If still overlaps after trying to adjust, then prevent move for this iteration
+          }
+          break; // For simplicity, handle first collision encountered. More complex logic could find best fit.
+        }
+      }
+
+      if (canMove) {
+        setDraggingTask(prev => {
+          if (!prev || !prev.task) return null;
+          return {
+            ...prev,
+            task: {
+              ...prev.task,
+              dayOffset: targetDayOffset as number,
+              startHour: snappedNewStartHour,
+            }
+          };
+        });
+      }
     }
   }, [
     draggingTask, 
@@ -572,6 +643,7 @@ export default function DailyPlanner() {
     TIMELINE_SPLIT_HOUR_2, 
     TIMELINE_END_HOUR,
     MIN_TASK_DURATION,
+    tasks // Added tasks to dependency array
   ]);
 
   useEffect(() => {
@@ -579,9 +651,31 @@ export default function DailyPlanner() {
       if (resizingTask) handleMouseMoveResize(event);
       if (draggingTask) handleMouseMoveDrag(event); 
     };
-    if (draggingTask || resizingTask) {
+
+    if (draggingTask) {
+      document.body.style.cursor = 'grabbing';
       window.addEventListener('mousemove', onMouseMove);
+    } else if (resizingTask) {
+      // Use a more direct approach for cursor consistency
+      document.body.style.cursor = 'col-resize'; 
+      window.addEventListener('mousemove', onMouseMove);
+      
+      // Capture pointer events to ensure cursor remains consistent
+      // This helps prevent the cursor from being affected by elements under it
+      document.body.style.userSelect = 'none';
+      document.body.style.pointerEvents = 'none';
+      
+      return () => {
+        window.removeEventListener('mousemove', onMouseMove);
+        // Reset styles when done resizing
+        document.body.style.userSelect = '';
+        document.body.style.pointerEvents = '';
+      };
+    } else {
+      // Ensure cursor is reset if no drag or resize operation is active
+      document.body.style.cursor = '';
     }
+
     return () => {
       window.removeEventListener('mousemove', onMouseMove);
     };
@@ -628,7 +722,7 @@ export default function DailyPlanner() {
         (taskToConsider.startHour < startHour && taskToConsider.startHour + taskToConsider.duration > endHour)
       );
     });
-    const columnHeight = 100; 
+    const columnHeight = TIMELINE_COLUMN_HEIGHT; 
     const isTargetCopyDay = copyingTaskData && targetCopyDayOffset === dayOffset; 
     const [currentTimeForMarker, setCurrentTimeForMarker] = useState(new Date());
     useEffect(() => {
@@ -643,16 +737,30 @@ export default function DailyPlanner() {
         const markerLeft = (currentHourFloat - startHour) * PIXELS_PER_HOUR;
         currentTimeMarker = (
           <div 
-            className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-[120] pointer-events-none"
+            className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-[120] pointer-events-none flex flex-col justify-end items-center"
             style={{ left: `${markerLeft}px` }}
             title={`Current time: ${formatTime(currentHourFloat)}`}
-          />
+          >
+            {/* Arrowhead: simple triangle pointing down (inverse for end of line) */}
+            {/* This is a basic way to make a triangle with borders. Adjust size/color as needed. */}
+            <div 
+              style={{ 
+                width: '0', 
+                height: '0', 
+                borderLeft: '4px solid transparent', 
+                borderRight: '4px solid transparent', 
+                borderTop: '6px solid #ef4444', // Corresponds to bg-red-500
+                marginBottom: '-1px' // Adjust to align with the line
+              }}
+            />
+          </div>
         );
       }
     }
 
     // Handles single click for pasting
     const handleTimelineSingleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        e.stopPropagation(); // Prevent event from bubbling to parent elements
         if (!copyingTaskData) return; // Only proceed if in copy mode
 
         const sectionClicked = e.currentTarget.getAttribute('data-section-period');
@@ -725,7 +833,7 @@ export default function DailyPlanner() {
           data-section-period={period} 
           data-day-offset={dayOffset}
           onClick={handleTimelineSingleClick}
-          onDoubleClick={handleTimelineDoubleClick}
+          onDoubleClick={(e) => e.stopPropagation()}
           onMouseEnter={() => {
             if (copyingTaskData && targetCopyDayOffset !== dayOffset) {
               setTargetCopyDayOffset(dayOffset);
@@ -756,8 +864,16 @@ export default function DailyPlanner() {
               />
             ))}
             {tasksToRender.map((task) => {
-              const displayTask = (draggingTask && draggingTask.task.id === task.id) ? draggingTask.task : task;
-              const originalIndex = tasks.findIndex((t) => t.id === displayTask.id);
+              let displayTask = task; // Start with the task from the main array
+              if (draggingTask && draggingTask.task.id === task.id) {
+                  displayTask = draggingTask.task; // Dragging preview overrides
+              }
+              if (resizingTask && resizingTask.task.id === task.id) {
+                  // If this task is being resized, use the preview data from resizingTask.task
+                  displayTask = resizingTask.task;
+              }
+
+              const originalIndex = tasks.findIndex((t) => t.id === task.id); // Use task.id for originalIndex from main array
               if (originalIndex === -1 && !(draggingTask && draggingTask.task.id === task.id)) return null; 
               
               const color = displayTask.color || TASK_COLORS[originalIndex % TASK_COLORS.length]; 
@@ -765,6 +881,21 @@ export default function DailyPlanner() {
               const isBeingResized = resizingTask?.task.id === displayTask.id; 
               const isBeingCopied = copyingTaskData?.id === displayTask.id;
               const isCurrentlyEditing = editingTaskId === displayTask.id; 
+              
+              // Determine global operation state
+              const globalResizingActive = !!resizingTask;
+              const globalDraggingActive = !!draggingTask;
+
+              let cardCursorStyle;
+              if (globalResizingActive) {
+                cardCursorStyle = 'inherit'; // Use 'inherit' instead of 'col-resize' to follow document.body style
+              } else if (globalDraggingActive) {
+                cardCursorStyle = 'grabbing'; // Explicitly set to grabbing for all cards
+              } else if (copyingTaskData?.id === displayTask.id) {
+                cardCursorStyle = 'default';
+              } else {
+                cardCursorStyle = 'grab';
+              }
               
               let isPastTask = false;
               if (displayTask.dayOffset === 0) {
@@ -786,16 +917,18 @@ export default function DailyPlanner() {
               const taskStyleObj: React.CSSProperties = {
                 left: `${renderLeft}px`, width: `${renderWidth}px`,
                 top: `${TASK_BASE_TOP}px`, height: `${TASK_HEIGHT}px`,
-                zIndex: zIndex, 
-                cursor: isBeingDragged ? 'grabbing' : (isBeingCopied ? 'default' : 'grab'),
+                zIndex: zIndex,
+                cursor: cardCursorStyle,
               };
 
               if (displayTask.startHour < startHour) taskStyleObj.borderLeftStyle = 'dashed';
               if ((displayTask.startHour + displayTask.duration) > endHour) taskStyleObj.borderRightStyle = 'dashed';
 
               return (
-                <Card
-                  key={`task-card-${displayTask.id}-${period}-${dayOffset}`}
+                <div
+                  key={`task-container-${displayTask.id}-${period}-${dayOffset}`}
+                  className={`${taskCardBaseClassName} border-transparent rounded-md`}
+                  style={taskStyleObj}
                   onMouseDown={(e) => {
                     const target = e.target as HTMLElement;
                     const isButton = target.tagName === 'BUTTON' || target.closest('button') || target.tagName === 'INPUT' || target.closest('.resize-handle');
@@ -807,37 +940,34 @@ export default function DailyPlanner() {
                     }
                   }}
                   onClick={(e) => e.stopPropagation()}
-                  className={taskCardBaseClassName}
-                  style={taskStyleObj}
+                  onDoubleClick={(e) => e.stopPropagation()}
                 >
-                  <CardContent className="p-0.5 px-1.5 text-xs h-full flex flex-col justify-between relative overflow-hidden draggable-area">
-                    <TaskCard
-                      task={displayTask}
-                      height={TASK_HEIGHT} 
-                      onStartEdit={openEditModal} 
-                      onUpdateTask={handleUpdateTask} 
-                      onDelete={handleDeleteTask} 
-                      onCopy={startCopy} 
-                      onColorChange={handleTaskColorChange} 
-                      editingTaskId={editingTaskId} 
-                      setEditingTaskId={setEditingTaskId} 
-                      onMoveToPool={copyTaskToPool} 
-                      onPinTask={handlePinTask} 
-                    />
-                    {!isCurrentlyEditing && (
-                      <>
-                        <div
-                          className="resize-handle absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-blue-200/50 active:bg-blue-300/50 z-30"
-                          onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(displayTask, 'start', e); }}
-                        ><div className={`absolute inset-y-0 right-0 w-0.5 ${isBeingDragged || isBeingResized ? 'bg-white' : 'bg-transparent group-hover:bg-gray-300/50'}`}></div></div>
-                        <div
-                          className="resize-handle absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-blue-200/50 active:bg-blue-300/50 z-30"
-                          onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(displayTask, 'end', e); }}
-                        ><div className={`absolute inset-y-0 left-0 w-0.5 ${isBeingDragged || isBeingResized ? 'bg-white' : 'bg-transparent group-hover:bg-gray-300/50'}`}></div></div>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
+                  <TaskCard
+                    task={displayTask}
+                    height={TASK_HEIGHT}
+                    onStartEdit={openEditModal} 
+                    onUpdateTask={handleUpdateTask} 
+                    onDelete={handleDeleteTask}
+                    onCopy={startCopy} 
+                    onColorChange={handleTaskColorChange} 
+                    editingTaskId={editingTaskId}
+                    setEditingTaskId={setEditingTaskId}
+                    onMoveToPool={copyTaskToPool}
+                    onPinTask={handlePinTask} 
+                  />
+                  {!isCurrentlyEditing && (
+                    <>
+                      <div
+                        className={`resize-handle absolute left-0 top-0 bottom-0 w-3 ${isBeingResized ? 'cursor-inherit' : 'cursor-ew-resize'} hover:bg-blue-200/70 active:bg-blue-300/70 z-30`}
+                        onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(displayTask, 'start', e); }}
+                      ><div className={`absolute inset-y-0 right-0 w-0.5 ${isBeingDragged || isBeingResized ? 'bg-white' : 'bg-transparent group-hover:bg-gray-300/50'}`}></div></div>
+                      <div
+                        className={`resize-handle absolute right-0 top-0 bottom-0 w-3 ${isBeingResized ? 'cursor-inherit' : 'cursor-ew-resize'} hover:bg-blue-200/70 active:bg-blue-300/70 z-30`}
+                        onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(displayTask, 'end', e); }}
+                      ><div className={`absolute inset-y-0 left-0 w-0.5 ${isBeingDragged || isBeingResized ? 'bg-white' : 'bg-transparent group-hover:bg-gray-300/50'}`}></div></div>
+                    </>
+                  )}
+                </div>
               );
             })}
           </div>
@@ -975,7 +1105,7 @@ export default function DailyPlanner() {
     <div className="min-h-screen p-4 bg-transparent text-white transition-colors">
       <div className="max-w-7xl mx-auto">
         <div className="flex gap-4">
-          <div className="w-52 bg-neutral-900 border border-neutral-800 rounded-lg shadow-xl flex flex-col sticky top-4 h-[calc(100vh-3rem-env(safe-area-inset-bottom))] overflow-hidden z-[120]">
+          <div className="w-52 bg-neutral-900 border border-neutral-800 rounded-lg shadow-xl flex flex-col sticky top-4 h-[calc(100vh-3rem-env(safe-area-inset-bottom))] overflow-hidden z-[150]">
             <div className="flex border-b border-neutral-700">
               <button type="button" className={`flex-1 p-2 text-sm font-medium text-center transition-colors focus:outline-none ${activeSidebarTab === 'pool' ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100'}`} onClick={() => setActiveSidebarTab('pool')}>Task Pool</button>
               <button type="button" className={`flex-1 p-2 text-sm font-medium text-center transition-colors focus:outline-none ${activeSidebarTab === 'pinned' ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100'}`} onClick={() => setActiveSidebarTab('pinned')}>Pinned Tasks</button>
@@ -990,6 +1120,7 @@ export default function DailyPlanner() {
                 setCopyingTaskData={setCopyingTaskData} 
                 setTargetCopyDayOffset={setTargetCopyDayOffset} 
                 onActualAddPoolTask={handleActualAddPoolTask} 
+                openEditModal={openEditModal}
                 formatDuration={formatDuration} 
                 onDeletePoolTask={handleDeletePoolTask} 
                 onClearPool={handleClearPool} 
