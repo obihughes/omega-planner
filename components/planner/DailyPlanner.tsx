@@ -135,12 +135,14 @@ const TaskCard: React.FC<TaskCardProps> = ({
     <>
       <div 
         className={`
-          flex flex-col p-1.5 rounded-md
+          flex flex-col 
+          p-1.5
+          rounded-md
           ${color}
           hover:ring-1 hover:ring-gray-400 dark:hover:ring-gray-300
           transition-all duration-200
           ${isCompressed ? 'min-h-[24px]' : ''}
-          h-full relative
+          h-full max-h-full relative
         `}
         onClick={(e) => e.stopPropagation()}
       >
@@ -396,9 +398,9 @@ export default function DailyPlanner() {
   const [newTaskDayOffset, setNewTaskDayOffset] = useState<number>(0);
 
   const TIMELINE_COLUMN_HEIGHT = 100;
-  const TASK_BASE_TOP = 2;
-  const TASK_BASE_BOTTOM_PADDING = 2;
-  const TASK_HEIGHT = TIMELINE_COLUMN_HEIGHT - TASK_BASE_TOP - TASK_BASE_BOTTOM_PADDING; // Now 96px
+  const TASK_BASE_TOP = 0;
+  const TASK_BASE_BOTTOM_PADDING = 33;
+  const TASK_HEIGHT = TIMELINE_COLUMN_HEIGHT - TASK_BASE_TOP - TASK_BASE_BOTTOM_PADDING;
   const TIMELINE_SPLIT_HOUR_1 = 11;
   const TIMELINE_SPLIT_HOUR_2 = 18;
   const TIMELINE_HEADER_HEIGHT_PX = 28;
@@ -927,7 +929,7 @@ export default function DailyPlanner() {
               return (
                 <div
                   key={`task-container-${displayTask.id}-${period}-${dayOffset}`}
-                  className={`${taskCardBaseClassName} border-transparent rounded-md`}
+                  className={`${taskCardBaseClassName} border-transparent`}
                   style={taskStyleObj}
                   onMouseDown={(e) => {
                     const target = e.target as HTMLElement;
@@ -1139,12 +1141,14 @@ export default function DailyPlanner() {
             <div className="bg-neutral-900 p-3 rounded-lg shadow-sm border border-neutral-800 overflow-auto">
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-neutral-800">
                 <div className="flex items-center space-x-2">
+                  <button type="button" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors" onClick={() => setTopDayOffset(topDayOffset - 7)} title="Previous week">◀◀</button>
                   <button type="button" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors" onClick={() => setTopDayOffset(topDayOffset - 1)} title="Previous day">◀</button>
                   <span className="text-white font-medium w-[250px] text-center">{getDateLabel(topDayOffset)}</span>
                   <button type="button" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors" onClick={() => setTopDayOffset(topDayOffset + 1)} title="Next day">▶</button>
+                  <button type="button" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors" onClick={() => setTopDayOffset(topDayOffset + 7)} title="Next week">▶▶</button>
                 </div>
                 <div className="flex items-center justify-end space-x-4">
-                  <button type="button" className="bg-neutral-700 hover:bg-neutral-600 text-white px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors" 
+                  <button type="button" className="bg-neutral-700 hover:bg-neutral-600 text-white px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors"
                     onClick={() => {
                       // Initialize form states for button click scenario
                       setNewTaskName("New Task");
