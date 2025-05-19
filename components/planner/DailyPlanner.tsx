@@ -2,17 +2,16 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, Button, Input } from "@/components/ui";
-// Assuming lucide-react is installed or using text/emoji
-// import { Trash2, Pencil, Check, X } from 'lucide-react'; 
+import { Edit3, Copy, Pin, CopyPlus, Trash2, PinOff } from 'lucide-react'; // Added Lucide icons
 
 import { formatDuration, formatTime } from '@/utils/formatters';
 import TaskStorage from '@/utils/storage';
-import { Task } from '../../types/planner';
+import { Task, PinnedTask } from '../../types/planner'; // Removed StorageData from this import
 
 // Style constants
 let taskIdCounter = 5;
 const TASK_BASE_TOP = 2;
-const TASK_HEIGHT = 56;
+const TASK_HEIGHT = 60; // Increased from 48
 const TIMELINE_START_HOUR = 4;
 const TIMELINE_END_HOUR = 25;
 const TIMELINE_SPLIT_HOUR_1 = 11;
@@ -53,7 +52,7 @@ const TASK_COLORS = [
 ];
 
 // Adjust the pixels per hour to increase width and prevent cutoff
-const PIXELS_PER_HOUR = 142; // Making this divisible by 7 for even display
+const PIXELS_PER_HOUR = 140; // Adjusted to 70
 const PIXELS_PER_MINUTE = PIXELS_PER_HOUR / 60;
 
 interface TaskCardProps {
@@ -66,6 +65,7 @@ interface TaskCardProps {
   editingTaskId: string | null;
   setEditingTaskId: (id: string | null) => void;
   onMoveToPool: (taskId: string) => void;
+  onPinTask?: (task: Task) => void; // Optional for now, will be used by timeline tasks
 }
 
 const TaskCard: React.FC<TaskCardProps> = ({
@@ -78,6 +78,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
   editingTaskId,
   setEditingTaskId,
   onMoveToPool,
+  onPinTask,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingTaskName, setEditingTaskName] = useState(task.name);
@@ -104,7 +105,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
   }, [isEditing, setEditingTaskId]);
 
   // Determine if this is a compressed task (15 mins or less)
-  const isCompressed = task.duration <= 0.25;
+  const isCompressed = task.duration <= 0.5; // Changed from 0.25 to 0.5
 
   // Calculate end time for display
   const endTime = task.startHour + Number(task.duration);
@@ -175,7 +176,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
     <>
       <div 
         className={`
-          flex flex-col p-1 rounded-sm
+          flex flex-col p-0.5 rounded-sm
           ${color}
           hover:ring-1 hover:ring-gray-400 dark:hover:ring-gray-300
           transition-all duration-200
@@ -185,46 +186,46 @@ const TaskCard: React.FC<TaskCardProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex flex-col h-full min-w-0">
-          {/* Task Content Area */}
-          <div className="flex flex-col justify-between min-w-0 draggable-area h-full">
-            {/* Task Name and Time */}
-            <div className="min-w-0 flex-grow -mt-0.5">
+          {/* Task Content Area - MODIFIED for better internal layout */}
+          <div className="flex flex-row justify-between items-start min-w-0 draggable-area h-full gap-1">
+            {/* Task Name and Time (Left, Growable) */}
+            <div className="flex-grow flex flex-col min-w-0">
               <div className={`
                 dark:text-white break-words
-                ${isCompressed ? 'text-[8px] writing-mode-vertical-lr transform h-full flex items-center justify-center' : 'text-xs line-clamp-2'}
+                ${isCompressed ? 'text-[8px] writing-mode-vertical-lr transform h-full flex items-center justify-center overflow-hidden leading-tight' : 'text-[11px] line-clamp-2'} 
                 font-bold
               `}>
                 {task.name}
               </div>
               {!isCompressed && (
                 <>
-                  <div className="text-[10px] text-gray-700 dark:text-gray-200 font-medium mt-0.5">
+                  <div className="text-[9px] text-gray-500 dark:text-gray-400 font-medium mt-px">
                     {formatTime(task.startHour)} - {formatTime(endTime)}
                   </div>
-                  <div className="text-[8px] text-gray-700 dark:text-gray-200 font-semibold mt-0.5 mb-0.5">
+                  <div className="text-[8px] text-gray-700 dark:text-gray-200 font-semibold mt-px mb-0.5">
                     {formatTaskDuration(task.duration)}
                   </div>
                 </>
               )}
             </div>
 
-            {/* Action buttons - show for all tasks except compressed ones */}
+            {/* Action buttons (Right, Fixed Size) - only if not compressed */}
             {!isCompressed && (
-              <div className="absolute top-0 right-0 flex flex-col items-end gap-0.5" onClick={(e) => e.stopPropagation()}>
+              <div className="flex flex-col items-end gap-0.5 flex-shrink-0"> {/* Reduced gap, added flex-shrink-0 */}
                 {/* Edit button */}
                 <button
                   type="button"
-                  className="h-4 w-4 p-0 text-gray-600 dark:text-gray-300 hover:bg-gray-100/30 dark:hover:bg-gray-600/30 rounded-sm flex items-center justify-center"
+                  className="h-3.5 w-3.5 p-0 text-gray-600 dark:text-gray-300 hover:bg-gray-100/30 dark:hover:bg-gray-600/30 rounded-sm flex items-center justify-center"
                   onClick={handleEditClick}
                   title="Edit task"
                 >
-                  <span className="text-[9px]">✎</span>
+                  <Edit3 className="w-2.5 h-2.5" /> {/* Replaced emoji with Lucide icon */}
                 </button>
                 
                 {/* Copy button */}
                 <button
                   type="button"
-                  className="h-4 w-4 p-0 text-gray-600 dark:text-gray-300 hover:bg-gray-100/30 dark:hover:bg-gray-600/30 rounded-sm flex items-center justify-center"
+                  className="h-3.5 w-3.5 p-0 text-gray-600 dark:text-gray-300 hover:bg-gray-100/30 dark:hover:bg-gray-600/30 rounded-sm flex items-center justify-center"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -232,14 +233,29 @@ const TaskCard: React.FC<TaskCardProps> = ({
                   }}
                   title="Copy task"
                 >
-                  <span className="text-[9px]">📋</span>
+                  <Copy className="w-2.5 h-2.5" /> {/* Replaced emoji with Lucide icon */}
                 </button>
+                {/* Pin button - only show if onPinTask is provided (i.e., for timeline tasks) */}
+                {onPinTask && (
+                  <button
+                    type="button"
+                    className="h-3.5 w-3.5 p-0 text-gray-600 dark:text-gray-300 hover:bg-gray-100/30 dark:hover:bg-gray-600/30 rounded-sm flex items-center justify-center"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onPinTask(task);
+                    }}
+                    title="Pin task"
+                  >
+                    <Pin className="w-2.5 h-2.5" /> {/* Replaced emoji with Lucide icon */}
+                  </button>
+                )}
               </div>
             )}
 
-            {/* Edit button for compressed tasks - at the bottom */}
+            {/* Edit button for compressed tasks - still needs to be positioned if layout changes */}
             {isCompressed && (
-              <div className="flex justify-end mt-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="absolute bottom-0.5 right-0.5 flex justify-end" onClick={(e) => e.stopPropagation()}> {/* Kept absolute for now due to vertical text complexity */}
                 <button
                   type="button"
                   className="h-3 w-3 p-0 text-gray-600 dark:text-gray-300 hover:bg-gray-100/30 dark:hover:bg-gray-600/30 rounded-sm flex items-center justify-center"
@@ -258,7 +274,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
       {isEditing && menuPosition && (
         <div 
           ref={menuRef}
-          className="fixed z-[1000] bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-3 min-w-[250px]"
+          className="fixed z-[1000] bg-white dark:bg-gray-900 rounded-lg shadow-xl border border-gray-200 dark:border-gray-800 p-3 min-w-[250px]"
           style={{
             top: '50%',
             left: '50%',
@@ -270,14 +286,15 @@ const TaskCard: React.FC<TaskCardProps> = ({
         >
           <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-2">
-              <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+              <label htmlFor="editTaskNameInput" className="text-xs font-medium text-gray-700 dark:text-gray-300">
                 Task Name
               </label>
               <Input 
+                id="editTaskNameInput"
                 type="text" 
                 value={editingTaskName}
                 onChange={(e) => setEditingTaskName(e.target.value)}
-                className="h-7 px-2 text-sm min-w-0 dark:bg-gray-700 dark:text-white"
+                className="h-7 px-2 text-sm min-w-0 dark:bg-gray-800 dark:text-white"
                 autoFocus={true}
                 onClick={(e) => e.stopPropagation()}
                 onMouseDown={(e) => e.stopPropagation()}
@@ -348,7 +365,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
               <div className="flex gap-2">
                 <button
                   type="button"
-                  className="flex-1 h-8 px-3 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-sm font-medium transition-colors"
+                  className="flex-1 h-8 px-3 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-sm font-medium transition-colors"
                   onClick={handleCancel}
                 >
                   Cancel
@@ -384,10 +401,24 @@ import { format, addDays } from "date-fns";
 const STORAGE_KEY = 'daily-planner-tasks';
 const STORAGE_VERSION = '1.0';
 
-// Add a type for the storage data
-interface StorageData {
-  version: string;
-  tasks: Task[];
+// Custom hook to skip effect on first render
+function useEffectSkipFirstRender(fn: () => (void | (() => void)), deps: React.DependencyList) {
+  const isFirstRender = useRef(true); // Renamed for clarity
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      // This cleanup runs when the component unmounts OR when StrictMode unmounts this effect instance.
+      return () => {
+        // If the effect is re-mounted (e.g. by StrictMode, or a real unmount/remount),
+        // we want it to be considered a "first render" again for that new instance's perspective.
+        isFirstRender.current = true;
+      };
+    }
+    // This part executes for actual dependency changes after the true initial mount sequence (including StrictMode's phases).
+    return fn(); // Execute the provided function and return its potential cleanup.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
 }
 
 export default function DailyPlanner() {
@@ -418,7 +449,7 @@ export default function DailyPlanner() {
   const [newTaskName, setNewTaskName] = useState<string>("");
   const [newTaskHour, setNewTaskHour] = useState<number>(9);
   const [newTaskDuration, setNewTaskDuration] = useState<number>(1);
-  const [newTaskColor, setNewTaskColor] = useState<string>("bg-blue-200 dark:bg-blue-600");
+  const [newTaskColor, setNewTaskColor] = useState<string>("bg-sky-600 dark:bg-sky-700"); // Changed default task color to blue
   const [newTaskSection, setNewTaskSection] = useState<string>("morning");
 
   // Task counter for generating unique IDs
@@ -426,6 +457,27 @@ export default function DailyPlanner() {
 
   // First, add a new state for the task pool
   const [poolTasks, setPoolTasks] = useState<Task[]>([]);
+
+  // State for the new pool task form
+  const [showPoolTaskForm, setShowPoolTaskForm] = useState<boolean>(false);
+  const [newPoolTaskName, setNewPoolTaskName] = useState<string>("");
+  const [newPoolTaskDuration, setNewPoolTaskDuration] = useState<number>(1); // Default duration 1h
+  const [newPoolTaskColor, setNewPoolTaskColor] = useState<string>(TASK_COLORS[0]); // Default to first color
+
+  // State for Pinned Tasks
+  const [pinnedTasks, setPinnedTasks] = useState<PinnedTask[]>([]);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [activeSidebarTab, setActiveSidebarTab] = useState<'pool' | 'pinned'>('pinned');
+
+  const initialLoadComplete = useRef(false); // Flag to prevent initial saves
+
+  // Effect to update currentTime every minute for countdowns
+  useEffect(() => {
+    const timerId = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+    return () => clearInterval(timerId);
+  }, []);
 
   // Then add functions to handle moving tasks to/from the pool
   // Add these with the other task action functions
@@ -483,6 +535,10 @@ export default function DailyPlanner() {
   const setSafeTopDayOffset = (offset: number) => {
       const newTopOffset = ensureDifferentDay(offset, bottomDayOffset);
       setTopDayOffset(newTopOffset);
+      // Adjust bottomDayOffset if it becomes the same as the new topDayOffset
+      if (newTopOffset === bottomDayOffset) {
+          setBottomDayOffset(ensureDifferentDay(bottomDayOffset - 1, newTopOffset));
+      }
   };
 
   const setSafeBottomDayOffset = (offset: number) => {
@@ -599,6 +655,8 @@ export default function DailyPlanner() {
       setTargetCopyDayOffset(null);
 
       // See if this was a pool task and remove it if so
+      // FOR "COPY" BEHAVIOR, WE NO LONGER REMOVE IT FROM THE POOL
+      /*
       const poolTaskIndex = poolTasks.findIndex(t => 
         t.name === copyingTaskData.name && 
         t.duration === copyingTaskData.duration && 
@@ -607,6 +665,7 @@ export default function DailyPlanner() {
       if (poolTaskIndex >= 0) {
         setPoolTasks(prev => prev.filter((_, i) => i !== poolTaskIndex));
       }
+      */
       return;
     }
     
@@ -635,6 +694,7 @@ export default function DailyPlanner() {
     setNewTaskHour(newHour);
     setNewTaskName("New Task");
     setNewTaskDuration(1);
+    setNewTaskColor("bg-sky-600 dark:bg-sky-700"); // Changed default task color to blue
     setShowTaskForm(true);
   }, [copyingTaskData, taskIdCounter, tasks]);
 
@@ -876,14 +936,14 @@ export default function DailyPlanner() {
     const timelineHours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
     
     return (
-      <div className="flex h-8 border-b border-gray-300 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-20">
+      <div className="flex h-8 border-b border-neutral-700 dark:border-neutral-800 sticky top-0 bg-neutral-900 dark:bg-neutral-900 z-20"> {/* Changed background and dark border */}
         {timelineHours.map((hour) => (
-          <div key={hour} className="flex-none text-xs text-gray-500 dark:text-gray-400 pt-1 pl-1 border-l border-gray-200 dark:border-gray-700" style={{ width: `${PIXELS_PER_HOUR}px`, boxSizing: 'border-box' }}>
+          <div key={hour} className="flex-none text-xs text-neutral-300 pt-1 pl-0.5 border-l border-neutral-700 dark:border-neutral-700" style={{ width: `${PIXELS_PER_HOUR}px`, boxSizing: 'border-box' }}> {/* Changed text and border color */}
             {formatTime(hour)}
           </div>
         ))}
          {/* Add final hour line */}
-         <div className="flex-none border-l-2 border-gray-200 dark:border-gray-700" style={{ width: `10px`, boxSizing: 'border-box' }}></div>
+         <div className="flex-none border-l-2 border-neutral-700 dark:border-neutral-700" style={{ width: `2px`, boxSizing: 'border-box' }}></div> {/* Changed border color */}
       </div>
     );
   };
@@ -932,29 +992,49 @@ export default function DailyPlanner() {
       )
     );
     
-    const columnHeight = 90;
+    const columnHeight = 100; // Increased from 90
     const isTargetCopyDay = copyingTaskData && targetCopyDayOffset === dayOffset;
+
+    // Calculate current time marker position if it's today
+    let currentTimeMarker = null;
+    if (dayOffset === 0) {
+      const now = currentTime; // Use the state variable that updates every minute
+      const currentHourFloat = now.getHours() + now.getMinutes() / 60;
+      
+      // Check if current time is within this column's period
+      if (currentHourFloat >= startHour && currentHourFloat < endHour) {
+        const markerLeft = (currentHourFloat - startHour) * PIXELS_PER_HOUR;
+        currentTimeMarker = (
+          <div 
+            className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-[120] pointer-events-none" // z-30 should be above grid lines (z-10) but below task cards (z-40+)
+            style={{ left: `${markerLeft}px` }}
+            title={`Current time: ${formatTime(currentHourFloat)}`}
+          />
+        );
+      }
+    }
 
     return (
       <div className={`w-full transition-colors duration-200 relative ${isTargetCopyDay ? 'bg-blue-50/80 dark:bg-blue-900/20 ring-2 ring-blue-400 dark:ring-blue-500' : ''}`}>
         <div 
-          className={`relative border border-gray-200 dark:border-gray-700 rounded-md ${isTargetCopyDay ? 'ring-2 ring-inset ring-blue-500 bg-blue-50/50 dark:bg-blue-900/30' : ''}`}
+          className={`relative border border-gray-200 dark:border-neutral-800 rounded-md ${isTargetCopyDay ? 'ring-2 ring-inset ring-blue-500 bg-blue-50/50 dark:bg-blue-900/30' : ''}`}
           style={{ 
-            width: `${PIXELS_PER_HOUR * 7 + 10}px`, // 7 hours width plus small border
-            minWidth: `${PIXELS_PER_HOUR * 7 + 10}px`, // Ensure consistent minimum width
+            width: `${PIXELS_PER_HOUR * 7 + 6}px`,
+            minWidth: `${PIXELS_PER_HOUR * 7 + 6}px`,
             maxWidth: '100%',
             height: `${columnHeight}px`,
-            overflow: 'hidden' // Change back to 'hidden' to prevent extending past container
+            overflow: 'hidden'
           }}
           data-section={period}
           data-day-offset={dayOffset}
           onDoubleClick={handleTimelineClick}
         > 
+          {/* This renders the hour labels */}
           {renderTimeline(period)}
           <div
-            className={`relative h-full ${isTargetCopyDay ? 'bg-blue-50/80 dark:bg-blue-900/30 cursor-copy' : 'cursor-pointer'}`}
+            className={`relative h-full bg-neutral-900 ${isTargetCopyDay ? 'bg-blue-50/80 dark:bg-blue-900/30 cursor-copy' : 'cursor-pointer'}`} /* Changed bg-slate-800 to bg-neutral-900 */
             onDoubleClick={handleTimelineClick}
-            data-section={period}
+            data-section={period} // Keep these for event handling
             data-day-offset={dayOffset}
             data-testid="timeline"
           >
@@ -968,11 +1048,14 @@ export default function DailyPlanner() {
               </div>
             )}
 
+            {/* Current Time Marker - Renders if today and within this period */}
+            {currentTimeMarker}
+            
             {/* Grid lines for each hour - update z-index */}
             {Array.from({ length: endHour - startHour + 1 }, (_, i) => (
               <div 
                 key={`grid-${i}-${dayOffset}`} 
-                className={`border-l-2 border-gray-400 dark:border-gray-700 z-10`} 
+                className={`border-l-2 border-neutral-700 dark:border-neutral-700 z-10`}  /* Updated grid line colors */
                 style={{ 
                   left: `${i * PIXELS_PER_HOUR}px`, 
                   height: '100%',
@@ -996,6 +1079,16 @@ export default function DailyPlanner() {
               const isBeingResized = resizingTask?.index === originalIndex;
               const isBeingCopied = copyingTaskData?.id === task.id;
               const isEditing = editingTaskId === task.id;
+
+              // Determine if task is in the past for today
+              let isPastTask = false;
+              if (task.dayOffset === 0) {
+                const now = currentTime;
+                const currentHourFloat = now.getHours() + now.getMinutes() / 60;
+                if ((task.startHour + task.duration) < currentHourFloat) {
+                  isPastTask = true;
+                }
+              }
 
               // Calculate position (relative to the padded task area)
               // Adjust left position based on the startHour of this half
@@ -1021,6 +1114,25 @@ export default function DailyPlanner() {
                 return null;
               }
 
+              const taskCardBaseClassName = `absolute select-none transition-transform duration-100 ease-out hover:shadow-md group ${color} ${isBeingDragged || isBeingResized ? 'opacity-95 shadow-lg scale-[1.01] ring-1 ring-white' : 'shadow-sm'} ${isBeingCopied ? 'ring-2 ring-offset-1 ring-blue-500' : ''} ${isPastTask ? 'filter saturate-50 brightness-75' : ''}`;
+
+              const taskStyleObj: React.CSSProperties = {
+                left: `${adjustedLeft}px`,
+                width: `${renderWidth}px`,
+                top: `${renderTop}px`,
+                height: `${renderHeight}px`,
+                zIndex: zIndex,
+                cursor: isBeingDragged ? 'grabbing' : (isBeingCopied ? 'default' : 'grab'),
+              };
+
+              // Check if task continues from previous section or into next section
+              if (task.startHour < startHour) { // `startHour` is the start of the current rendering section
+                taskStyleObj.borderLeftStyle = 'dashed';
+              }
+              if ((task.startHour + task.duration) > endHour) { // `endHour` is the end of the current rendering section
+                taskStyleObj.borderRightStyle = 'dashed';
+              }
+
               return (
                 <Card
                   key={task.id}
@@ -1040,21 +1152,10 @@ export default function DailyPlanner() {
                     }
                   }}
                   onClick={(e) => e.stopPropagation()}
-                  className={`absolute select-none transition-transform duration-100 ease-out hover:shadow-md group ${
-                    color
-                  } ${
-                    isBeingDragged || isBeingResized ? 'opacity-95 shadow-lg scale-[1.01] ring-1 ring-white' : 'shadow-sm'
-                  } ${ isBeingCopied ? 'ring-2 ring-offset-1 ring-blue-500' : '' }`}
-                  style={{
-                    left: `${adjustedLeft}px`,
-                    width: `${renderWidth}px`,
-                    top: `${renderTop}px`,
-                    height: `${renderHeight}px`,
-                    zIndex: isEditing ? 110 : (isBeingDragged || isBeingResized ? 100 : 40),
-                    cursor: isBeingDragged ? 'grabbing' : (isBeingCopied ? 'default' : 'grab')
-                  }}
+                  className={taskCardBaseClassName} // Use the preserved base className
+                  style={taskStyleObj} // Use the modified style object
                 >
-                  <CardContent className="p-1 px-2 text-xs h-full flex flex-col justify-between relative overflow-hidden draggable-area">
+                  <CardContent className="p-0.5 px-1.5 text-xs h-full flex flex-col justify-between relative overflow-hidden draggable-area">
                     <TaskCard
                       task={task}
                       height={renderHeight}
@@ -1065,6 +1166,7 @@ export default function DailyPlanner() {
                       editingTaskId={editingTaskId}
                       setEditingTaskId={setEditingTaskId}
                       onMoveToPool={copyTaskToPool}
+                      onPinTask={handlePinTask} // Pass the pin handler
                     />
 
                     {/* Resizing Handles - Only show borders on hover/drag */}
@@ -1134,7 +1236,7 @@ export default function DailyPlanner() {
     setNewTaskName("");
     setNewTaskHour(9);
     setNewTaskDuration(1);
-    setNewTaskColor("bg-blue-200 dark:bg-blue-600");
+    setNewTaskColor("bg-sky-600 dark:bg-sky-700"); // Changed default task color to blue
     setShowTaskForm(false);
   }, [taskIdCounter, newTaskName, newTaskHour, newTaskDuration, newTaskColor, topDayOffset, bottomDayOffset, newTaskSection]);
 
@@ -1222,26 +1324,29 @@ export default function DailyPlanner() {
 
   // Load tasks when component mounts
   useEffect(() => {
-    console.log('🔄 Loading tasks from storage...');
-    const savedTasks = TaskStorage.load();
-    console.log('📦 Loaded tasks:', savedTasks);
-    
+    console.log('🔄 Loading data from storage...');
+    const savedRegularTasks = TaskStorage.load();
     const savedPoolTasks = TaskStorage.loadPoolTasks();
-    console.log('📦 Loaded pool tasks:', savedPoolTasks);
-    
-    if (savedTasks.length > 0) {
-      console.log('✅ Found saved tasks, setting state...');
-      setTasks(savedTasks);
-      
-      // Find the highest task ID from both saved tasks and pool tasks
-      const taskIds = savedTasks.map(t => parseInt(t.id) || 0);
-      const poolTaskIds = savedPoolTasks.map(t => parseInt(t.id) || 0);
-      const allIds = [...taskIds, ...poolTaskIds];
-      const maxId = allIds.length > 0 ? Math.max(...allIds) : 0;
-      
-      setTaskIdCounter(maxId + 1);
-      console.log('📊 Updated task counter to:', maxId + 1);
-    } else {
+    const savedPinnedTasks = TaskStorage.loadPinnedTasks();
+
+    let currentMaxId = 0;
+    const allLoadedTasksForIdCalc: Task[] = [];
+
+    if (savedRegularTasks.length > 0) {
+      allLoadedTasksForIdCalc.push(...savedRegularTasks);
+    }
+    if (savedPoolTasks.length > 0) {
+      allLoadedTasksForIdCalc.push(...savedPoolTasks);
+    }
+
+    allLoadedTasksForIdCalc.forEach(task => {
+      const numId = parseInt(task.id);
+      if (!isNaN(numId) && numId > currentMaxId) {
+        currentMaxId = numId;
+      }
+    });
+
+    if (savedRegularTasks.length === 0 && savedPoolTasks.length === 0 && savedPinnedTasks.length === 0) {
       console.log('ℹ️ No saved tasks found, setting default tasks...');
       const defaultTasks: Task[] = [
         { id: "1", name: "Review notes", duration: 1, startHour: 9, dayOffset: 0, color: "bg-blue-200 dark:bg-blue-600" },
@@ -1249,38 +1354,52 @@ export default function DailyPlanner() {
         { id: "3", name: "Plan goals", duration: 1, startHour: 13, dayOffset: 0, color: "bg-yellow-200 dark:bg-yellow-600" },
       ];
       setTasks(defaultTasks);
+      setPoolTasks([]);
+      setPinnedTasks([]);
       setTaskIdCounter(4);
-      console.log('✅ Default tasks set');
-    }
-    
-    if (savedPoolTasks.length > 0) {
+      console.log('✅ Default tasks set. Task counter to 4.');
+    } else {
+      console.log('✅ Found saved data, setting state...');
+      setTasks(savedRegularTasks);
       setPoolTasks(savedPoolTasks);
+      setPinnedTasks(savedPinnedTasks);
+      setTaskIdCounter(currentMaxId + 1);
+      console.log(`📊 Loaded data. Task counter to: ${currentMaxId + 1}`);
     }
+    // initialLoadComplete.current = true; // No longer needed with useEffectSkipFirstRender
+    // console.log('🚩 Initial load complete flag set.');
   }, []);
 
-  // Save tasks whenever they change
-  useEffect(() => {
+  // Save tasks whenever they change - using custom hook
+  useEffectSkipFirstRender(() => {
     console.log('💾 Saving tasks:', tasks);
     TaskStorage.save(tasks);
   }, [tasks]);
 
-  // Add a new effect for saving pool tasks
-  useEffect(() => {
+  // Add a new effect for saving pool tasks - using custom hook
+  useEffectSkipFirstRender(() => {
     console.log('💾 Saving pool tasks:', poolTasks);
     TaskStorage.savePoolTasks(poolTasks);
   }, [poolTasks]);
 
+  // Save pinned tasks whenever they change - using custom hook
+  useEffectSkipFirstRender(() => {
+    console.log('💾 Saving pinned tasks:', pinnedTasks);
+    TaskStorage.savePinnedTasks(pinnedTasks);
+  }, [pinnedTasks]);
+
   // Add click outside functionality to close the Task Pool dropdown
   const taskPoolRef = useRef<HTMLDivElement>(null);
-  const taskPoolButtonRef = useRef<HTMLButtonElement>(null);
+  // const taskPoolButtonRef = useRef<HTMLButtonElement>(null); // Button ref no longer needed
 
-  // Add useEffect to handle clicking outside the task pool
+  // useEffect for hiding task pool on outside click is commented out as it's a permanent panel
+  /*
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
         taskPoolRef.current && 
         !taskPoolRef.current.contains(event.target as Node) &&
-        taskPoolButtonRef.current && 
+        taskPoolButtonRef.current && // This ref would be null now
         !taskPoolButtonRef.current.contains(event.target as Node)
       ) {
         // Close the task pool dropdown
@@ -1295,7 +1414,8 @@ export default function DailyPlanner() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, []); // taskPoolButtonRef removed from dependencies
+  */
 
   // 1. Add a new clone function after the existing task functions (around line 425)
   // Clone bottom day tasks to top day
@@ -1305,106 +1425,77 @@ export default function DailyPlanner() {
   // 2. Update the cloneBottomToTop function to handle conflicts based on the selected strategy around line 425
   // Clone bottom day tasks to top day
   const cloneBottomToTop = useCallback(() => {
-    // Get all tasks from bottom day
-    const bottomDayTasks = tasks.filter(task => task.dayOffset === bottomDayOffset);
-    
-    if (bottomDayTasks.length === 0) {
-      // No tasks to clone
+    const bottomDayTasksToClone = tasks.filter(task => task.dayOffset === bottomDayOffset);
+    if (bottomDayTasksToClone.length === 0) {
+      alert("No tasks on the selected day to clone.");
+      setShowCloneConfirmation(false);
       return;
     }
-    
-    // Check for potential conflicts
-    let hasConflicts = false;
-    for (const task of bottomDayTasks) {
-      if (hasConflict("clone", topDayOffset, task.startHour, task.duration)) {
-        hasConflicts = true;
-        break;
-      }
-    }
-    
-    // Create new tasks with top day offset based on conflict strategy
-    const newTasks = bottomDayTasks.map(task => {
-      const hasTimeConflict = hasConflict("clone", topDayOffset, task.startHour, task.duration);
-      
-      // Handle conflicts based on strategy
-      if (hasTimeConflict) {
+
+    let nextId = taskIdCounter;
+    const newClonedTasks: Task[] = [];
+    const tasksToReplaceDetails: Array<{startHour: number, duration: number}> = [];
+
+    for (const task of bottomDayTasksToClone) {
+      let taskMayBeAdded = true;
+      let currentStartHour = task.startHour;
+      // Store original timing for 'replace' strategy
+      tasksToReplaceDetails.push({startHour: task.startHour, duration: task.duration});
+
+
+      if (hasConflict("clone-check", topDayOffset, task.startHour, task.duration)) {
         if (cloneConflictStrategy === 'skip') {
-          // Skip this task
-          return null;
+          taskMayBeAdded = false;
         } else if (cloneConflictStrategy === 'adjust') {
-          // Find the next available slot
-          let adjustedStartHour = task.startHour;
-          let foundSlot = false;
-          
-          // Try to find a slot within the same section (morning/afternoon/evening)
-          let sectionStartHour, sectionEndHour;
-          if (task.startHour < TIMELINE_SPLIT_HOUR_1) {
-            sectionStartHour = TIMELINE_START_HOUR;
-            sectionEndHour = TIMELINE_SPLIT_HOUR_1;
-          } else if (task.startHour < TIMELINE_SPLIT_HOUR_2) {
-            sectionStartHour = TIMELINE_SPLIT_HOUR_1;
-            sectionEndHour = TIMELINE_SPLIT_HOUR_2;
-          } else {
-            sectionStartHour = TIMELINE_SPLIT_HOUR_2;
-            sectionEndHour = TIMELINE_END_HOUR;
-          }
-          
-          // Try in 30-minute increments
-          for (let hour = task.startHour + 0.5; hour <= sectionEndHour - task.duration; hour += 0.5) {
-            if (!hasConflict("clone", topDayOffset, hour, task.duration)) {
-              adjustedStartHour = hour;
-              foundSlot = true;
+          let adjusted = false;
+          let sectionStart, sectionEnd;
+          if (task.startHour < TIMELINE_SPLIT_HOUR_1) { sectionStart = TIMELINE_START_HOUR; sectionEnd = TIMELINE_SPLIT_HOUR_1; }
+          else if (task.startHour < TIMELINE_SPLIT_HOUR_2) { sectionStart = TIMELINE_SPLIT_HOUR_1; sectionEnd = TIMELINE_SPLIT_HOUR_2; }
+          else { sectionStart = TIMELINE_SPLIT_HOUR_2; sectionEnd = TIMELINE_END_HOUR; }
+
+          for (let h = sectionStart; h <= sectionEnd - task.duration; h += 0.25) { // Check in 15min increments
+            if (!hasConflict("clone-adjust-check", topDayOffset, h, task.duration)) {
+              currentStartHour = h;
+              adjusted = true;
               break;
             }
           }
-          
-          // If no slot found in same section, skip this task
-          if (!foundSlot) {
-            return null;
-          }
-          
-          return {
-            ...task,
-            id: String(taskIdCounter + parseInt(task.id)),
-            dayOffset: topDayOffset,
-            startHour: adjustedStartHour
-          };
+          if (!adjusted) taskMayBeAdded = false; // Could not adjust
         }
-        // For 'replace' strategy, we continue with the original time
+        // For 'replace', conflict is handled by filtering tasks state later
       }
-      
-      // Default case (no conflict or replace strategy)
-      return {
-        ...task,
-        id: String(taskIdCounter + parseInt(task.id)),
-        dayOffset: topDayOffset
-      };
-    }).filter((task): task is Task => task !== null); // Properly type the filtered array
-    
-    // Add to tasks array
-    if (cloneConflictStrategy === 'replace') {
-      // Remove existing tasks that conflict before adding new ones
-      const nonConflictingTasks = tasks.filter(existingTask => {
-        if (existingTask.dayOffset !== topDayOffset) return true;
-        
-        // Check if any new task conflicts with this existing task
-        return !bottomDayTasks.some(newTask => 
-          (newTask.startHour < (existingTask.startHour + existingTask.duration)) &&
-          ((newTask.startHour + newTask.duration) > existingTask.startHour)
-        );
-      });
-      
-      setTasks([...nonConflictingTasks, ...newTasks]);
-    } else {
-      setTasks(prev => [...prev, ...newTasks]);
+
+      if (taskMayBeAdded) {
+        newClonedTasks.push({
+          ...task,
+          id: String(nextId++),
+          dayOffset: topDayOffset,
+          startHour: currentStartHour,
+        });
+      }
     }
-    
-    // Update task counter
-    setTaskIdCounter(prev => prev + bottomDayTasks.length);
-    
-    // Close the confirmation dialog
+
+    if (newClonedTasks.length > 0) {
+      if (cloneConflictStrategy === 'replace') {
+        // Remove tasks from topDayOffset that would overlap with ANY of the tasks being cloned (based on their original times)
+        const tasksToKeep = tasks.filter(existingTask => {
+          if (existingTask.dayOffset !== topDayOffset) return true; // Keep tasks not on the target day
+
+          // Check if this existing task overlaps with any of the tasks intended to be cloned
+          const overlaps = bottomDayTasksToClone.some(cloningTask =>
+            (cloningTask.startHour < (existingTask.startHour + existingTask.duration)) &&
+            ((cloningTask.startHour + cloningTask.duration) > existingTask.startHour)
+          );
+          return !overlaps; // Keep if no overlap
+        });
+        setTasks([...tasksToKeep, ...newClonedTasks]);
+      } else {
+        setTasks(prev => [...prev, ...newClonedTasks]);
+      }
+      setTaskIdCounter(nextId); // Update global counter
+    }
     setShowCloneConfirmation(false);
-  }, [tasks, bottomDayOffset, topDayOffset, taskIdCounter, cloneConflictStrategy, hasConflict]);
+  }, [tasks, bottomDayOffset, topDayOffset, taskIdCounter, cloneConflictStrategy, hasConflict, TIMELINE_SPLIT_HOUR_1, TIMELINE_SPLIT_HOUR_2, TIMELINE_START_HOUR, TIMELINE_END_HOUR]); // Added relevant constants to dependency array
 
   // 3. Add a function to open the confirmation dialog
   const openCloneConfirmation = () => {
@@ -1436,7 +1527,7 @@ export default function DailyPlanner() {
   {/* Clone Confirmation Modal */}
   {showCloneConfirmation && (
     <div className="fixed inset-0 bg-black/30 dark:bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-xl max-w-md w-full">
+      <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-xl max-w-md w-full">
         <h3 className="text-xl font-bold mb-2 dark:text-white">Clone Tasks</h3>
         <p className="text-gray-600 dark:text-gray-300 mb-4">
           This will copy all tasks from {getDateLabel(bottomDayOffset)} to {getDateLabel(topDayOffset)}.
@@ -1497,7 +1588,7 @@ export default function DailyPlanner() {
         <div className="flex justify-end gap-2">
           <button
             type="button"
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+            className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
             onClick={() => setShowCloneConfirmation(false)}
           >
             Cancel
@@ -1514,106 +1605,182 @@ export default function DailyPlanner() {
     </div>
   )}
 
+  // Add new function to handle adding tasks directly to the pool
+  const handleAddPoolTask = useCallback(() => {
+    if (newPoolTaskName.trim() === "") return;
+
+    const newTask: Task = {
+      id: String(taskIdCounter),
+      name: newPoolTaskName.trim(),
+      duration: newPoolTaskDuration,
+      color: newPoolTaskColor,
+      // No startHour or dayOffset needed for pool tasks initially
+      startHour: 0, // Placeholder, not used by pool rendering logic directly
+      dayOffset: 0, // Placeholder, not used by pool rendering logic directly
+    };
+
+    setPoolTasks(prevTasks => [...prevTasks, newTask]);
+    setTaskIdCounter(prev => prev + 1);
+
+    // Reset form
+    setNewPoolTaskName("");
+    setNewPoolTaskDuration(1);
+    setNewPoolTaskColor(TASK_COLORS[0]);
+    setShowPoolTaskForm(false);
+  }, [taskIdCounter, newPoolTaskName, newPoolTaskDuration, newPoolTaskColor]);
+
+  // Function to handle pinning a task
+  const handlePinTask = useCallback((taskToPin: Task) => {
+    setPinnedTasks(prevPinnedTasks => {
+      // Check if this specific task instance (by original ID) is already pinned
+      if (prevPinnedTasks.some(pt => pt.originalId === taskToPin.id)) {
+        // Optional: Unpin if already pinned, or just do nothing
+        // For now, let's unpin if clicked again
+        return prevPinnedTasks.filter(pt => pt.originalId !== taskToPin.id);
+      }
+
+      const today = new Date();
+      const targetDate = new Date(today.getFullYear(), today.getMonth(), today.getDate()); // Start with today at 00:00:00
+      targetDate.setDate(targetDate.getDate() + taskToPin.dayOffset);
+      
+      const dueHour = taskToPin.startHour + taskToPin.duration;
+      targetDate.setHours(Math.floor(dueHour), (dueHour % 1) * 60, 0, 0);
+
+      const newPinnedTask: PinnedTask = {
+        ...taskToPin,
+        dueDate: targetDate,
+        originalId: taskToPin.id,
+        pinnedId: `pinned-${String(taskIdCounter)}`, // Create a new unique ID for the pinned entry
+      };
+      setTaskIdCounter(prev => prev + 1); // Increment counter for the new pinnedId
+      return [...prevPinnedTasks, newPinnedTask];
+    });
+  }, [taskIdCounter]);
+
+  // Function to handle unpinning a task
+  const handleUnpinTask = useCallback((pinnedIdToUnpin: string) => {
+    setPinnedTasks(prevPinnedTasks => prevPinnedTasks.filter(pt => pt.pinnedId !== pinnedIdToUnpin));
+  }, []);
+
+  // Function to format time remaining for pinned tasks
+  const formatTimeRemaining = (dueDate: Date): string => {
+    const now = new Date();
+    let diffMs = dueDate.getTime() - now.getTime();
+
+    if (diffMs <= 0) return "Due!";
+
+    // Round to nearest 15 minutes (900,000 ms)
+    const fifteenMinMs = 15 * 60 * 1000;
+    diffMs = Math.round(diffMs / fifteenMinMs) * fifteenMinMs;
+
+    if (diffMs === 0) return "Due in <15m"; // If rounded to 0, but was positive
+
+    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    diffMs -= days * (1000 * 60 * 60 * 24);
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    diffMs -= hours * (1000 * 60 * 60);
+    const minutes = Math.floor(diffMs / (1000 * 60));
+
+    let parts = [];
+    if (days > 0) parts.push(`${days}d`);
+    if (hours > 0) parts.push(`${hours}h`);
+    if (minutes > 0) parts.push(`${minutes}m`);
+    
+    return parts.length > 0 ? `Due in: ${parts.join(' ')}` : "Due in <15m";
+  };
+
   // Update the return statement to remove ThemeProvider
   return (
-    <div className="min-h-screen p-4 bg-gray-900 text-white transition-colors">
-      <div className="max-w-5xl mx-auto space-y-4">
-        {/* Top Navigation with integrated date display */}
-        <div className="bg-gray-800 p-3 rounded-lg shadow-sm border border-gray-700 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <button
-              type="button"
-              className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors"
-              onClick={() => setTopDayOffset(prev => prev - 1)}
-              title="Previous day"
-            >
-              ◀
-            </button>
-            <span className="text-white font-medium px-3">
-              {getDateLabel(topDayOffset)}
-            </span>
-            <button
-              type="button"
-              className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors"
-              onClick={() => setTopDayOffset(prev => prev + 1)}
-              title="Next day"
-            >
-              ▶
-            </button>
-          </div>
-          
-          <div className="flex items-center justify-end space-x-4">
-            <div className="relative group">
+    <div className="min-h-screen p-4 bg-transparent text-white transition-colors"> {/* Changed bg-neutral-900 to bg-transparent */}
+      <div className="max-w-7xl mx-auto">
+        
+
+        {/* Main layout: Task Pool | Timeline Container | Pinned Tasks */}
+        <div className="flex gap-4">
+          {/* Combined Sidebar: Task Pool & Pinned Tasks - MOVED TO THE RIGHT */}
+          <div 
+            className="w-52 bg-neutral-900 border border-neutral-800 rounded-lg shadow-xl flex flex-col sticky top-4 h-[calc(100vh-3rem-env(safe-area-inset-bottom))] overflow-hidden"
+          >
+            {/* Tab Switcher */}
+            <div className="flex border-b border-neutral-700">
               <button
-                ref={taskPoolButtonRef}
                 type="button"
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors duration-200"
-                onClick={() => document.getElementById('task-pool')?.classList.toggle('hidden')}
+                className={`flex-1 p-2 text-sm font-medium text-center transition-colors focus:outline-none ${
+                  activeSidebarTab === 'pool' 
+                    ? 'bg-neutral-700 text-white' 
+                    : 'text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100'
+                }`}
+                onClick={() => setActiveSidebarTab('pool')}
               >
-                <span>📋</span>
-                <span>Task Pool</span>
-                {poolTasks.length > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                    {poolTasks.length}
-                  </span>
-                )}
+                Task Pool
               </button>
-              
-              {/* Task Pool Dropdown */}
-              <div 
-                id="task-pool"
-                ref={taskPoolRef}
-                className="absolute right-0 mt-2 w-72 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 hidden"
+              <button
+                type="button"
+                className={`flex-1 p-2 text-sm font-medium text-center transition-colors focus:outline-none ${
+                  activeSidebarTab === 'pinned' 
+                    ? 'bg-neutral-700 text-white' 
+                    : 'text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100'
+                }`}
+                onClick={() => setActiveSidebarTab('pinned')}
               >
-                <div className="p-2 border-b border-slate-700 flex justify-between items-center">
-                  <h3 className="text-white text-sm font-medium">Task Pool</h3>
-                  <span className="text-xs text-slate-400">{poolTasks.length} tasks</span>
+                Pinned Tasks
+              </button>
+            </div>
+
+            {/* Conditional Content Area */}
+            {activeSidebarTab === 'pool' && (
+              <div className="flex flex-col flex-grow overflow-hidden">
+                {/* Task Pool Header (Simplified) */}
+                <div className="p-2 border-b border-neutral-800 flex justify-end items-center"> {/* Removed justify-between, title removed */}
+                  <button
+                    type="button"
+                    className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded hover:bg-slate-800/50 transition-colors"
+                    onClick={() => setShowPoolTaskForm(true)}
+                    title="Add new task to pool"
+                  >
+                    + Add
+                  </button>
                 </div>
-                <div className="max-h-80 overflow-y-auto">
+                {/* Task Pool List Area */}
+                <div className="flex-grow overflow-y-auto p-1">
                   {poolTasks.length === 0 ? (
                     <div className="text-slate-400 text-xs p-2 text-center">
                       No unscheduled tasks.
                       <br />Move tasks here to save for later.
                     </div>
                   ) : (
-                    <div className="grid gap-1 p-1">
+                    <div className="grid gap-1">
                       {poolTasks.map(task => (
                         <div 
                           key={task.id}
-                          className={`${task.color || 'bg-blue-600'} px-2 py-1 rounded text-white text-xs relative group hover:brightness-110 transition-all duration-150`}
+                          className={`${task.color || 'bg-blue-600'} opacity-60 hover:opacity-80 px-1.5 py-1 rounded text-white text-[11px] relative group transition-all duration-150`}
                         >
-                          <div className="font-medium truncate pr-7">{task.name}</div>
-                          <div className="text-[10px] opacity-80">{formatDuration(task.duration)}</div>
-                          <div className="absolute top-1 right-1 flex space-x-1">
+                          <div className="font-medium line-clamp-2 pr-6">{task.name}</div>
+                          <div className="text-[9px] opacity-80">{formatDuration(task.duration)}</div>
+                          <div className="absolute top-1 right-1 flex space-x-0.5">
                             <button
                               type="button"
-                              className="h-4 w-4 rounded bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                              className="h-5 w-5 rounded bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
                               onClick={() => {
-                                // Instead of directly scheduling, use the copyingTaskData flow for placement
                                 const poolTask = poolTasks.find(t => t.id === task.id);
                                 if (poolTask) {
                                   setCopyingTaskData({...poolTask});
                                   setTargetCopyDayOffset(topDayOffset);
-                                  // Close the pool dropdown
-                                  document.getElementById('task-pool')?.classList.add('hidden');
-                                  // We'll remove from pool when it's actually placed on timeline
-                                  // This is handled in handleTimelineClick when copyingTaskData exists
                                 }
                               }}
-                              title="Schedule this task"
+                              title="Copy to Schedule"
                             >
-                              <span className="text-[9px]">📅</span>
+                              <CopyPlus className="w-3.5 h-3.5" />
                             </button>
                             <button
                               type="button"
-                              className="h-4 w-4 rounded bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                              className="h-5 w-5 rounded bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
                               onClick={() => {
-                                // Delete from pool
                                 setPoolTasks(prev => prev.filter(t => t.id !== task.id));
                               }}
                               title="Delete task"
                             >
-                              <span className="text-[9px]">✕</span>
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </div>
@@ -1621,354 +1788,488 @@ export default function DailyPlanner() {
                     </div>
                   )}
                 </div>
-                <div className="p-1 border-t border-slate-700 flex justify-between items-center text-[10px]">
+                {/* Task Pool Footer */}
+                <div className="p-1 border-t border-slate-800 flex justify-between items-center text-[10px]">
                   <button
                     type="button"
-                    className="text-slate-400 hover:text-white px-2 py-1 rounded hover:bg-slate-700 transition-colors"
+                    className="text-slate-400 hover:text-white px-2 py-1 rounded hover:bg-slate-800 transition-colors"
+                    onClick={() => setShowPoolTaskForm(true)}
+                    title="Add new task to pool"
+                  >
+                    Add Task
+                  </button>
+                  <button
+                    type="button"
+                    className="text-slate-400 hover:text-white px-2 py-1 rounded hover:bg-slate-800 transition-colors"
                     onClick={() => setPoolTasks([])}
                     disabled={poolTasks.length === 0}
                   >
                     Clear All
                   </button>
+                </div>
+              </div>
+            )}
+
+            {activeSidebarTab === 'pinned' && (
+              <div className="flex flex-col flex-grow overflow-hidden">
+                {/* Pinned Tasks Header removed as tab serves as title */}
+                {/* Pinned Tasks List Area */}
+                <div className="p-3 space-y-2 overflow-y-auto flex-grow">
+                  {pinnedTasks.length === 0 ? (
+                    <p className="text-slate-400 text-sm text-center pt-2">No tasks pinned yet.</p> 
+                  ) : (
+                    pinnedTasks.map(pinnedTask => (
+                      <div key={pinnedTask.pinnedId} className={`relative px-1.5 py-1 rounded-md text-xs ${pinnedTask.color || 'bg-slate-800'}`}>
+                        <p className="font-medium text-white truncate pr-5">{pinnedTask.name}</p>
+                        <p className="text-[10px] text-slate-300">{formatTimeRemaining(new Date(pinnedTask.dueDate))}</p>
+                        <button
+                          type="button"
+                          className="absolute top-1 right-1 h-5 w-5 rounded bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                          onClick={() => handleUnpinTask(pinnedTask.pinnedId)}
+                          title="Unpin task"
+                        >
+                          <PinOff className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Right Column: Timeline Container - MOVED TO THE LEFT */}
+          <div className="flex-1 space-y-4 min-w-0"> 
+            {/* Today's Schedule - top navigation will be moved inside here */}
+            <div className="bg-neutral-900 p-3 rounded-lg shadow-sm border border-neutral-800 overflow-auto"> {/* Changed overflow-hidden to overflow-auto */}
+              {/* MOVED Top Navigation Controls HERE */}
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-neutral-800">
+                <div className="flex items-center space-x-2">
                   <button
                     type="button"
-                    className="text-slate-400 hover:text-white px-2 py-1 rounded hover:bg-slate-700 transition-colors"
-                    onClick={() => document.getElementById('task-pool')?.classList.add('hidden')}
+                    className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors"
+                    onClick={() => setSafeTopDayOffset(topDayOffset - 1)}
+                    title="Previous day"
                   >
-                    Close
+                    ◀
+                  </button>
+                  <span className="text-white font-medium w-[250px] text-center">
+                    {getDateLabel(topDayOffset)}
+                  </span>
+                  <button
+                    type="button"
+                    className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors"
+                    onClick={() => setSafeTopDayOffset(topDayOffset + 1)}
+                    title="Next day"
+                  >
+                    ▶
+                  </button>
+                </div>
+                
+                <div className="flex items-center justify-end space-x-4">
+                  <button
+                    type="button"
+                    className="bg-neutral-700 hover:bg-neutral-600 text-white px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors" // This is the Add New Task button, should be solid neutral
+                    onClick={() => setShowTaskForm(true)}
+                  >
+                    <span>+</span>
+                    <span>Add New Task</span>
                   </button>
                 </div>
               </div>
-            </div>
-            
-            <button
-              type="button"
-              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors duration-200 dark:bg-blue-600 dark:hover:bg-blue-700"
-              onClick={() => setShowTaskForm(true)}
-            >
-              <span>+</span>
-              <span>Add New Task</span>
-            </button>
-          </div>
-        </div>
 
-        {/* Today's Schedule - remove redundant heading */}
-        <div className="bg-gray-800 p-3 rounded-lg shadow-sm border border-gray-700 overflow-hidden">
-          <div className="flex flex-col gap-1">
-            <div 
-              className={`bg-blue-950/30 rounded-lg p-1 relative hover:bg-blue-900/40 transition-colors duration-200 ${copyingTaskData ? 'ring-2 ring-blue-400 dark:ring-blue-500 cursor-copy' : 'cursor-pointer'}`} 
-              data-section="morning" 
-              data-day-offset={topDayOffset}
-              onDoubleClick={handleTimelineClick}
-              title="Double-click to add task"
-            >
-              <div className="text-xs text-blue-200 font-medium mb-1">Morning</div>
-              {renderColumn(topDayOffset, 'morning')}
-            </div>
-            <div 
-              className={`bg-indigo-950/30 rounded-lg p-1 relative hover:bg-indigo-900/40 transition-colors duration-200 ${copyingTaskData ? 'ring-2 ring-blue-400 dark:ring-blue-500 cursor-copy' : 'cursor-pointer'}`} 
-              data-section="afternoon" 
-              data-day-offset={topDayOffset}
-              onDoubleClick={handleTimelineClick}
-              title="Double-click to add task"
-            >
-              <div className="text-xs text-indigo-200 font-medium mb-1">Afternoon</div>
-              {renderColumn(topDayOffset, 'afternoon')}
-            </div>
-            <div 
-              className={`bg-purple-950/30 rounded-lg p-1 relative hover:bg-purple-900/40 transition-colors duration-200 ${copyingTaskData ? 'ring-2 ring-blue-400 dark:ring-blue-500 cursor-copy' : 'cursor-pointer'}`} 
-              data-section="evening" 
-              data-day-offset={topDayOffset}
-              onDoubleClick={handleTimelineClick}
-              title="Double-click to add task"
-            >
-              <div className="text-xs text-purple-200 font-medium mb-1">Evening</div>
-              {renderColumn(topDayOffset, 'evening')}
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Navigation Controls - Extended version */}
-        <div className="flex items-center justify-between mt-6">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <button
-                type="button"
-                className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors"
-                onClick={() => setBottomDayOffset(prev => prev - 7)}
-                title="Previous week"
-              >
-                ◀◀
-              </button>
-              <button
-                type="button"
-                className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors"
-                onClick={() => setBottomDayOffset(prev => prev - 1)}
-                title="Previous day"
-              >
-                ◀
-              </button>
-            </div>
-            <span className="text-white font-medium">
-              {getDateLabel(bottomDayOffset)}
-            </span>
-            <div className="flex items-center space-x-2">
-              <button
-                type="button"
-                className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors"
-                onClick={() => setBottomDayOffset(prev => prev + 1)}
-                title="Next day"
-              >
-                ▶
-              </button>
-              <button
-                type="button"
-                className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors"
-                onClick={() => setBottomDayOffset(prev => prev + 7)}
-                title="Next week"
-              >
-                ▶▶
-              </button>
-            </div>
-          </div>
-          
-          {/* Clone Button - REMOVED FROM HERE */}
-        </div>
-
-        {/* Tomorrow's Schedule */}
-        <div className="bg-gray-800 p-3 rounded-lg shadow-sm border border-gray-700 overflow-hidden">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-medium text-white">
-              {getDateLabel(bottomDayOffset)}
-            </h2>
-            {/* Clone Button - ADDED HERE and color changed */}
-            <button
-              type="button"
-              className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium flex items-center gap-2 transition-colors duration-200" // Changed bg-emerald-600 to bg-gray-600 and hover:bg-emerald-700 to hover:bg-gray-700
-              onClick={openCloneConfirmation}
-              title="Clone tasks from tomorrow to today"
-            >
-              <span>↑</span>
-              <span>Clone to Today</span>
-            </button>
-          </div>
-          
-          <div className="flex flex-col gap-1">
-            <div 
-              className={`bg-blue-950/30 rounded-lg p-1 relative hover:bg-blue-900/40 transition-colors duration-200 ${copyingTaskData ? 'ring-2 ring-blue-400 dark:ring-blue-500 cursor-copy' : 'cursor-pointer'}`} 
-              data-section="bottom_morning" 
-              data-day-offset={bottomDayOffset}
-              onDoubleClick={handleTimelineClick}
-              title="Double-click to add task"
-            >
-              <div className="text-xs text-blue-200 font-medium mb-1">Morning</div>
-              {renderColumn(bottomDayOffset, 'morning')}
-            </div>
-            <div 
-              className={`bg-indigo-950/30 rounded-lg p-1 relative hover:bg-indigo-900/40 transition-colors duration-200 ${copyingTaskData ? 'ring-2 ring-blue-400 dark:ring-blue-500 cursor-copy' : 'cursor-pointer'}`} 
-              data-section="bottom_afternoon" 
-              data-day-offset={bottomDayOffset}
-              onDoubleClick={handleTimelineClick}
-              title="Double-click to add task"
-            >
-              <div className="text-xs text-indigo-200 font-medium mb-1">Afternoon</div>
-              {renderColumn(bottomDayOffset, 'afternoon')}
-            </div>
-            <div 
-              className={`bg-purple-950/30 rounded-lg p-1 relative hover:bg-purple-900/40 transition-colors duration-200 ${copyingTaskData ? 'ring-2 ring-blue-400 dark:ring-blue-500 cursor-copy' : 'cursor-pointer'}`} 
-              data-section="bottom_evening" 
-              data-day-offset={bottomDayOffset}
-              onDoubleClick={handleTimelineClick}
-              title="Double-click to add task"
-            >
-              <div className="text-xs text-purple-200 font-medium mb-1">Evening</div>
-              {renderColumn(bottomDayOffset, 'evening')}
-            </div>
-          </div>
-        </div>
-
-        {/* Task Form Modal */}
-        {showTaskForm && (
-          <div className="fixed inset-0 bg-black/30 dark:bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-xl max-w-md w-full">
-              <h3 className="text-xl font-bold mb-4 dark:text-white">Create New Task</h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Task Name</label>
-                  <input
-                    type="text"
-                    value={newTaskName}
-                    onChange={(e) => setNewTaskName(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                    placeholder="Enter task name"
-                  />
+              {/* Original content of Today's Schedule panel starts here */}
+              <div className="flex flex-col gap-px"> {/* MODIFIED gap-1 to gap-px */}
+                <div
+                  className={`bg-neutral-800/70 rounded-lg p-1 relative transition-colors duration-200 ${copyingTaskData ? 'ring-2 ring-blue-400 dark:ring-blue-500 cursor-copy' : 'cursor-pointer'}`}  // Changed background, hover
+                  data-section="morning"
+                  data-day-offset={topDayOffset}
+                  onDoubleClick={handleTimelineClick}
+                  title="Double-click to add task"
+                >
+                  <div className="text-xs text-neutral-200 font-medium mb-1">Morning</div> {/* Changed text color */}
+                  {renderColumn(topDayOffset, 'morning')}
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Time Period</label>
-                  <select
-                    value={newTaskSection}
-                    onChange={(e) => setNewTaskSection(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                <div
+                  className={`bg-neutral-800/70 rounded-lg p-1 relative transition-colors duration-200 ${copyingTaskData ? 'ring-2 ring-blue-400 dark:ring-blue-500 cursor-copy' : 'cursor-pointer'}`}  // Changed background, hover
+                  data-section="afternoon"
+                  data-day-offset={topDayOffset}
+                  onDoubleClick={handleTimelineClick}
+                  title="Double-click to add task"
+                >
+                  <div className="text-xs text-neutral-200 font-medium mb-1">Afternoon</div> {/* Changed text color */}
+                  {renderColumn(topDayOffset, 'afternoon')}
+                </div>
+                <div
+                  className={`bg-neutral-800/70 rounded-lg p-1 relative transition-colors duration-200 ${copyingTaskData ? 'ring-2 ring-blue-400 dark:ring-blue-500 cursor-copy' : 'cursor-pointer'}`}  // Changed background, hover
+                  data-section="evening"
+                  data-day-offset={topDayOffset}
+                  onDoubleClick={handleTimelineClick}
+                  title="Double-click to add task"
+                >
+                  <div className="text-xs text-neutral-200 font-medium mb-1">Evening</div> {/* Changed text color */}
+                  {renderColumn(topDayOffset, 'evening')}
+                </div>
+              </div>
+            </div>
+
+            {/* Tomorrow's Schedule */}
+            <div className="bg-neutral-900 p-3 rounded-lg shadow-sm border border-neutral-800 overflow-auto"> {/* Changed overflow-hidden to overflow-auto */}
+              <div className="flex items-center justify-between mb-4"> {/* This is the main flex container for the header line */}
+                {/* Date Navigation controls on the left */}
+                <div className="flex items-center space-x-2"> {/* Group for Prev Week, Prev Day, Date, Next Day, Next Week */}
+                  <button
+                    type="button"
+                    className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors"
+                    onClick={() => setSafeBottomDayOffset(bottomDayOffset - 7)}
+                    title="Previous week"
                   >
-                    <option value="morning">Today - Morning</option>
-                    <option value="afternoon">Today - Afternoon</option>
-                    <option value="evening">Today - Evening</option>
-                    <option value="bottom_morning">Tomorrow - Morning</option>
-                    <option value="bottom_afternoon">Tomorrow - Afternoon</option>
-                    <option value="bottom_evening">Tomorrow - Evening</option>
-                  </select>
+                    ◀◀
+                  </button>
+                  <button
+                    type="button"
+                    className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors"
+                    onClick={() => setSafeBottomDayOffset(bottomDayOffset - 1)}
+                    title="Previous day"
+                  >
+                    ◀
+                  </button>
+                  {/* Date display - styled like the top one */}
+                  <span className="text-white font-medium w-[250px] text-center"> {/* Changed from px-3 */}
+                    {getDateLabel(bottomDayOffset)}
+                  </span>
+                  <button
+                    type="button"
+                    className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors"
+                    onClick={() => setSafeBottomDayOffset(bottomDayOffset + 1)}
+                    title="Next day"
+                  >
+                    ▶
+                  </button>
+                  <button
+                    type="button"
+                    className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors"
+                    onClick={() => setSafeBottomDayOffset(bottomDayOffset + 7)}
+                    title="Next week"
+                  >
+                    ▶▶
+                  </button>
                 </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Hour</label>
-                    <select
-                      value={newTaskHour}
-                      onChange={(e) => setNewTaskHour(parseInt(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                    >
-                      {Array.from({ length: 24 }, (_, i) => (
-                        <option key={i} value={i}>{i}:00</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duration</label>
-                    <select
-                      value={newTaskDuration}
-                      onChange={(e) => setNewTaskDuration(parseFloat(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                    >
-                      <option value="0.25">15m</option>
-                      <option value="0.5">30m</option>
-                      <option value="0.75">45m</option>
-                      <option value="1">1h</option>
-                      <option value="1.5">1h30m</option>
-                      <option value="2">2h</option>
-                      <option value="3">3h</option>
-                      <option value="4">4h</option>
-                    </select>
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Color</label>
-                  <div className="grid grid-cols-8 gap-1.5">
-                    {TASK_COLORS.map((color) => (
-                      <button
-                        key={color}
-                        type="button"
-                        className={`w-6 h-6 rounded-full ${color} ${newTaskColor === color ? 'ring-2 ring-offset-2 ring-blue-500 dark:ring-blue-400' : ''}`}
-                        onClick={() => setNewTaskColor(color)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex justify-end mt-6 gap-2">
-                <button
-                  type="button"
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                  onClick={() => setShowTaskForm(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
-                  onClick={addTask}
-                >
-                  Create Task
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* Clone Confirmation Modal */}
-        {showCloneConfirmation && (
-          <div className="fixed inset-0 bg-black/30 dark:bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-xl max-w-md w-full">
-              <h3 className="text-xl font-bold mb-2 dark:text-white">Clone Tasks</h3>
-              <p className="text-gray-600 dark:text-gray-300 mb-4">
-                This will copy all tasks from {getDateLabel(bottomDayOffset)} to {getDateLabel(topDayOffset)}.
-              </p>
+                {/* Clone Button on the right */}
+                <button
+                  type="button"
+                  className="border border-neutral-600 text-neutral-300 hover:bg-neutral-700 hover:text-neutral-100 px-3 py-1.5 rounded-lg font-medium flex items-center gap-2 transition-colors duration-200" // THIS is the Clone to Today button, outline style
+                  onClick={openCloneConfirmation}
+                  title="Clone tasks from tomorrow to today"
+                >
+                  <span>↑</span>
+                  <span>Clone to Today</span>
+                </button>
+              </div>
               
-              <div className="mb-4">
-                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  How should we handle time conflicts?
-                </h4>
-                <div className="space-y-2">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="conflictStrategy"
-                      value="skip"
-                      checked={cloneConflictStrategy === 'skip'}
-                      onChange={() => setCloneConflictStrategy('skip')}
-                      className="mr-2"
-                    />
-                    <div>
-                      <div className="text-gray-800 dark:text-white font-medium">Skip conflicting tasks</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">Only clone tasks that don't overlap with existing ones</div>
-                    </div>
-                  </label>
-                  
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="conflictStrategy"
-                      value="replace"
-                      checked={cloneConflictStrategy === 'replace'}
-                      onChange={() => setCloneConflictStrategy('replace')}
-                      className="mr-2"
-                    />
-                    <div>
-                      <div className="text-gray-800 dark:text-white font-medium">Replace existing tasks</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">Remove any existing tasks that conflict with new ones</div>
-                    </div>
-                  </label>
-                  
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="conflictStrategy"
-                      value="adjust"
-                      checked={cloneConflictStrategy === 'adjust'}
-                      onChange={() => setCloneConflictStrategy('adjust')}
-                      className="mr-2"
-                    />
-                    <div>
-                      <div className="text-gray-800 dark:text-white font-medium">Adjust timing</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">Try to find alternate times for conflicting tasks</div>
-                    </div>
-                  </label>
+              <div className="flex flex-col gap-px"> {/* MODIFIED gap-1 to gap-px */}
+                <div
+                  className={`bg-neutral-800/70 rounded-lg p-1 relative transition-colors duration-200 ${copyingTaskData ? 'ring-2 ring-blue-400 dark:ring-blue-500 cursor-copy' : 'cursor-pointer'}`} // Changed background, hover
+                  data-section="bottom_morning"
+                  data-day-offset={bottomDayOffset}
+                  onDoubleClick={handleTimelineClick}
+                  title="Double-click to add task"
+                >
+                  <div className="text-xs text-neutral-200 font-medium mb-1">Morning</div> {/* Changed text color */}
+                  {renderColumn(bottomDayOffset, 'morning')}
+                </div>
+                <div
+                  className={`bg-neutral-800/70 rounded-lg p-1 relative transition-colors duration-200 ${copyingTaskData ? 'ring-2 ring-blue-400 dark:ring-blue-500 cursor-copy' : 'cursor-pointer'}`} // Changed background, hover
+                  data-section="bottom_afternoon"
+                  data-day-offset={bottomDayOffset}
+                  onDoubleClick={handleTimelineClick}
+                  title="Double-click to add task"
+                >
+                  <div className="text-xs text-neutral-200 font-medium mb-1">Afternoon</div> {/* Changed text color */}
+                  {renderColumn(bottomDayOffset, 'afternoon')}
+                </div>
+                <div
+                  className={`bg-neutral-800/70 rounded-lg p-1 relative transition-colors duration-200 ${copyingTaskData ? 'ring-2 ring-blue-400 dark:ring-blue-500 cursor-copy' : 'cursor-pointer'}`} // Changed background, hover
+                  data-section="bottom_evening"
+                  data-day-offset={bottomDayOffset}
+                  onDoubleClick={handleTimelineClick}
+                  title="Double-click to add task"
+                >
+                  <div className="text-xs text-neutral-200 font-medium mb-1">Evening</div> {/* Changed text color */}
+                  {renderColumn(bottomDayOffset, 'evening')}
                 </div>
               </div>
-              
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                  onClick={() => setShowCloneConfirmation(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700"
-                  onClick={cloneBottomToTop}
-                >
-                  Clone Tasks
-                </button>
-              </div>
             </div>
+
+            {/* Task Form Modal */}
+            {showTaskForm && (
+              <div className="fixed inset-0 bg-black/30 dark:bg-black/50 flex items-center justify-center z-50">
+                <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-xl max-w-md w-full">
+                  <h3 className="text-xl font-bold mb-4 dark:text-white">Create New Task</h3>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label htmlFor="newTaskNameInput" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Task Name</label>
+                      <input
+                        id="newTaskNameInput"
+                        type="text"
+                        value={newTaskName}
+                        onChange={(e) => setNewTaskName(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+                        placeholder="Enter task name"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="newTaskSectionSelect" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Time Period</label>
+                      <select
+                        id="newTaskSectionSelect"
+                        value={newTaskSection}
+                        onChange={(e) => setNewTaskSection(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+                      >
+                        <option value="morning">Today - Morning</option>
+                        <option value="afternoon">Today - Afternoon</option>
+                        <option value="evening">Today - Evening</option>
+                        <option value="bottom_morning">Tomorrow - Morning</option>
+                        <option value="bottom_afternoon">Tomorrow - Afternoon</option>
+                        <option value="bottom_evening">Tomorrow - Evening</option>
+                      </select>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="newTaskHourSelect" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Hour</label>
+                        <select
+                          id="newTaskHourSelect"
+                          value={newTaskHour}
+                          onChange={(e) => setNewTaskHour(parseInt(e.target.value))}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+                        >
+                          {Array.from({ length: 24 }, (_, i) => (
+                            <option key={i} value={i}>{i}:00</option>
+                          ))}
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="newTaskDurationSelect" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duration</label>
+                        <select
+                          id="newTaskDurationSelect"
+                          value={newTaskDuration}
+                          onChange={(e) => setNewTaskDuration(parseFloat(e.target.value))}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+                        >
+                          <option value="0.25">15m</option>
+                          <option value="0.5">30m</option>
+                          <option value="0.75">45m</option>
+                          <option value="1">1h</option>
+                          <option value="1.5">1h30m</option>
+                          <option value="2">2h</option>
+                          <option value="3">3h</option>
+                          <option value="4">4h</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Color</label>
+                      <div className="grid grid-cols-8 gap-1.5">
+                        {TASK_COLORS.map((color) => (
+                          <button
+                            key={color}
+                            type="button"
+                            className={`w-6 h-6 rounded-full ${color} ${newTaskColor === color ? 'ring-2 ring-offset-2 ring-blue-500 dark:ring-blue-400' : ''}`}
+                            onClick={() => setNewTaskColor(color)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end mt-6 gap-2">
+                    <button
+                      type="button"
+                      className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      onClick={() => setShowTaskForm(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
+                      onClick={addTask}
+                    >
+                      Create Task
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Clone Confirmation Modal */}
+            {showCloneConfirmation && (
+              <div className="fixed inset-0 bg-black/30 dark:bg-black/50 flex items-center justify-center z-50">
+                <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-xl max-w-md w-full">
+                  <h3 className="text-xl font-bold mb-2 dark:text-white">Clone Tasks</h3>
+                  <p className="text-gray-600 dark:text-gray-300 mb-4">
+                    This will copy all tasks from {getDateLabel(bottomDayOffset)} to {getDateLabel(topDayOffset)}.
+                  </p>
+                  
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      How should we handle time conflicts?
+                    </h4>
+                    <div className="space-y-2">
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="conflictStrategy"
+                          value="skip"
+                          checked={cloneConflictStrategy === 'skip'}
+                          onChange={() => setCloneConflictStrategy('skip')}
+                          className="mr-2"
+                        />
+                        <div>
+                          <div className="text-gray-800 dark:text-white font-medium">Skip conflicting tasks</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">Only clone tasks that don't overlap with existing ones</div>
+                        </div>
+                      </label>
+                      
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="conflictStrategy"
+                          value="replace"
+                          checked={cloneConflictStrategy === 'replace'}
+                          onChange={() => setCloneConflictStrategy('replace')}
+                          className="mr-2"
+                        />
+                        <div>
+                          <div className="text-gray-800 dark:text-white font-medium">Replace existing tasks</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">Remove any existing tasks that conflict with new ones</div>
+                        </div>
+                      </label>
+                      
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="conflictStrategy"
+                          value="adjust"
+                          checked={cloneConflictStrategy === 'adjust'}
+                          onChange={() => setCloneConflictStrategy('adjust')}
+                          className="mr-2"
+                        />
+                        <div>
+                          <div className="text-gray-800 dark:text-white font-medium">Adjust timing</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">Try to find alternate times for conflicting tasks</div>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      onClick={() => setShowCloneConfirmation(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700"
+                      onClick={cloneBottomToTop}
+                    >
+                      Clone Tasks
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* New Pool Task Form Modal */}
+            {showPoolTaskForm && (
+              <div className="fixed inset-0 bg-black/30 dark:bg-black/50 flex items-center justify-center z-[60]"> {/* Ensure z-index is high enough */}
+                <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-xl max-w-sm w-full">
+                  <h3 className="text-xl font-bold mb-4 dark:text-white">Add Task to Pool</h3>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label htmlFor="newPoolTaskNameInput" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Task Name</label>
+                      <Input
+                        id="newPoolTaskNameInput"
+                        type="text"
+                        value={newPoolTaskName}
+                        onChange={(e) => setNewPoolTaskName(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+                        placeholder="Enter task name"
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="newPoolTaskDurationSelect" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duration</label>
+                        <select
+                          id="newPoolTaskDurationSelect"
+                          value={newPoolTaskDuration}
+                          onChange={(e) => setNewPoolTaskDuration(parseFloat(e.target.value))}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+                        >
+                          <option value="0.25">15m</option>
+                          <option value="0.5">30m</option>
+                          <option value="0.75">45m</option>
+                          <option value="1">1h</option>
+                          <option value="1.5">1h30m</option>
+                          <option value="2">2h</option>
+                          <option value="3">3h</option>
+                          <option value="4">4h</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Color</label>
+                      <div className="grid grid-cols-8 gap-1.5">
+                        {TASK_COLORS.map((color) => (
+                          <button
+                            key={color}
+                            type="button"
+                            className={`w-6 h-6 rounded-full ${color} ${newPoolTaskColor === color ? 'ring-2 ring-offset-2 ring-blue-500 dark:ring-blue-400' : ''}`}
+                            onClick={() => setNewPoolTaskColor(color)}
+                            title={color.split(' ')[0].replace('bg-', '').replace('-200', '').replace('-300', '')}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end mt-6 gap-2">
+                    <button
+                      type="button"
+                      className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      onClick={() => setShowPoolTaskForm(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
+                      onClick={handleAddPoolTask}
+                    >
+                      Add to Pool
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-        )}
+
+          {/* Far Right Column: Pinned Tasks Section - THIS ENTIRE DIV BLOCK IS REMOVED */}
+          {/* <div className="w-52 bg-neutral-900 rounded-lg shadow-sm border border-neutral-800 flex flex-col sticky top-4 h-[calc(100vh-3rem-env(safe-area-inset-bottom))] overflow-hidden"> ... </div> */}
+
+        </div>
       </div>
     </div>
   );

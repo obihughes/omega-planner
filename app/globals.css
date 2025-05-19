@@ -4,7 +4,7 @@
 
 /* Base HTML and body elements - use dark blue instead of gray */
 html, body {
-  background-color: #0f172a !important;
+  background-color: #101010 !important;
   color: #ffffff !important;
   color-scheme: dark !important;
   min-height: 100vh !important;
@@ -16,7 +16,7 @@ html, body {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
   --background-end-rgb: 255, 255, 255;
-  --background: #0f172a;
+  --background: #101010;
   --foreground: #ffffff;
 }
 
@@ -29,10 +29,10 @@ body.dark,
 :root[data-theme="dark"],
 [data-theme="dark"] {
   --foreground-rgb: 255, 255, 255 !important;
-  --background-start-rgb: 15, 23, 42 !important;
-  --background-end-rgb: 15, 23, 42 !important;
+  --background-start-rgb: 16, 16, 16 !important;
+  --background-end-rgb: 16, 16, 16 !important;
   color-scheme: dark !important;
-  background-color: #0f172a !important;
+  background-color: #101010 !important;
   color: #ffffff !important;
 }
 
@@ -60,7 +60,7 @@ html.dark *,
 [data-theme="dark"] [class*="wrapper"]:not([class*="bg-"]),
 [data-theme="dark"] [class*="content"]:not([class*="bg-"]),
 [data-theme="dark"] [class*="app"]:not([class*="bg-"]) {
-  background-color: #0f172a !important;
+  background-color: #101010 !important;
   color: #ffffff !important;
 }
 
@@ -91,18 +91,18 @@ html.dark *,
 @media (prefers-color-scheme: dark) {
   :root {
     --foreground-rgb: 255, 255, 255 !important;
-    --background-start-rgb: 15, 23, 42 !important;
-    --background-end-rgb: 15, 23, 42 !important;
+    --background-start-rgb: 16, 16, 16 !important;
+    --background-end-rgb: 16, 16, 16 !important;
   }
   
   html, body {
     color-scheme: dark !important;
-    background-color: #0f172a !important;
+    background-color: #101010 !important;
     color: #ffffff !important;
   }
   
   #__next, #root, main, [class*="container"]:not([class*="bg-"]), [class*="wrapper"]:not([class*="bg-"]), [class*="content"]:not([class*="bg-"]), [class*="app"]:not([class*="bg-"]) {
-    background-color: #0f172a !important;
+    background-color: #101010 !important;
     color: #ffffff !important;
   }
 }
@@ -122,9 +122,9 @@ body {
 
 .dark body,
 [data-theme="dark"] body {
-  background: #0f172a !important;
+  background: #101010 !important;
   background-image: none !important;
-  background-color: #0f172a !important;
+  background-color: #101010 !important;
 }
 
 @layer utilities {
@@ -140,18 +140,18 @@ body {
 
 html {
   height: 100%;
-  background-color: #0f172a !important;
+  background-color: #101010 !important;
 }
 
 body {
   height: 100%;
-  background-color: #0f172a !important;
+  background-color: #101010 !important;
 }
 
 .dark {
-  --background: #0f172a;
+  --background: #101010;
   --foreground: #ffffff;
-  background-color: #0f172a !important;
+  background-color: #101010 !important;
   color: #ffffff !important;
 }
 
@@ -162,7 +162,7 @@ main,
 [class*="wrapper"]:not([class*="bg-"]),
 [class*="content"]:not([class*="bg-"]),
 [class*="app"]:not([class*="bg-"]) {
-  background-color: #0f172a !important;
+  background-color: #101010 !important;
   color: #ffffff !important;
 }
 
