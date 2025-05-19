@@ -24,6 +24,8 @@ interface TaskPoolSidebarProps {
   
   // Utility functions
   formatDuration: (duration: number) => string;
+  onDeletePoolTask?: (taskId: string) => void;
+  onClearPool?: () => void;
 }
 
 export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
@@ -36,6 +38,8 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
   setTargetCopyDayOffset,
   onActualAddPoolTask,
   formatDuration,
+  onDeletePoolTask,
+  onClearPool,
 }) => {
   const [showPoolTaskForm, setShowPoolTaskForm] = useState<boolean>(false);
   const [newPoolTaskName, setNewPoolTaskName] = useState<string>("");

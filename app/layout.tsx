@@ -79,14 +79,22 @@ export default function RootLayout({
               
               // Re-apply when DOM changes
               const observer = new MutationObserver((mutations) => {
-                const newElements = document.querySelectorAll('*:not([data-dark-applied])');
-                newElements.forEach(el => {
-                  el.style.backgroundColor = el.tagName === 'HTML' || el.tagName === 'BODY' ? '#0a0a0a' : '';
+                // Target elements within the body, and exclude script/style tags from getting data-dark-applied
+                document.body.querySelectorAll('*:not([data-dark-applied]):not(script):not(style)').forEach(el => {
+                  // Only apply background to body and html directly, other elements rely on CSS or specific class targeting
+                  if (el.tagName === 'HTML' || el.tagName === 'BODY') {
+                    el.style.backgroundColor = '#0a0a0a';
+                  }
+                  // Avoid setting backgroundColor directly on all other elements via this observer,
+                  // as it's too broad. Rely on CSS for theming.
                   el.setAttribute('data-dark-applied', 'true');
                 });
               });
               
-              observer.observe(document.body, { childList: true, subtree: true });
+              // Observe the body for changes
+              if (document.body) { // Ensure body exists before observing
+                observer.observe(document.body, { childList: true, subtree: true });
+              }
             })();
           `
         }} />

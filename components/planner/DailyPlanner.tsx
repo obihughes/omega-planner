@@ -1,30 +1,17 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import ReactDOM from 'react-dom';
 import { Card, CardContent, Button, Input } from "@/components/ui";
-import { Edit3, Copy, Pin, CopyPlus, Trash2, PinOff } from 'lucide-react'; // Added Lucide icons
+import { Edit3, Copy, Pin, CopyPlus, Trash2, PinOff } from 'lucide-react';
 
 import { formatDuration, formatTime } from '@/utils/formatters';
-import TaskStorage from '@/utils/storage';
-import { Task, PinnedTask } from '../../types/planner'; // Removed StorageData from this import
-import { TaskPoolSidebar } from './TaskPoolSidebar'; // IMPORT New Component
-import { PinnedTasksSidebar } from './PinnedTasksSidebar'; // IMPORT New Component
+import { Task, PinnedTask } from '../../types/planner';
+import { TaskPoolSidebar } from './TaskPoolSidebar';
+import { PinnedTasksSidebar } from './PinnedTasksSidebar';
+import { useDailyPlanner } from '../../hooks/useDailyPlannerState';
 
-// Style constants
-let taskIdCounter = 5;
-const TASK_BASE_TOP = 2;
-const TASK_HEIGHT = 60; // Increased from 48
-const TIMELINE_START_HOUR = 4;
-const TIMELINE_END_HOUR = 25;
-const TIMELINE_SPLIT_HOUR_1 = 11;
-const TIMELINE_SPLIT_HOUR_2 = 18;
-const MIN_TASK_DURATION = 0.25;
-const TIMELINE_HEADER_HEIGHT_PX = 28;
-const GRID_LINE_STYLE = "border-l-2 border-gray-400 z-10";
-
-// Available task colors - 24 options arranged in a gradient
-const TASK_COLORS = [
-  // Row 1: Reds -> Yellows
+export const TASK_COLORS = [
   "bg-red-300 dark:bg-red-700",
   "bg-red-200 dark:bg-red-600",     // Lighter Red
   "bg-rose-300 dark:bg-rose-700",
@@ -53,27 +40,25 @@ const TASK_COLORS = [
   "bg-stone-300 dark:bg-stone-600",   // Grey 3 (Brownish)
 ];
 
-// Adjust the pixels per hour to increase width and prevent cutoff
-const PIXELS_PER_HOUR = 140; // Adjusted to 70
-const PIXELS_PER_MINUTE = PIXELS_PER_HOUR / 60;
-
 interface TaskCardProps {
   task: Task;
   height: number;
   onStartEdit: (task: Task) => void;
+  onUpdateTask: (taskId: string, updatedFields: Partial<Omit<Task, 'id'>>) => void;
   onDelete: (taskId: string) => void;
   onCopy: (task: Task) => void;
   onColorChange: (taskId: string, color: string) => void;
   editingTaskId: string | null;
   setEditingTaskId: (id: string | null) => void;
   onMoveToPool: (taskId: string) => void;
-  onPinTask?: (task: Task) => void; // Optional for now, will be used by timeline tasks
+  onPinTask?: (task: Task) => void;
 }
 
 const TaskCard: React.FC<TaskCardProps> = ({
   task,
   height,
   onStartEdit,
+  onUpdateTask,
   onDelete,
   onCopy,
   onColorChange,
@@ -84,83 +69,53 @@ const TaskCard: React.FC<TaskCardProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingTaskName, setEditingTaskName] = useState(task.name);
-  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Add effect to handle clicking outside the menu
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsEditing(false);
-        setMenuPosition(null);
         setEditingTaskId(null);
       }
     };
-
     if (isEditing) {
       document.addEventListener('mousedown', handleClickOutside);
     }
-
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isEditing, setEditingTaskId]);
 
-  // Determine if this is a compressed task (15 mins or less)
-  const isCompressed = task.duration <= 0.5; // Changed from 0.25 to 0.5
-
-  // Calculate end time for display
+  const isCompressed = task.duration <= 0.5;
   const endTime = task.startHour + Number(task.duration);
-  
-  // Ensure the task color has dark mode variant with stronger contrast
   const color = task.color?.includes('dark:') 
     ? task.color 
     : `${task.color || 'bg-blue-200'} dark:bg-blue-500`;
 
-  const handleSave = () => {
+  const handleSaveName = () => {
     if (editingTaskName.trim()) {
-      onStartEdit(task);
+      onUpdateTask(task.id, { name: editingTaskName.trim() });
       setIsEditing(false);
-      setMenuPosition(null);
+      setEditingTaskId(null);
     }
   };
 
-  const handleCancel = () => {
+  const handleCancelEditMenu = () => {
     setIsEditing(false);
     setEditingTaskName(task.name);
-    setMenuPosition(null);
   };
 
   const handleEditClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    // Close any other open edit menus
     setEditingTaskId(task.id);
-    
-    // Calculate menu dimensions
-    const menuHeight = 300;
-    const menuWidth = 250;
-    
-    // Get viewport dimensions and scroll position
-    const viewportHeight = window.innerHeight;
-    const viewportWidth = window.innerWidth;
-    const scrollY = window.scrollY || document.documentElement.scrollTop;
-    const scrollX = window.scrollX || document.documentElement.scrollLeft;
-    
-    // Position the menu at the center of the screen
-    const top = scrollY + (viewportHeight / 2) - (menuHeight / 2);
-    const left = scrollX + (viewportWidth / 2) - (menuWidth / 2);
-    
-    setMenuPosition({ top, left });
+    setEditingTaskName(task.name);
     setIsEditing(true);
   };
 
-  // Add effect to close menu when another task is being edited
   useEffect(() => {
     if (editingTaskId !== task.id) {
       setIsEditing(false);
-      setMenuPosition(null);
     }
   }, [editingTaskId, task.id]);
 
@@ -178,15 +133,19 @@ const TaskCard: React.FC<TaskCardProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex flex-col h-full min-w-0">
-          {/* Task Content Area - MODIFIED for better internal layout */}
           <div className="flex flex-row justify-between items-start min-w-0 draggable-area h-full gap-1">
-            {/* Task Name and Time (Left, Growable) */}
             <div className="flex-grow flex flex-col min-w-0">
               <div className={`
                 dark:text-white break-words
                 ${isCompressed ? 'text-[8px] writing-mode-vertical-lr transform h-full flex items-center justify-center overflow-hidden leading-tight' : 'text-[11px] line-clamp-2'} 
                 font-bold
-              `}>
+              `}
+              onClick={(e) => { 
+                  if (e.detail === 2) {
+                      onStartEdit(task); 
+                  }
+              }}
+              >
                 {task.name}
               </div>
               {!isCompressed && (
@@ -201,58 +160,44 @@ const TaskCard: React.FC<TaskCardProps> = ({
               )}
             </div>
 
-            {/* Action buttons (Right, Fixed Size) - only if not compressed */}
             {!isCompressed && (
-              <div className="flex flex-col items-end gap-0.5 flex-shrink-0"> {/* Reduced gap, added flex-shrink-0 */}
-                {/* Edit button */}
+              <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
                 <button
                   type="button"
                   className="h-3.5 w-3.5 p-0 text-gray-600 dark:text-gray-300 hover:bg-gray-100/30 dark:hover:bg-gray-600/30 rounded-sm flex items-center justify-center"
-                  onClick={handleEditClick}
-                  title="Edit task"
+                  onClick={handleEditClick} 
+                  title="Edit task (inline)"
                 >
-                  <Edit3 className="w-2.5 h-2.5" /> {/* Replaced emoji with Lucide icon */}
+                  <Edit3 className="w-2.5 h-2.5" />
                 </button>
                 
-                {/* Copy button */}
                 <button
                   type="button"
                   className="h-3.5 w-3.5 p-0 text-gray-600 dark:text-gray-300 hover:bg-gray-100/30 dark:hover:bg-gray-600/30 rounded-sm flex items-center justify-center"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onCopy(task);
-                  }}
-                  title="Copy task"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); onCopy(task); }}
+                  title="Copy task to timeline"
                 >
-                  <Copy className="w-2.5 h-2.5" /> {/* Replaced emoji with Lucide icon */}
+                  <Copy className="w-2.5 h-2.5" />
                 </button>
-                {/* Pin button - only show if onPinTask is provided (i.e., for timeline tasks) */}
                 {onPinTask && (
                   <button
                     type="button"
                     className="h-3.5 w-3.5 p-0 text-gray-600 dark:text-gray-300 hover:bg-gray-100/30 dark:hover:bg-gray-600/30 rounded-sm flex items-center justify-center"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onPinTask(task);
-                    }}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); onPinTask(task);}}
                     title="Pin task"
                   >
-                    <Pin className="w-2.5 h-2.5" /> {/* Replaced emoji with Lucide icon */}
+                    <Pin className="w-2.5 h-2.5" />
                   </button>
                 )}
               </div>
             )}
-
-            {/* Edit button for compressed tasks - still needs to be positioned if layout changes */}
             {isCompressed && (
-              <div className="absolute bottom-0.5 right-0.5 flex justify-end" onClick={(e) => e.stopPropagation()}> {/* Kept absolute for now due to vertical text complexity */}
+              <div className="absolute bottom-0.5 right-0.5 flex justify-end" onClick={(e) => e.stopPropagation()}>
                 <button
                   type="button"
                   className="h-3 w-3 p-0 text-gray-600 dark:text-gray-300 hover:bg-gray-100/30 dark:hover:bg-gray-600/30 rounded-sm flex items-center justify-center"
-                  onClick={handleEditClick}
-                  title="Edit task"
+                  onClick={handleEditClick} 
+                  title="Edit task (inline)"
                 >
                   <span className="text-[7px]">✎</span>
                 </button>
@@ -262,27 +207,23 @@ const TaskCard: React.FC<TaskCardProps> = ({
         </div>
       </div>
 
-      {/* Floating Edit Menu */}
-      {isEditing && menuPosition && (
+      {isEditing && editingTaskId === task.id && typeof document !== 'undefined' && ReactDOM.createPortal(
         <div 
           ref={menuRef}
           className="fixed z-[1000] bg-white dark:bg-gray-900 rounded-lg shadow-xl border border-gray-200 dark:border-gray-800 p-3 min-w-[250px]"
           style={{
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            maxHeight: '80vh',
-            overflowY: 'auto'
+            top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+            maxHeight: '80vh', overflowY: 'auto'
           }}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-2">
-              <label htmlFor="editTaskNameInput" className="text-xs font-medium text-gray-700 dark:text-gray-300">
+              <label htmlFor={`editTaskNameInput-${task.id}`} className="text-xs font-medium text-gray-700 dark:text-gray-300">
                 Task Name
               </label>
               <Input 
-                id="editTaskNameInput"
+                id={`editTaskNameInput-${task.id}`}
                 type="text" 
                 value={editingTaskName}
                 onChange={(e) => setEditingTaskName(e.target.value)}
@@ -290,6 +231,10 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 autoFocus={true}
                 onClick={(e) => e.stopPropagation()}
                 onMouseDown={(e) => e.stopPropagation()}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveName();
+                    if (e.key === 'Escape') handleCancelEditMenu();
+                }}
               />
             </div>
 
@@ -300,14 +245,9 @@ const TaskCard: React.FC<TaskCardProps> = ({
               <div className="grid grid-cols-8 gap-1.5">
                 {TASK_COLORS.map(colorClass => (
                   <button
-                    key={colorClass}
-                    type="button"
+                    key={`color-button-${colorClass}-${task.id}`} type="button"
                     className={`w-6 h-6 rounded-full ${colorClass} hover:ring-2 ring-gray-400 transition-all ${task.color === colorClass ? 'ring-2 ring-blue-500' : ''}`}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onColorChange(task.id, colorClass);
-                    }}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); onColorChange(task.id, colorClass); }}
                     title={colorClass.split(' ')[0].replace('bg-', '').replace('-200', '')}
                   />
                 ))}
@@ -319,37 +259,21 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 <button
                   type="button"
                   className="flex-1 h-8 px-3 bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-800/50 text-sm font-medium transition-colors"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onCopy(task);
-                    setIsEditing(false);
-                    setMenuPosition(null);
-                  }}
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); onCopy(task); setIsEditing(false); }}
                 >
                   Copy Task
                 </button>
                 <button
                   type="button"
                   className="flex-1 h-8 px-3 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 rounded hover:bg-indigo-200 dark:hover:bg-indigo-800/50 text-sm font-medium transition-colors"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onMoveToPool(task.id);
-                    setIsEditing(false);
-                    setMenuPosition(null);
-                  }}
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMoveToPool(task.id); setIsEditing(false); }}
                 >
                   Copy to Pool
                 </button>
                 <button
                   type="button"
                   className="flex-1 h-8 px-3 bg-red-500 text-white rounded hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-sm font-medium transition-colors"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onDelete(task.id);
-                  }}
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(task.id); setIsEditing(false);}}
                 >
                   Delete
                 </button>
@@ -358,649 +282,368 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 <button
                   type="button"
                   className="flex-1 h-8 px-3 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-sm font-medium transition-colors"
-                  onClick={handleCancel}
+                  onClick={handleCancelEditMenu}
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   className="flex-1 h-8 px-3 bg-blue-500 text-white rounded hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-sm font-medium transition-colors"
-                  onClick={() => {
-                    if (editingTaskName.trim()) {
-                      const updatedTask = { ...task, name: editingTaskName.trim() };
-                      onStartEdit(updatedTask);
-                      setIsEditing(false);
-                      setMenuPosition(null);
-                    }
-                  }}
+                  onClick={handleSaveName}
                 >
-                  Save
+                  Save Name
                 </button>
               </div>
+                 <button
+                    type="button"
+                    className="w-full mt-1 h-8 px-3 bg-green-500 text-white rounded hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 text-sm font-medium transition-colors"
+                    onClick={() => {
+                        onStartEdit(task); 
+                        setIsEditing(false);
+                    }}
+                  >
+                    Open Full Edit Modal
+                </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
 };
 
-// Add dark mode context and hooks at the top of the file
-import { useTheme } from "next-themes";
-import { format, addDays } from "date-fns";
-
-// Add these constants at the top with other constants
-const STORAGE_KEY = 'daily-planner-tasks';
-const STORAGE_VERSION = '1.0';
-
-// Custom hook to skip effect on first render
-function useEffectSkipFirstRender(fn: () => (void | (() => void)), deps: React.DependencyList) {
-  const isFirstRender = useRef(true); // Renamed for clarity
-
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      // This cleanup runs when the component unmounts OR when StrictMode unmounts this effect instance.
-      return () => {
-        // If the effect is re-mounted (e.g. by StrictMode, or a real unmount/remount),
-        // we want it to be considered a "first render" again for that new instance's perspective.
-        isFirstRender.current = true;
-      };
-    }
-    // This part executes for actual dependency changes after the true initial mount sequence (including StrictMode's phases).
-    return fn(); // Execute the provided function and return its potential cleanup.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
-}
-
 export default function DailyPlanner() {
-  // Add the today constant
-  const today = new Date();
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [taskInput, setTaskInput] = useState<string>("");
-  const [resizingTask, setResizingTask] = useState<{ index: number; direction: 'left' | 'right'; startX: number; initialTask: Task } | null>(null);
-  const [draggingTask, setDraggingTask] = useState<{ index: number; startX: number; initialTask: Task } | null>(null);
-  
-  // State for tracking the current day offsets
-  const [topDayOffset, setTopDayOffset] = useState<number>(0);
-  const [bottomDayOffset, setBottomDayOffset] = useState<number>(1);
+  const {
+    tasks,
+    poolTasks,
+    pinnedTasks,
+    activeSidebarTab,
+    topDayOffset,
+    bottomDayOffset,
+    getDateLabel,
+    setTopDayOffset,
+    setBottomDayOffset,
+    setTasks,
+    setPoolTasks,
+    setPinnedTasks,
+    setActiveSidebarTab,
+    TIMELINE_START_HOUR,
+    TIMELINE_END_HOUR,
+    PIXELS_PER_HOUR,
+    MIN_TASK_DURATION,
+    setShowClearPoolConfirmation,
+    showClearPoolConfirmation,
+    setShowCloneConfirmation,
+    showCloneConfirmation,
+    draggingTask,
+    setDraggingTask,
+    resizingTask,
+    setResizingTask,
+    editingTaskId,
+    setEditingTaskId,
+    contextMenu,
+    setContextMenu,
+    copyingTaskData,
+    setCopyingTaskData,
+    targetCopyDayOffset,
+    setTargetCopyDayOffset,
+    colorPickerState,
+    setColorPickerState,
+    activeEditModalTask,
+    setActiveEditModalTask,
+    hasConflict,
+    handleAddTask,
+    handleDeleteTask,
+    handleUpdateTask,
+    handleTaskColorChange,
+    toggleColorPicker,
+    handleTaskCompletionToggle,
+    openEditModal,
+    closeEditModal,
+    saveTaskFromModal,
+    handleActualAddPoolTask,
+    copyTaskToPool,
+    moveTaskFromPool,
+    handleDeletePoolTask,
+    clearPool,
+    handlePinTask,
+    handleUnpinTask,
+    formatTimeRemaining,
+    startCopy,
+    cancelCopy,
+    handleDropCopy,
+    cloneDayTasks,
+  } = useDailyPlanner();
 
-  // State for copy mode
-  const [copyingTaskData, setCopyingTaskData] = useState<Task | null>(null);
-  const [targetCopyDayOffset, setTargetCopyDayOffset] = useState<number | null>(null);
-
-  // State for inline editing
-  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
-  const [editingTaskName, setEditingTaskName] = useState<string>("");
-  
-  // State for color selection
-  const [showColorPicker, setShowColorPicker] = useState<string | null>(null);
-
-  // State for task form
   const [showTaskForm, setShowTaskForm] = useState<boolean>(false);
   const [newTaskName, setNewTaskName] = useState<string>("");
   const [newTaskHour, setNewTaskHour] = useState<number>(9);
   const [newTaskDuration, setNewTaskDuration] = useState<number>(1);
-  const [newTaskColor, setNewTaskColor] = useState<string>("bg-sky-600 dark:bg-sky-700"); // Changed default task color to blue
-  const [newTaskSection, setNewTaskSection] = useState<string>("morning");
+  const [newTaskColor, setNewTaskColor] = useState<string>(TASK_COLORS[0]);
+  const [newTaskDayOffset, setNewTaskDayOffset] = useState<number>(0);
 
-  // Task counter for generating unique IDs
-  const [taskIdCounter, setTaskIdCounter] = useState<number>(1);
+  const TASK_BASE_TOP = 2;
+  const TASK_HEIGHT = 60;
+  const TIMELINE_SPLIT_HOUR_1 = 11;
+  const TIMELINE_SPLIT_HOUR_2 = 18;
+  const TIMELINE_HEADER_HEIGHT_PX = 28;
+  const GRID_LINE_STYLE = "border-l-2 border-gray-400 z-10";
+  const PIXELS_PER_MINUTE = PIXELS_PER_HOUR / 60;
 
-  // First, add a new state for the task pool
-  const [poolTasks, setPoolTasks] = useState<Task[]>([]);
+  const timelineScrollRef = useRef<HTMLDivElement>(null);
+  const topDayTimelineRef = useRef<HTMLDivElement>(null);
+  const bottomDayTimelineRef = useRef<HTMLDivElement>(null);
 
-  // State for the new pool task form
-  // const [showPoolTaskForm, setShowPoolTaskForm] = useState<boolean>(false);
-  // const [newPoolTaskName, setNewPoolTaskName] = useState<string>("");
-  // const [newPoolTaskDuration, setNewPoolTaskDuration] = useState<number>(1); // Default duration 1h
-  // const [newPoolTaskColor, setNewPoolTaskColor] = useState<string>(TASK_COLORS[0]); // Default to first color
-
-  // State for Pinned Tasks
-  const [pinnedTasks, setPinnedTasks] = useState<PinnedTask[]>([]);
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [activeSidebarTab, setActiveSidebarTab] = useState<'pool' | 'pinned'>('pinned');
-
-  const initialLoadComplete = useRef(false); // Flag to prevent initial saves
-
-  // Effect to update currentTime every minute for countdowns
-  useEffect(() => {
-    const timerId = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000); // Update every minute
-    return () => clearInterval(timerId);
-  }, []);
-
-  // Then add functions to handle moving tasks to/from the pool
-  // Add these with the other task action functions
-
-  // Add task to pool
-  const copyTaskToPool = useCallback((taskId: string) => {
-    const taskToCopy = tasks.find(t => t.id === taskId);
-    if (taskToCopy) {
-      // Add to pool with a new ID
-      setPoolTasks(prev => [...prev, {...taskToCopy, id: String(taskIdCounter)}]);
-      setTaskIdCounter(prev => prev + 1);
-      // Don't remove from schedule - just copy
-    }
-  }, [tasks, taskIdCounter]);
-
-  // Move task from pool to schedule
-  const moveTaskFromPool = useCallback((poolTaskId: string, targetDayOffset: number, startHour: number) => {
-    const taskToMove = poolTasks.find(t => t.id === poolTaskId);
-    if (taskToMove) {
-      // Add to schedule with the new day and time
-      setTasks(prev => [...prev, {
-        ...taskToMove,
-        id: String(taskIdCounter),
-        dayOffset: targetDayOffset,
-        startHour
-      }]);
-      setTaskIdCounter(prev => prev + 1);
-      // Remove from pool
-      setPoolTasks(prev => prev.filter(t => t.id !== poolTaskId));
-    }
-  }, [poolTasks, taskIdCounter]);
-
-  // Remove the old day switching logic and replace with simpler version
-  const getDateLabel = (offset: number, withPrefix = false): string => {
-    const date = new Date();
-    date.setDate(date.getDate() + offset);
-    return format(date, 'EEEE, MMMM d');
-  };
-
-  // --- Day Switching Logic ---
-  const getOrderedDayOffsets = (): [number, number] => {
-    // Simply return the top and bottom day offsets
-    return [topDayOffset, bottomDayOffset];
-  };
-
-  // No need for these functions anymore as we're using topDayOffset and bottomDayOffset directly
-  // const [topDay, bottomDay] = getOrderedDayOffsets();
-
-  const ensureDifferentDay = (newOffset: number, otherOffset: number): number => {
-      // Simple check: if they are the same, subtract 1. Add more complex logic if needed.
-      return newOffset === otherOffset ? newOffset - 1 : newOffset;
-  }
-
-  // Replace these functions with simpler versions that use topDayOffset and bottomDayOffset
-  const setSafeTopDayOffset = (offset: number) => {
-      const newTopOffset = ensureDifferentDay(offset, bottomDayOffset);
-      setTopDayOffset(newTopOffset);
-      // Adjust bottomDayOffset if it becomes the same as the new topDayOffset
-      if (newTopOffset === bottomDayOffset) {
-          setBottomDayOffset(ensureDifferentDay(bottomDayOffset - 1, newTopOffset));
-      }
-  };
-
-  const setSafeBottomDayOffset = (offset: number) => {
-      const newBottomOffset = ensureDifferentDay(offset, topDayOffset);
-      setBottomDayOffset(newBottomOffset);
-      // Adjust topDayOffset if it becomes the same as the new bottomDayOffset
-      if (newBottomOffset === topDayOffset) {
-          setTopDayOffset(ensureDifferentDay(topDayOffset - 1, newBottomOffset));
-      }
-  };
-  // --- End Day Switching ---
-
-  // --- Conflict Detection ---
-  const hasConflict = (
-      taskIdToIgnore: string,
-      dayOffset: number,
-      checkStartHour: number,
-      checkDuration: number
-  ): boolean => {
-      const checkEndHour = checkStartHour + checkDuration;
-      // Use a small epsilon to prevent floating point issues at the boundary
-      const epsilon = 0.001;
-      return tasks.some(task =>
-          task.id !== taskIdToIgnore &&
-          task.dayOffset === dayOffset &&
-          (checkStartHour + epsilon) < (task.startHour + task.duration) && 
-          (checkEndHour - epsilon) > task.startHour
-      );
-  };
-  // --- End Conflict Detection ---
-
-  // --- Task Actions (DEFINED INSIDE COMPONENT) ---
-  const handleAddTask = () => {
-    if (taskInput.trim()) {
-      const duration = 1; // Default duration
-      const startHour = 9; // Default start time
-      const colorIndex = Math.floor(Math.random() * TASK_COLORS.length);
-      const color = TASK_COLORS[colorIndex];
-      
-      // Use "new-task" instead of "1" for conflict check
-      if (hasConflict("new-task", topDayOffset, startHour, duration)) {
-        alert("Time slot from 9:00 AM is already occupied. Please clear it first.");
-        return;
-      }
-
-      const newTask: Task = { 
-        id: taskIdCounter.toString(), 
-        name: taskInput, 
-        duration, 
-        startHour,
-        dayOffset: topDayOffset,
-        color
-      };
-      
-      setTasks(currentTasks => [...currentTasks, newTask]);
-      setTaskInput("");
-      setTaskIdCounter(prev => prev + 1);
-    }
-  };
-
-  // --- Copy Functions ---
-  const handleInitiateCopy = useCallback((taskToCopy: Task) => {
-    // Create a proper deep copy
-    setCopyingTaskData({...taskToCopy});
-    // Default to the same day as the task being copied
-    setTargetCopyDayOffset(taskToCopy.dayOffset);
-  }, []);
-
-  const handleTimelineClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    // Only handle double clicks for task creation
-    if (e.detail !== 2) return;
-    
-    // Don't create task if target is not the timeline
-    if (e.target !== e.currentTarget) return;
-    
-    const section = e.currentTarget.getAttribute('data-section');
-    const dayOffsetAttr = e.currentTarget.getAttribute('data-day-offset');
-    const dayOffset = dayOffsetAttr ? parseInt(dayOffsetAttr) : null;
-    
-    if (!section || dayOffset === null) return;
-
-    // If in copy mode, handle the copy operation
-    if (copyingTaskData) {
-      // Get rect of current timeline section
-      const rect = e.currentTarget.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const width = rect.width;
-      
-      // Calculate position based on click
-      const relativePosition = clickX / width;
-      
-      // Set start hour based on section and click position
-      let baseHour: number;
-      const actualSection = section.replace('bottom_', '');
-      if (actualSection === 'morning') baseHour = 4;
-      else if (actualSection === 'afternoon') baseHour = 11;
-      else baseHour = 18;
-      
-      const hoursInView = 7; // 7 hours in each section
-      const clickedHourOffset = Math.floor(relativePosition * hoursInView);
-      const newHour = baseHour + clickedHourOffset;
-      
-      // Create the copied task with a new ID and the target day offset
-      const newTask: Task = {
-        ...copyingTaskData,
-        id: String(taskIdCounter),
-        startHour: newHour,
-        dayOffset: dayOffset
-      };
-      
-      setTasks(prevTasks => [...prevTasks, newTask]);
-      setTaskIdCounter(prev => prev + 1);
-      setCopyingTaskData(null);
-      setTargetCopyDayOffset(null);
-
-      // See if this was a pool task and remove it if so
-      // FOR "COPY" BEHAVIOR, WE NO LONGER REMOVE IT FROM THE POOL
-      /*
-      const poolTaskIndex = poolTasks.findIndex(t => 
-        t.name === copyingTaskData.name && 
-        t.duration === copyingTaskData.duration && 
-        t.color === copyingTaskData.color
-      );
-      if (poolTaskIndex >= 0) {
-        setPoolTasks(prev => prev.filter((_, i) => i !== poolTaskIndex));
-      }
-      */
-      return;
-    }
-    
-    // Otherwise, handle creating a new task
-    setNewTaskSection(section);
-    
-    // Set start hour based on section and click position
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const width = rect.width;
-    
-    // Calculate position based on click
-    const relativePosition = clickX / width;
-    
-    // Set start hour based on section and click position
-    let baseHour: number;
-    const actualSection = section.replace('bottom_', '');
-    if (actualSection === 'morning') baseHour = 4;
-    else if (actualSection === 'afternoon') baseHour = 11;
-    else baseHour = 18;
-    
-    const hoursInView = 7; // 7 hours in each section
-    const clickedHourOffset = Math.floor(relativePosition * hoursInView);
-    const newHour = baseHour + clickedHourOffset;
-    
-    setNewTaskHour(newHour);
-    setNewTaskName("New Task");
-    setNewTaskDuration(1);
-    setNewTaskColor("bg-sky-600 dark:bg-sky-700"); // Changed default task color to blue
-    setShowTaskForm(true);
-  }, [copyingTaskData, taskIdCounter, tasks]);
-
-  const cancelCopy = () => {
-      setCopyingTaskData(null);
-      setTargetCopyDayOffset(null);
-  };
-  // --- End Copy Functions ---
-
-  // --- Color Selection Functions ---
-  // Handle color change
-  const handleColorChange = (taskId: string, newColor: string) => {
-    setTasks(currentTasks => currentTasks.map(task => 
-      task.id === taskId ? { ...task, color: newColor } : task
-    ));
-    setShowColorPicker(null); // Close color picker after selection
-  };
-
-  // Toggle color picker
-  const toggleColorPicker = (e: React.MouseEvent, taskId: string) => {
+  const handleResizeStart = (task: Task, edge: 'start' | 'end', e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
     e.preventDefault();
-    e.stopPropagation();
-    setShowColorPicker(current => current === taskId ? null : taskId);
-  };
-  // --- End Color Selection Functions ---
-
-  // --- Edit/Delete Functions ---
-    // Delete Task
-    const handleDeleteTask = (taskIdToDelete: string) => {
-      console.log("Delete task called with ID:", taskIdToDelete);
-      setTasks(currentTasks => currentTasks.filter(task => task.id !== taskIdToDelete));
-    };
-
-    // Edit Task Name (Inline)
-    const handleStartEdit = (updatedTask: Task) => {
-        setTasks(currentTasks => currentTasks.map(task =>
-          task.id === updatedTask.id
-          ? updatedTask
-          : task
-        ));
-        
-        setEditingTaskId(null);
-        setEditingTaskName("");
-    };
-
-    const handleCancelEdit = () => {
-        console.log("Cancel edit called");
-        setEditingTaskId(null);
-        setEditingTaskName("");
-    };
-
-    const handleSaveEdit = () => {
-        console.log("Save edit called for task ID:", editingTaskId);
-        if (!editingTaskId) return;
-        setTasks(currentTasks => currentTasks.map(task =>
-            task.id === editingTaskId
-            ? { ...task, name: editingTaskName.trim() || "Untitled Task" } // Ensure name isn't empty
-            : task
-        ));
-        handleCancelEdit(); // Exit edit mode
-    };
-
-    // Handle Enter/Escape key in edit input
-    const handleEditKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-        if (event.key === 'Enter') {
-            handleSaveEdit();
-        } else if (event.key === 'Escape') {
-            handleCancelEdit();
-        }
-    };
-  // --- End Edit/Delete Functions ---
-
-  // --- Resize Functions ---
-  const handleResizeStart = (taskIndex: number, direction: 'left' | 'right', e: React.MouseEvent) => {
-    e.stopPropagation();
-    cancelCopy();
-    setDraggingTask(null);
-    const task = tasks[taskIndex];
+    cancelCopy(); 
+    setDraggingTask(null); 
+    document.body.style.cursor = 'col-resize';
     if (task) {
-        // Store initial task state when resize starts
-        setResizingTask({ index: taskIndex, direction, startX: e.clientX, initialTask: { ...task } });
+        setResizingTask({ 
+             task: { ...task }, 
+             edge,
+             initialMouseX: e.clientX,
+             initialStartHour: task.startHour,
+             initialDuration: task.duration,
+        });
     }
   };
 
-  const handleMouseMoveResize = (e: MouseEvent) => {
+  const handleMouseMoveResize = useCallback((e: MouseEvent) => {
     if (!resizingTask) return;
-    // Use initialTask from the state captured on resize start
-    const { index, direction, startX, initialTask } = resizingTask;
-
-    const deltaX = e.clientX - startX;
-    const deltaMinutes = Math.round(deltaX / PIXELS_PER_MINUTE / 15) * 15;
-    const deltaHours = deltaMinutes / 60;
-
-    let potentialNewStartHour = initialTask.startHour;
-    let potentialNewDuration = initialTask.duration;
-    
-    // Determine which section the task belongs to (first or second half of day)
-    const isInSecondHalf = initialTask.startHour >= TIMELINE_SPLIT_HOUR_2;
-    const sectionStartHour = isInSecondHalf ? TIMELINE_SPLIT_HOUR_2 : TIMELINE_START_HOUR;
-    const sectionEndHour = isInSecondHalf ? TIMELINE_END_HOUR : TIMELINE_SPLIT_HOUR_2;
-
-    if (direction === 'right') {
-        potentialNewDuration = Math.max(0.25, Math.min(sectionEndHour - initialTask.startHour, initialTask.duration + deltaHours));
-    } else { // left
-        const tryStart = initialTask.startHour + deltaHours;
-        const tryDuration = initialTask.duration - deltaHours;
-        if (tryStart >= sectionStartHour && tryDuration >= 0.25) {
-             potentialNewStartHour = tryStart;
-             potentialNewDuration = tryDuration;
-        } else if (tryStart < sectionStartHour) { // Hit start boundary
-             potentialNewDuration = initialTask.duration + (initialTask.startHour - sectionStartHour);
-             potentialNewStartHour = sectionStartHour;
-        } else { // Duration hit minimum boundary
-             potentialNewStartHour = initialTask.startHour + (initialTask.duration - 0.25);
-             potentialNewDuration = 0.25;
-        }
-    }
-
-    // Check for conflict *before* updating state using the actual task ID
-    if (!hasConflict(initialTask.id, initialTask.dayOffset, potentialNewStartHour, potentialNewDuration)) {
-        console.log(`🔄 Resizing task ${initialTask.id}: New StartH: ${potentialNewStartHour.toFixed(3)}, New Dur: ${potentialNewDuration.toFixed(3)}`); // ADDED LOG
-        // Update state only if no conflict
-        setTasks(currentTasks => currentTasks.map((task, i) =>
-            i === index
-            ? { ...task, startHour: parseFloat(potentialNewStartHour.toFixed(3)), duration: parseFloat(potentialNewDuration.toFixed(3)) }
-            : task
-        ));
-    } else {
-        console.log("Resize conflict detected");
-    }
-    // No startX update needed here, delta is always from initial startX
-  };
-  // --- End Resize Functions ---
-
-  // --- Drag Functions ---
-  const handleDragStart = (taskIndex: number, e: React.MouseEvent) => {
     e.preventDefault();
-    e.stopPropagation();
+
+    const { task: originalTaskAtResizeStart, edge, initialMouseX, initialStartHour, initialDuration } = resizingTask;
     
-    // Clear any active interactions
-    cancelCopy();
-    setResizingTask(null);
-    setEditingTaskId(null);
-    
-    const task = tasks[taskIndex];
-    if (task) {
-      // Store initial task state and cursor position when drag starts
-      setDraggingTask({ 
-        index: taskIndex, 
-        startX: e.clientX, 
-        initialTask: { ...task } 
-      });
-      
-      // Change cursor during drag
-      document.body.style.cursor = 'grabbing';
+    const dx = e.clientX - initialMouseX;
+    const dHours = dx / PIXELS_PER_HOUR;
+
+    let newStartHourCandidate = initialStartHour;
+    let newDurationCandidate = initialDuration;
+
+    if (edge === 'start') {
+        newStartHourCandidate = initialStartHour + dHours;
+        newDurationCandidate = initialDuration - dHours;
+    } else { // edge === 'end'
+        newStartHourCandidate = initialStartHour; 
+        newDurationCandidate = initialDuration + dHours;
     }
-  };
+
+    // Initial snapping and min duration
+    let finalNewStartHour = Math.round(newStartHourCandidate * 4) / 4;
+    let finalNewDuration = Math.round(newDurationCandidate * 4) / 4;
+    finalNewDuration = Math.max(MIN_TASK_DURATION, finalNewDuration);
+
+    if (edge === 'start') {
+        const originalEndHour = initialStartHour + initialDuration;
+        // Adjust start hour: cannot go beyond original end minus min_duration
+        finalNewStartHour = Math.min(finalNewStartHour, originalEndHour - MIN_TASK_DURATION);
+        // And cannot go before timeline start
+        finalNewStartHour = Math.max(finalNewStartHour, TIMELINE_START_HOUR);
+        
+        // Recalculate duration based on adjusted start and original end
+        finalNewDuration = originalEndHour - finalNewStartHour;
+        // Ensure duration is at least min_duration and also fits if start was pushed by TIMELINE_START_HOUR
+        // And that it doesn't extend beyond TIMELINE_END_HOUR from the new start
+        finalNewDuration = Math.min(finalNewDuration, TIMELINE_END_HOUR - finalNewStartHour);
+        finalNewDuration = Math.max(MIN_TASK_DURATION, finalNewDuration);
+
+    } else { // edge === 'end'
+        finalNewStartHour = initialStartHour; // Start hour is fixed
+
+        // Adjust duration: cannot go beyond timeline end from the fixed start hour
+        finalNewDuration = Math.min(finalNewDuration, TIMELINE_END_HOUR - finalNewStartHour);
+        // Ensure duration is at least min_duration (already done, but re-check after TIMELINE_END_HOUR constraint)
+        finalNewDuration = Math.max(MIN_TASK_DURATION, finalNewDuration);
+    }
+
+    // Safeguard: Final pass to ensure everything is within bounds and respects min_duration.
+    // This primarily handles cases where initial values + delta were already OOB or edge cases from constraints.
+    finalNewStartHour = Math.max(TIMELINE_START_HOUR, finalNewStartHour);
+    finalNewStartHour = Math.min(finalNewStartHour, TIMELINE_END_HOUR - MIN_TASK_DURATION); // Ensure start allows for min_duration
+    
+    finalNewDuration = Math.min(finalNewDuration, TIMELINE_END_HOUR - finalNewStartHour); // Duration cannot exceed remaining timeline
+    finalNewDuration = Math.max(MIN_TASK_DURATION, finalNewDuration);
+
+    // If constraints on duration forced it such that start + duration is still problematic, adjust start one last time.
+    // This can happen if TIMELINE_END_HOUR - MIN_TASK_DURATION was the cap for start, but duration was further reduced.
+    if (finalNewStartHour + finalNewDuration > TIMELINE_END_HOUR) {
+        finalNewStartHour = TIMELINE_END_HOUR - finalNewDuration;
+    }
+    // Final check on start hour after all adjustments.
+    finalNewStartHour = Math.max(TIMELINE_START_HOUR, finalNewStartHour);
+
+
+    setTasks(currentTasks =>
+        currentTasks.map(t =>
+            t.id === originalTaskAtResizeStart.id ? { ...t, startHour: finalNewStartHour, duration: finalNewDuration } : t
+        )
+    );
+    
+    setResizingTask(prev => {
+      if (!prev) return null;
+      return {
+        ...prev, 
+        task: { 
+          ...prev.task, 
+          startHour: finalNewStartHour,
+          duration: finalNewDuration,
+        }
+      };
+    });
+
+  }, [resizingTask, setTasks, PIXELS_PER_HOUR, MIN_TASK_DURATION, TIMELINE_START_HOUR, TIMELINE_END_HOUR, setResizingTask]);
 
   const handleMouseMoveDrag = useCallback((e: MouseEvent) => {
-    if (!draggingTask) return;
-    
+    if (!draggingTask || !draggingTask.taskElement || !draggingTask.task) return;
     e.preventDefault();
-    
-    // Use initialTask from state captured on drag start
-    const { index, startX, initialTask } = draggingTask;
 
-    const deltaX = e.clientX - startX;
-    const deltaMinutes = Math.round(deltaX / PIXELS_PER_MINUTE / 15) * 15;
-    const deltaHours = deltaMinutes / 60;
+    const { task: draggedTaskItem, taskElement, offsetX } = draggingTask;
+    // offsetX might be undefined if not set, default to 0
+    const currentOffsetX = offsetX || 0;
 
-    // Calculate new start hour with the delta
-    const tryStartHour = initialTask.startHour + deltaHours;
-    
-    // Determine which section this task belongs to
-    let sectionStartHour, sectionEndHour;
-    if (tryStartHour < TIMELINE_SPLIT_HOUR_1) {
-      sectionStartHour = TIMELINE_START_HOUR;
-      sectionEndHour = TIMELINE_SPLIT_HOUR_1;
-    } else if (tryStartHour < TIMELINE_SPLIT_HOUR_2) {
-      sectionStartHour = TIMELINE_SPLIT_HOUR_1;
-      sectionEndHour = TIMELINE_SPLIT_HOUR_2;
-    } else {
-      sectionStartHour = TIMELINE_SPLIT_HOUR_2;
-      sectionEndHour = TIMELINE_END_HOUR;
+    let targetDayOffset: number | null = null;
+    let targetPeriod: 'morning' | 'afternoon' | 'evening' | null = null;
+    let relativeXInTimelineSegment = 0;
+    let baseHourForCalc = TIMELINE_START_HOUR;
+
+    const elementsUnderMouse = document.elementsFromPoint(e.clientX, e.clientY);
+    let dropZone: HTMLElement | null = null;
+
+    for (const elem of elementsUnderMouse) {
+      const potentialDropZone = elem.closest('[data-testid^="timeline-area-"]') as HTMLElement;
+      if (potentialDropZone) {
+        dropZone = potentialDropZone;
+        break;
+      }
     }
-    
-    // Clamp to ensure task stays within timeline boundaries
-    const potentialNewStartHour = Math.max(
-      sectionStartHour, 
-      Math.min(sectionEndHour - initialTask.duration, tryStartHour)
-    );
 
-    // Check for conflicts before updating
-    if (!hasConflict(initialTask.id, initialTask.dayOffset, potentialNewStartHour, initialTask.duration)) {
-      setTasks(currentTasks => currentTasks.map((task, i) =>
-        i === index
-        ? { ...task, startHour: parseFloat(potentialNewStartHour.toFixed(3)) }
-        : task
-      ));
+    if (dropZone) {
+      const dayOffsetAttr = dropZone.getAttribute('data-day-offset');
+      const periodAttr = dropZone.getAttribute('data-section-period') as 'morning' | 'afternoon' | 'evening' | null;
+      
+      if (dayOffsetAttr && periodAttr) {
+        targetDayOffset = parseInt(dayOffsetAttr, 10);
+        targetPeriod = periodAttr;
+
+        const rect = dropZone.getBoundingClientRect();
+        // Adjust relativeX by the initial click offset within the task card
+        relativeXInTimelineSegment = (e.clientX - rect.left) - currentOffsetX;
+
+        switch (targetPeriod) {
+          case 'morning': baseHourForCalc = TIMELINE_START_HOUR; break;
+          case 'afternoon': baseHourForCalc = TIMELINE_SPLIT_HOUR_1; break;
+          case 'evening': baseHourForCalc = TIMELINE_SPLIT_HOUR_2; break;
+        }
+      }
     }
-  }, [draggingTask, hasConflict]);
 
-  const handleMouseUp = useCallback(() => {
+    if (targetDayOffset !== null && targetPeriod !== null) {
+      const hourInBlock = relativeXInTimelineSegment / PIXELS_PER_HOUR;
+      let newStartHour = baseHourForCalc + hourInBlock;
+
+      const taskDuration = draggedTaskItem.duration || MIN_TASK_DURATION;
+      newStartHour = Math.max(TIMELINE_START_HOUR, newStartHour);
+      newStartHour = Math.min(TIMELINE_END_HOUR - taskDuration, newStartHour);
+      
+      const snappedNewStartHour = Math.round(newStartHour * 4) / 4;
+
+      setDraggingTask(prev => {
+        if (!prev || !prev.task) return null;
+        return {
+          ...prev,
+          task: {
+            ...prev.task,
+            dayOffset: targetDayOffset as number,
+            startHour: snappedNewStartHour,
+          }
+        };
+      });
+    }
+  }, [
+    draggingTask, 
+    setDraggingTask, 
+    PIXELS_PER_HOUR, 
+    TIMELINE_START_HOUR, 
+    TIMELINE_SPLIT_HOUR_1, 
+    TIMELINE_SPLIT_HOUR_2, 
+    TIMELINE_END_HOUR,
+    MIN_TASK_DURATION,
+  ]);
+
+  useEffect(() => {
+    const onMouseMove = (event: MouseEvent) => {
+      if (resizingTask) handleMouseMoveResize(event);
+      if (draggingTask) handleMouseMoveDrag(event); 
+    };
     if (draggingTask || resizingTask) {
-      document.body.style.cursor = '';
-      setDraggingTask(null);
-      setResizingTask(null);
+      window.addEventListener('mousemove', onMouseMove);
     }
-  }, [draggingTask, resizingTask]);
-  // --- End Drag Functions ---
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+    };
+  }, [draggingTask, resizingTask, handleMouseMoveResize, handleMouseMoveDrag]);
 
-  // --- Formatting & Labels ---
-  // REMOVED local formatDuration function, as it's imported from @/utils/formatters
-  // const formatDuration = (duration: number): string => {
-  //   const totalMinutes = Math.round(duration * 60);
-  //   const hrs = Math.floor(totalMinutes / 60);
-  //   const mins = totalMinutes % 60;
-  //   if (hrs === 0) return `${mins}m`;
-  //   if (mins === 0) return `${hrs}h`;
-  //   return `${hrs}h${mins}m`;
-  // };
-  // --- End Formatting ---
-
-  // --- Rendering Logic ---
-  const renderTimeline = (period: 'morning' | 'afternoon' | 'evening') => {
+  const renderTimeline = useCallback((period: 'morning' | 'afternoon' | 'evening') => {
     let startHour, endHour;
     switch (period) {
-      case 'morning':
-        startHour = TIMELINE_START_HOUR;
-        endHour = TIMELINE_SPLIT_HOUR_1;
-        break;
-      case 'afternoon':
-        startHour = TIMELINE_SPLIT_HOUR_1;
-        endHour = TIMELINE_SPLIT_HOUR_2;
-        break;
-      case 'evening':
-        startHour = TIMELINE_SPLIT_HOUR_2;
-        endHour = TIMELINE_END_HOUR;
-        break;
+      case 'morning': startHour = TIMELINE_START_HOUR; endHour = TIMELINE_SPLIT_HOUR_1; break;
+      case 'afternoon': startHour = TIMELINE_SPLIT_HOUR_1; endHour = TIMELINE_SPLIT_HOUR_2; break;
+      case 'evening': startHour = TIMELINE_SPLIT_HOUR_2; endHour = TIMELINE_END_HOUR; break; 
     }
     const timelineHours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
-    
     return (
-      <div className="flex h-8 border-b border-neutral-700 dark:border-neutral-800 sticky top-0 bg-neutral-900 dark:bg-neutral-900 z-20"> {/* Changed background and dark border */}
+      <div className="flex h-8 border-b border-neutral-700 dark:border-neutral-800 sticky top-0 bg-neutral-900 dark:bg-neutral-900 z-20">
         {timelineHours.map((hour) => (
-          <div key={hour} className="flex-none text-xs text-neutral-300 pt-1 pl-0.5 border-l border-neutral-700 dark:border-neutral-700" style={{ width: `${PIXELS_PER_HOUR}px`, boxSizing: 'border-box' }}> {/* Changed text and border color */}
+          <div key={`timeline-hour-${hour}-${period}`} className="flex-none text-xs text-neutral-300 pt-1 pl-0.5 border-l border-neutral-700 dark:border-neutral-700" style={{ width: `${PIXELS_PER_HOUR}px`, boxSizing: 'border-box' }}>
             {formatTime(hour)}
           </div>
         ))}
-         {/* Add final hour line */}
-         <div className="flex-none border-l-2 border-neutral-700 dark:border-neutral-700" style={{ width: `2px`, boxSizing: 'border-box' }}></div> {/* Changed border color */}
+         <div key={`timeline-end-marker-${period}`} className="flex-none border-l-2 border-neutral-700 dark:border-neutral-700" style={{ width: `2px`, boxSizing: 'border-box' }}></div>
       </div>
     );
-  };
+  }, [PIXELS_PER_HOUR, TIMELINE_START_HOUR, TIMELINE_END_HOUR]); 
 
-  // Update colors array with dark variants
-  const colors = [
-    "bg-blue-100/90 dark:bg-blue-800/90", 
-    "bg-green-100/90 dark:bg-green-800/90", 
-    "bg-yellow-100/90 dark:bg-yellow-800/90", 
-    "bg-red-100/90 dark:bg-red-800/90",
-    "bg-purple-100/90 dark:bg-purple-800/90", 
-    "bg-pink-100/90 dark:bg-pink-800/90", 
-    "bg-indigo-100/90 dark:bg-indigo-800/90"
-  ];
-
-  const renderColumn = (dayOffset: number, period: 'morning' | 'afternoon' | 'evening') => {
-    // Determine the time range for this column
+  const renderColumn = useCallback((dayOffset: number, period: 'morning' | 'afternoon' | 'evening') => {
     let startHour, endHour;
     switch (period) {
-      case 'morning':
-        startHour = TIMELINE_START_HOUR;
-        endHour = TIMELINE_SPLIT_HOUR_1;
-        break;
-      case 'afternoon':
-        startHour = TIMELINE_SPLIT_HOUR_1;
-        endHour = TIMELINE_SPLIT_HOUR_2;
-        break;
-      case 'evening':
-        startHour = TIMELINE_SPLIT_HOUR_2;
-        endHour = TIMELINE_END_HOUR;
-        break;
+      case 'morning': startHour = TIMELINE_START_HOUR; endHour = TIMELINE_SPLIT_HOUR_1; break;
+      case 'afternoon': startHour = TIMELINE_SPLIT_HOUR_1; endHour = TIMELINE_SPLIT_HOUR_2; break;
+      case 'evening': startHour = TIMELINE_SPLIT_HOUR_2; endHour = TIMELINE_END_HOUR; break;
     }
-    
-    // Filter tasks for this time period
-    const tasksToRender = tasks.filter(t => 
-      t.dayOffset === dayOffset && 
-      (
-        // Task starts in this section
-        (t.startHour >= startHour && t.startHour < endHour) || 
-        // Task starts before but ends in this section
-        (t.startHour < startHour && t.startHour + t.duration > startHour) ||
-        // Task starts in this section but ends after
-        (t.startHour >= startHour && t.startHour < endHour && t.startHour + t.duration > endHour) ||
-        // Task spans across the entire section
-        (t.startHour < startHour && t.startHour + t.duration > endHour)
-      )
-    );
-    
-    const columnHeight = 100; // Increased from 90
-    const isTargetCopyDay = copyingTaskData && targetCopyDayOffset === dayOffset;
-
-    // Calculate current time marker position if it's today
+    const tasksToRender = tasks.filter(t => {
+      if (draggingTask && draggingTask.task.id === t.id) {
+        return draggingTask.task.dayOffset === dayOffset;
+      }
+      return t.dayOffset === dayOffset;
+    }).filter(t => {
+      const taskToConsider = (draggingTask && draggingTask.task.id === t.id) ? draggingTask.task : t;
+      return (
+        (taskToConsider.startHour >= startHour && taskToConsider.startHour < endHour) || 
+        (taskToConsider.startHour < startHour && taskToConsider.startHour + taskToConsider.duration > startHour) ||
+        (taskToConsider.startHour >= startHour && taskToConsider.startHour < endHour && taskToConsider.startHour + taskToConsider.duration > endHour) ||
+        (taskToConsider.startHour < startHour && taskToConsider.startHour + taskToConsider.duration > endHour)
+      );
+    });
+    const columnHeight = 100; 
+    const isTargetCopyDay = copyingTaskData && targetCopyDayOffset === dayOffset; 
+    const [currentTimeForMarker, setCurrentTimeForMarker] = useState(new Date());
+    useEffect(() => {
+        const timerId = setInterval(() => setCurrentTimeForMarker(new Date()), 60000);
+        return () => clearInterval(timerId);
+    }, []);
     let currentTimeMarker = null;
-    if (dayOffset === 0) {
-      const now = currentTime; // Use the state variable that updates every minute
+    if (dayOffset === 0) { 
+      const now = currentTimeForMarker;
       const currentHourFloat = now.getHours() + now.getMinutes() / 60;
-      
-      // Check if current time is within this column's period
       if (currentHourFloat >= startHour && currentHourFloat < endHour) {
         const markerLeft = (currentHourFloat - startHour) * PIXELS_PER_HOUR;
         currentTimeMarker = (
           <div 
-            className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-[120] pointer-events-none" // z-30 should be above grid lines (z-10) but below task cards (z-40+)
+            className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-[120] pointer-events-none"
             style={{ left: `${markerLeft}px` }}
             title={`Current time: ${formatTime(currentHourFloat)}`}
           />
@@ -1008,182 +651,189 @@ export default function DailyPlanner() {
       }
     }
 
+    // Handles single click for pasting
+    const handleTimelineSingleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!copyingTaskData) return; // Only proceed if in copy mode
+
+        const sectionClicked = e.currentTarget.getAttribute('data-section-period');
+        const dayOffsetClickedAttr = e.currentTarget.getAttribute('data-day-offset');
+        const dayOffsetClicked = dayOffsetClickedAttr ? parseInt(dayOffsetClickedAttr) : null;
+
+        if (!sectionClicked || dayOffsetClicked === null) return;
+
+        const rect = e.currentTarget.getBoundingClientRect();
+        const clickXrelative = e.clientX - rect.left;
+        let baseHourForCalc: number;
+
+        switch (sectionClicked) {
+            case 'morning': baseHourForCalc = TIMELINE_START_HOUR; break;
+            case 'afternoon': baseHourForCalc = TIMELINE_SPLIT_HOUR_1; break;
+            case 'evening': baseHourForCalc = TIMELINE_SPLIT_HOUR_2; break;
+            default: return;
+        }
+
+        const hourInBlock = (clickXrelative / PIXELS_PER_HOUR);
+        const calculatedNewStartHour = baseHourForCalc + hourInBlock;
+        const snappedNewStartHour = Math.round(calculatedNewStartHour * 4) / 4;
+
+        handleDropCopy(dayOffsetClicked, snappedNewStartHour);
+    };
+
+    // Handles double click for creating a new task
+    const handleTimelineDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (e.detail !== 2) return; // Ensure it's a double click
+        if (copyingTaskData) return; // Don't create task if in copy mode
+
+        const sectionClicked = e.currentTarget.getAttribute('data-section-period');
+        const dayOffsetClickedAttr = e.currentTarget.getAttribute('data-day-offset');
+        const dayOffsetClicked = dayOffsetClickedAttr ? parseInt(dayOffsetClickedAttr) : null;
+
+        if (!sectionClicked || dayOffsetClicked === null) return;
+
+        const rect = e.currentTarget.getBoundingClientRect();
+        const clickXrelative = e.clientX - rect.left;
+        let baseHourForCalc: number;
+
+        switch (sectionClicked) {
+            case 'morning': baseHourForCalc = TIMELINE_START_HOUR; break;
+            case 'afternoon': baseHourForCalc = TIMELINE_SPLIT_HOUR_1; break;
+            case 'evening': baseHourForCalc = TIMELINE_SPLIT_HOUR_2; break;
+            default: return;
+        }
+
+        const hourInBlock = (clickXrelative / PIXELS_PER_HOUR);
+        const calculatedNewStartHour = baseHourForCalc + hourInBlock;
+        const snappedNewStartHour = Math.round(calculatedNewStartHour * 4) / 4;
+
+        setNewTaskDayOffset(dayOffsetClicked);
+        setNewTaskHour(snappedNewStartHour);
+        setNewTaskName("New Task"); 
+        setNewTaskDuration(1); 
+        setNewTaskColor(TASK_COLORS[0]);
+        setShowTaskForm(true);
+    };
+
     return (
       <div className={`w-full transition-colors duration-200 relative ${isTargetCopyDay ? 'bg-blue-50/80 dark:bg-blue-900/20 ring-2 ring-blue-400 dark:ring-blue-500' : ''}`}>
         <div 
           className={`relative border border-gray-200 dark:border-neutral-800 rounded-md ${isTargetCopyDay ? 'ring-2 ring-inset ring-blue-500 bg-blue-50/50 dark:bg-blue-900/30' : ''}`}
           style={{ 
-            width: `${PIXELS_PER_HOUR * 7 + 6}px`,
-            minWidth: `${PIXELS_PER_HOUR * 7 + 6}px`,
-            maxWidth: '100%',
-            height: `${columnHeight}px`,
-            overflow: 'hidden'
+            width: `${PIXELS_PER_HOUR * (endHour - startHour)}px`, 
+            minWidth: `${PIXELS_PER_HOUR * (endHour - startHour)}px`,
+            maxWidth: '100%', height: `${columnHeight}px`, overflow: 'hidden'
           }}
-          data-section={period}
+          data-section-period={period} 
           data-day-offset={dayOffset}
-          onDoubleClick={handleTimelineClick}
+          onClick={handleTimelineSingleClick}
+          onDoubleClick={handleTimelineDoubleClick}
+          onMouseEnter={() => {
+            if (copyingTaskData && targetCopyDayOffset !== dayOffset) {
+              setTargetCopyDayOffset(dayOffset);
+            }
+          }}
         > 
-          {/* This renders the hour labels */}
           {renderTimeline(period)}
           <div
-            className={`relative h-full bg-neutral-900 ${isTargetCopyDay ? 'bg-blue-50/80 dark:bg-blue-900/30 cursor-copy' : 'cursor-pointer'}`} /* Changed bg-slate-800 to bg-neutral-900 */
-            onDoubleClick={handleTimelineClick}
-            data-section={period} // Keep these for event handling
+            className={`relative h-full bg-neutral-900 ${isTargetCopyDay ? 'bg-blue-50/80 dark:bg-blue-900/30 cursor-copy' : 'cursor-pointer'}`}
+            data-section-period={period} 
             data-day-offset={dayOffset}
-            data-testid="timeline"
+            data-testid={`timeline-area-${dayOffset}-${period}`}
+            onClick={handleTimelineSingleClick}
+            onDoubleClick={handleTimelineDoubleClick}
+            onMouseEnter={() => {
+              if (copyingTaskData && targetCopyDayOffset !== dayOffset) {
+                setTargetCopyDayOffset(dayOffset);
+              }
+            }}
           >
-            {/* Add a visual indicator for copy target */}
-            {isTargetCopyDay && (
-              <div className="absolute inset-0 pointer-events-none z-10">
-                <div className="absolute inset-0 bg-blue-100/30 dark:bg-blue-800/30 animate-pulse"></div>
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-blue-500 dark:text-blue-300 font-bold text-lg">
-                  Double-click to paste task
-                </div>
-              </div>
-            )}
-
-            {/* Current Time Marker - Renders if today and within this period */}
+            {isTargetCopyDay && ( <div className="absolute inset-0 pointer-events-none z-10"><div className="absolute inset-0 bg-blue-100/30 dark:bg-blue-800/30 animate-pulse"></div><div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-blue-500 dark:text-blue-300 font-bold text-lg">Click to paste task</div></div>)}
             {currentTimeMarker}
-            
-            {/* Grid lines for each hour - update z-index */}
             {Array.from({ length: endHour - startHour + 1 }, (_, i) => (
               <div 
-                key={`grid-${i}-${dayOffset}`} 
-                className={`border-l-2 border-neutral-700 dark:border-neutral-700 z-10`}  /* Updated grid line colors */
-                style={{ 
-                  left: `${i * PIXELS_PER_HOUR}px`, 
-                  height: '100%',
-                  top: 0,
-                  borderLeftStyle: 'dashed',
-                  position: 'absolute'
-                }} 
+                key={`grid-${i}-${dayOffset}-${period}`} 
+                className={`border-l-2 border-neutral-700 dark:border-neutral-700 z-10`}
+                style={{ left: `${i * PIXELS_PER_HOUR}px`, height: '100%', top: 0, borderLeftStyle: 'dashed', position: 'absolute'}} 
               />
             ))}
-            
-            {/* Tasks - update z-index to be higher than grid lines */}
             {tasksToRender.map((task) => {
-              const originalIndex = tasks.findIndex((t) => t.id === task.id);
-              if (originalIndex === -1) return null;
-
-              // Get a numeric index for the task based on its position in the array
-              const taskColorIndex = parseInt(task.id) || originalIndex;
-              const color = task.color || colors[taskColorIndex % colors.length];
+              const displayTask = (draggingTask && draggingTask.task.id === task.id) ? draggingTask.task : task;
+              const originalIndex = tasks.findIndex((t) => t.id === displayTask.id);
+              if (originalIndex === -1 && !(draggingTask && draggingTask.task.id === task.id)) return null; 
               
-              const isBeingDragged = draggingTask?.index === originalIndex;
-              const isBeingResized = resizingTask?.index === originalIndex;
-              const isBeingCopied = copyingTaskData?.id === task.id;
-              const isEditing = editingTaskId === task.id;
-
-              // Determine if task is in the past for today
+              const color = displayTask.color || TASK_COLORS[originalIndex % TASK_COLORS.length]; 
+              const isBeingDragged = draggingTask?.task.id === displayTask.id; 
+              const isBeingResized = resizingTask?.task.id === displayTask.id; 
+              const isBeingCopied = copyingTaskData?.id === displayTask.id;
+              const isCurrentlyEditing = editingTaskId === displayTask.id; 
+              
               let isPastTask = false;
-              if (task.dayOffset === 0) {
-                const now = currentTime;
+              if (displayTask.dayOffset === 0) {
+                const now = currentTimeForMarker;
                 const currentHourFloat = now.getHours() + now.getMinutes() / 60;
-                if ((task.startHour + task.duration) < currentHourFloat) {
-                  isPastTask = true;
-                }
+                if ((displayTask.startHour + displayTask.duration) < currentHourFloat) isPastTask = true;
               }
-
-              // Calculate position (relative to the padded task area)
-              // Adjust left position based on the startHour of this half
-              const renderLeft = (task.startHour - startHour) * PIXELS_PER_HOUR;
               
-              // Handle tasks that start before this section but continue into it
-              const adjustedStartHour = Math.max(task.startHour, startHour);
-              const adjustedEndHour = Math.min(task.startHour + task.duration, endHour);
-              const visibleDuration = adjustedEndHour - adjustedStartHour;
+              const taskStartRelativeToSection = Math.max(0, displayTask.startHour - startHour);
+              const taskEndRelativeToSection = Math.min(endHour - startHour, (displayTask.startHour + displayTask.duration) - startHour);
+              const renderLeft = taskStartRelativeToSection * PIXELS_PER_HOUR;
+              const renderWidth = Math.max(PIXELS_PER_MINUTE * 15, (taskEndRelativeToSection - taskStartRelativeToSection) * PIXELS_PER_HOUR);
               
-              // Calculate the visible width of the task in this section
-              const renderWidth = Math.max(PIXELS_PER_MINUTE * 15, visibleDuration * PIXELS_PER_HOUR);
+              if (renderWidth <= 0 && !isBeingDragged) return null;
               
-              // Adjust the left position for tasks that start before this section
-              const adjustedLeft = task.startHour < startHour ? 0 : renderLeft;
+              const zIndex = isCurrentlyEditing ? 110 : (isBeingDragged || isBeingResized ? 100 : 40);
+              const taskCardBaseClassName = `absolute select-none transition-transform duration-100 ease-out hover:shadow-md group ${isBeingDragged || isBeingResized ? 'opacity-95 shadow-lg scale-[1.01] ring-1 ring-white' : 'shadow-sm'} ${isBeingCopied ? 'ring-2 ring-offset-1 ring-blue-500' : ''} ${isPastTask ? 'filter saturate-50 brightness-75' : ''}`;
               
-              const renderTop = TASK_BASE_TOP; // Position from the top of the padded container
-              const renderHeight = TASK_HEIGHT;
-              const zIndex = isEditing ? 110 : (isBeingDragged || isBeingResized ? 100 : 40);
-              
-              // Only render tasks that are visible in this time section
-              if (renderWidth <= 0 || adjustedLeft < -renderWidth || adjustedLeft > (endHour - startHour) * PIXELS_PER_HOUR) {
-                return null;
-              }
-
-              const taskCardBaseClassName = `absolute select-none transition-transform duration-100 ease-out hover:shadow-md group ${color} ${isBeingDragged || isBeingResized ? 'opacity-95 shadow-lg scale-[1.01] ring-1 ring-white' : 'shadow-sm'} ${isBeingCopied ? 'ring-2 ring-offset-1 ring-blue-500' : ''} ${isPastTask ? 'filter saturate-50 brightness-75' : ''}`;
-
               const taskStyleObj: React.CSSProperties = {
-                left: `${adjustedLeft}px`,
-                width: `${renderWidth}px`,
-                top: `${renderTop}px`,
-                height: `${renderHeight}px`,
-                zIndex: zIndex,
+                left: `${renderLeft}px`, width: `${renderWidth}px`,
+                top: `${TASK_BASE_TOP}px`, height: `${TASK_HEIGHT}px`,
+                zIndex: zIndex, 
                 cursor: isBeingDragged ? 'grabbing' : (isBeingCopied ? 'default' : 'grab'),
               };
 
-              // Check if task continues from previous section or into next section
-              if (task.startHour < startHour) { // `startHour` is the start of the current rendering section
-                taskStyleObj.borderLeftStyle = 'dashed';
-              }
-              if ((task.startHour + task.duration) > endHour) { // `endHour` is the end of the current rendering section
-                taskStyleObj.borderRightStyle = 'dashed';
-              }
+              if (displayTask.startHour < startHour) taskStyleObj.borderLeftStyle = 'dashed';
+              if ((displayTask.startHour + displayTask.duration) > endHour) taskStyleObj.borderRightStyle = 'dashed';
 
               return (
                 <Card
-                  key={task.id}
+                  key={`task-card-${displayTask.id}-${period}-${dayOffset}`}
                   onMouseDown={(e) => {
-                    // Only start drag if click is on the draggable area
                     const target = e.target as HTMLElement;
-                    const isButton = target.tagName === 'BUTTON' || 
-                                   target.closest('button') ||
-                                   target.tagName === 'INPUT' ||
-                                   target.closest('.resize-handle');
-                    const isDraggableArea = target.classList.contains('draggable-area') ||
-                                           target.closest('.draggable-area');
+                    const isButton = target.tagName === 'BUTTON' || target.closest('button') || target.tagName === 'INPUT' || target.closest('.resize-handle');
+                    const isDraggableArea = target.classList.contains('draggable-area') || target.closest('.draggable-area');
                     
-                    // Prevent starting drag/resize when editing, copying, or clicking buttons
-                    if (!isEditing && !isBeingCopied && !isButton && isDraggableArea) {
-                      handleDragStart(originalIndex, e);
+                    const mainTaskIndex = tasks.findIndex(t => t.id === displayTask.id); 
+                    if (mainTaskIndex !== -1 && !isCurrentlyEditing && !isBeingCopied && !isButton && isDraggableArea) {
+                      handleDragStart(mainTaskIndex, e); 
                     }
                   }}
                   onClick={(e) => e.stopPropagation()}
-                  className={taskCardBaseClassName} // Use the preserved base className
-                  style={taskStyleObj} // Use the modified style object
+                  className={taskCardBaseClassName}
+                  style={taskStyleObj}
                 >
                   <CardContent className="p-0.5 px-1.5 text-xs h-full flex flex-col justify-between relative overflow-hidden draggable-area">
                     <TaskCard
-                      task={task}
-                      height={renderHeight}
-                      onStartEdit={handleStartEdit}
-                      onDelete={handleDeleteTask}
-                      onCopy={handleInitiateCopy}
-                      onColorChange={handleColorChange}
-                      editingTaskId={editingTaskId}
-                      setEditingTaskId={setEditingTaskId}
-                      onMoveToPool={copyTaskToPool}
-                      onPinTask={handlePinTask} // Pass the pin handler
+                      task={displayTask}
+                      height={TASK_HEIGHT} 
+                      onStartEdit={openEditModal} 
+                      onUpdateTask={handleUpdateTask} 
+                      onDelete={handleDeleteTask} 
+                      onCopy={startCopy} 
+                      onColorChange={handleTaskColorChange} 
+                      editingTaskId={editingTaskId} 
+                      setEditingTaskId={setEditingTaskId} 
+                      onMoveToPool={copyTaskToPool} 
+                      onPinTask={handlePinTask} 
                     />
-
-                    {/* Resizing Handles - Only show borders on hover/drag */}
-                    {!isEditing && (
+                    {!isCurrentlyEditing && (
                       <>
                         <div
                           className="resize-handle absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-blue-200/50 active:bg-blue-300/50 z-30"
-                          onMouseDown={(e) => {
-                            e.stopPropagation();
-                            handleResizeStart(originalIndex, 'left', e);
-                          }}
-                        >
-                          <div className={`absolute inset-y-0 right-0 w-0.5 ${isBeingDragged || isBeingResized ? 'bg-white' : 'bg-transparent group-hover:bg-gray-300/50'}`}></div>
-                        </div>
+                          onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(displayTask, 'start', e); }}
+                        ><div className={`absolute inset-y-0 right-0 w-0.5 ${isBeingDragged || isBeingResized ? 'bg-white' : 'bg-transparent group-hover:bg-gray-300/50'}`}></div></div>
                         <div
                           className="resize-handle absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-blue-200/50 active:bg-blue-300/50 z-30"
-                          onMouseDown={(e) => {
-                            e.stopPropagation();
-                            handleResizeStart(originalIndex, 'right', e);
-                          }}
-                        >
-                          <div className={`absolute inset-y-0 left-0 w-0.5 ${isBeingDragged || isBeingResized ? 'bg-white' : 'bg-transparent group-hover:bg-gray-300/50'}`}></div>
-                        </div>
+                          onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(displayTask, 'end', e); }}
+                        ><div className={`absolute inset-y-0 left-0 w-0.5 ${isBeingDragged || isBeingResized ? 'bg-white' : 'bg-transparent group-hover:bg-gray-300/50'}`}></div></div>
                       </>
                     )}
                   </CardContent>
@@ -1194,923 +844,372 @@ export default function DailyPlanner() {
         </div>
       </div>
     );
-  };
+  }, [tasks, PIXELS_PER_HOUR, PIXELS_PER_MINUTE, TIMELINE_START_HOUR, TIMELINE_END_HOUR, copyingTaskData, targetCopyDayOffset, draggingTask, resizingTask, editingTaskId, openEditModal, handleDeleteTask, startCopy, handleTaskColorChange, setEditingTaskId, copyTaskToPool, handlePinTask, TASK_COLORS, topDayOffset, setCopyingTaskData, handleDropCopy, setNewTaskName, setNewTaskDuration, setNewTaskColor, setNewTaskHour, setNewTaskDayOffset, setShowTaskForm]);
 
-  // Task creation
-  const addTask = useCallback(() => {
+  const handleSubmitNewTaskForm = () => {
     if (newTaskName.trim() === "") return;
-    
-    // Determine which day offset to use based on the section
-    const dayOffset = newTaskSection.includes('bottom_') 
-      ? bottomDayOffset 
-      : topDayOffset;
-    
-    // Remove the 'bottom_' prefix if it exists
-    const section = newTaskSection.replace('bottom_', '');
-    
-    // Set the start hour based on the section
-    let startHour = newTaskHour;
-    if (section === 'morning') startHour = Math.max(4, Math.min(startHour, 10));
-    else if (section === 'afternoon') startHour = Math.max(11, Math.min(startHour, 17));
-    else startHour = Math.max(18, Math.min(startHour, 24));
-    
-    const newTask: Task = {
-      id: String(taskIdCounter),
-      name: newTaskName,
-      startHour,
-      duration: newTaskDuration,
-      color: newTaskColor,
-      dayOffset,
-    };
-    
-    setTasks(prevTasks => [...prevTasks, newTask]);
-    setTaskIdCounter(prev => prev + 1);
-    
-    // Reset form
+    // newTaskDayOffset and newTaskHour are now set by the action that opened the form
+    handleAddTask(newTaskDayOffset, newTaskHour, { 
+        name: newTaskName,
+        duration: newTaskDuration,
+        color: newTaskColor,
+    });
+    setShowTaskForm(false); // Close form
+    // Reset fields to default for next generic open, but not strictly necessary if button re-initializes
     setNewTaskName("");
-    setNewTaskHour(9);
+    setNewTaskHour(9); 
     setNewTaskDuration(1);
-    setNewTaskColor("bg-sky-600 dark:bg-sky-700"); // Changed default task color to blue
-    setShowTaskForm(false);
-  }, [taskIdCounter, newTaskName, newTaskHour, newTaskDuration, newTaskColor, topDayOffset, bottomDayOffset, newTaskSection]);
+    setNewTaskColor(TASK_COLORS[0]);
+    setNewTaskDayOffset(topDayOffset); // Default to top day for next generic open
+  };
+  
+  const [cloneConflictStrategy, setCloneConflictStrategy] = useState<'skip' | 'replace' | 'adjust'>('skip');
+  const handleConfirmClone = () => {
+      cloneDayTasks(bottomDayOffset, topDayOffset); 
+      setShowCloneConfirmation(null);
+  };
+  
+  const [editModalName, setEditModalName] = useState("");
+  const [editModalStartHour, setEditModalStartHour] = useState(9);
+  const [editModalDuration, setEditModalDuration] = useState(1);
+  const [editModalColor, setEditModalColor] = useState(TASK_COLORS[0]);
+  const [editModalNotes, setEditModalNotes] = useState("");
 
-  // Fix the task resize handle
-  // Add useEffect to ensure all cursor and state resets happen properly
   useEffect(() => {
-    // Reset cursor when not dragging or resizing
-    if (!draggingTask && !resizingTask) {
-      document.body.style.cursor = '';
+    if (activeEditModalTask) {
+      setEditModalName(activeEditModalTask.name);
+      setEditModalStartHour(activeEditModalTask.startHour);
+      setEditModalDuration(activeEditModalTask.duration);
+      setEditModalColor(activeEditModalTask.color || TASK_COLORS[0]);
+      setEditModalNotes("");
     }
-    
-    // When a task is being resized, change the cursor
-    if (resizingTask) {
-      document.body.style.cursor = 'ew-resize';
-    }
-    
-    // When a task is being dragged, change the cursor
-    if (draggingTask) {
-      document.body.style.cursor = 'grabbing';
-    }
-  }, [draggingTask, resizingTask]);
+  }, [activeEditModalTask, TASK_COLORS]);
 
-  // Add useEffect to handle click outside the droppable areas when in copy mode
+  // Diagnostic useEffect to check for duplicate task IDs in the main tasks state
   useEffect(() => {
-    const handleClickOutsideDroppableArea = (event: MouseEvent) => {
-      // Only proceed if we're in copy mode
-      if (!copyingTaskData) return;
+    const idCounts = tasks.reduce((acc, task) => {
+      acc[task.id] = (acc[task.id] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    const duplicates = Object.entries(idCounts).filter(([id, count]) => count > 1);
+    if (duplicates.length > 0) {
+      console.warn('Duplicate task IDs found in tasks state in DailyPlanner.tsx:', Object.fromEntries(duplicates));
+      // console.log('Full tasks array with duplicates:', tasks); // Optionally log full array
       
-      // Check if click was inside a droppable timeline area
-      const isInsideTimeline = !!event.target && 
-        (document.querySelectorAll('[data-section]').length > 0) &&
-        Array.from(document.querySelectorAll('[data-section]')).some(el => 
-          el.contains(event.target as Node)
-        );
+      // Fix duplicate task IDs by keeping only the first occurrence of each ID
+      const uniqueTaskIds = new Set<string>();
+      const uniqueTasks = tasks.filter(task => {
+        if (uniqueTaskIds.has(task.id)) {
+          return false; // Skip this duplicate
+        }
+        uniqueTaskIds.add(task.id);
+        return true;
+      });
       
-      // If the click was outside any timeline section, cancel copy mode
-      if (!isInsideTimeline) {
-        cancelCopy();
+      // Only update if we actually removed any duplicates
+      if (uniqueTasks.length !== tasks.length) {
+        console.log('Fixing duplicate tasks - removing', tasks.length - uniqueTasks.length, 'duplicates');
+        setTasks(uniqueTasks);
       }
-    };
-    
-    // Add event listener if in copy mode
-    if (copyingTaskData) {
-      document.addEventListener('click', handleClickOutsideDroppableArea);
     }
-    
-    // Cleanup
-    return () => {
-      document.removeEventListener('click', handleClickOutsideDroppableArea);
-    };
-  }, [copyingTaskData, cancelCopy]);
-
-  // Add event listeners useEffect after all function definitions
-  useEffect(() => {
-    const handleWindowMouseMove = (e: MouseEvent) => {
-      if (resizingTask) handleMouseMoveResize(e);
-      if (draggingTask) handleMouseMoveDrag(e);
-    };
-    
-    const handleWindowMouseUp = () => {
-      handleMouseUp();
-    };
-    
-    const handleEsc = (event: KeyboardEvent) => { 
-      if (event.key === 'Escape') {
-        cancelCopy();
-        setEditingTaskId(null);
-        setDraggingTask(null);
-        setResizingTask(null);
-      }
-    };
-
-    // Add all event listeners
-    window.addEventListener("mousemove", handleWindowMouseMove);
-    window.addEventListener("mouseup", handleWindowMouseUp);
-    window.addEventListener('keydown', handleEsc);
-    
-    // Clean up all event listeners on unmount
-    return () => { 
-      window.removeEventListener("mousemove", handleWindowMouseMove);
-      window.removeEventListener("mouseup", handleWindowMouseUp);
-      window.removeEventListener('keydown', handleEsc);
-    };
-  }, [draggingTask, resizingTask, handleMouseMoveDrag, handleMouseMoveResize, handleMouseUp, cancelCopy]);
-
-  // Load tasks when component mounts
-  useEffect(() => {
-    console.log('🔄 Loading data from storage...');
-    const savedRegularTasksResult = TaskStorage.load();
-    const savedPoolTasksResult = TaskStorage.loadPoolTasks();
-    const savedPinnedTasksResult = TaskStorage.loadPinnedTasks();
-
-    let currentMaxId = 0;
-    const allLoadedTasksForIdCalc: Task[] = [];
-
-    // Populate tasks for ID calculation, ensuring they are not null
-    if (savedRegularTasksResult) {
-      allLoadedTasksForIdCalc.push(...savedRegularTasksResult);
-    }
-    if (savedPoolTasksResult) {
-      allLoadedTasksForIdCalc.push(...savedPoolTasksResult);
-    }
-    if (savedPinnedTasksResult) {
-        savedPinnedTasksResult.forEach(pt => {
-             allLoadedTasksForIdCalc.push(pt as Task);
-        });
-    }
-
-    allLoadedTasksForIdCalc.forEach(task => {
-      if (task && task.id) {
-        const numId = parseInt(task.id);
-        if (!isNaN(numId) && numId > currentMaxId) {
-          currentMaxId = numId;
-        }
-      }
-    });
-
-    // Always load from storage, or use empty arrays if storage is null/empty.
-    // Default tasks are no longer loaded.
-    console.log('✅ Attempting to load from storage or initializing empty...');
-    
-    const regularTasksToSet = savedRegularTasksResult || [];
-    const poolTasksToSet = savedPoolTasksResult || [];
-    const pinnedTasksToSet = savedPinnedTasksResult || [];
-    
-    setTasks(regularTasksToSet);
-    setPoolTasks(poolTasksToSet);
-    setPinnedTasks(pinnedTasksToSet);
-    
-    // Recalculate currentMaxId one last time based on the actual tasks being set
-    // This is important if any of the *_savedResults were null and are now empty arrays.
-    currentMaxId = 0; 
-    const finalTasksForIdCalc: Task[] = [...regularTasksToSet, ...poolTasksToSet];
-    pinnedTasksToSet.forEach(pt => finalTasksForIdCalc.push(pt as Task));
-
-    finalTasksForIdCalc.forEach(task => {
-      if (task && task.id) {
-        const numId = parseInt(task.id);
-        if (!isNaN(numId) && numId > currentMaxId) {
-          currentMaxId = numId;
-        }
-      }
-    });
-
-    // Initialize taskIdCounter. If no tasks loaded (currentMaxId is 0), start counter at 1.
-    setTaskIdCounter(currentMaxId > 0 ? currentMaxId + 1 : 1);
-    console.log(`📊 Tasks processed. Initial Task counter to: ${currentMaxId > 0 ? currentMaxId + 1 : 1}`);
-    
-  }, []);
-
-  // Save tasks whenever they change - using custom hook
-  useEffectSkipFirstRender(() => {
-    console.log('💾 Saving tasks:', tasks);
-    TaskStorage.save(tasks);
   }, [tasks]);
 
-  // Add a new effect for saving pool tasks - using custom hook
-  useEffectSkipFirstRender(() => {
-    console.log('💾 Saving pool tasks:', poolTasks);
-    TaskStorage.savePoolTasks(poolTasks);
-  }, [poolTasks]);
-
-  // Save pinned tasks whenever they change - using custom hook
-  useEffectSkipFirstRender(() => {
-    console.log('💾 Saving pinned tasks:', pinnedTasks);
-    TaskStorage.savePinnedTasks(pinnedTasks);
-  }, [pinnedTasks]);
-
-  // Add click outside functionality to close the Task Pool dropdown
-  const taskPoolRef = useRef<HTMLDivElement>(null);
-  // const taskPoolButtonRef = useRef<HTMLButtonElement>(null); // Button ref no longer needed
-
-  // useEffect for hiding task pool on outside click is commented out as it's a permanent panel
-  /*
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        taskPoolRef.current && 
-        !taskPoolRef.current.contains(event.target as Node) &&
-        taskPoolButtonRef.current && // This ref would be null now
-        !taskPoolButtonRef.current.contains(event.target as Node)
-      ) {
-        // Close the task pool dropdown
-        document.getElementById('task-pool')?.classList.add('hidden');
-      }
-    };
-
-    // Add event listener
-    document.addEventListener('mousedown', handleClickOutside);
-    
-    // Clean up
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []); // taskPoolButtonRef removed from dependencies
-  */
-
-  // 1. Add a new clone function after the existing task functions (around line 425)
-  // Clone bottom day tasks to top day
-  const [showCloneConfirmation, setShowCloneConfirmation] = useState<boolean>(false);
-  const [cloneConflictStrategy, setCloneConflictStrategy] = useState<'skip' | 'replace' | 'adjust'>('skip');
-
-  // 2. Update the cloneBottomToTop function to handle conflicts based on the selected strategy around line 425
-  // Clone bottom day tasks to top day
-  const cloneBottomToTop = useCallback(() => {
-    const bottomDayTasksToClone = tasks.filter(task => task.dayOffset === bottomDayOffset);
-    if (bottomDayTasksToClone.length === 0) {
-      alert("No tasks on the selected day to clone.");
-      setShowCloneConfirmation(false);
-      return;
-    }
-
-    let nextId = taskIdCounter;
-    const newClonedTasks: Task[] = [];
-    const tasksToReplaceDetails: Array<{startHour: number, duration: number}> = [];
-
-    for (const task of bottomDayTasksToClone) {
-      let taskMayBeAdded = true;
-      let currentStartHour = task.startHour;
-      // Store original timing for 'replace' strategy
-      tasksToReplaceDetails.push({startHour: task.startHour, duration: task.duration});
-
-
-      if (hasConflict("clone-check", topDayOffset, task.startHour, task.duration)) {
-        if (cloneConflictStrategy === 'skip') {
-          taskMayBeAdded = false;
-        } else if (cloneConflictStrategy === 'adjust') {
-          let adjusted = false;
-          let sectionStart, sectionEnd;
-          if (task.startHour < TIMELINE_SPLIT_HOUR_1) { sectionStart = TIMELINE_START_HOUR; sectionEnd = TIMELINE_SPLIT_HOUR_1; }
-          else if (task.startHour < TIMELINE_SPLIT_HOUR_2) { sectionStart = TIMELINE_SPLIT_HOUR_1; sectionEnd = TIMELINE_SPLIT_HOUR_2; }
-          else { sectionStart = TIMELINE_SPLIT_HOUR_2; sectionEnd = TIMELINE_END_HOUR; }
-
-          for (let h = sectionStart; h <= sectionEnd - task.duration; h += 0.25) { // Check in 15min increments
-            if (!hasConflict("clone-adjust-check", topDayOffset, h, task.duration)) {
-              currentStartHour = h;
-              adjusted = true;
-              break;
-            }
-          }
-          if (!adjusted) taskMayBeAdded = false; // Could not adjust
-        }
-        // For 'replace', conflict is handled by filtering tasks state later
-      }
-
-      if (taskMayBeAdded) {
-        newClonedTasks.push({
-          ...task,
-          id: String(nextId++),
-          dayOffset: topDayOffset,
-          startHour: currentStartHour,
-        });
-      }
-    }
-
-    if (newClonedTasks.length > 0) {
-      if (cloneConflictStrategy === 'replace') {
-        // Remove tasks from topDayOffset that would overlap with ANY of the tasks being cloned (based on their original times)
-        const tasksToKeep = tasks.filter(existingTask => {
-          if (existingTask.dayOffset !== topDayOffset) return true; // Keep tasks not on the target day
-
-          // Check if this existing task overlaps with any of the tasks intended to be cloned
-          const overlaps = bottomDayTasksToClone.some(cloningTask =>
-            (cloningTask.startHour < (existingTask.startHour + existingTask.duration)) &&
-            ((cloningTask.startHour + cloningTask.duration) > existingTask.startHour)
-          );
-          return !overlaps; // Keep if no overlap
-        });
-        setTasks([...tasksToKeep, ...newClonedTasks]);
-      } else {
-        setTasks(prev => [...prev, ...newClonedTasks]);
-      }
-      setTaskIdCounter(nextId); // Update global counter
-    }
-    setShowCloneConfirmation(false);
-  }, [tasks, bottomDayOffset, topDayOffset, taskIdCounter, cloneConflictStrategy, hasConflict, TIMELINE_SPLIT_HOUR_1, TIMELINE_SPLIT_HOUR_2, TIMELINE_START_HOUR, TIMELINE_END_HOUR]); // Added relevant constants to dependency array
-
-  // 3. Add a function to open the confirmation dialog
-  const openCloneConfirmation = () => {
-    // Get all tasks from bottom day
-    const bottomDayTasks = tasks.filter(task => task.dayOffset === bottomDayOffset);
-    
-    if (bottomDayTasks.length === 0) {
-      // No tasks to clone, show alert
-      alert("No tasks to clone from this day.");
-      return;
-    }
-    
-    setShowCloneConfirmation(true);
-  };
-
-  // 4. Update the Clone button to open the confirmation dialog instead of directly cloning around line 1390
-  {/* Add Clone Button */}
-  <button
-    type="button"
-    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium flex items-center gap-2 transition-colors duration-200"
-    onClick={openCloneConfirmation}
-    title="Clone tasks from tomorrow to today"
-  >
-    <span>↑</span>
-    <span>Clone to Today</span>
-  </button>
-
-  // 5. Add the confirmation dialog to the JSX, near the other modals around line 1600
-  {/* Clone Confirmation Modal */}
-  {showCloneConfirmation && (
-    <div className="fixed inset-0 bg-black/30 dark:bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-xl max-w-md w-full">
-        <h3 className="text-xl font-bold mb-2 dark:text-white">Clone Tasks</h3>
-        <p className="text-gray-600 dark:text-gray-300 mb-4">
-          This will copy all tasks from {getDateLabel(bottomDayOffset)} to {getDateLabel(topDayOffset)}.
-        </p>
-        
-        <div className="mb-4">
-          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            How should we handle time conflicts?
-          </h4>
-          <div className="space-y-2">
-            <label className="flex items-center">
-              <input
-                type="radio"
-                name="conflictStrategy"
-                value="skip"
-                checked={cloneConflictStrategy === 'skip'}
-                onChange={() => setCloneConflictStrategy('skip')}
-                className="mr-2"
-              />
-              <div>
-                <div className="text-gray-800 dark:text-white font-medium">Skip conflicting tasks</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Only clone tasks that don't overlap with existing ones</div>
-              </div>
-            </label>
-            
-            <label className="flex items-center">
-              <input
-                type="radio"
-                name="conflictStrategy"
-                value="replace"
-                checked={cloneConflictStrategy === 'replace'}
-                onChange={() => setCloneConflictStrategy('replace')}
-                className="mr-2"
-              />
-              <div>
-                <div className="text-gray-800 dark:text-white font-medium">Replace existing tasks</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Remove any existing tasks that conflict with new ones</div>
-              </div>
-            </label>
-            
-            <label className="flex items-center">
-              <input
-                type="radio"
-                name="conflictStrategy"
-                value="adjust"
-                checked={cloneConflictStrategy === 'adjust'}
-                onChange={() => setCloneConflictStrategy('adjust')}
-                className="mr-2"
-              />
-              <div>
-                <div className="text-gray-800 dark:text-white font-medium">Adjust timing</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Try to find alternate times for conflicting tasks</div>
-              </div>
-            </label>
-          </div>
-        </div>
-        
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
-            onClick={() => setShowCloneConfirmation(false)}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700"
-            onClick={cloneBottomToTop}
-          >
-            Clone Tasks
-          </button>
-        </div>
-      </div>
-    </div>
-  )}
-
-  // MODIFIED function to handle adding tasks directly to the pool
-  // This will be called by TaskPoolSidebar
-  const handleActualAddPoolTask = useCallback((taskData: { name: string; duration: number; color: string }) => {
-    const newTask: Task = {
-      id: String(taskIdCounter),
-      name: taskData.name,
-      duration: taskData.duration,
-      color: taskData.color,
-      startHour: 0, // Placeholder for pool tasks
-      dayOffset: 0, // Placeholder for pool tasks
-    };
-    setPoolTasks(prevTasks => [...prevTasks, newTask]);
-    setTaskIdCounter(prev => prev + 1);
-  }, [taskIdCounter]);
-
-  // Function to handle pinning a task
-  const handlePinTask = useCallback((taskToPin: Task) => {
-    setPinnedTasks(prevPinnedTasks => {
-      // Check if this specific task instance (by original ID) is already pinned
-      if (prevPinnedTasks.some(pt => pt.originalId === taskToPin.id)) {
-        // Optional: Unpin if already pinned, or just do nothing
-        // For now, let's unpin if clicked again
-        return prevPinnedTasks.filter(pt => pt.originalId !== taskToPin.id);
-      }
-
-      const today = new Date();
-      const targetDate = new Date(today.getFullYear(), today.getMonth(), today.getDate()); // Start with today at 00:00:00
-      targetDate.setDate(targetDate.getDate() + taskToPin.dayOffset);
-      
-      const dueHour = taskToPin.startHour + taskToPin.duration;
-      targetDate.setHours(Math.floor(dueHour), (dueHour % 1) * 60, 0, 0);
-
-      const newPinnedTask: PinnedTask = {
-        ...taskToPin,
-        dueDate: targetDate,
-        originalId: taskToPin.id,
-        pinnedId: `pinned-${String(taskIdCounter)}`, // Create a new unique ID for the pinned entry
-      };
-      setTaskIdCounter(prev => prev + 1); // Increment counter for the new pinnedId
-      return [...prevPinnedTasks, newPinnedTask];
+  const handleSaveFromMainModal = () => {
+    if (!activeEditModalTask) return;
+    saveTaskFromModal({ 
+        id: activeEditModalTask.id, 
+        name: editModalName,
+        startHour: editModalStartHour,
+        duration: editModalDuration,
+        color: editModalColor,
     });
-  }, [taskIdCounter]);
-
-  // Function to handle unpinning a task
-  const handleUnpinTask = useCallback((pinnedIdToUnpin: string) => {
-    setPinnedTasks(prevPinnedTasks => prevPinnedTasks.filter(pt => pt.pinnedId !== pinnedIdToUnpin));
-  }, []);
-
-  // Function to format time remaining for pinned tasks
-  const formatTimeRemaining = (dueDate: Date): string => {
-    const now = new Date();
-    let diffMs = dueDate.getTime() - now.getTime();
-
-    if (diffMs <= 0) return "Due!";
-
-    // Round to nearest 15 minutes (900,000 ms)
-    const fifteenMinMs = 15 * 60 * 1000;
-    diffMs = Math.round(diffMs / fifteenMinMs) * fifteenMinMs;
-
-    if (diffMs === 0) return "Due in <15m"; // If rounded to 0, but was positive
-
-    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    diffMs -= days * (1000 * 60 * 60 * 24);
-    const hours = Math.floor(diffMs / (1000 * 60 * 60));
-    diffMs -= hours * (1000 * 60 * 60);
-    const minutes = Math.floor(diffMs / (1000 * 60));
-
-    let parts = [];
-    if (days > 0) parts.push(`${days}d`);
-    if (hours > 0) parts.push(`${hours}h`);
-    if (minutes > 0) parts.push(`${minutes}m`);
-    
-    return parts.length > 0 ? `Due in: ${parts.join(' ')}` : "Due in <15m";
+    closeEditModal();
   };
 
-  // Update the return statement to remove ThemeProvider
+  const handleClearPool = () => {
+    if (setShowClearPoolConfirmation) setShowClearPoolConfirmation(true);
+  };
+
+  const confirmClearPool = () => {
+    if (setPoolTasks) setPoolTasks(() => []);
+    if (setShowClearPoolConfirmation) setShowClearPoolConfirmation(false);
+  };
+
+  const cancelClearPool = () => {
+    if (setShowClearPoolConfirmation) setShowClearPoolConfirmation(false);
+  };
+
+  const handleCloneDay = (dayOffset: number, period: 'morning' | 'afternoon' | 'evening') => {
+    if (setShowCloneConfirmation) setShowCloneConfirmation({ dayOffset, period });
+  };
+
+  const cancelCloneDay = () => {
+    if (setShowCloneConfirmation) setShowCloneConfirmation(null);
+  };
+
+  const handleDragStart = (taskIndex: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    cancelCopy(); 
+    setResizingTask(null); 
+    const taskToDrag = tasks[taskIndex]; 
+    if (taskToDrag) {
+      document.body.style.cursor = 'grabbing';
+      const taskElement = e.currentTarget as HTMLDivElement;
+      const rect = taskElement.getBoundingClientRect();
+      const offsetX = e.clientX - rect.left;
+
+      setDraggingTask({ 
+        taskIndex: taskIndex,
+        initialMouseY: e.clientY, // Retained for potential future vertical dragging logic
+        initialStartHour: taskToDrag.startHour,
+        initialDayOffset: taskToDrag.dayOffset,
+        taskElement: taskElement, 
+        task: { ...taskToDrag },
+        offsetX: offsetX, // Store the initial X offset within the task card
+      });
+    }
+  };
+
   return (
-    <div className="min-h-screen p-4 bg-transparent text-white transition-colors"> {/* Changed bg-neutral-900 to bg-transparent */}
+    <div className="min-h-screen p-4 bg-transparent text-white transition-colors">
       <div className="max-w-7xl mx-auto">
-        
-
-        {/* Main layout: Task Pool | Timeline Container | Pinned Tasks */}
         <div className="flex gap-4">
-          {/* Combined Sidebar: Task Pool & Pinned Tasks - MOVED TO THE RIGHT */}
-          <div 
-            className="w-52 bg-neutral-900 border border-neutral-800 rounded-lg shadow-xl flex flex-col sticky top-4 h-[calc(100vh-3rem-env(safe-area-inset-bottom))] overflow-hidden"
-          >
-            {/* Tab Switcher */}
+          <div className="w-52 bg-neutral-900 border border-neutral-800 rounded-lg shadow-xl flex flex-col sticky top-4 h-[calc(100vh-3rem-env(safe-area-inset-bottom))] overflow-hidden z-[120]">
             <div className="flex border-b border-neutral-700">
-              <button
-                type="button"
-                className={`flex-1 p-2 text-sm font-medium text-center transition-colors focus:outline-none ${
-                  activeSidebarTab === 'pool' 
-                    ? 'bg-neutral-700 text-white' 
-                    : 'text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100'
-                }`}
-                onClick={() => setActiveSidebarTab('pool')}
-              >
-                Task Pool
-              </button>
-              <button
-                type="button"
-                className={`flex-1 p-2 text-sm font-medium text-center transition-colors focus:outline-none ${
-                  activeSidebarTab === 'pinned' 
-                    ? 'bg-neutral-700 text-white' 
-                    : 'text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100'
-                }`}
-                onClick={() => setActiveSidebarTab('pinned')}
-              >
-                Pinned Tasks
-              </button>
+              <button type="button" className={`flex-1 p-2 text-sm font-medium text-center transition-colors focus:outline-none ${activeSidebarTab === 'pool' ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100'}`} onClick={() => setActiveSidebarTab('pool')}>Task Pool</button>
+              <button type="button" className={`flex-1 p-2 text-sm font-medium text-center transition-colors focus:outline-none ${activeSidebarTab === 'pinned' ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100'}`} onClick={() => setActiveSidebarTab('pinned')}>Pinned Tasks</button>
             </div>
-
-            {/* Conditional Content Area */}
             {activeSidebarTab === 'pool' && (
               <TaskPoolSidebar
-                poolTasks={poolTasks}
-                TASK_COLORS={TASK_COLORS}
-                activeTab={activeSidebarTab} // Or simply rely on parent's conditional rendering
-                topDayOffset={topDayOffset}
-                setPoolTasks={setPoolTasks}
-                setCopyingTaskData={setCopyingTaskData}
-                setTargetCopyDayOffset={setTargetCopyDayOffset}
-                onActualAddPoolTask={handleActualAddPoolTask}
-                formatDuration={formatDuration} // Ensure formatDuration is available in this scope (it is, via import)
+                poolTasks={poolTasks} 
+                TASK_COLORS={TASK_COLORS} 
+                activeTab={activeSidebarTab} 
+                topDayOffset={topDayOffset} 
+                setPoolTasks={setPoolTasks} 
+                setCopyingTaskData={setCopyingTaskData} 
+                setTargetCopyDayOffset={setTargetCopyDayOffset} 
+                onActualAddPoolTask={handleActualAddPoolTask} 
+                formatDuration={formatDuration} 
+                onDeletePoolTask={handleDeletePoolTask} 
+                onClearPool={handleClearPool} 
               />
             )}
-
             {activeSidebarTab === 'pinned' && (
               <PinnedTasksSidebar
-                pinnedTasks={pinnedTasks}
-                onUnpinTask={handleUnpinTask}
-                formatTimeRemaining={formatTimeRemaining}
+                pinnedTasks={pinnedTasks} 
+                onUnpinTask={handleUnpinTask} 
+                formatTimeRemaining={formatTimeRemaining} 
               />
             )}
           </div>
 
-          {/* Right Column: Timeline Container - MOVED TO THE LEFT */}
-          <div className="flex-1 space-y-4 min-w-0"> 
-            {/* Today's Schedule - top navigation will be moved inside here */}
-            <div className="bg-neutral-900 p-3 rounded-lg shadow-sm border border-neutral-800 overflow-auto"> {/* Changed overflow-hidden to overflow-auto */}
-              {/* MOVED Top Navigation Controls HERE */}
+          <div className="flex-1 space-y-4 min-w-0" ref={timelineScrollRef}>
+            <div className="bg-neutral-900 p-3 rounded-lg shadow-sm border border-neutral-800 overflow-auto">
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-neutral-800">
                 <div className="flex items-center space-x-2">
-                  <button
-                    type="button"
-                    className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors"
-                    onClick={() => setSafeTopDayOffset(topDayOffset - 1)}
-                    title="Previous day"
-                  >
-                    ◀
-                  </button>
-                  <span className="text-white font-medium w-[250px] text-center">
-                    {getDateLabel(topDayOffset)}
-                  </span>
-                  <button
-                    type="button"
-                    className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors"
-                    onClick={() => setSafeTopDayOffset(topDayOffset + 1)}
-                    title="Next day"
-                  >
-                    ▶
-                  </button>
+                  <button type="button" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors" onClick={() => setTopDayOffset(topDayOffset - 1)} title="Previous day">◀</button>
+                  <span className="text-white font-medium w-[250px] text-center">{getDateLabel(topDayOffset)}</span>
+                  <button type="button" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors" onClick={() => setTopDayOffset(topDayOffset + 1)} title="Next day">▶</button>
                 </div>
-                
                 <div className="flex items-center justify-end space-x-4">
-                  <button
-                    type="button"
-                    className="bg-neutral-700 hover:bg-neutral-600 text-white px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors" // This is the Add New Task button, should be solid neutral
-                    onClick={() => setShowTaskForm(true)}
+                  <button type="button" className="bg-neutral-700 hover:bg-neutral-600 text-white px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors" 
+                    onClick={() => {
+                      // Initialize form states for button click scenario
+                      setNewTaskName("New Task");
+                      setNewTaskHour(9); 
+                      setNewTaskDuration(1);
+                      setNewTaskColor(TASK_COLORS[0]);
+                      setNewTaskDayOffset(topDayOffset); // Default to top day
+                      setShowTaskForm(true);
+                    }}
                   >
-                    <span>+</span>
-                    <span>Add New Task</span>
+                    <span>+</span><span>Add New Task</span>
                   </button>
                 </div>
               </div>
-
-              {/* Original content of Today's Schedule panel starts here */}
-              <div className="flex flex-col gap-px"> {/* MODIFIED gap-1 to gap-px */}
-                <div
-                  className={`bg-neutral-800/70 rounded-lg p-1 relative transition-colors duration-200 ${copyingTaskData ? 'ring-2 ring-blue-400 dark:ring-blue-500 cursor-copy' : 'cursor-pointer'}`}  // Changed background, hover
-                  data-section="morning"
-                  data-day-offset={topDayOffset}
-                  onDoubleClick={handleTimelineClick}
-                  title="Double-click to add task"
-                >
-                  <div className="text-xs text-neutral-200 font-medium mb-1">Morning</div> {/* Changed text color */}
-                  {renderColumn(topDayOffset, 'morning')}
-                </div>
-                <div
-                  className={`bg-neutral-800/70 rounded-lg p-1 relative transition-colors duration-200 ${copyingTaskData ? 'ring-2 ring-blue-400 dark:ring-blue-500 cursor-copy' : 'cursor-pointer'}`}  // Changed background, hover
-                  data-section="afternoon"
-                  data-day-offset={topDayOffset}
-                  onDoubleClick={handleTimelineClick}
-                  title="Double-click to add task"
-                >
-                  <div className="text-xs text-neutral-200 font-medium mb-1">Afternoon</div> {/* Changed text color */}
-                  {renderColumn(topDayOffset, 'afternoon')}
-                </div>
-                <div
-                  className={`bg-neutral-800/70 rounded-lg p-1 relative transition-colors duration-200 ${copyingTaskData ? 'ring-2 ring-blue-400 dark:ring-blue-500 cursor-copy' : 'cursor-pointer'}`}  // Changed background, hover
-                  data-section="evening"
-                  data-day-offset={topDayOffset}
-                  onDoubleClick={handleTimelineClick}
-                  title="Double-click to add task"
-                >
-                  <div className="text-xs text-neutral-200 font-medium mb-1">Evening</div> {/* Changed text color */}
-                  {renderColumn(topDayOffset, 'evening')}
-                </div>
+              <div className="flex flex-col gap-px">
+                {renderColumn(topDayOffset, 'morning')}
+                {renderColumn(topDayOffset, 'afternoon')}
+                {renderColumn(topDayOffset, 'evening')}
               </div>
             </div>
 
-            {/* Tomorrow's Schedule */}
-            <div className="bg-neutral-900 p-3 rounded-lg shadow-sm border border-neutral-800 overflow-auto"> {/* Changed overflow-hidden to overflow-auto */}
-              <div className="flex items-center justify-between mb-4"> {/* This is the main flex container for the header line */}
-                {/* Date Navigation controls on the left */}
-                <div className="flex items-center space-x-2"> {/* Group for Prev Week, Prev Day, Date, Next Day, Next Week */}
-                  <button
-                    type="button"
-                    className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors"
-                    onClick={() => setSafeBottomDayOffset(bottomDayOffset - 7)}
-                    title="Previous week"
-                  >
-                    ◀◀
-                  </button>
-                  <button
-                    type="button"
-                    className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors"
-                    onClick={() => setSafeBottomDayOffset(bottomDayOffset - 1)}
-                    title="Previous day"
-                  >
-                    ◀
-                  </button>
-                  {/* Date display - styled like the top one */}
-                  <span className="text-white font-medium w-[250px] text-center"> {/* Changed from px-3 */}
-                    {getDateLabel(bottomDayOffset)}
-                  </span>
-                  <button
-                    type="button"
-                    className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors"
-                    onClick={() => setSafeBottomDayOffset(bottomDayOffset + 1)}
-                    title="Next day"
-                  >
-                    ▶
-                  </button>
-                  <button
-                    type="button"
-                    className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors"
-                    onClick={() => setSafeBottomDayOffset(bottomDayOffset + 7)}
-                    title="Next week"
-                  >
-                    ▶▶
-                  </button>
+            <div className="bg-neutral-900 p-3 rounded-lg shadow-sm border border-neutral-800 overflow-auto">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  <button type="button" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset - 7)} title="Previous week">◀◀</button>
+                  <button type="button" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset - 1)} title="Previous day">◀</button>
+                  <span className="text-white font-medium w-[250px] text-center">{getDateLabel(bottomDayOffset)}</span>
+                  <button type="button" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset + 1)} title="Next day">▶</button>
+                  <button type="button" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset + 7)} title="Next week">▶▶</button>
                 </div>
-
-                {/* Clone Button on the right */}
-                <button
-                  type="button"
-                  className="border border-neutral-600 text-neutral-300 hover:bg-neutral-700 hover:text-neutral-100 px-3 py-1.5 rounded-lg font-medium flex items-center gap-2 transition-colors duration-200" // THIS is the Clone to Today button, outline style
-                  onClick={openCloneConfirmation}
-                  title="Clone tasks from tomorrow to today"
-                >
-                  <span>↑</span>
-                  <span>Clone to Today</span>
+                <button type="button" className="border border-neutral-600 text-neutral-300 hover:bg-neutral-700 hover:text-neutral-100 px-3 py-1.5 rounded-lg font-medium flex items-center gap-2 transition-colors duration-200" onClick={() => setShowCloneConfirmation({ dayOffset: bottomDayOffset, period: 'morning' })} title="Clone tasks from this day to the top day">
+                  <span>↑</span><span>Clone to Top Day</span>
                 </button>
               </div>
-              
-              <div className="flex flex-col gap-px"> {/* MODIFIED gap-1 to gap-px */}
-                <div
-                  className={`bg-neutral-800/70 rounded-lg p-1 relative transition-colors duration-200 ${copyingTaskData ? 'ring-2 ring-blue-400 dark:ring-blue-500 cursor-copy' : 'cursor-pointer'}`} // Changed background, hover
-                  data-section="bottom_morning"
-                  data-day-offset={bottomDayOffset}
-                  onDoubleClick={handleTimelineClick}
-                  title="Double-click to add task"
-                >
-                  <div className="text-xs text-neutral-200 font-medium mb-1">Morning</div> {/* Changed text color */}
-                  {renderColumn(bottomDayOffset, 'morning')}
-                </div>
-                <div
-                  className={`bg-neutral-800/70 rounded-lg p-1 relative transition-colors duration-200 ${copyingTaskData ? 'ring-2 ring-blue-400 dark:ring-blue-500 cursor-copy' : 'cursor-pointer'}`} // Changed background, hover
-                  data-section="bottom_afternoon"
-                  data-day-offset={bottomDayOffset}
-                  onDoubleClick={handleTimelineClick}
-                  title="Double-click to add task"
-                >
-                  <div className="text-xs text-neutral-200 font-medium mb-1">Afternoon</div> {/* Changed text color */}
-                  {renderColumn(bottomDayOffset, 'afternoon')}
-                </div>
-                <div
-                  className={`bg-neutral-800/70 rounded-lg p-1 relative transition-colors duration-200 ${copyingTaskData ? 'ring-2 ring-blue-400 dark:ring-blue-500 cursor-copy' : 'cursor-pointer'}`} // Changed background, hover
-                  data-section="bottom_evening"
-                  data-day-offset={bottomDayOffset}
-                  onDoubleClick={handleTimelineClick}
-                  title="Double-click to add task"
-                >
-                  <div className="text-xs text-neutral-200 font-medium mb-1">Evening</div> {/* Changed text color */}
-                  {renderColumn(bottomDayOffset, 'evening')}
-                </div>
+              <div className="flex flex-col gap-px">
+                {renderColumn(bottomDayOffset, 'morning')}
+                {renderColumn(bottomDayOffset, 'afternoon')}
+                {renderColumn(bottomDayOffset, 'evening')}
               </div>
             </div>
 
-            {/* Task Form Modal */}
             {showTaskForm && (
-              <div className="fixed inset-0 bg-black/30 dark:bg-black/50 flex items-center justify-center z-50">
+              <div className="fixed inset-0 bg-black/30 dark:bg-black/50 flex items-center justify-center z-[1001]">
                 <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-xl max-w-md w-full">
                   <h3 className="text-xl font-bold mb-4 dark:text-white">Create New Task</h3>
-                  
                   <div className="space-y-4">
                     <div>
                       <label htmlFor="newTaskNameInput" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Task Name</label>
-                      <input
-                        id="newTaskNameInput"
-                        type="text"
-                        value={newTaskName}
-                        onChange={(e) => setNewTaskName(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
-                        placeholder="Enter task name"
-                      />
+                      <Input id="newTaskNameInput" type="text" value={newTaskName} onChange={(e) => setNewTaskName(e.target.value)} placeholder="Enter task name" />
                     </div>
-                    
                     <div>
-                      <label htmlFor="newTaskSectionSelect" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Time Period</label>
-                      <select
-                        id="newTaskSectionSelect"
-                        value={newTaskSection}
-                        onChange={(e) => setNewTaskSection(e.target.value)}
+                      <label htmlFor="newTaskSectionSelect" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Time Period / Day</label>
+                      {/* Temporarily simplify/disable direct state update from this select to avoid NaN issues until it's fully refactored */}
+                      <select 
+                        id="newTaskSectionSelect" 
+                        // value={newTaskDayOffset === topDayOffset ? 'top_morning' : ...} // Complex value binding
+                        // onChange={(e) => { ... complex logic to set newTaskDayOffset and potentially newTaskHour ... }}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
                       >
-                        <option value="morning">Today - Morning</option>
-                        <option value="afternoon">Today - Afternoon</option>
-                        <option value="evening">Today - Evening</option>
-                        <option value="bottom_morning">Tomorrow - Morning</option>
-                        <option value="bottom_afternoon">Tomorrow - Afternoon</option>
-                        <option value="bottom_evening">Tomorrow - Evening</option>
+                        <option value={`${topDayOffset}_morning`}>Top Day - Morning</option> {/* Example value, would need parsing */} 
+                        <option value={`${topDayOffset}_afternoon`}>Top Day - Afternoon</option>
+                        <option value={`${topDayOffset}_evening`}>Top Day - Evening</option>
+                        <option value={`${bottomDayOffset}_morning`}>Bottom Day - Morning</option>
+                        <option value={`${bottomDayOffset}_afternoon`}>Bottom Day - Afternoon</option>
+                        <option value={`${bottomDayOffset}_evening`}>Bottom Day - Evening</option>
                       </select>
                     </div>
-                    
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label htmlFor="newTaskHourSelect" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Hour</label>
-                        <select
-                          id="newTaskHourSelect"
-                          value={newTaskHour}
-                          onChange={(e) => setNewTaskHour(parseInt(e.target.value))}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
-                        >
-                          {Array.from({ length: 24 }, (_, i) => (
-                            <option key={i} value={i}>{i}:00</option>
-                          ))}
-                        </select>
+                        <label htmlFor="newTaskHourSelect" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Hour (approx)</label>
+                        <Input id="newTaskHourSelect" type="number" value={newTaskHour} onChange={(e) => setNewTaskHour(parseFloat(e.target.value))} step="0.25" min={TIMELINE_START_HOUR} max={TIMELINE_END_HOUR-MIN_TASK_DURATION} />
                       </div>
-                      
                       <div>
                         <label htmlFor="newTaskDurationSelect" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duration</label>
-                        <select
-                          id="newTaskDurationSelect"
-                          value={newTaskDuration}
-                          onChange={(e) => setNewTaskDuration(parseFloat(e.target.value))}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
-                        >
-                          <option value="0.25">15m</option>
-                          <option value="0.5">30m</option>
-                          <option value="0.75">45m</option>
-                          <option value="1">1h</option>
-                          <option value="1.5">1h30m</option>
-                          <option value="2">2h</option>
-                          <option value="3">3h</option>
-                          <option value="4">4h</option>
+                        <select id="newTaskDurationSelect" value={newTaskDuration} onChange={(e) => setNewTaskDuration(parseFloat(e.target.value))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md dark:bg-gray-800 dark:text-white">
+                          {[0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4].map(d => <option key={d} value={d}>{formatDuration(d)}</option>)}
                         </select>
                       </div>
                     </div>
-                    
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Color</label>
                       <div className="grid grid-cols-8 gap-1.5">
-                        {TASK_COLORS.map((color) => (
-                          <button
-                            key={color}
-                            type="button"
-                            className={`w-6 h-6 rounded-full ${color} ${newTaskColor === color ? 'ring-2 ring-offset-2 ring-blue-500 dark:ring-blue-400' : ''}`}
-                            onClick={() => setNewTaskColor(color)}
-                          />
-                        ))}
+                        {TASK_COLORS.map((color) => (<button key={`color-button-${color}-${newTaskName}`} type="button" className={`w-6 h-6 rounded-full ${color} ${newTaskColor === color ? 'ring-2 ring-offset-2 ring-blue-500 dark:ring-blue-400' : ''}`} onClick={() => setNewTaskColor(color)}/>))}
                       </div>
                     </div>
                   </div>
-                  
                   <div className="flex justify-end mt-6 gap-2">
-                    <button
-                      type="button"
-                      className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
-                      onClick={() => setShowTaskForm(false)}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
-                      onClick={addTask}
-                    >
-                      Create Task
-                    </button>
+                    <Button variant="outline" onClick={() => setShowTaskForm(false)}>Cancel</Button>
+                    <Button onClick={handleSubmitNewTaskForm}>Create Task</Button>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Clone Confirmation Modal */}
             {showCloneConfirmation && (
-              <div className="fixed inset-0 bg-black/30 dark:bg-black/50 flex items-center justify-center z-50">
+              <div className="fixed inset-0 bg-black/30 dark:bg-black/50 flex items-center justify-center z-[1001]">
                 <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-xl max-w-md w-full">
                   <h3 className="text-xl font-bold mb-2 dark:text-white">Clone Tasks</h3>
-                  <p className="text-gray-600 dark:text-gray-300 mb-4">
-                    This will copy all tasks from {getDateLabel(bottomDayOffset)} to {getDateLabel(topDayOffset)}.
-                  </p>
-                  
+                  <p className="text-gray-600 dark:text-gray-300 mb-4">Clone tasks from {getDateLabel(bottomDayOffset)} to {getDateLabel(topDayOffset)}.</p>
                   <div className="mb-4">
-                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      How should we handle time conflicts?
-                    </h4>
+                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Conflict Strategy:</h4>
                     <div className="space-y-2">
-                      <label className="flex items-center">
-                        <input
-                          type="radio"
-                          name="conflictStrategy"
-                          value="skip"
-                          checked={cloneConflictStrategy === 'skip'}
-                          onChange={() => setCloneConflictStrategy('skip')}
-                          className="mr-2"
-                        />
-                        <div>
-                          <div className="text-gray-800 dark:text-white font-medium">Skip conflicting tasks</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">Only clone tasks that don't overlap with existing ones</div>
-                        </div>
-                      </label>
-                      
-                      <label className="flex items-center">
-                        <input
-                          type="radio"
-                          name="conflictStrategy"
-                          value="replace"
-                          checked={cloneConflictStrategy === 'replace'}
-                          onChange={() => setCloneConflictStrategy('replace')}
-                          className="mr-2"
-                        />
-                        <div>
-                          <div className="text-gray-800 dark:text-white font-medium">Replace existing tasks</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">Remove any existing tasks that conflict with new ones</div>
-                        </div>
-                      </label>
-                      
-                      <label className="flex items-center">
-                        <input
-                          type="radio"
-                          name="conflictStrategy"
-                          value="adjust"
-                          checked={cloneConflictStrategy === 'adjust'}
-                          onChange={() => setCloneConflictStrategy('adjust')}
-                          className="mr-2"
-                        />
-                        <div>
-                          <div className="text-gray-800 dark:text-white font-medium">Adjust timing</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">Try to find alternate times for conflicting tasks</div>
-                        </div>
-                      </label>
+                        {['skip', 'replace', 'adjust'].map(strategy => (
+                            <label key={`conflict-strategy-${strategy}`} className="flex items-center">
+                                <input type="radio" name="conflictStrategy" value={strategy} checked={cloneConflictStrategy === strategy} onChange={() => setCloneConflictStrategy(strategy as any)} className="mr-2"/>
+                                <span className="capitalize text-gray-800 dark:text-white">{strategy}</span>
+                            </label>
+                        ))}
                     </div>
                   </div>
-                  
                   <div className="flex justify-end gap-2">
-                    <button
-                      type="button"
-                      className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
-                      onClick={() => setShowCloneConfirmation(false)}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700"
-                      onClick={cloneBottomToTop}
-                    >
-                      Clone Tasks
-                    </button>
+                    <Button variant="outline" onClick={() => setShowCloneConfirmation(null)}>Cancel</Button>
+                    <Button onClick={handleConfirmClone}>Clone Tasks</Button>
                   </div>
                 </div>
               </div>
             )}
+            
+            {activeEditModalTask && (
+                 <div className="fixed inset-0 bg-black/30 dark:bg-black/50 flex items-center justify-center z-[1002]">
+                    <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-xl max-w-lg w-full">
+                        <h3 className="text-xl font-bold mb-4 dark:text-white">Edit Task: {activeEditModalTask.name}</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label htmlFor="editModalTaskName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Task Name</label>
+                                <Input id="editModalTaskName" type="text" value={editModalName} onChange={(e) => setEditModalName(e.target.value)} />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label htmlFor="editModalStartHour" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Hour</label>
+                                    <Input id="editModalStartHour" type="number" value={editModalStartHour} onChange={(e) => setEditModalStartHour(parseFloat(e.target.value))} step="0.25" />
+                                </div>
+                                <div>
+                                    <label htmlFor="editModalDuration" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duration</label>
+                                    <select id="editModalDuration" value={editModalDuration} onChange={(e) => setEditModalDuration(parseFloat(e.target.value))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md dark:bg-gray-800 dark:text-white">
+                                         {[0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4].map(d => <option key={d} value={d}>{formatDuration(d)}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                             <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Color</label>
+                                <div className="grid grid-cols-8 gap-1.5">
+                                    {TASK_COLORS.map((color) => (<button key={`color-button-${color}-${editModalName}`} type="button" className={`w-6 h-6 rounded-full ${color} ${editModalColor === color ? 'ring-2 ring-offset-2 ring-blue-500 dark:ring-blue-400' : ''}`} onClick={() => setEditModalColor(color)}/>))}
+                                </div>
+                            </div>
+                            <div>
+                                <label htmlFor="editModalNotes" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
+                                <textarea id="editModalNotes" value={editModalNotes} onChange={(e) => setEditModalNotes(e.target.value)} rows={3} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md dark:bg-gray-800 dark:text-white" placeholder="Add notes..."></textarea>
+                            </div>
+                        </div>
+                        <div className="flex justify-end mt-6 gap-2">
+                            <Button variant="outline" onClick={closeEditModal}>Cancel</Button>
+                            <Button onClick={handleSaveFromMainModal}>Save Changes</Button>
+                        </div>
+                    </div>
+                 </div>
+            )}
 
-            {/* New Pool Task Form Modal - REMOVED, now inside TaskPoolSidebar */}
-
+            {colorPickerState && (
+              <div 
+                className="fixed z-[1005] bg-white dark:bg-gray-800 p-2 rounded-md shadow-lg border dark:border-gray-700"
+                style={{ top: colorPickerState.y, left: colorPickerState.x }}
+              >
+                <div className="grid grid-cols-6 gap-1">
+                  {TASK_COLORS.map(color => (
+                    <button
+                      key={`floating-color-button-${color}-${colorPickerState.taskId}`}
+                      type="button"
+                      className={`w-5 h-5 rounded ${color} hover:ring-1 ring-gray-400`}
+                      onClick={() => handleTaskColorChange(colorPickerState.taskId, color)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            {showClearPoolConfirmation && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1001]">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl">
+                        <h3 className="text-lg font-semibold mb-4 dark:text-white">Clear Task Pool?</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
+                            Are you sure you want to remove all tasks from the pool? This action cannot be undone.
+                        </p>
+                        <div className="flex justify-end gap-3">
+                            <Button variant="outline" onClick={() => setShowClearPoolConfirmation(false)}>
+                                Cancel
+                            </Button>
+                            <Button variant="outline" className="text-red-500 border-red-500 hover:bg-red-100 dark:hover:bg-red-800 hover:text-red-600" onClick={() => {
+                                confirmClearPool(); 
+                            }}>
+                                Clear Pool
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
           </div>
-
-          {/* Far Right Column: Pinned Tasks Section - THIS ENTIRE DIV BLOCK IS REMOVED */}
-          {/* <div className="w-52 bg-neutral-900 rounded-lg shadow-sm border border-neutral-800 flex flex-col sticky top-4 h-[calc(100vh-3rem-env(safe-area-inset-bottom))] overflow-hidden"> ... </div> */}
-
         </div>
       </div>
     </div>
