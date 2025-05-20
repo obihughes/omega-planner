@@ -14,20 +14,56 @@ This document provides an overview of the Daily Planner application's architectu
 
 ## 1. Project Structure
 
-*(A brief overview of the main directories like `components/`, `hooks/`, `app/`, `utils/`, `types/` and their purpose can be added here later.)*
+The application follows a modular structure with clear separation of concerns:
+
+- `/app` - Next.js application routes and pages
+- `/components` - React components organized by functionality
+  - `/components/planner` - Main planner-specific components
+  - `/components/ui` - Reusable UI components
+- `/hooks` - Custom React hooks for state management and logic
+- `/lib` - Core utilities and constants
+- `/types` - TypeScript type definitions
+- `/utils` - Utility functions for formatting, storage, etc.
+- `/docs` - Documentation files
+- `/tests` - Test files and test utilities
 
 ## 2. State Management
 
-The primary application state for the daily planner view is managed within the `useDailyPlanner` custom hook (`hooks/useDailyPlannerState.ts`). This hook centralizes:
-*   Core data: `tasks`, `poolTasks`, `pinnedTasks`, `taskIdCounter`.
-*   UI state: `activeSidebarTab`, `draggingTask`, `resizingTask`, `editingTaskId`, modal visibility states (`showClearPoolConfirmation`, `showCloneConfirmation`, `activeEditModalTask`), `copyingTaskData`, `targetCopyDayOffset`, view offsets (`topDayOffset`, `bottomDayOffset`), etc.
-*   Core logic and action handlers: Functions for adding, deleting, updating, pinning, pooling, copying, and cloning tasks, as well as conflict detection and date formatting.
+The application uses custom hooks for state management:
+
+- **useDailyPlanner** (`hooks/useDailyPlannerState.ts`): 
+  Main state management hook that centralizes:
+  * Core data: `tasks`, `poolTasks`, `pinnedTasks`, `taskIdCounter`
+  * UI state: `activeSidebarTab`, `draggingTask`, `resizingTask`, etc.
+  * Core task manipulation functions
+
+- **useModalManager** (`hooks/useModalManager.ts`):
+  Centralized management for all modals and popups:
+  * Edit task modals
+  * Color pickers
+  * Confirmation dialogs
+  * Modal-specific action handlers
 
 Data is loaded from and saved to `localStorage` via utility functions in `utils/storage.ts`.
 
 ## 3. Key Components
 
-*(Details about major components like `DailyPlanner.tsx`, `TaskCard.tsx`, `TaskPoolSidebar.tsx`, `PinnedTasksSidebar.tsx` can be added here, describing their responsibilities and primary props.)*
+The application is built with these main components:
+
+- **DailyPlanner** (`components/planner/DailyPlanner.tsx`): 
+  The main component orchestrating the entire planner interface, including the timeline view.
+
+- **TaskCard** (`components/planner/TaskCard.tsx`): 
+  Reusable component for rendering individual task cards in the timeline. Handles:
+  * Task appearance and styling
+  * Drag and resize interactions
+  * Context menus and inline editing
+
+- **TaskPoolSidebar** (`components/planner/TaskPoolSidebar.tsx`):
+  Sidebar component for managing task templates/pool tasks.
+
+- **PinnedTasksSidebar** (`components/planner/PinnedTasksSidebar.tsx`):
+  Sidebar component for displaying and managing pinned tasks.
 
 ## 4. UI Layering (Z-Index)
 
@@ -61,12 +97,20 @@ The application uses `z-index` extensively to manage the stacking of UI elements
 
 ## 5. Styling
 
-*(Information about the styling approach, e.g., Tailwind CSS, global styles, component-specific styles, dark mode implementation details.)*
+The application uses Tailwind CSS for styling:
+- Consistent color palette defined in tailwind.config.js
+- Responsive design for different screen sizes
+- Dark mode support with `dark:` variants
+- Custom utility classes for specialized UI elements
 
 ## 6. Utility Functions
 
+The application includes various utility functions:
+
 *   `utils/formatters.ts`: Contains functions like `formatTime`, `formatDuration`.
 *   `utils/storage.ts`: Handles all interactions with `localStorage` for saving and loading application data (tasks, settings, etc.).
+*   `lib/constants.ts`: Contains application-wide constants like colors, timeline settings, etc.
+*   `lib/utils.ts`: General utility functions used throughout the application.
 
 ## 7. Data Storage
 

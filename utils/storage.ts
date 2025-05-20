@@ -45,11 +45,14 @@ const TaskStorage = {
       tasks = Array.from(uniqueTasksMap.values());
       console.log('TaskStorage.save: Filtered out duplicates. Saving unique tasks:', tasks.length);
     }
-
+    
     try {
       const data = {
         version: STORAGE_VERSION,
-        tasks,
+        tasks: tasks.map(task => ({
+          ...task,
+          baseDate: task.baseDate || new Date().toISOString() // Ensure baseDate exists
+        })),
         lastUpdated: new Date().toISOString()
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -71,7 +74,11 @@ const TaskStorage = {
         console.error('Loaded data is invalid (tasks array missing or not an array): ', data);
         return [];
       }
-      return data.tasks;
+      // Ensure all tasks have a baseDate
+      return data.tasks.map((task: any) => ({
+        ...task,
+        baseDate: task.baseDate || new Date().toISOString() // Add baseDate if missing
+      }));
     } catch (err) {
       console.error('Failed to parse tasks from localStorage. Data was: ', savedData, err);
       return [];
