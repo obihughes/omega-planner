@@ -179,7 +179,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 <button
                   type="button"
                   className="h-3.5 w-3.5 p-0 text-gray-600 dark:text-gray-300 hover:bg-gray-100/30 dark:hover:bg-gray-600/30 rounded-sm flex items-center justify-center"
-                  onClick={handleEditClick} 
+                  onClick={handleEditClick}
                   title="Edit task (inline)"
                 >
                   <Edit3 className="w-2.5 h-2.5" />
@@ -210,7 +210,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 <button
                   type="button"
                   className="h-3 w-3 p-0 text-gray-600 dark:text-gray-300 hover:bg-gray-100/30 dark:hover:bg-gray-600/30 rounded-sm flex items-center justify-center"
-                  onClick={handleEditClick} 
+                  onClick={handleEditClick}
                   title="Edit task (inline)"
                 >
                   <span className="text-[7px]">✎</span>
@@ -311,15 +311,15 @@ const TaskCard: React.FC<TaskCardProps> = ({
                  <button
                     type="button"
                     className="w-full mt-1 h-8 px-3 bg-green-500 text-white rounded hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 text-sm font-medium transition-colors"
-                    onClick={() => {
+                  onClick={() => {
                         onStartEdit(task); 
-                        setIsEditing(false);
-                    }}
-                  >
+                      setIsEditing(false);
+                  }}
+                >
                     Open Full Edit Modal
                 </button>
+              </div>
             </div>
-          </div>
         </div>,
         document.body
       )}
@@ -725,14 +725,14 @@ export default function DailyPlanner() {
       );
     });
     const columnHeight = TIMELINE_COLUMN_HEIGHT; 
-    const isTargetCopyDay = copyingTaskData && targetCopyDayOffset === dayOffset; 
+    const isTargetCopyDay = copyingTaskData && targetCopyDayOffset === dayOffset;
     const [currentTimeForMarker, setCurrentTimeForMarker] = useState(new Date());
     useEffect(() => {
         const timerId = setInterval(() => setCurrentTimeForMarker(new Date()), 60000);
         return () => clearInterval(timerId);
     }, []);
     let currentTimeMarker = null;
-    if (dayOffset === 0) { 
+    if (dayOffset === 0) {
       const now = currentTimeForMarker;
       const currentHourFloat = now.getHours() + now.getMinutes() / 60;
       if (currentHourFloat >= startHour && currentHourFloat < endHour) {
@@ -915,7 +915,7 @@ export default function DailyPlanner() {
               
               const zIndex = isCurrentlyEditing ? 110 : (isBeingDragged || isBeingResized ? 100 : 40);
               const taskCardBaseClassName = `absolute select-none transition-transform duration-100 ease-out hover:shadow-md group ${isBeingDragged || isBeingResized ? 'opacity-95 shadow-lg scale-[1.01] ring-1 ring-white' : 'shadow-sm'} ${isBeingCopied ? 'ring-2 ring-offset-1 ring-blue-500' : ''} ${isPastTask ? 'filter saturate-50 brightness-75' : ''}`;
-              
+
               const taskStyleObj: React.CSSProperties = {
                 left: `${renderLeft}px`, width: `${renderWidth}px`,
                 top: `${TASK_BASE_TOP}px`, height: `${TASK_HEIGHT}px`,
@@ -944,22 +944,22 @@ export default function DailyPlanner() {
                   onClick={(e) => e.stopPropagation()}
                   onDoubleClick={(e) => e.stopPropagation()}
                 >
-                  <TaskCard
+                    <TaskCard
                     task={displayTask}
                     height={TASK_HEIGHT}
                     onStartEdit={openEditModal} 
                     onUpdateTask={handleUpdateTask} 
-                    onDelete={handleDeleteTask}
+                      onDelete={handleDeleteTask}
                     onCopy={startCopy} 
                     onColorChange={handleTaskColorChange} 
-                    editingTaskId={editingTaskId}
-                    setEditingTaskId={setEditingTaskId}
-                    onMoveToPool={copyTaskToPool}
+                      editingTaskId={editingTaskId}
+                      setEditingTaskId={setEditingTaskId}
+                      onMoveToPool={copyTaskToPool}
                     onPinTask={handlePinTask} 
-                  />
+                    />
                   {!isCurrentlyEditing && (
-                    <>
-                      <div
+                      <>
+                        <div
                         className={`resize-handle absolute left-0 top-0 bottom-0 w-3 ${isBeingResized ? 'cursor-inherit' : 'cursor-ew-resize'} hover:bg-blue-200/70 active:bg-blue-300/70 z-30`}
                         onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(displayTask, 'start', e); }}
                       ><div className={`absolute inset-y-0 right-0 w-0.5 ${isBeingDragged || isBeingResized ? 'bg-white' : 'bg-transparent group-hover:bg-gray-300/50'}`}></div></div>
@@ -967,8 +967,8 @@ export default function DailyPlanner() {
                         className={`resize-handle absolute right-0 top-0 bottom-0 w-3 ${isBeingResized ? 'cursor-inherit' : 'cursor-ew-resize'} hover:bg-blue-200/70 active:bg-blue-300/70 z-30`}
                         onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(displayTask, 'end', e); }}
                       ><div className={`absolute inset-y-0 left-0 w-0.5 ${isBeingDragged || isBeingResized ? 'bg-white' : 'bg-transparent group-hover:bg-gray-300/50'}`}></div></div>
-                    </>
-                  )}
+                      </>
+                    )}
                 </div>
               );
             })}
@@ -982,14 +982,14 @@ export default function DailyPlanner() {
     if (newTaskName.trim() === "") return;
     // newTaskDayOffset and newTaskHour are now set by the action that opened the form
     handleAddTask(newTaskDayOffset, newTaskHour, { 
-        name: newTaskName,
-        duration: newTaskDuration,
-        color: newTaskColor,
+      name: newTaskName,
+      duration: newTaskDuration,
+      color: newTaskColor,
     });
     setShowTaskForm(false); // Close form
     // Reset fields to default for next generic open, but not strictly necessary if button re-initializes
     setNewTaskName("");
-    setNewTaskHour(9); 
+    setNewTaskHour(9);
     setNewTaskDuration(1);
     setNewTaskColor(TASK_COLORS[0]);
     setNewTaskDayOffset(topDayOffset); // Default to top day for next generic open
@@ -1126,7 +1126,7 @@ export default function DailyPlanner() {
                   const dropStartHour = taskFromPool.startHour !== 0 ? taskFromPool.startHour : 9; // Default or actual start hour
                   if (handleDropCopy) handleDropCopy(dayOffsetForDrop, dropStartHour);
                 }} 
-                onDeleteTaskFromPool={handleDeletePoolTask} 
+                onDeletePoolTask={handleDeletePoolTask} 
                 onClearPool={clearPool} 
                 openEditModal={openEditModal} 
               />
@@ -1167,9 +1167,9 @@ export default function DailyPlanner() {
                 </div>
               </div>
               <div className="flex flex-col gap-px">
-                {renderColumn(topDayOffset, 'morning')}
-                {renderColumn(topDayOffset, 'afternoon')}
-                {renderColumn(topDayOffset, 'evening')}
+                  {renderColumn(topDayOffset, 'morning')}
+                  {renderColumn(topDayOffset, 'afternoon')}
+                  {renderColumn(topDayOffset, 'evening')}
               </div>
             </div>
 
@@ -1187,9 +1187,9 @@ export default function DailyPlanner() {
                 </button>
               </div>
               <div className="flex flex-col gap-px">
-                {renderColumn(bottomDayOffset, 'morning')}
-                {renderColumn(bottomDayOffset, 'afternoon')}
-                {renderColumn(bottomDayOffset, 'evening')}
+                  {renderColumn(bottomDayOffset, 'morning')}
+                  {renderColumn(bottomDayOffset, 'afternoon')}
+                  {renderColumn(bottomDayOffset, 'evening')}
               </div>
             </div>
 
@@ -1205,8 +1205,8 @@ export default function DailyPlanner() {
                     <div>
                       <label htmlFor="newTaskSectionSelect" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Time Period / Day</label>
                       {/* Temporarily simplify/disable direct state update from this select to avoid NaN issues until it's fully refactored */}
-                      <select 
-                        id="newTaskSectionSelect" 
+                      <select
+                        id="newTaskSectionSelect"
                         // value={newTaskDayOffset === topDayOffset ? 'top_morning' : ...} // Complex value binding
                         // onChange={(e) => { ... complex logic to set newTaskDayOffset and potentially newTaskHour ... }}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
@@ -1258,10 +1258,10 @@ export default function DailyPlanner() {
                             <label key={`conflict-strategy-${strategy}`} className="flex items-center">
                                 <input type="radio" name="conflictStrategy" value={strategy} checked={cloneConflictStrategy === strategy} onChange={() => setCloneConflictStrategy(strategy as any)} className="mr-2"/>
                                 <span className="capitalize text-gray-800 dark:text-white">{strategy}</span>
-                            </label>
+                      </label>
                         ))}
-                    </div>
-                  </div>
+                        </div>
+                        </div>
                   <div className="flex justify-end gap-2">
                     <Button variant="outline" onClick={() => setShowCloneConfirmation(null)}>Cancel</Button>
                     <Button onClick={handleConfirmClone}>Clone Tasks</Button>
@@ -1269,18 +1269,18 @@ export default function DailyPlanner() {
                 </div>
               </div>
             )}
-            
+
             {activeEditModalTask && (
                  <div className="fixed inset-0 bg-black/30 dark:bg-black/50 flex items-center justify-center z-[1002]">
                     <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-xl max-w-lg w-full">
                         <h3 className="text-xl font-bold mb-4 dark:text-white">Edit Task: {activeEditModalTask.name}</h3>
-                        <div className="space-y-4">
-                            <div>
+                  <div className="space-y-4">
+                    <div>
                                 <label htmlFor="editModalTaskName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Task Name</label>
                                 <Input id="editModalTaskName" type="text" value={editModalName} onChange={(e) => setEditModalName(e.target.value)} />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
                                     <label htmlFor="editModalStartHour" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Hour</label>
                                     <Input id="editModalStartHour" type="number" value={editModalStartHour} onChange={(e) => setEditModalStartHour(parseFloat(e.target.value))} step="0.25" />
                                 </div>
@@ -1288,21 +1288,21 @@ export default function DailyPlanner() {
                                     <label htmlFor="editModalDuration" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duration</label>
                                     <select id="editModalDuration" value={editModalDuration} onChange={(e) => setEditModalDuration(parseFloat(e.target.value))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md dark:bg-gray-800 dark:text-white">
                                          {[0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4].map(d => <option key={d} value={d}>{formatDuration(d)}</option>)}
-                                    </select>
-                                </div>
-                            </div>
-                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Color</label>
-                                <div className="grid grid-cols-8 gap-1.5">
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Color</label>
+                      <div className="grid grid-cols-8 gap-1.5">
                                     {TASK_COLORS.map((color) => (<button key={`color-button-${color}-${editModalName}`} type="button" className={`w-6 h-6 rounded-full ${color} ${editModalColor === color ? 'ring-2 ring-offset-2 ring-blue-500 dark:ring-blue-400' : ''}`} onClick={() => setEditModalColor(color)}/>))}
-                                </div>
-                            </div>
+                      </div>
+                    </div>
                             <div>
                                 <label htmlFor="editModalNotes" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
                                 <textarea id="editModalNotes" value={editModalNotes} onChange={(e) => setEditModalNotes(e.target.value)} rows={3} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md dark:bg-gray-800 dark:text-white" placeholder="Add notes..."></textarea>
-                            </div>
+                  </div>
                         </div>
-                        <div className="flex justify-end mt-6 gap-2">
+                  <div className="flex justify-end mt-6 gap-2">
                             <Button variant="outline" onClick={closeEditModal}>Cancel</Button>
                             <Button onClick={handleSaveFromMainModal}>Save Changes</Button>
                         </div>
@@ -1343,9 +1343,9 @@ export default function DailyPlanner() {
                             }}>
                                 Clear Pool
                             </Button>
-                        </div>
-                    </div>
+                  </div>
                 </div>
+              </div>
             )}
           </div>
         </div>
