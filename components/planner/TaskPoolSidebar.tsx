@@ -1,32 +1,30 @@
 import React, { useState, useCallback } from 'react';
 import { Task } from '../../types/planner';
-import { Input } from "@/components/ui";
-import { CopyPlus, Trash2, Edit3 } from 'lucide-react';
+import { Input, Button } from "@/components/ui";
+import { CopyPlus, Trash2, Edit3, Pin, PinOff, GripVertical } from 'lucide-react';
+import { formatDuration } from '@/utils/formatters';
 
 // Imported from DailyPlanner's constants, or pass as prop
 // For now, let's assume TASK_COLORS is passed as a prop.
 // const TASK_COLORS = [ ... ]; 
 
-interface TaskPoolSidebarProps {
+export interface TaskPoolSidebarProps {
   poolTasks: Task[];
   TASK_COLORS: string[]; // For the add form color picker
   activeTab: 'pool' | 'pinned'; // To control rendering, though parent will likely do this
   topDayOffset: number;
-  
-  // Functions from parent to interact with parent state
-  setPoolTasks: (setter: (prevTasks: Task[]) => Task[]) => void;
-  setCopyingTaskData: (task: Task | null) => void;
-  setTargetCopyDayOffset: (offset: number | null) => void;
+  isOpen: boolean;
+  setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   
   // Function to handle the actual adding of task to parent's state
   // Parent will assign ID and use its taskIdCounter
   onActualAddPoolTask: (taskData: { name: string; duration: number; color: string }) => void;
   
   // Utility functions
-  formatDuration: (duration: number) => string;
   onDeletePoolTask?: (taskId: string) => void;
   onClearPool?: () => void;
   openEditModal: (task: Task, isFromPool?: boolean) => void;
+  onAddTaskToTimeline: (task: Task, dayOffset: number) => void;
 }
 
 export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
@@ -34,19 +32,22 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
   TASK_COLORS,
   activeTab, // This component might not need to know the activeTab if parent only renders it when it's the pool tab
   topDayOffset,
-  setPoolTasks,
-  setCopyingTaskData,
-  setTargetCopyDayOffset,
+  isOpen,
+  setIsOpen,
   onActualAddPoolTask,
-  formatDuration,
   onDeletePoolTask,
   onClearPool,
   openEditModal,
+  onAddTaskToTimeline,
 }) => {
   const [showPoolTaskForm, setShowPoolTaskForm] = useState<boolean>(false);
   const [newPoolTaskName, setNewPoolTaskName] = useState<string>("");
   const [newPoolTaskDuration, setNewPoolTaskDuration] = useState<number>(1); // Default duration 1h
   const [newPoolTaskColor, setNewPoolTaskColor] = useState<string>(TASK_COLORS[0] || "bg-gray-300 dark:bg-gray-600"); // Default to first color or a fallback
+
+  if (!isOpen) {
+    return null;
+  }
 
   const handleAddPoolTaskSubmit = useCallback(() => {
     if (newPoolTaskName.trim() === "") return;
@@ -73,98 +74,109 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
   //   return null; 
   // }
 
+  const handleDragStartPoolItem = (e: React.DragEvent<HTMLDivElement>, task: Task) => {
+    e.dataTransfer.setData('task', JSON.stringify(task));
+    e.dataTransfer.effectAllowed = 'copy';
+    // Call onAddTaskToTimeline here if drag is directly to timeline from pool
+    // This might be complex depending on how drop is handled on the timeline side
+    // For now, let's assume a click-to-add or a different drag mechanism for adding to timeline
+  };
+
   return (
-    <>
-      {/* Task Pool Content (previously inside conditional block in DailyPlanner) */}
-      <div className="flex flex-col flex-grow overflow-hidden">
-        {/* Task Pool Header */}
-        <div className="p-2 border-b border-neutral-800 flex justify-end items-center">
-          <button
-            type="button"
-            className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded hover:bg-slate-800/50 transition-colors"
-            onClick={() => setShowPoolTaskForm(true)}
-            title="Add new task to pool"
-          >
-            + Add
-          </button>
-        </div>
-        {/* Task Pool List Area */}
-        <div className="flex-grow overflow-y-auto p-1">
-          {poolTasks.length === 0 ? (
-            <div className="text-slate-400 text-xs p-2 text-center">
-              No unscheduled tasks.
-              <br />Move tasks here to save for later.
-            </div>
-          ) : (
-            <div className="grid gap-1">
-              {poolTasks.map(task => (
-                <div 
-                  key={task.id}
-                  className={`${task.color || 'bg-blue-600'} opacity-60 hover:opacity-80 px-1.5 py-1 rounded text-white text-[11px] relative group transition-all duration-150`}
-                >
-                  <div className="font-medium line-clamp-2 pr-6">{task.name}</div>
-                  <div className="text-[9px] opacity-80">{formatDuration(task.duration)}</div>
-                  <div className="absolute top-1 right-1 flex space-x-0.5">
-                    <button
-                      type="button"
-                      className="h-5 w-5 rounded bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-                      onClick={() => {
-                        const poolTask = poolTasks.find(t => t.id === task.id);
-                        if (poolTask) {
-                          setCopyingTaskData({...poolTask});
-                          setTargetCopyDayOffset(topDayOffset);
-                        }
-                      }}
-                      title="Copy to Schedule"
-                    >
-                      <CopyPlus className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      className="h-5 w-5 rounded bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-                      onClick={() => {
-                        setPoolTasks(prev => prev.filter(t => t.id !== task.id));
-                      }}
-                      title="Delete task"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      className="h-5 w-5 rounded bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-                      onClick={() => openEditModal(task, true)}
-                      title="Edit Pool Task"
-                    >
-                      <Edit3 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        {/* Task Pool Footer */}
-        <div className="p-1 border-t border-slate-800 flex justify-between items-center text-[10px]">
-          <button
-            type="button"
-            className="text-slate-400 hover:text-white px-2 py-1 rounded hover:bg-slate-800 transition-colors"
-            onClick={() => setShowPoolTaskForm(true)}
-            title="Add new task to pool"
-          >
-            Add Task
-          </button>
-          <button
-            type="button"
-            className="text-slate-400 hover:text-white px-2 py-1 rounded hover:bg-slate-800 transition-colors"
-            onClick={() => setPoolTasks(() => [])} // Clears all pool tasks - FIXED LINTER ERROR
-            disabled={poolTasks.length === 0}
-          >
-            Clear All
-          </button>
+    <div className="flex flex-col h-full bg-neutral-850 text-white p-0">
+      <div className="flex justify-between items-center p-3 border-b border-neutral-700 sticky top-0 bg-neutral-850 z-10">
+        <h3 className="font-semibold text-base">Task Pool</h3>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={() => setShowPoolTaskForm(!showPoolTaskForm)} className="text-neutral-400 hover:text-white w-7 h-7">
+            <CopyPlus className="w-4 h-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} className="text-neutral-400 hover:text-white w-7 h-7">
+            <PinOff className="w-4 h-4" />
+          </Button>
         </div>
       </div>
 
-      {/* New Pool Task Form Modal */}
+      <div className="flex-grow overflow-y-auto p-1">
+        {poolTasks.length === 0 ? (
+          <div className="text-slate-400 text-xs p-2 text-center">
+            No unscheduled tasks.
+            <br />Move tasks here to save for later.
+          </div>
+        ) : (
+          <div className="grid gap-1">
+            {poolTasks.map(task => (
+              <div 
+                key={task.id}
+                className={`${task.color || 'bg-blue-600'} opacity-60 hover:opacity-80 px-1.5 py-1 rounded text-white text-[11px] relative group transition-all duration-150`}
+              >
+                <div className="font-medium line-clamp-2 pr-6">{task.name}</div>
+                <div className="text-[9px] opacity-80">{formatDuration(task.duration)}</div>
+                <div className="absolute top-1 right-1 flex space-x-0.5">
+                  <button
+                    type="button"
+                    className="h-5 w-5 rounded bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const poolTask = poolTasks.find(t => t.id === task.id);
+                      if (poolTask) {
+                        // Call onAddTaskToTimeline to copy to schedule
+                        onAddTaskToTimeline(poolTask, topDayOffset); 
+                      }
+                    }}
+                    title="Copy to Schedule"
+                  >
+                    <CopyPlus className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    className="h-5 w-5 rounded bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (onDeletePoolTask) onDeletePoolTask(task.id);
+                    }}
+                    title="Delete task"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    className="h-5 w-5 rounded bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      openEditModal(task, true);
+                    }}
+                    title="Edit Pool Task"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="p-1 border-t border-slate-800 flex justify-between items-center text-[10px]">
+        <button
+          type="button"
+          className="text-slate-400 hover:text-white px-2 py-1 rounded hover:bg-slate-800 transition-colors"
+          onClick={() => setShowPoolTaskForm(true)}
+          title="Add new task to pool"
+        >
+          Add Task
+        </button>
+        <button
+          type="button"
+          className="text-slate-400 hover:text-white px-2 py-1 rounded hover:bg-slate-800 transition-colors"
+          onClick={() => {
+            if (onClearPool) onClearPool();
+          }}
+          disabled={poolTasks.length === 0}
+        >
+          Clear All
+        </button>
+      </div>
+
       {showPoolTaskForm && (
         <div className="fixed inset-0 bg-black/30 dark:bg-black/50 flex items-center justify-center z-[130]">
           <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-xl max-w-sm w-full">
@@ -182,7 +194,7 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div> {/* Duration Input Column */}
+                <div>
                   <label htmlFor="newPoolTaskDurationSelect" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duration</label>
                   <select
                     id="newPoolTaskDurationSelect"
@@ -200,7 +212,8 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
                     <option value="4">4h</option>
                   </select>
                 </div>
-                <div> {/* Placeholder for another input if needed, or adjust grid-cols */} </div>
+                <div>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Color</label>
@@ -236,6 +249,6 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }; 

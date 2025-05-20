@@ -12,7 +12,7 @@ const PIXELS_PER_HOUR = 140; // From DailyPlanner
 const PIXELS_PER_MINUTE = PIXELS_PER_HOUR / 60;
 const DEFAULT_TASK_DURATION = 1; // Default duration for new tasks
 const DEFAULT_TOP_DAY_OFFSET = 0; // Today
-const DEFAULT_BOTTOM_DAY_OFFSET = 1; // Tomorrow
+const DEFAULT_BOTTOM_DAY_OFFSET = -1; // Yesterday
 
 // Define the type for the resizingTask state
 interface ResizingTaskState {
@@ -36,7 +36,8 @@ export function useDailyPlanner() {
   const [pinnedTasks, setPinnedTasks] = useState<PinnedTask[]>([]);
   const [taskIdCounter, setTaskIdCounter] = useState<number>(-1); // Last used ID, primarily for display or effects
   const taskIdCounterRef = useRef<number>(-1); // Ref for the actual latest ID counter for generation
-  const [activeSidebarTab, setActiveSidebarTab] = useState<'pool' | 'pinned'>('pool');
+  const [activeSidebarTab, setActiveSidebarTab] = useState<'pool' | 'pinned'>('pinned');
+  const [isTaskPoolOpen, setIsTaskPoolOpen] = useState<boolean>(true); // Added for default open task pool
 
   const [draggingTask, setDraggingTask] = useState<{
     taskIndex: number; 
@@ -569,10 +570,9 @@ export function useDailyPlanner() {
 
     let maxIdInExistingTasks = -1;
     if (allLoadedTasksForIdCalc.length > 0) {
-      // Correctly parse string IDs to numbers before finding max
       const validIds = allLoadedTasksForIdCalc.map(t => {
         const numId = parseInt(t.id, 10);
-        return isNaN(numId) ? -Infinity : numId; // Use -Infinity for unparseable, won't affect Math.max
+        return isNaN(numId) ? -Infinity : numId;
       }).filter(id => id !== -Infinity);
 
       if (validIds.length > 0) {
@@ -580,7 +580,7 @@ export function useDailyPlanner() {
       }
     }
 
-    const lastStoredId = TaskStorage.loadNextId(); // This should be the last ID *used*
+    const lastStoredId = TaskStorage.loadNextId();
 
     const effectiveLastUsedId = Math.max(
       maxIdInExistingTasks,
@@ -588,19 +588,20 @@ export function useDailyPlanner() {
     );
 
     setTaskIdCounter(effectiveLastUsedId);
-    taskIdCounterRef.current = effectiveLastUsedId; // Initialize the ref here
+    taskIdCounterRef.current = effectiveLastUsedId;
     
-    // Updated console log for clarity
     console.log(`🔢 Initial last used ID set to: ${effectiveLastUsedId}. Next ID will be ${effectiveLastUsedId + 1}. (Details: Max from tasks: ${maxIdInExistingTasks}, ID from storage: ${lastStoredId === null || lastStoredId === undefined ? 'N/A' : lastStoredId})`);
 
-    const loadedSettings = TaskStorage.loadDayViewSettings();
-    if (loadedSettings) {
-      setTopDayOffset(loadedSettings.topDayOffset);
-      setBottomDayOffset(loadedSettings.bottomDayOffset);
-    } else {
-      // Save default view if nothing is loaded
-      TaskStorage.saveDayViewSettings({ topDayOffset: DEFAULT_TOP_DAY_OFFSET, bottomDayOffset: DEFAULT_BOTTOM_DAY_OFFSET });
-    }
+    // --- MODIFIED DAY VIEW SETTINGS LOGIC ---
+    // Always set the day offsets to the application defaults first.
+    _setTopDayOffset(DEFAULT_TOP_DAY_OFFSET);
+    _setBottomDayOffset(DEFAULT_BOTTOM_DAY_OFFSET);
+    // Then, save these new application defaults to localStorage, overwriting any old settings.
+    // This establishes the new defaults as the baseline for this user.
+    // Subsequent user changes to the day views will then be saved and loaded correctly by the other useEffect.
+    console.log('📅 Forcing application default day view settings and saving to storage.');
+    TaskStorage.saveDayViewSettings({ topDayOffset: DEFAULT_TOP_DAY_OFFSET, bottomDayOffset: DEFAULT_BOTTOM_DAY_OFFSET });
+    // --- END MODIFIED LOGIC ---
 
     // Mark initial load as complete after a short delay to allow state updates to settle
     setTimeout(() => {
@@ -608,7 +609,7 @@ export function useDailyPlanner() {
         console.log('✅ useDailyPlanner: Initial load complete.');
     }, 100);
 
-  }, []);
+  }, []); // Empty dependency array means this runs once on mount
 
   // Save tasks whenever they change
   useEffect(() => {
@@ -686,6 +687,7 @@ export function useDailyPlanner() {
     MIN_TASK_DURATION,
     TIMELINE_START_HOUR,
     TIMELINE_END_HOUR,
+    isTaskPoolOpen,
 
     // State Setters (some might be replaced by dedicated functions later)
     setTasks,
@@ -704,6 +706,7 @@ export function useDailyPlanner() {
     setBottomDayOffset,
     setColorPickerState,
     setActiveEditModalTask,
+    setIsTaskPoolOpen,
 
     // Date & View
     getDateLabel,

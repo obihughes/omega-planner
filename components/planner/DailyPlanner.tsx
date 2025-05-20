@@ -388,6 +388,8 @@ export default function DailyPlanner() {
     cancelCopy,
     handleDropCopy,
     cloneDayTasks,
+    isTaskPoolOpen,
+    setIsTaskPoolOpen,
   } = useDailyPlanner();
 
   const [showTaskForm, setShowTaskForm] = useState<boolean>(false);
@@ -414,13 +416,11 @@ export default function DailyPlanner() {
   const handleResizeStart = (task: Task, edge: 'start' | 'end', e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
     e.preventDefault();
-    cancelCopy(); 
+    if (cancelCopy) cancelCopy(); 
     setDraggingTask(null); 
     
-    // Apply cursor style directly to document.body for consistency
     document.body.style.cursor = 'col-resize';
     
-    // Add a class to the html element to prevent selection during resize
     document.documentElement.classList.add('resize-active');
     
     if (task) {
@@ -1082,7 +1082,7 @@ export default function DailyPlanner() {
   const handleDragStart = (taskIndex: number, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    cancelCopy(); 
+    if (cancelCopy) cancelCopy(); 
     setResizingTask(null); 
     const taskToDrag = tasks[taskIndex]; 
     if (taskToDrag) {
@@ -1118,14 +1118,17 @@ export default function DailyPlanner() {
                 TASK_COLORS={TASK_COLORS} 
                 activeTab={activeSidebarTab} 
                 topDayOffset={topDayOffset} 
-                setPoolTasks={setPoolTasks} 
-                setCopyingTaskData={setCopyingTaskData} 
-                setTargetCopyDayOffset={setTargetCopyDayOffset} 
+                isOpen={isTaskPoolOpen}
+                setIsOpen={setIsTaskPoolOpen}
                 onActualAddPoolTask={handleActualAddPoolTask} 
-                openEditModal={openEditModal}
-                formatDuration={formatDuration} 
-                onDeletePoolTask={handleDeletePoolTask} 
-                onClearPool={handleClearPool} 
+                onAddTaskToTimeline={(taskFromPool, dayOffsetForDrop) => {
+                  if (startCopy) startCopy(taskFromPool); 
+                  const dropStartHour = taskFromPool.startHour !== 0 ? taskFromPool.startHour : 9; // Default or actual start hour
+                  if (handleDropCopy) handleDropCopy(dayOffsetForDrop, dropStartHour);
+                }} 
+                onDeleteTaskFromPool={handleDeletePoolTask} 
+                onClearPool={clearPool} 
+                openEditModal={openEditModal} 
               />
             )}
             {activeSidebarTab === 'pinned' && (
