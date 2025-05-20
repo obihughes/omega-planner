@@ -34,6 +34,38 @@ npm run dev:clean
 - Copy/paste tasks
 - Time-based task organization
 - Responsive design
+- Task pool for unscheduled tasks
+- Pinned tasks for quick access
+
+## Project Structure
+
+- `/app` - Next.js application routes and pages
+- `/components` - React components organized by functionality
+  - `/components/planner` - Main planner-specific components
+  - `/components/ui` - Reusable UI components
+- `/hooks` - Custom React hooks for state management and logic
+- `/lib` - Core utilities and constants
+- `/types` - TypeScript type definitions
+- `/utils` - Utility functions for formatting, storage, etc.
+
+## Architecture
+
+For a more detailed overview of the application architecture, see [ARCHITECTURE.md](./ARCHITECTURE.md).
+
+## Testing
+
+Run the test suite with:
+
+```bash
+npm test
+```
+
+## Recent Changes
+
+- **Component Extraction**: Extracted `TaskCard` from `DailyPlanner` for better code organization
+- **Modal Management**: Added dedicated `useModalManager` hook to centralize modal state and functions
+- **Documentation**: Added JSDoc comments and README files across the codebase
+- **Improved Type Safety**: Enhanced TypeScript type definitions and interfaces
 
 ## Troubleshooting
 

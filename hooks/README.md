@@ -1,0 +1,64 @@
+# Custom Hooks
+
+This directory contains custom React hooks used throughout the application.
+
+## Available Hooks
+
+### useDailyPlanner
+
+`useDailyPlanner` is the main state management hook for the planner application. It handles:
+
+- Core data state (tasks, poolTasks, pinnedTasks)
+- UI state (active tab, dragging/resizing state, modals)
+- Task manipulation functions (add, delete, update)
+- Data persistence via localStorage
+
+**Usage:**
+```jsx
+import { useDailyPlanner } from '@/hooks';
+
+function YourComponent() {
+  const { 
+    tasks, 
+    handleAddTask, 
+    handleDeleteTask, 
+    // ...other state and functions 
+  } = useDailyPlanner();
+
+  // Use the state and functions in your component
+}
+```
+
+### useModalManager
+
+`useModalManager` centralizes all modal-related state and functionality to keep the main planner hook cleaner.
+
+**Features:**
+- Manages edit task modals
+- Handles color pickers
+- Controls confirmation dialogs
+- Provides utility functions for all modal interactions
+
+**Usage:**
+```jsx
+import { useModalManager } from '@/hooks';
+
+function YourComponent() {
+  const modalManager = useModalManager({
+    onUpdateTask: handleUpdateTask,
+    onUpdatePoolTask: handleUpdatePoolTask,
+    onClearPool: clearPool,
+    onCloneTasks: cloneDayTasks,
+    topDayOffset: topDayOffset
+  });
+
+  const {
+    openEditModal,
+    closeEditModal,
+    saveTaskFromModal,
+    // ...other modal functions and state
+  } = modalManager;
+
+  // Use the modal functions in your component
+}
+``` 
