@@ -69,31 +69,60 @@ export function useDailyPlanner() {
 
   const [cloneConflictStrategy, setCloneConflictStrategy] = useState<'skip' | 'replace' | 'adjust'>('skip');
 
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   // --- UTILITY FUNCTIONS (originally in DailyPlanner.tsx) ---
+  /**
+   * Generates a display label for a given day offset.
+   * Ensures client-side rendering to prevent hydration mismatches with server-rendered dates.
+   * Displays "Today", "Tomorrow", "Yesterday", or the short day name and date (e.g., "Mon, May 27").
+   * Dates are based on the client's current date.
+   * @param {number} dayOffset - The offset from the current day (0 for today, 1 for tomorrow, etc.).
+   * @returns {string} The formatted date label, or "Loading date..." during SSR.
+   */
   const getDateLabel = useCallback((dayOffset: number): string => {
-    // Get the base date from the first task, or use current date if no tasks
-    const baseDate = tasks.length > 0 ? new Date(tasks[0].baseDate) : new Date();
-    const date = new Date(baseDate);
+    if (!isClient) {
+      return "Loading date..."; // Static placeholder for SSR
+    }
+
+    // Client-side logic - use absolute dates instead of relative offsets
+    // This is a key change - using toLocaleDateString for display dates ensures consistency
+    const date = new Date();
     date.setDate(date.getDate() + dayOffset);
     
     const today = new Date();
-    const tomorrow = new Date();
-    tomorrow.setDate(today.getDate() + 1);
-    const yesterday = new Date();
-    yesterday.setDate(today.getDate() - 1);
+    today.setHours(0, 0, 0, 0); // Normalize to start of day
+    
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    // Normalize the date for comparison (remove time part)
+    const dateForComparison = new Date(date);
+    dateForComparison.setHours(0, 0, 0, 0);
 
     let dayName = '';
-    if (date.toDateString() === today.toDateString()) {
+    
+    // Compare dates ignoring time
+    if (dateForComparison.getTime() === today.getTime()) {
       dayName = 'Today';
-    } else if (date.toDateString() === tomorrow.toDateString()) {
+    } else if (dateForComparison.getTime() === tomorrow.getTime()) {
       dayName = 'Tomorrow';
-    } else if (date.toDateString() === yesterday.toDateString()) {
+    } else if (dateForComparison.getTime() === yesterday.getTime()) {
       dayName = 'Yesterday';
     } else {
       dayName = date.toLocaleDateString(undefined, { weekday: 'short' });
     }
+    
+    // Use the same date format string for both server and client
     return `${dayName}, ${date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
-  }, [tasks]); // Add tasks to dependency array since we're using it
+  }, [isClient]);
 
   const getOrderedDayOffsets = useCallback((): number[] => {
     // Assuming the two views should be distinct and ordered
@@ -129,7 +158,19 @@ export function useDailyPlanner() {
     return String(newNumId);
   }, [setTaskIdCounter]); // Dependency on setTaskIdCounter is fine, as it's stable. Ref updates don't trigger re-renders directly.
 
+  /**
+   * Adds a new task to the main timeline.
+   * The new task's 'baseDate' is set to midnight of the current day (client-side).
+   * The 'dayOffset' property then determines its calendar day relative to this 'baseDate'.
+   * @param {number} dayOffset - The day offset from the current day for the new task.
+   * @param {number} startHour - The start hour for the new task.
+   * @param {object} taskData - Object containing name, duration, and color for the new task.
+   */
   const handleAddTask = useCallback((dayOffset: number, startHour: number, taskData: { name: string; duration: number; color: string }) => {
+    // Create a base date with time set to midnight
+    const baseDate = new Date();
+    baseDate.setHours(0, 0, 0, 0);
+    
     const newTask: Task = {
       id: getNextId(),
       name: taskData.name,
@@ -137,7 +178,7 @@ export function useDailyPlanner() {
       duration: taskData.duration,
       dayOffset,
       color: taskData.color,
-      baseDate: new Date().toISOString()
+      baseDate: baseDate.toISOString()
     };
     setTasks(prevTasks => [...prevTasks, newTask]);
   }, [getNextId]);
@@ -481,15 +522,26 @@ export function useDailyPlanner() {
     setTargetCopyDayOffset(null);
   }, [setCopyingTaskData, setTargetCopyDayOffset]);
 
+  /**
+   * Creates a new task when a copied task is dropped onto the timeline.
+   * The new task's 'baseDate' is set to midnight of the current day (client-side).
+   * Its 'dayOffset' and 'startHour' are determined by the drop target.
+   * @param {number} targetDayOffset - The day offset where the task is dropped.
+   * @param {number} targetStartHour - The start hour where the task is dropped.
+   */
   const handleDropCopy = useCallback((targetDayOffset: number, targetStartHour: number) => {
     if (!copyingTaskData) return;
+
+    // Create a base date with time set to midnight for today
+    const baseDate = new Date();
+    baseDate.setHours(0, 0, 0, 0);
 
     const newTask: Task = {
       ...copyingTaskData,
       id: getNextId(),
       dayOffset: targetDayOffset,
       startHour: targetStartHour,
-      baseDate: copyingTaskData.baseDate // Maintain the original base date
+      baseDate: baseDate.toISOString() // Use today as the base date for copied tasks
     };
 
     setTasks(prevTasks => [...prevTasks, newTask]);
@@ -497,16 +549,28 @@ export function useDailyPlanner() {
     setTargetCopyDayOffset(null);
   }, [copyingTaskData, getNextId, setTasks, setCopyingTaskData, setTargetCopyDayOffset]);
 
+  /**
+   * Clones all tasks from a source day offset to a destination day offset.
+   * New tasks created during cloning have their 'baseDate' set to midnight of the current day (client-side).
+   * The 'dayOffset' is set to the destination day's offset.
+   * Handles conflicts based on the 'cloneConflictStrategy'.
+   * @param {number} sourceDayOffset - The day offset of the tasks to clone.
+   * @param {number} destinationDayOffset - The day offset where the cloned tasks will be placed.
+   */
   const cloneDayTasks = useCallback((sourceDayOffset: number, destinationDayOffset: number) => {
     const sourceTasks = tasks.filter(t => t.dayOffset === sourceDayOffset);
     const destinationTasks = tasks.filter(t => t.dayOffset === destinationDayOffset);
+    
+    // Create a base date with time set to midnight for today
+    const baseDate = new Date();
+    baseDate.setHours(0, 0, 0, 0);
     
     const newTasks = sourceTasks.map(sourceTask => {
       const newTask: Task = {
         ...sourceTask,
         id: getNextId(),
         dayOffset: destinationDayOffset,
-        baseDate: sourceTask.baseDate // Maintain the original base date
+        baseDate: baseDate.toISOString() // Use today as the base date for cloned tasks
       };
       return newTask;
     });
@@ -730,6 +794,7 @@ export function useDailyPlanner() {
     TIMELINE_START_HOUR,
     TIMELINE_END_HOUR,
     isTaskPoolOpen,
+    isClient,
 
     // State Setters (some might be replaced by dedicated functions later)
     setTasks,
@@ -757,6 +822,7 @@ export function useDailyPlanner() {
     handleUpdateTask,
     handleTaskColorChange,
     toggleColorPicker,
+    handleTaskCompletionToggle,
 
     // Task Editing (Modal) functions from modalManager
     openEditModal: modalOpenEditModal,

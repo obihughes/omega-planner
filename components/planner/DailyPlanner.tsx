@@ -25,6 +25,44 @@ const checkOverlap = (
   return task1Start < task2End && task1End > task2Start;
 };
 
+/**
+ * Helper function to get the actual calendar date for a column offset from the current day.
+ * The date is normalized to midnight (00:00:00:000).
+ * @param {number} columnDayOffset - The number of days to offset from the current date.
+ * @returns {Date} The calculated calendar date, normalized to midnight.
+ */
+const getCalendarDateForColumn = (columnDayOffset: number): Date => {
+  const date = new Date(); // Today's actual date
+  date.setHours(0, 0, 0, 0); // Normalize to start of day
+  date.setDate(date.getDate() + columnDayOffset);
+  return date;
+};
+
+/**
+ * Helper function to extract a Date object representing the calendar date (normalized to midnight)
+ * from an ISO date string.
+ * @param {string} isoDateString - The ISO string representation of a date.
+ * @returns {Date} A Date object normalized to midnight of the given ISO string's date.
+ */
+const getDateWithoutTime = (isoDateString: string): Date => {
+  const date = new Date(isoDateString);
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
+/**
+ * Helper function to compare two Date objects to see if they fall on the same calendar date,
+ * ignoring the time component.
+ * @param {Date} date1 - The first date.
+ * @param {Date} date2 - The second date.
+ * @returns {boolean} True if both dates are on the same calendar day, false otherwise.
+ */
+const isSameCalendarDate = (date1: Date, date2: Date): boolean => {
+  return date1.getFullYear() === date2.getFullYear() &&
+         date1.getMonth() === date2.getMonth() &&
+         date1.getDate() === date2.getDate();
+};
+
 export default function DailyPlanner() {
   const {
     tasks,
@@ -44,9 +82,7 @@ export default function DailyPlanner() {
     TIMELINE_END_HOUR,
     PIXELS_PER_HOUR,
     MIN_TASK_DURATION,
-    setShowClearPoolConfirmation,
     showClearPoolConfirmation,
-    setShowCloneConfirmation,
     showCloneConfirmation,
     draggingTask,
     setDraggingTask,
@@ -61,9 +97,7 @@ export default function DailyPlanner() {
     targetCopyDayOffset,
     setTargetCopyDayOffset,
     colorPickerState,
-    setColorPickerState,
     activeEditModalTask,
-    setActiveEditModalTask,
     hasConflict,
     handleAddTask,
     handleDeleteTask,
@@ -88,6 +122,11 @@ export default function DailyPlanner() {
     cloneDayTasks,
     isTaskPoolOpen,
     setIsTaskPoolOpen,
+    showClearPoolModal,
+    showCloneModal,
+    cancelCloneDay,
+    cancelClearPool,
+    isClient,
   } = useDailyPlanner();
 
   const [showTaskForm, setShowTaskForm] = useState<boolean>(false);
@@ -401,6 +440,14 @@ export default function DailyPlanner() {
     );
   }, [PIXELS_PER_HOUR, TIMELINE_START_HOUR, TIMELINE_END_HOUR]); 
 
+  /**
+   * Renders a single column in the timeline for a specific day offset and period (morning, afternoon, evening).
+   * Filters tasks to display only those that belong to the column's calendar date and fall within the period's time range.
+   * Task date association relies on `task.baseDate` (an ISO string normalized to midnight) and `task.dayOffset`.
+   * The column's calendar date is determined by `dayOffset` relative to the current actual date.
+   * @param {number} dayOffset - The offset from the current day for this column.
+   * @param {'morning' | 'afternoon' | 'evening'} period - The time period this column represents.
+   */
   const renderColumn = useCallback((dayOffset: number, period: 'morning' | 'afternoon' | 'evening') => {
     let startHour, endHour;
     switch (period) {
@@ -408,13 +455,25 @@ export default function DailyPlanner() {
       case 'afternoon': startHour = TIMELINE_SPLIT_HOUR_1; endHour = TIMELINE_SPLIT_HOUR_2; break;
       case 'evening': startHour = TIMELINE_SPLIT_HOUR_2; endHour = TIMELINE_END_HOUR; break;
     }
+
+    const columnCalendarDate = getCalendarDateForColumn(dayOffset);
+
     const tasksToRender = tasks.filter(t => {
+      // If we have a task being dragged, handle it specially
       if (draggingTask && draggingTask.task.id === t.id) {
-        return draggingTask.task.dayOffset === dayOffset;
+        const draggingTaskTargetDate = getCalendarDateForColumn(draggingTask.task.dayOffset);
+        return isSameCalendarDate(draggingTaskTargetDate, columnCalendarDate);
       }
-      return t.dayOffset === dayOffset;
+
+      // For normal tasks, use their baseDate + dayOffset to determine where they belong
+      const taskDate = getDateWithoutTime(t.baseDate);
+      taskDate.setDate(taskDate.getDate() + t.dayOffset);
+      
+      return isSameCalendarDate(taskDate, columnCalendarDate);
     }).filter(t => {
+      // Continue with same filter for time periods...
       const taskToConsider = (draggingTask && draggingTask.task.id === t.id) ? draggingTask.task : t;
+      
       return (
         (taskToConsider.startHour >= startHour && taskToConsider.startHour < endHour) || 
         (taskToConsider.startHour < startHour && taskToConsider.startHour + taskToConsider.duration > startHour) ||
@@ -695,8 +754,10 @@ export default function DailyPlanner() {
   
   const [cloneConflictStrategy, setCloneConflictStrategy] = useState<'skip' | 'replace' | 'adjust'>('skip');
   const handleConfirmClone = () => {
-      cloneDayTasks(bottomDayOffset, topDayOffset); 
-      setShowCloneConfirmation(null);
+    if (cloneDayTasks && showCloneConfirmation) {
+      cloneDayTasks(showCloneConfirmation.dayOffset, topDayOffset === showCloneConfirmation.dayOffset ? bottomDayOffset : topDayOffset);
+    }
+    // Modal closing is handled by confirmCloneDay from the hook, which should be called by the modal itself if this is just a handler
   };
   
   const [editModalName, setEditModalName] = useState("");
@@ -757,24 +818,19 @@ export default function DailyPlanner() {
   };
 
   const handleClearPool = () => {
-    if (setShowClearPoolConfirmation) setShowClearPoolConfirmation(true);
+    showClearPoolModal(); 
   };
 
-  const confirmClearPool = () => {
+  // confirmClearPool is provided by the hook and handles its own logic including modal closure.
+  // The local confirmClearPool can be removed if the button directly calls the hook's version.
+  // For now, let's assume the button calls this local version, which then calls the hook's setPoolTasks.
+  const confirmClearPool = () => { 
     if (setPoolTasks) setPoolTasks(() => []);
-    if (setShowClearPoolConfirmation) setShowClearPoolConfirmation(false);
-  };
-
-  const cancelClearPool = () => {
-    if (setShowClearPoolConfirmation) setShowClearPoolConfirmation(false);
+    // Hook's confirmClearPool implies modal closing.
   };
 
   const handleCloneDay = (dayOffset: number, period: 'morning' | 'afternoon' | 'evening') => {
-    if (setShowCloneConfirmation) setShowCloneConfirmation({ dayOffset, period });
-  };
-
-  const cancelCloneDay = () => {
-    if (setShowCloneConfirmation) setShowCloneConfirmation(null);
+    showCloneModal({ dayOffset, period });
   };
 
   const handleDragStart = (taskIndex: number, e: React.MouseEvent) => {
@@ -844,7 +900,9 @@ export default function DailyPlanner() {
                 <div className="flex items-center space-x-2">
                   <button type="button" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors" onClick={() => setTopDayOffset(topDayOffset - 7)} title="Previous week">◀◀</button>
                   <button type="button" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors" onClick={() => setTopDayOffset(topDayOffset - 1)} title="Previous day">◀</button>
-                  <span className="text-white font-medium w-[250px] text-center">{getDateLabel(topDayOffset)}</span>
+                  <span className="text-white font-medium w-[250px] text-center">
+                    {isClient ? getDateLabel(topDayOffset) : "Loading date..."}
+                  </span>
                   <button type="button" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors" onClick={() => setTopDayOffset(topDayOffset + 1)} title="Next day">▶</button>
                   <button type="button" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors" onClick={() => setTopDayOffset(topDayOffset + 7)} title="Next week">▶▶</button>
                 </div>
@@ -876,11 +934,16 @@ export default function DailyPlanner() {
                 <div className="flex items-center space-x-2">
                   <button type="button" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset - 7)} title="Previous week">◀◀</button>
                   <button type="button" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset - 1)} title="Previous day">◀</button>
-                  <span className="text-white font-medium w-[250px] text-center">{getDateLabel(bottomDayOffset)}</span>
+                  <span className="text-white font-medium w-[250px] text-center">
+                    {isClient ? getDateLabel(bottomDayOffset) : "Loading date..."}
+                  </span>
                   <button type="button" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset + 1)} title="Next day">▶</button>
                   <button type="button" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset + 7)} title="Next week">▶▶</button>
                 </div>
-                <button type="button" className="border border-neutral-600 text-neutral-300 hover:bg-neutral-700 hover:text-neutral-100 px-3 py-1.5 rounded-lg font-medium flex items-center gap-2 transition-colors duration-200" onClick={() => setShowCloneConfirmation({ dayOffset: bottomDayOffset, period: 'morning' })} title="Clone tasks from this day to the top day">
+                <button type="button" className="border border-neutral-600 text-neutral-300 hover:bg-neutral-700 hover:text-neutral-100 px-3 py-1.5 rounded-lg font-medium flex items-center gap-2 transition-colors duration-200" 
+                  onClick={() => showCloneModal({ dayOffset: bottomDayOffset, period: 'morning' })} 
+                  title="Clone tasks from this day to the top day"
+                >
                   <span>↑</span><span>Clone to Top Day</span>
                 </button>
               </div>
@@ -948,7 +1011,9 @@ export default function DailyPlanner() {
               <div className="fixed inset-0 bg-black/30 dark:bg-black/50 flex items-center justify-center z-[1001]">
                 <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-xl max-w-md w-full">
                   <h3 className="text-xl font-bold mb-2 dark:text-white">Clone Tasks</h3>
-                  <p className="text-gray-600 dark:text-gray-300 mb-4">Clone tasks from {getDateLabel(bottomDayOffset)} to {getDateLabel(topDayOffset)}.</p>
+                  <p className="text-gray-600 dark:text-gray-300 mb-4">
+                    {isClient ? `Clone tasks from ${getDateLabel(bottomDayOffset)} to ${getDateLabel(topDayOffset)}.` : "Loading details..."}
+                  </p>
                   <div className="mb-4">
                     <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Conflict Strategy:</h4>
                     <div className="space-y-2">
@@ -961,7 +1026,7 @@ export default function DailyPlanner() {
                         </div>
                         </div>
                   <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setShowCloneConfirmation(null)}>Cancel</Button>
+                    <Button variant="outline" onClick={cancelCloneDay}>Cancel</Button>
                     <Button onClick={handleConfirmClone}>Clone Tasks</Button>
                   </div>
                 </div>
@@ -1033,7 +1098,7 @@ export default function DailyPlanner() {
                             Are you sure you want to remove all tasks from the pool? This action cannot be undone.
                         </p>
                         <div className="flex justify-end gap-3">
-                            <Button variant="outline" onClick={() => setShowClearPoolConfirmation(false)}>
+                            <Button variant="outline" onClick={cancelClearPool}>
                                 Cancel
                             </Button>
                             <Button variant="outline" className="text-red-500 border-red-500 hover:bg-red-100 dark:hover:bg-red-800 hover:text-red-600" onClick={() => {

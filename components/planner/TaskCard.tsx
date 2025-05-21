@@ -55,9 +55,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
   const isCompressed = task.duration <= 0.5;
   const endTime = task.startHour + Number(task.duration);
-  const color = task.color?.includes('dark:') 
-    ? task.color 
-    : `${task.color || 'bg-blue-200'} dark:bg-blue-500`;
+  const color = task.color || TASK_COLORS[0];
 
   const handleSaveName = () => {
     if (editingTaskName.trim()) {

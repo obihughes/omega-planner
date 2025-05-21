@@ -19,7 +19,13 @@ export interface DayViewSettings {
 
 // Task Storage utility
 const TaskStorage = {
-  // Save tasks to localStorage
+  /**
+   * Saves the main tasks to localStorage.
+   * Ensures that all tasks have a 'baseDate' property, normalized to midnight UTC of that date.
+   * This normalization is crucial for consistent date-based filtering and display.
+   * Also handles de-duplication of tasks based on their IDs before saving.
+   * @param {Task[]} tasks - The array of tasks to save.
+   */
   save: (tasks: Task[]): void => {
     if (typeof window === 'undefined') return;
     
@@ -47,12 +53,30 @@ const TaskStorage = {
     }
     
     try {
+      // Ensure every task has a normalized baseDate (midnight of the day)
+      const normalizedTasks = tasks.map(task => {
+        if (!task.baseDate) {
+          // If task doesn't have baseDate, set to midnight today
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          return {
+            ...task,
+            baseDate: today.toISOString()
+          };
+        }
+        
+        // If it has a baseDate, make sure it's normalized to midnight
+        const baseDate = new Date(task.baseDate);
+        baseDate.setHours(0, 0, 0, 0);
+        return {
+          ...task,
+          baseDate: baseDate.toISOString()
+        };
+      });
+      
       const data = {
         version: STORAGE_VERSION,
-        tasks: tasks.map(task => ({
-          ...task,
-          baseDate: task.baseDate || new Date().toISOString() // Ensure baseDate exists
-        })),
+        tasks: normalizedTasks,
         lastUpdated: new Date().toISOString()
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -62,7 +86,12 @@ const TaskStorage = {
     }
   },
   
-  // Load tasks from localStorage
+  /**
+   * Loads the main tasks from localStorage.
+   * Ensures that all loaded tasks have a 'baseDate' property, normalized to midnight UTC.
+   * If a task lacks a 'baseDate' or it's not normalized, it's adjusted.
+   * @returns {Task[] | null} The array of loaded tasks, or null if no data is found.
+   */
   load: (): Task[] | null => {
     if (typeof window === 'undefined') return [];
     const savedData = localStorage.getItem(STORAGE_KEY);
@@ -74,25 +103,49 @@ const TaskStorage = {
         console.error('Loaded data is invalid (tasks array missing or not an array): ', data);
         return [];
       }
-      // Ensure all tasks have a baseDate
-      return data.tasks.map((task: any) => ({
-        ...task,
-        baseDate: task.baseDate || new Date().toISOString() // Add baseDate if missing
-      }));
+      
+      // Ensure all tasks have a normalized baseDate
+      return data.tasks.map((task: any) => {
+        // If task doesn't have baseDate, create one
+        if (!task.baseDate) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          return {
+            ...task,
+            baseDate: today.toISOString()
+          };
+        }
+        
+        // Normalize the existing baseDate to midnight
+        const baseDate = new Date(task.baseDate);
+        baseDate.setHours(0, 0, 0, 0);
+        
+        return {
+          ...task,
+          baseDate: baseDate.toISOString()
+        };
+      });
     } catch (err) {
       console.error('Failed to parse tasks from localStorage. Data was: ', savedData, err);
       return [];
     }
   },
   
-  // Save pool tasks to localStorage
+  /**
+   * Saves the pool tasks to localStorage.
+   * Pool tasks are saved as-is without 'baseDate' normalization,
+   * as their 'baseDate' is not typically used for scheduling while they are in the pool.
+   * A 'baseDate' is still ensured for type consistency if one is missing upon load.
+   * @param {Task[]} poolTasks - The array of pool tasks to save.
+   */
   savePoolTasks: (poolTasks: Task[]): void => {
     if (typeof window === 'undefined') return;
     
     try {
+      // Pool tasks do not need baseDate normalization
       const data = {
         version: STORAGE_VERSION,
-        tasks: poolTasks,
+        tasks: poolTasks, // Save poolTasks as they are
         lastUpdated: new Date().toISOString()
       };
       localStorage.setItem(POOL_STORAGE_KEY, JSON.stringify(data));
@@ -102,7 +155,13 @@ const TaskStorage = {
     }
   },
   
-  // Load pool tasks from localStorage
+  /**
+   * Loads the pool tasks from localStorage.
+   * Pool tasks are loaded as-is. While a 'baseDate' is ensured for type consistency
+   * (defaulting to the current date at midnight if missing), it is not strictly normalized
+   * here as its primary scheduling relevance comes when moved to the main timeline.
+   * @returns {Task[] | null} The array of loaded pool tasks, or null if no data is found.
+   */
   loadPoolTasks: (): Task[] | null => {
     if (typeof window === 'undefined') return [];
     const savedData = localStorage.getItem(POOL_STORAGE_KEY);
@@ -114,7 +173,14 @@ const TaskStorage = {
         console.error('Loaded pool data is invalid (tasks array missing or not an array): ', data);
         return [];
       }
-      return data.tasks;
+      
+      // Pool tasks are loaded as they are, without baseDate normalization
+      return data.tasks.map((task: any) => ({
+        ...task,
+        // Ensure baseDate exists, if not, provide a default. This is for type safety.
+        // It won't be used for scheduling if dayOffset indicates it's a pool task.
+        baseDate: task.baseDate || new Date().toISOString() 
+      }));
     } catch (err) {
       console.error('Failed to parse pool tasks from localStorage. Data was: ', savedData, err);
       return [];
