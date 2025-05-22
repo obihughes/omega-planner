@@ -214,7 +214,7 @@ export function useDailyPlanner() {
   const handleAddTask = useCallback((
     targetDate: Date,
     startHour: number,
-    taskData: { name: string; duration: number; color: string },
+    taskData: { name: string; duration: number; color: string; notes?: string; completed?: boolean; },
     dayOffset: number = 0 // Default dayOffset to 0
   ) => {
     // Create a normalized base date from the targetDate with time set to midnight
@@ -228,7 +228,9 @@ export function useDailyPlanner() {
       duration: taskData.duration,
       dayOffset, // Use the provided dayOffset, defaulting to 0
       color: taskData.color,
-      baseDate: normalizedBaseDate.toISOString() // baseDate is the normalized targetDate
+      baseDate: normalizedBaseDate.toISOString(), // baseDate is the normalized targetDate
+      notes: taskData.notes, // Add notes
+      completed: taskData.completed // Add completed status
     };
     setTasks(prevTasks => [...prevTasks, newTask]);
   }, [getNextId]);

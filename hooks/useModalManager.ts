@@ -8,6 +8,7 @@ import { TASK_COLORS } from '@/lib/constants';
  */
 export interface ActiveModalTask extends Task {
   isFromPool?: boolean;
+  isNew?: boolean;
 }
 
 /**
@@ -26,7 +27,7 @@ export interface CloneConfirmationData {
  */
 export interface UseModalManagerProps {
   /** Callback to add a new task */
-  onAddTask: (targetDate: Date, startHour: number, taskData: { name: string; duration: number; color: string }, dayOffset?: number) => void;
+  onAddTask: (targetDate: Date, startHour: number, taskData: { name: string; duration: number; color: string; notes?: string; completed?: boolean; }, dayOffset?: number) => void;
 
   /** Callback to update a timeline task */
   onUpdateTask: (taskId: string, updatedFields: Partial<Omit<Task, 'id'>>) => void;
@@ -99,7 +100,7 @@ export interface ModalManagerState {
   // Task Edit Modal Functions
   /** Opens the task edit/create modal.
    * If `task` is provided, it populates the modal for editing that task.
-   * If `task` is not provided, it prepares the modal for creating a new task, 
+   * If `task` is not provided or options.isNew is true, it prepares the modal for creating a new task,
    * potentially using `options.initialDayOffset` and `options.initialStartHour` as defaults.
    * The new task's `baseDate` is provisionally set based on `initialDayOffset` from today, 
    * and `dayOffset` to 0. This may be refined by TaskFormModal if a more specific target is known.
@@ -108,19 +109,20 @@ export interface ModalManagerState {
    * @param {boolean} [options.isFromPool] - Indicates if the task is from/for the task pool.
    * @param {number} [options.initialDayOffset] - Suggested day offset for a new task (e.g., from view).
    * @param {number} [options.initialStartHour] - Suggested start hour for a new task.
+   * @param {boolean} [options.isNew] - Explicitly states if this is for a new task.
    */
-  openEditModal: (task?: Task, options?: { isFromPool?: boolean; initialDayOffset?: number; initialStartHour?: number }) => void;
+  openEditModal: (task?: Task, options?: { isFromPool?: boolean; initialDayOffset?: number; initialStartHour?: number; isNew?: boolean }) => void;
   /** Closes the task edit/create modal */
   closeEditModal: () => void;
   /** Saves task data from the edit/create modal.
-   * If `isNewTaskFlag` is true, it calls `onAddTask` with the task details.
+   * If `activeEditModalTask.isNew` is true, it calls `onAddTask` with the task details.
    * The `taskDataFromForm` for a new task must include `baseDate` (as specific target date) and `name`.
    * `dayOffset` for `onAddTask` will be 0 as `baseDate` is specific.
-   * If `isNewTaskFlag` is false, it calls `onUpdateTask` or `onUpdatePoolTask` based on `activeEditModalTask` context.
+   * If `activeEditModalTask.isNew` is false, it calls `onUpdateTask` or `onUpdatePoolTask` based on `activeEditModalTask` context.
    * @param {Partial<Task>} taskDataFromForm - The task data from the form.
-   * @param {boolean} isNewTaskFlag - True if saving a new task, false if updating an existing one.
+   * @param {boolean} isNewTaskFlag - DEPRECATED: This parameter is no longer used. The new/edit status is derived from activeEditModalTask.
    */
-  saveTaskFromModal: (taskDataFromForm: Partial<Task>, isNewTaskFlag: boolean) => void;
+  saveTaskFromModal: (taskDataFromForm: Partial<Task>, isNewTaskFlag?: boolean /* Param now effectively ignored */) => void;
   
   // State Setters (if direct access is needed)
   setShowClearPoolConfirmation: React.Dispatch<React.SetStateAction<boolean>>;
@@ -245,7 +247,7 @@ export function useModalManager({
   /**
    * Opens the task edit/create modal.
    * If `task` is provided, it populates the modal for editing that task.
-   * If `task` is not provided, it prepares the modal for creating a new task, 
+   * If `task` is not provided or options.isNew is true, it prepares the modal for creating a new task,
    * potentially using `options.initialDayOffset` and `options.initialStartHour` as defaults.
    * The new task's `baseDate` is provisionally set based on `initialDayOffset` from today, 
    * and `dayOffset` to 0. This may be refined by TaskFormModal if a more specific target is known.
@@ -254,93 +256,101 @@ export function useModalManager({
    * @param {boolean} [options.isFromPool] - Indicates if the task is from/for the task pool.
    * @param {number} [options.initialDayOffset] - Suggested day offset for a new task (e.g., from view).
    * @param {number} [options.initialStartHour] - Suggested start hour for a new task.
+   * @param {boolean} [options.isNew] - Explicitly states if this is for a new task.
    */
-  const openEditModal = useCallback((task?: Task, options?: { isFromPool?: boolean; initialDayOffset?: number; initialStartHour?: number }) => {
+  const openEditModal = useCallback((task?: Task, options?: { 
+    isFromPool?: boolean; 
+    initialDayOffset?: number; 
+    initialStartHour?: number; 
+    isNew?: boolean; 
+  }) => {
     if (task) {
-      setActiveEditModalTask({ 
-        ...task,
-        isFromPool: options?.isFromPool ?? false 
-      });
-    } else {
-      // For a new task, create a default structure
-      // The ID will be generated by the actual addTask function later
-      // BaseDate needs to be the specific target date, dayOffset 0 relative to it.
-      // This requires the caller of openEditModal to provide context for date.
-      // For now, let's use initialDayOffset and initialStartHour with a placeholder baseDate (today).
-      // This will need refinement based on how TaskFormModal provides the targetDate.
-      const newBase = new Date();
-      newBase.setHours(0,0,0,0);
-      if (options?.initialDayOffset) {
-        newBase.setDate(newBase.getDate() + options.initialDayOffset);
-      }
-
+      // Task is present. It could be an existing task to edit,
+      // or a pre-filled new task object (if options.isNew is true).
+      const taskObject: Task = task; // Assert task is not undefined here
       setActiveEditModalTask({
-        id: '__NEW_TASK__', // Temporary ID for new task
-        name: 'New Task',
+        ...taskObject, // Spread the asserted task object
+        isFromPool: options?.isFromPool || false,
+        isNew: options?.isNew || false, // This will be true if DailyPlanner sends a new task
+      });
+      setInitialDayOffsetForModal(undefined); 
+      setInitialStartHourForModal(undefined); 
+    } else if (options?.isNew) {
+      // Task is not provided, but options.isNew is true. Create a default new task.
+      const tempId = `temp-new-${Date.now()}`;
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      setActiveEditModalTask({
+        id: tempId,
+        name: "New Task", // Default name
         startHour: options?.initialStartHour ?? 9,
         duration: 1,
-        dayOffset: 0, // Will be 0 because baseDate will be specific
-        baseDate: newBase.toISOString(),
-        color: TASK_COLORS[0], // Ensure TASK_COLORS is available or passed in
-        isFromPool: options?.isFromPool ?? false,
+        baseDate: today.toISOString(), 
+        dayOffset: 0,
+        color: TASK_COLORS[0],
+        isFromPool: options?.isFromPool || false,
+        isNew: true,
       });
+      setInitialDayOffsetForModal(options?.initialDayOffset);
+      setInitialStartHourForModal(options?.initialStartHour);
     }
-    setInitialDayOffsetForModal(options?.initialDayOffset);
-    setInitialStartHourForModal(options?.initialStartHour);
-  }, [setActiveEditModalTask, setInitialDayOffsetForModal, setInitialStartHourForModal /*, TASK_COLORS (if used directly) */]);
+  }, [setActiveEditModalTask, setInitialDayOffsetForModal, setInitialStartHourForModal]);
 
+  /** Closes the task edit/create modal */
   const closeEditModal = useCallback(() => {
     setActiveEditModalTask(null);
     setInitialDayOffsetForModal(undefined);
     setInitialStartHourForModal(undefined);
   }, [setActiveEditModalTask, setInitialDayOffsetForModal, setInitialStartHourForModal]);
 
-  /**
-   * Saves task data from the edit/create modal.
-   * If `isNewTaskFlag` is true, it calls `onAddTask` with the task details.
+  /** Saves task data from the edit/create modal.
+   * If `activeEditModalTask.isNew` is true, it calls `onAddTask` with the task details.
    * The `taskDataFromForm` for a new task must include `baseDate` (as specific target date) and `name`.
    * `dayOffset` for `onAddTask` will be 0 as `baseDate` is specific.
-   * If `isNewTaskFlag` is false, it calls `onUpdateTask` or `onUpdatePoolTask` based on `activeEditModalTask` context.
+   * If `activeEditModalTask.isNew` is false, it calls `onUpdateTask` or `onUpdatePoolTask` based on `activeEditModalTask` context.
    * @param {Partial<Task>} taskDataFromForm - The task data from the form.
-   * @param {boolean} isNewTaskFlag - True if saving a new task, false if updating an existing one.
+   * @param {boolean} isNewTaskFlag - DEPRECATED: This parameter is no longer used. The new/edit status is derived from activeEditModalTask.
    */
-  const saveTaskFromModal = useCallback((taskDataFromForm: Partial<Task>, isNewTaskFlag: boolean) => {
-    if (isNewTaskFlag) {
-      if (!taskDataFromForm.name || !taskDataFromForm.baseDate) {
-        console.error("Save new task error: name and baseDate are required from form.");
+  const saveTaskFromModal = useCallback((taskDataFromForm: Partial<Task>, isNewTaskFlag?: boolean /* Param now effectively ignored */) => {
+    if (!activeEditModalTask) return;
+
+    // The isNew status should come from the activeEditModalTask
+    const isActuallyNew = activeEditModalTask.isNew || false;
+    // The original ID should be used for updates, or a new one generated if it was a temp ID.
+    const taskIdToUse = activeEditModalTask.id;
+
+    // Ensure critical fields for new tasks are present
+    if (isActuallyNew) {
+      if (!taskDataFromForm.name || !taskDataFromForm.baseDate || typeof taskDataFromForm.startHour !== 'number' || typeof taskDataFromForm.duration !== 'number') {
+        console.error("SaveTaskFromModal: New task is missing required fields (name, baseDate, startHour, duration).", taskDataFromForm);
+        // Optionally, show a user-facing error here
         return;
       }
-      const targetDate = new Date(taskDataFromForm.baseDate);
-      const startHour = taskDataFromForm.startHour ?? 9;
-      // Explicitly type taskDetails to allow optional properties
-      const taskDetails: { name: string; duration: number; color: string; notes?: string; completed?: boolean } = {
-        name: taskDataFromForm.name,
-        duration: taskDataFromForm.duration ?? 1,
-        color: taskDataFromForm.color ?? TASK_COLORS[0],
-      };
-      if (taskDataFromForm.notes) taskDetails.notes = taskDataFromForm.notes;
-      if (typeof taskDataFromForm.completed === 'boolean') taskDetails.completed = taskDataFromForm.completed;
+      const newBaseDate = new Date(taskDataFromForm.baseDate); // Ensure it's a date object
+      newBaseDate.setHours(0,0,0,0); // Normalize
 
-      // Assuming isFromPool was handled by openEditModal and stored in activeEditModalTask
-      // If saving a new task that was marked as fromPool, it should go to pool tasks (not implemented yet via onAddPoolTask)
-      // For now, all new tasks from modal go to onAddTask (timeline)
-      onAddTask(targetDate, startHour, taskDetails, 0); // dayOffset is 0 because targetDate is specific
-
-    } else if (activeEditModalTask) {
-      // This is an update to an existing task
-      const updatePayload = { ...taskDataFromForm };
-      delete updatePayload.id; // Don't allow ID to be changed
-      delete updatePayload.baseDate; // Usually baseDate is changed via drag-drop, not form, unless explicitly allowed
-      delete updatePayload.dayOffset; // Usually dayOffset is changed via drag-drop
-
+      onAddTask(
+        newBaseDate, 
+        taskDataFromForm.startHour, 
+        { 
+          name: taskDataFromForm.name, 
+          duration: taskDataFromForm.duration, 
+          color: taskDataFromForm.color || TASK_COLORS[0],
+          notes: taskDataFromForm.notes, 
+          completed: taskDataFromForm.completed
+        },
+        0 // dayOffset is always 0 because baseDate is absolute
+      );
+    } else {
+      // Update existing task
       if (activeEditModalTask.isFromPool) {
-        onUpdatePoolTask(activeEditModalTask.id, updatePayload);
+        onUpdatePoolTask(taskIdToUse, taskDataFromForm);
       } else {
-        onUpdateTask(activeEditModalTask.id, updatePayload);
+        onUpdateTask(taskIdToUse, taskDataFromForm);
       }
     }
     closeEditModal();
-  }, [activeEditModalTask, onAddTask, onUpdateTask, onUpdatePoolTask, closeEditModal /*, TASK_COLORS (if used directly) */]);
+  }, [activeEditModalTask, onAddTask, onUpdateTask, onUpdatePoolTask, closeEditModal]);
 
   return {
     // States

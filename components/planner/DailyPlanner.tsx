@@ -12,6 +12,7 @@ import { PinnedTasksSidebar } from './PinnedTasksSidebar';
 import { useDailyPlanner } from '../../hooks/useDailyPlannerState';
 import { TASK_COLORS } from '../../lib/constants';
 import { TaskCard } from './TaskCard';
+import { EditTaskModal } from './EditTaskModal';
 
 // Helper function to check for task overlap
 const checkOverlap = (
@@ -88,8 +89,6 @@ export default function DailyPlanner() {
     setDraggingTask,
     resizingTask,
     setResizingTask,
-    editingTaskId,
-    setEditingTaskId,
     contextMenu,
     setContextMenu,
     copyingTaskData,
@@ -128,13 +127,6 @@ export default function DailyPlanner() {
     cancelClearPool,
     isClient,
   } = useDailyPlanner();
-
-  const [showTaskForm, setShowTaskForm] = useState<boolean>(false);
-  const [newTaskName, setNewTaskName] = useState<string>("");
-  const [newTaskHour, setNewTaskHour] = useState<number>(9);
-  const [newTaskDuration, setNewTaskDuration] = useState<number>(1);
-  const [newTaskColor, setNewTaskColor] = useState<string>(TASK_COLORS[0]);
-  const [newTaskDayOffset, setNewTaskDayOffset] = useState<number>(0);
 
   const TIMELINE_COLUMN_HEIGHT = 100;
   const TASK_BASE_TOP = 0;
@@ -611,7 +603,7 @@ export default function DailyPlanner() {
         if (e.detail !== 2) return; // Ensure it's a double click
         if (copyingTaskData) return; // Don't create task if in copy mode
 
-        const sectionClicked = e.currentTarget.getAttribute('data-section-period');
+        const sectionClicked = e.currentTarget.getAttribute('data-section-period') as 'morning' | 'afternoon' | 'evening' | null; // Keep period for start hour calc
         const dayOffsetClickedAttr = e.currentTarget.getAttribute('data-day-offset');
         const dayOffsetClicked = dayOffsetClickedAttr ? parseInt(dayOffsetClickedAttr) : null;
 
@@ -630,14 +622,29 @@ export default function DailyPlanner() {
 
         const hourInBlock = (clickXrelative / PIXELS_PER_HOUR);
         const calculatedNewStartHour = baseHourForCalc + hourInBlock;
-        const snappedNewStartHour = Math.round(calculatedNewStartHour * 4) / 4;
+        // Snap to nearest 15-minute interval
+        let snappedNewStartHour = Math.round(calculatedNewStartHour * 4) / 4;
 
-        setNewTaskDayOffset(dayOffsetClicked);
-        setNewTaskHour(snappedNewStartHour);
-        setNewTaskName("New Task"); 
-        setNewTaskDuration(1); 
-        setNewTaskColor(TASK_COLORS[0]);
-        setShowTaskForm(true);
+        // Ensure snappedNewStartHour is within timeline boundaries
+        snappedNewStartHour = Math.max(TIMELINE_START_HOUR, snappedNewStartHour);
+        snappedNewStartHour = Math.min(TIMELINE_END_HOUR - MIN_TASK_DURATION, snappedNewStartHour); // Ensure task can have min duration
+        
+        const targetDate = getCalendarDateForColumn(dayOffsetClicked);
+        const newTempId = `temp-new-task-${Date.now()}`;
+
+        const newTaskDefaults: Task = {
+            id: newTempId,
+            name: "New Task", // Or perhaps an empty string to force user input
+            startHour: snappedNewStartHour,
+            duration: MIN_TASK_DURATION, // Default to min task duration
+            baseDate: targetDate.toISOString(),
+            dayOffset: 0, // Always 0 for absolute dates
+            color: TASK_COLORS[0],
+            notes: "",
+            completed: false,
+        };
+
+        openEditModal(newTaskDefaults, { isNew: true, isFromPool: false });
     };
 
     return (
@@ -652,7 +659,7 @@ export default function DailyPlanner() {
           data-section-period={period} 
           data-day-offset={dayOffset}
           onClick={handleTimelineSingleClick}
-          onDoubleClick={(e) => e.stopPropagation()}
+          onDoubleClick={handleTimelineDoubleClick}
           onMouseEnter={() => {
             if (copyingTaskData && targetCopyDayOffset !== dayOffset) {
               setTargetCopyDayOffset(dayOffset);
@@ -699,7 +706,7 @@ export default function DailyPlanner() {
               const isBeingDragged = draggingTask?.task.id === displayTask.id; 
               const isBeingResized = resizingTask?.task.id === displayTask.id; 
               const isBeingCopied = copyingTaskData?.id === displayTask.id;
-              const isCurrentlyEditing = editingTaskId === displayTask.id; 
+              // const isCurrentlyEditing = activeEditModalTask?.id === displayTask.id; // No longer needed for TaskCard styling if modal is global
               
               // Determine global operation state
               const globalResizingActive = !!resizingTask;
@@ -736,7 +743,7 @@ export default function DailyPlanner() {
               
               if (renderWidth <= 0 && !isBeingDragged) return null;
               
-              const zIndex = isCurrentlyEditing ? 110 : (isBeingDragged || isBeingResized ? 100 : 40);
+              const zIndex = (isBeingDragged || isBeingResized ? 100 : 40); // activeEditModalTask?.id === displayTask.id no longer needed for z-index here
               const taskCardBaseClassName = `absolute select-none transition-transform duration-100 ease-out hover:shadow-md group ${isBeingDragged || isBeingResized ? 'opacity-95 shadow-lg scale-[1.01] ring-1 ring-white' : 'shadow-sm'} ${isBeingCopied ? 'ring-2 ring-offset-1 ring-blue-500' : ''} ${isPastTask ? 'filter saturate-50 brightness-75' : ''}`;
 
               const taskStyleObj: React.CSSProperties = {
@@ -757,9 +764,10 @@ export default function DailyPlanner() {
                   onMouseDown={(e) => {
                     const target = e.target as HTMLElement;
                     const isButton = target.tagName === 'BUTTON' || target.closest('button') || target.tagName === 'INPUT' || target.closest('.resize-handle');
+                    // const isCurrentlyEditing = activeEditModalTask?.id === displayTask.id; // Not needed for this check anymore
                     const isDraggableArea = target.classList.contains('draggable-area') || target.closest('.draggable-area');
                     
-                    if (!isCurrentlyEditing && !isBeingCopied && !isButton && isDraggableArea) {
+                    if (/*!isCurrentlyEditing &&*/ !isBeingCopied && !isButton && isDraggableArea) {
                       handleDragStart(displayTask, e);
                     }
                   }}
@@ -767,19 +775,19 @@ export default function DailyPlanner() {
                   onDoubleClick={(e) => e.stopPropagation()}
                 >
                     <TaskCard
-                    task={displayTask}
-                    height={TASK_HEIGHT}
-                    onStartEdit={openEditModal} 
-                    onUpdateTask={handleUpdateTask} 
-                      onDelete={handleDeleteTask}
-                    onCopy={startCopy} 
-                    onColorChange={handleTaskColorChange} 
-                      editingTaskId={editingTaskId}
-                      setEditingTaskId={setEditingTaskId}
-                      onMoveToPool={copyTaskToPool}
-                    onPinTask={handlePinTask} 
+                      task={displayTask}
+                      height={TASK_HEIGHT}
+                      onStartEdit={openEditModal} // This is the openEditModal from useDailyPlanner hook
+                      // onUpdateTask={handleUpdateTask} // Removed, modal handles save
+                      // onDelete={handleDeleteTask} // Keep if TaskCard has a direct delete button, otherwise remove
+                      onCopy={startCopy} // This is startCopy from useDailyPlanner hook
+                      // onColorChange={handleTaskColorChange} // Removed, modal handles color
+                      // editingTaskId={activeEditModalTask?.id} // Removed
+                      // setEditingTaskId={setDraggingTask} // Incorrect, Removed
+                      // onMoveToPool={copyTaskToPool} // Removed, modal handles
+                      // onPinTask={handlePinTask} // Removed, modal handles
                     />
-                  {!isCurrentlyEditing && (
+                  {/*!(activeEditModalTask?.id === displayTask.id) &&*/ (
                       <>
                         <div
                         className={`resize-handle absolute left-0 top-0 bottom-0 w-3 ${isBeingResized ? 'cursor-inherit' : 'cursor-ew-resize'} hover:bg-blue-200/70 active:bg-blue-300/70 z-30`}
@@ -798,7 +806,7 @@ export default function DailyPlanner() {
         </div>
       </div>
     );
-  }, [tasks, PIXELS_PER_HOUR, PIXELS_PER_MINUTE, TIMELINE_START_HOUR, TIMELINE_END_HOUR, copyingTaskData, targetCopyDayOffset, draggingTask, resizingTask, editingTaskId, openEditModal, handleDeleteTask, startCopy, handleTaskColorChange, setEditingTaskId, copyTaskToPool, handlePinTask, TASK_COLORS, topDayOffset, setCopyingTaskData, handleDropCopy, setNewTaskName, setNewTaskDuration, setNewTaskColor, setNewTaskHour, setNewTaskDayOffset, setShowTaskForm]);
+  }, [tasks, PIXELS_PER_HOUR, PIXELS_PER_MINUTE, TIMELINE_START_HOUR, TIMELINE_END_HOUR, copyingTaskData, targetCopyDayOffset, draggingTask, resizingTask, /*editingTaskId, No longer needed*/ openEditModal, handleDeleteTask, startCopy, /*handleTaskColorChange, No longer needed here*/ /*setEditingTaskId, No longer needed here*/ /*copyTaskToPool, No longer needed here*/ /*handlePinTask, No longer needed here*/ TASK_COLORS, topDayOffset, setCopyingTaskData, handleDropCopy, activeEditModalTask]); // Added activeEditModalTask for isCurrentlyEditing checks if any remain, and removed others.
 
   /**
    * Handles the submission of the new task form.
@@ -806,28 +814,28 @@ export default function DailyPlanner() {
    * Then, it calls handleAddTask with this specific targetDate, the task details from the form,
    * and a dayOffset of 0 (as targetDate now represents the task's absolute date).
    */
-  const handleSubmitNewTaskForm = () => {
-    if (newTaskName.trim() === "") return;
-    
-    // Calculate the targetDate using the helper function and newTaskDayOffset
-    const targetDate = getCalendarDateForColumn(newTaskDayOffset);
-
-    // newTaskHour is already set. The dayOffset for handleAddTask will be 0
-    // as targetDate now represents the specific date for the task.
-    handleAddTask(targetDate, newTaskHour, { 
-      name: newTaskName,
-      duration: newTaskDuration,
-      color: newTaskColor,
-    }, 0); // Pass 0 for the new dayOffset argument
-
-    setShowTaskForm(false); // Close form
-    // Reset fields to default for next generic open, but not strictly necessary if button re-initializes
-    setNewTaskName("");
-    setNewTaskHour(9);
-    setNewTaskDuration(1);
-    setNewTaskColor(TASK_COLORS[0]);
-    setNewTaskDayOffset(topDayOffset); // Default to top day for next generic open
-  };
+  // const handleSubmitNewTaskForm = () => { // REMOVED
+  //   if (newTaskName.trim() === "") return;
+  //   
+  //   // Calculate the targetDate using the helper function and newTaskDayOffset
+  //   const targetDate = getCalendarDateForColumn(newTaskDayOffset);
+  //
+  //   // newTaskHour is already set. The dayOffset for handleAddTask will be 0
+  //   // as targetDate now represents the specific date for the task.
+  //   handleAddTask(targetDate, newTaskHour, { 
+  //     name: newTaskName,
+  //     duration: newTaskDuration,
+  //     color: newTaskColor,
+  //   }, 0); // Pass 0 for the new dayOffset argument
+  //
+  //   setShowTaskForm(false); // Close form
+  //   // Reset fields to default for next generic open, but not strictly necessary if button re-initializes
+  //   setNewTaskName("");
+  //   setNewTaskHour(9);
+  //   setNewTaskDuration(1);
+  //   setNewTaskColor(TASK_COLORS[0]);
+  //   setNewTaskDayOffset(topDayOffset); // Default to top day for next generic open
+  // };
   
   const [cloneConflictStrategy, setCloneConflictStrategy] = useState<'skip' | 'replace' | 'adjust'>('skip');
   const handleConfirmClone = () => {
@@ -892,9 +900,9 @@ export default function DailyPlanner() {
     // Hook's confirmClearPool implies modal closing.
   };
 
-  const handleCloneDay = (dayOffset: number, period: 'morning' | 'afternoon' | 'evening') => {
+  const handleCloneDay = (dayOffset: number) => {
     const date = getCalendarDateForColumn(dayOffset);
-    showCloneModal({ dayOffset, date, period });
+    showCloneModal({ dayOffset, date });
   };
 
   /**
@@ -933,6 +941,19 @@ export default function DailyPlanner() {
   return (
     <div className="min-h-screen p-2 bg-transparent text-white transition-colors">
       <div className="w-full mx-auto">
+        {/* Global Modals and Overlays */}
+        {typeof document !== 'undefined' && activeEditModalTask && (
+          <EditTaskModal
+            taskToEdit={activeEditModalTask}
+            onSave={saveTaskFromModal}
+            onClose={closeEditModal}
+            onColorChange={handleTaskColorChange}
+            onPinTask={handlePinTask}
+            onMoveToPool={copyTaskToPool}
+            pinnedTasks={pinnedTasks}
+          />
+        )}
+
         <div className="flex gap-2">
           <div className="w-56 bg-neutral-900 border border-neutral-800 rounded-lg shadow-xl flex flex-col sticky top-4 h-[calc(100vh-2rem-env(safe-area-inset-bottom))] overflow-hidden z-[150]">
             <div className="flex border-b border-neutral-700">
@@ -985,13 +1006,21 @@ export default function DailyPlanner() {
                 <div className="flex items-center justify-end space-x-4">
                   <button type="button" className="bg-neutral-700 hover:bg-neutral-600 text-white px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors"
                     onClick={() => {
-                      // Initialize form states for button click scenario
-                      setNewTaskName("New Task");
-                      setNewTaskHour(9); 
-                      setNewTaskDuration(1);
-                      setNewTaskColor(TASK_COLORS[0]);
-                      setNewTaskDayOffset(topDayOffset); // Default to top day
-                      setShowTaskForm(true);
+                      const newTempId = `temp-new-task-${Date.now()}`;
+                      const targetDateForNewTask = getCalendarDateForColumn(topDayOffset);
+                      const newTaskDefaults: Task = {
+                        id: newTempId,
+                        name: "New Task",
+                        startHour: 9, // Default start time
+                        duration: 1,  // Default duration
+                        baseDate: targetDateForNewTask.toISOString(),
+                        dayOffset: 0, // Always 0 for absolute dates
+                        color: TASK_COLORS[0],
+                        notes: "",
+                        completed: false,
+                        // No need to specify isRecurring or subTasks if not part of base Task interface or handled by modal
+                      };
+                      openEditModal(newTaskDefaults, { isNew: true, isFromPool: false });
                     }}
                   >
                     <span>+</span><span>Add New Task</span>
@@ -1019,7 +1048,7 @@ export default function DailyPlanner() {
                 <button type="button" className="border border-neutral-600 text-neutral-300 hover:bg-neutral-700 hover:text-neutral-100 px-3 py-1.5 rounded-lg font-medium flex items-center gap-2 transition-colors duration-200" 
                   onClick={() => {
                     const date = getCalendarDateForColumn(bottomDayOffset);
-                    showCloneModal({ dayOffset: bottomDayOffset, date, period: 'morning' });
+                    showCloneModal({ dayOffset: bottomDayOffset, date });
                   }}
                   title="Clone tasks from this day to the top day"
                 >
@@ -1033,84 +1062,51 @@ export default function DailyPlanner() {
               </div>
             </div>
 
-            {showTaskForm && (
-              <div className="fixed inset-0 bg-black/30 dark:bg-black/50 flex items-center justify-center z-[1001]">
-                <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-xl max-w-md w-full">
-                  <h3 className="text-xl font-bold mb-4 dark:text-white">Create New Task</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label htmlFor="newTaskNameInput" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Task Name</label>
-                      <Input id="newTaskNameInput" type="text" value={newTaskName} onChange={(e) => setNewTaskName(e.target.value)} placeholder="Enter task name" />
-                    </div>
-                    <div>
-                      <label htmlFor="newTaskSectionSelect" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Time Period / Day</label>
-                      {/* Temporarily simplify/disable direct state update from this select to avoid NaN issues until it's fully refactored */}
-                      <select
-                        id="newTaskSectionSelect"
-                        // value={newTaskDayOffset === topDayOffset ? 'top_morning' : ...} // Complex value binding
-                        // onChange={(e) => { ... complex logic to set newTaskDayOffset and potentially newTaskHour ... }}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
-                      >
-                        <option value={`${topDayOffset}_morning`}>Top Day - Morning</option> {/* Example value, would need parsing */} 
-                        <option value={`${topDayOffset}_afternoon`}>Top Day - Afternoon</option>
-                        <option value={`${topDayOffset}_evening`}>Top Day - Evening</option>
-                        <option value={`${bottomDayOffset}_morning`}>Bottom Day - Morning</option>
-                        <option value={`${bottomDayOffset}_afternoon`}>Bottom Day - Afternoon</option>
-                        <option value={`${bottomDayOffset}_evening`}>Bottom Day - Evening</option>
-                      </select>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label htmlFor="newTaskHourSelect" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Hour (approx)</label>
-                        <Input id="newTaskHourSelect" type="number" value={newTaskHour} onChange={(e) => setNewTaskHour(parseFloat(e.target.value))} step="0.25" min={TIMELINE_START_HOUR} max={TIMELINE_END_HOUR-MIN_TASK_DURATION} />
-                      </div>
-                      <div>
-                        <label htmlFor="newTaskDurationSelect" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duration</label>
-                        <select id="newTaskDurationSelect" value={newTaskDuration} onChange={(e) => setNewTaskDuration(parseFloat(e.target.value))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md dark:bg-gray-800 dark:text-white">
-                          {[0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4].map(d => <option key={d} value={d}>{formatDuration(d)}</option>)}
-                        </select>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Color</label>
-                      <div className="grid grid-cols-8 gap-1.5">
-                        {TASK_COLORS.map((color) => (<button key={`color-button-${color}-${newTaskName}`} type="button" className={`w-6 h-6 rounded-full ${color} ${newTaskColor === color ? 'ring-2 ring-offset-2 ring-blue-500 dark:ring-blue-400' : ''}`} onClick={() => setNewTaskColor(color)}/>))}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex justify-end mt-6 gap-2">
-                    <Button variant="outline" onClick={() => setShowTaskForm(false)}>Cancel</Button>
-                    <Button onClick={handleSubmitNewTaskForm}>Create Task</Button>
-                  </div>
-                </div>
-              </div>
-            )}
+            {showCloneConfirmation && (() => {
+              // Determine source and destination labels for the message
+              const sourceDayLabel = getDateLabel(showCloneConfirmation.dayOffset);
+              let destinationDayViewOffset = topDayOffset; // Default destination is top view
+              if (topDayOffset === showCloneConfirmation.dayOffset) { // If top view is the source, clone to bottom view
+                destinationDayViewOffset = bottomDayOffset;
+              }
+              // If source and destination are the same (e.g. single view mode or cloning to self, which is unlikely for button)
+              // This might need a more robust way to determine a *different* day if they are the same.
+              // For now, this handles the two-view clone scenario.
+              if (destinationDayViewOffset === showCloneConfirmation.dayOffset && topDayOffset !== bottomDayOffset) {
+                // This case means source is (e.g.) top, and top became bottom, so they are same.
+                // Pick the *other* view.
+                // If initially source was top, and top is still top (but also somehow destination), then use bottom.
+                // This logic is primarily for the case where top and bottom might have swapped or become identical.
+                // A simple rule: if source is top, dest is bottom. If source is bottom, dest is top.
+                // This is already handled by the initial assignment and the if block.
+              }
+              const destinationDayLabel = getDateLabel(destinationDayViewOffset);
 
-            {showCloneConfirmation && (
-              <div className="fixed inset-0 bg-black/30 dark:bg-black/50 flex items-center justify-center z-[1001]">
-                <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-xl max-w-md w-full">
-                  <h3 className="text-xl font-bold mb-2 dark:text-white">Clone Tasks</h3>
-                  <p className="text-gray-600 dark:text-gray-300 mb-4">
-                    {isClient ? `Clone tasks from ${getDateLabel(bottomDayOffset)} to ${getDateLabel(topDayOffset)}.` : "Loading details..."}
-                  </p>
-                  <div className="mb-4">
-                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Conflict Strategy:</h4>
-                    <div className="space-y-2">
-                        {['skip', 'replace', 'adjust'].map(strategy => (
-                            <label key={`conflict-strategy-${strategy}`} className="flex items-center">
-                                <input type="radio" name="conflictStrategy" value={strategy} checked={cloneConflictStrategy === strategy} onChange={() => setCloneConflictStrategy(strategy as any)} className="mr-2"/>
-                                <span className="capitalize text-gray-800 dark:text-white">{strategy}</span>
-                      </label>
-                        ))}
-                        </div>
-                        </div>
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={cancelCloneDay}>Cancel</Button>
-                    <Button onClick={handleConfirmClone}>Clone Tasks</Button>
+              return (
+                <div className="fixed inset-0 bg-black/30 dark:bg-black/50 flex items-center justify-center z-[1001]">
+                  <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-xl max-w-md w-full">
+                    <h3 className="text-xl font-bold mb-2 dark:text-white">Clone Tasks</h3>
+                    <p className="text-gray-600 dark:text-gray-300 mb-4">
+                      {isClient ? `Clone tasks from ${sourceDayLabel} to ${destinationDayLabel}.` : "Loading details..."}
+                    </p>
+                    <div className="mb-4">
+                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Conflict Strategy:</h4>
+                      <div className="space-y-2">
+                          {['skip', 'replace', 'adjust'].map(strategy => (
+                              <label key={`conflict-strategy-${strategy}`} className="flex items-center">
+                                  <input type="radio" name="conflictStrategy" value={strategy} checked={cloneConflictStrategy === strategy} onChange={() => setCloneConflictStrategy(strategy as any)} className="mr-2"/>
+                                  <span className="capitalize text-gray-800 dark:text-white">{strategy}</span>
+                        </label>
+                          ))}
+                          </div>
+                          </div>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={cancelCloneDay}>Cancel</Button>
+                      <Button onClick={handleConfirmClone}>Clone Tasks</Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )} )()}
 
             {colorPickerState && (
               <div 
