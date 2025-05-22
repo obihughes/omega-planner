@@ -33,7 +33,7 @@ import { checkOverlap, resolveCollisionsForResize, resolveCollisionsForDrag } fr
 
 export default function DailyPlanner() {
   const {
-    tasks,
+    tasksByDate,
     poolTasks,
     pinnedTasks,
     activeSidebarTab,
@@ -42,7 +42,6 @@ export default function DailyPlanner() {
     getDateLabel,
     setTopDayOffset,
     setBottomDayOffset,
-    setTasks,
     setPoolTasks,
     setPinnedTasks,
     setActiveSidebarTab,
@@ -52,15 +51,12 @@ export default function DailyPlanner() {
     setDraggingTask,
     resizingTask,
     setResizingTask,
-    contextMenu,
-    setContextMenu,
     copyingTaskData,
     setCopyingTaskData,
     targetCopyDayOffset,
     setTargetCopyDayOffset,
     colorPickerState,
     activeEditModalTask,
-    hasConflict,
     handleAddTask,
     handleDeleteTask,
     handleUpdateTask,
@@ -162,12 +158,12 @@ export default function DailyPlanner() {
       { 
         id: originalTaskAtResizeStart.id, 
         baseDate: originalTaskAtResizeStart.baseDate,
-        initialStartHour: initialStartHour, // Pass initial start for duration recalculation if needed by helper
-        initialDuration: initialDuration // Pass initial duration
+        initialStartHour: initialStartHour, 
+        initialDuration: initialDuration 
       },
       livePreviewStartHour, 
       livePreviewDuration, 
-      tasks, 
+      tasksByDate.get(getDateWithoutTime(originalTaskAtResizeStart.baseDate).toISOString()) || [],
       edge
     );
 
@@ -207,7 +203,7 @@ export default function DailyPlanner() {
       };
     });
 
-  }, [resizingTask, APP_PIXELS_PER_HOUR, APP_MIN_TASK_DURATION, APP_TIMELINE_START_HOUR, APP_TIMELINE_END_HOUR, setResizingTask, tasks]);
+  }, [resizingTask, APP_PIXELS_PER_HOUR, APP_MIN_TASK_DURATION, APP_TIMELINE_START_HOUR, APP_TIMELINE_END_HOUR, setResizingTask, tasksByDate]);
 
   /**
    * Handles mouse move events during a task drag operation.
@@ -277,11 +273,11 @@ export default function DailyPlanner() {
         { 
           id: draggedTaskItem.id, 
           duration: taskDuration, 
-          baseDate: draggedTaskItem.baseDate // Pass current baseDate, helper uses it for context if needed
+          baseDate: draggedTaskItem.baseDate 
         },
         snappedNewStartHourBeforeCollision,
         targetColumnDate,
-        tasks,
+        tasksByDate.get(targetColumnDate.toISOString()) || [],
         APP_TIMELINE_START_HOUR,
         APP_TIMELINE_END_HOUR
       );
@@ -322,7 +318,7 @@ export default function DailyPlanner() {
     APP_TIMELINE_SPLIT_HOUR_2, 
     APP_TIMELINE_END_HOUR,
     APP_MIN_TASK_DURATION,
-    tasks // Added tasks to dependency array
+    tasksByDate
   ]);
 
   useEffect(() => {
@@ -398,7 +394,10 @@ export default function DailyPlanner() {
 
     const columnCalendarDate = getCalendarDateForColumn(dayOffset);
 
-    const tasksToRender = tasks.filter(t => {
+    // Get tasks for this specific column date from the memoized map
+    const tasksForThisColumnDate = tasksByDate.get(columnCalendarDate.toISOString()) || [];
+
+    const tasksToRender = tasksForThisColumnDate.filter(t => {
       // If we have a task being dragged, handle it specially
       if (draggingTask && draggingTask.task.id === t.id) {
         const draggingTaskTargetDate = getDateWithoutTime(draggingTask.task.baseDate);
@@ -407,11 +406,14 @@ export default function DailyPlanner() {
         return decision;
       }
 
-      // For normal tasks, use their baseDate + dayOffset to determine where they belong
-      const taskDate = getDateWithoutTime(t.baseDate);
-      taskDate.setDate(taskDate.getDate() + t.dayOffset);
-      
-      return isSameCalendarDate(taskDate, columnCalendarDate);
+      // For normal tasks, their baseDate (which is already an ISO string at midnight)
+      // directly maps to the key in tasksByDate. No further date math needed here if tasksByDate is correct.
+      // The tasksForThisColumnDate should already contain only tasks for this columnCalendarDate.
+      // The check below becomes redundant if tasksForThisColumnDate is sourced correctly.
+      // const taskDate = getDateWithoutTime(t.baseDate); 
+      // taskDate.setDate(taskDate.getDate() + t.dayOffset); // t.dayOffset should be 0
+      // return isSameCalendarDate(taskDate, columnCalendarDate);
+      return true; // All tasks in tasksForThisColumnDate are for this column
     }).filter(t => {
       // Continue with same filter for time periods...
       const taskToConsider = (draggingTask && draggingTask.task.id === t.id) ? draggingTask.task : t;
@@ -586,10 +588,33 @@ export default function DailyPlanner() {
                   displayTask = resizingTask.task;
               }
 
-              const originalIndex = tasks.findIndex((t) => t.id === task.id); // Use task.id for originalIndex from main array
-              if (originalIndex === -1 && !(draggingTask && draggingTask.task.id === task.id)) return null; 
+              // const originalIndex = tasks.findIndex((t) => t.id === task.id); // Old way, tasks no longer available here
+              // New approach for a somewhat stable color index if task.color is not set:
+              let colorIndex = 0;
+              if (displayTask.id) {
+                const numericIdPart = parseInt(displayTask.id.replace(/[^0-9]/g, ''), 10);
+                if (!isNaN(numericIdPart)) {
+                  colorIndex = numericIdPart;
+                }
+              }
+              // Ensure originalIndex is not -1 if the task is a new temporary task from dragging/resizing that might not be in tasksByDate yet
+              const isTempDraggingTask = draggingTask && draggingTask.task.id === task.id && !tasksByDate.get(getDateWithoutTime(task.baseDate).toISOString())?.find(t => t.id === task.id);
+              const isTempResizingTask = resizingTask && resizingTask.task.id === task.id && !tasksByDate.get(getDateWithoutTime(task.baseDate).toISOString())?.find(t => t.id === task.id);
+
+              if (isTempDraggingTask || isTempResizingTask) {
+                // For new tasks not yet in the main state, originalIndex check might be tricky.
+                // Defaulting to a specific color or a random one from the list for these previews.
+              } else {
+                // This check is to prevent errors if a task somehow isn't in tasksByDate (should not happen for rendered tasks)
+                const tasksOnDate = tasksByDate.get(getDateWithoutTime(task.baseDate).toISOString());
+                if (!tasksOnDate || !tasksOnDate.find(t => t.id === task.id)) {
+                  // If task is not found in tasksByDate (e.g. it's a new task being dragged/resized before saving)
+                  // we can use the colorIndex derived from its ID, or a default.
+                  // The `displayTask` should be the one from draggingTask or resizingTask in these cases.
+                } 
+              }
               
-              const color = displayTask.color || TASK_COLORS[originalIndex % TASK_COLORS.length]; 
+              const color = displayTask.color || TASK_COLORS[colorIndex % TASK_COLORS.length]; 
               const isBeingDragged = draggingTask?.task.id === displayTask.id; 
               const isBeingResized = resizingTask?.task.id === displayTask.id; 
               const isBeingCopied = copyingTaskData?.id === displayTask.id;
@@ -684,7 +709,7 @@ export default function DailyPlanner() {
         </div>
       </div>
     );
-  }, [tasks, APP_PIXELS_PER_HOUR, APP_PIXELS_PER_MINUTE, APP_TIMELINE_START_HOUR, APP_TIMELINE_END_HOUR, APP_TIMELINE_SPLIT_HOUR_1, APP_TIMELINE_SPLIT_HOUR_2, copyingTaskData, targetCopyDayOffset, draggingTask, resizingTask, openEditModal, handleDeleteTask, startCopy, TASK_COLORS, topDayOffset, setCopyingTaskData, handleDropCopy, activeEditModalTask, currentTimeForMarker]);
+  }, [tasksByDate, APP_PIXELS_PER_HOUR, APP_PIXELS_PER_MINUTE, APP_TIMELINE_START_HOUR, APP_TIMELINE_END_HOUR, APP_TIMELINE_SPLIT_HOUR_1, APP_TIMELINE_SPLIT_HOUR_2, copyingTaskData, targetCopyDayOffset, draggingTask, resizingTask, openEditModal, handleDeleteTask, startCopy, TASK_COLORS, topDayOffset, setCopyingTaskData, handleDropCopy, activeEditModalTask, currentTimeForMarker, tasksByDate]);
 
   /**
    * Handles the submission of the new task form.
@@ -706,34 +731,6 @@ export default function DailyPlanner() {
       cloneDayTasks(sourceDate, destinationDate);
     }
   };
-
-  // Diagnostic useEffect to check for duplicate task IDs in the main tasks state
-  useEffect(() => {
-    const idCounts = tasks.reduce((acc, task) => {
-      acc[task.id] = (acc[task.id] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    const duplicates = Object.entries(idCounts).filter(([id, count]) => count > 1);
-    if (duplicates.length > 0) {
-      console.warn('Duplicate task IDs found in tasks state in DailyPlanner.tsx:', Object.fromEntries(duplicates));
-      
-      // Fix duplicate task IDs by keeping only the first occurrence of each ID
-      const uniqueTaskIds = new Set<string>();
-      const uniqueTasks = tasks.filter(task => {
-        if (uniqueTaskIds.has(task.id)) {
-          return false; // Skip this duplicate
-        }
-        uniqueTaskIds.add(task.id);
-        return true;
-      });
-      
-      // Only update if we actually removed any duplicates
-      if (uniqueTasks.length !== tasks.length) {
-        console.log('Fixing duplicate tasks - removing', tasks.length - uniqueTasks.length, 'duplicates');
-        setTasks(uniqueTasks);
-      }
-    }
-  }, [tasks]);
 
   const handleClearPool = () => {
     showClearPoolModal(); 
@@ -767,10 +764,10 @@ export default function DailyPlanner() {
       const offsetX = e.clientX - rect.left;
 
       // Find the index of this task in the current tasks array for taskIndex (if still needed by other logic)
-      const taskIndex = tasks.findIndex(t => t.id === taskToDrag.id);
+      // const taskIndex = tasks.findIndex(t => t.id === taskToDrag.id); // No longer needed
 
       setDraggingTask({ 
-        taskIndex: taskIndex, // Keep taskIndex if it's used elsewhere, otherwise could be removed
+        // taskIndex: taskIndex, // No longer used
         initialMouseY: e.clientY, 
         initialStartHour: taskToDrag.startHour,
         initialDayOffset: taskToDrag.dayOffset, // Should be 0 for a correctly cloned task
@@ -779,7 +776,7 @@ export default function DailyPlanner() {
         offsetX: offsetX,
       });
     }
-  }, [tasks, cancelCopy, setResizingTask, setDraggingTask]); // tasks is a dependency for findIndex
+  }, [cancelCopy, setResizingTask, setDraggingTask]); // Removed tasks from dependency array
 
   return (
     <div className="min-h-screen p-2 bg-transparent text-white transition-colors">

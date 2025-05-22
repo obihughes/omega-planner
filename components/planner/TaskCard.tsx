@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import ReactDOM from 'react-dom';
-import { Input } from "@/components/ui";
 import { Edit3, Copy, Eye } from 'lucide-react';
 
 import { formatDuration, formatTime } from '@/utils/formatters';
-import { Task, PinnedTask } from '../../types/planner';
+import { Task } from '../../types/planner';
 import { TASK_COLORS } from '../../lib/constants';
 
 export interface TaskCardProps {
