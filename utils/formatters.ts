@@ -1,10 +1,16 @@
 // Create a new file for formatting utilities
-export const formatDuration = (duration: number): string => {
-  const hours = Math.floor(duration);
-  const minutes = Math.round((duration - hours) * 60);
-  
-  if (hours === 0) return `${minutes}m`;
-  if (minutes === 0) return `${hours}h`;
+export const formatDuration = (durationInHours: number): string => {
+  if (durationInHours <= 0) return '0m'; // Handle zero or negative duration
+
+  const hours = Math.floor(durationInHours);
+  const minutes = Math.round((durationInHours - hours) * 60);
+
+  if (hours === 0) {
+    return `${minutes}m`;
+  }
+  if (minutes === 0) {
+    return `${hours}h`;
+  }
   return `${hours}h ${minutes}m`;
 };
 

@@ -516,18 +516,19 @@ export default function DailyPlanner() {
 
         // Ensure snappedNewStartHour is within timeline boundaries
         snappedNewStartHour = Math.max(APP_TIMELINE_START_HOUR, snappedNewStartHour);
-        snappedNewStartHour = Math.min(APP_TIMELINE_END_HOUR - APP_MIN_TASK_DURATION, snappedNewStartHour); // Ensure task can have min duration
+        // Ensure task can have min duration -- this should now consider the new default 1h duration
+        snappedNewStartHour = Math.min(APP_TIMELINE_END_HOUR - 1, snappedNewStartHour); 
         
         const targetDate = getCalendarDateForColumn(dayOffsetClicked);
         const newTempId = `temp-new-task-${Date.now()}`;
 
         const newTaskDefaults: Task = {
             id: newTempId,
-            name: "New Task", // Or perhaps an empty string to force user input
+            name: "New Task", 
             startHour: snappedNewStartHour,
-            duration: APP_MIN_TASK_DURATION, // Default to min task duration
+            duration: 1, // Default duration to 1 hour
             baseDate: targetDate.toISOString(),
-            dayOffset: 0, // Always 0 for absolute dates
+            dayOffset: 0, 
             color: TASK_COLORS[0],
             notes: "",
             completed: false,
@@ -853,9 +854,9 @@ export default function DailyPlanner() {
                         id: newTempId,
                         name: "New Task",
                         startHour: 9, // Default start time
-                        duration: 1,  // Default duration
+                        duration: 1,  // Default duration to 1 hour
                         baseDate: targetDateForNewTask.toISOString(),
-                        dayOffset: 0, // Always 0 for absolute dates
+                        dayOffset: 0, 
                         color: TASK_COLORS[0],
                         notes: "",
                         completed: false,

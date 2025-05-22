@@ -1,24 +1,25 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import ReactDOM from 'react-dom';
 import { Input, Button } from "@/components/ui"; // Assuming Button is also from ui
-import { PinIcon, FolderPlus, Trash2, X as XIcon } from 'lucide-react';
+import { PinIcon, FolderPlus, Trash2, X as XIcon, ChevronDownIcon } from 'lucide-react';
 import { Task, PinnedTask } from '../../types/planner'; // Adjusted path
 import { ActiveModalTask } from '../../hooks/useModalManager'; // Adjusted path
 import { TASK_COLORS, TIMELINE_START_HOUR, TIMELINE_END_HOUR, MIN_TASK_DURATION } from '../../lib/constants'; // Adjusted path
 import { formatDuration } from "@/utils/formatters";
+import CustomTimePicker from '../primitives/CustomTimePicker'; // Import the new component
 
 // Duration options (can be kept here or moved to constants)
 const DURATION_OPTIONS = [
     { value: 0.25, label: '15 minutes' },
     { value: 0.5, label: '30 minutes' },
     { value: 0.75, label: '45 minutes' },
-    { value: 1, label: '1 hour' },
-    { value: 1.5, label: '1.5 hours' },
-    { value: 2, label: '2 hours' },
-    { value: 3, label: '3 hours' },
-    { value: 4, label: '4 hours' },
-    { value: 6, label: '6 hours' },
-    { value: 8, label: '8 hours' }
+    { value: 1, label: '1 hour' },        // Reverted to Xh Ym format
+    { value: 1.5, label: '1 hour 30 minutes' }, // Reverted
+    { value: 2, label: '2 hours' },      // Reverted
+    { value: 3, label: '3 hours' },      // Reverted
+    { value: 4, label: '4 hours' },      // Reverted
+    { value: 6, label: '6 hours' },      // Reverted
+    { value: 8, label: '8 hours' }       // Reverted
 ];
 
 export interface EditTaskModalProps {
@@ -47,8 +48,11 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   const [editingDuration, setEditingDuration] = useState(taskToEdit.duration);
   const [editingColor, setEditingColor] = useState(taskToEdit.color || TASK_COLORS[0]);
   const [editingNotes, setEditingNotes] = useState(taskToEdit.notes || '');
+  const [isDurationDropdownOpen, setIsDurationDropdownOpen] = useState(false);
   
   const menuRef = useRef<HTMLDivElement>(null);
+  const durationControlRef = useRef<HTMLDivElement>(null); // Ref for the duration control wrapper
+  const durationDropdownRef = useRef<HTMLDivElement>(null); // Ref for the duration dropdown itself
 
   // Initialize form fields when taskToEdit changes (e.g., when modal opens for a different task)
   useEffect(() => {
@@ -62,15 +66,22 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   // Handle clicks outside the modal to close it
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      // Close main modal
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         onClose();
+      }
+      // Close duration dropdown if open and click is outside of it and its toggle
+      if (isDurationDropdownOpen && 
+          durationDropdownRef.current && !durationDropdownRef.current.contains(event.target as Node) &&
+          durationControlRef.current && !durationControlRef.current.contains(event.target as Node)) {
+        setIsDurationDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [onClose]);
+  }, [onClose, isDurationDropdownOpen]); // Added isDurationDropdownOpen to dependencies
 
   const isTaskPinned = pinnedTasks.some(
     pinnedTask => pinnedTask.originalId === taskToEdit.id || pinnedTask.id === taskToEdit.id
@@ -172,28 +183,12 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
             <label htmlFor={`editStartHourInput-${taskToEdit.id}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Start Time
             </label>
-            <select
-              id={`editStartHourInput-${taskToEdit.id}`}
+            <CustomTimePicker 
               value={editingStartHour}
-              onChange={(e) => setEditingStartHour(parseFloat(e.target.value))}
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
-              onClick={stopPropagation}
-              onMouseDown={stopPropagation}
-            >
-              {Array.from({ length: TIMELINE_END_HOUR - TIMELINE_START_HOUR + 1 }, (_, i) => { // +1 to include end hour if needed
-                const hour = TIMELINE_START_HOUR + i * 0.25; // Allow quarter hours
-                if (hour > TIMELINE_END_HOUR - MIN_TASK_DURATION) return null; // ensure min duration can be selected
-                const period = hour < 12 ? 'AM' : (hour < 24 ? 'PM' : 'AM');
-                let displayHour = Math.floor(hour) % 12;
-                if (displayHour === 0) displayHour = 12; // Convert 0 to 12 for 12 AM/PM
-                const minutes = (hour % 1) * 60;
-                return (
-                  <option key={hour} value={hour}>
-                    {`${displayHour}:${minutes.toString().padStart(2, '0')} ${period}`}
-                  </option>
-                );
-              }).filter(Boolean)}
-            </select>
+              onChange={setEditingStartHour}
+              minHour={TIMELINE_START_HOUR}
+              maxHour={TIMELINE_END_HOUR - MIN_TASK_DURATION}
+            />
           </div>
 
           <div>
@@ -201,43 +196,46 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
               Duration
             </label>
             <div 
-              className="relative group"
-              onWheel={(e) => {
-                // e.preventDefault(); // Keep commented as per previous fix
-                // e.stopPropagation();
-                stopPropagation(e);
-                const currentIndex = DURATION_OPTIONS.findIndex(opt => opt.value === editingDuration);
-                if (e.deltaY > 0 && currentIndex < DURATION_OPTIONS.length - 1) {
-                  setEditingDuration(DURATION_OPTIONS[currentIndex + 1].value);
-                } else if (e.deltaY < 0 && currentIndex > 0) {
-                  setEditingDuration(DURATION_OPTIONS[currentIndex - 1].value);
-                }
-              }}
+              ref={durationControlRef}
+              className="relative"
+              // REMOVED onWheel handler from here
             >
-              <div 
-                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white cursor-pointer"
-                onClick={stopPropagation}
-                onMouseDown={stopPropagation}
+              <button
+                type="button"
+                className="w-full px-3 py-2 text-sm text-left border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white cursor-pointer flex justify-between items-center"
+                onClick={() => setIsDurationDropdownOpen(!isDurationDropdownOpen)}
+                // onMouseDown={stopPropagation} // This can likely be removed too if not specifically needed for focus quirks
               >
-                {DURATION_OPTIONS.find(opt => opt.value === editingDuration)?.label || formatDuration(editingDuration)}
-              </div>
-              <div className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 max-h-48 overflow-y-auto">
-                {DURATION_OPTIONS.map((option) => (
-                  <div
-                    key={option.value}
-                    className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 ${editingDuration === option.value ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
-                    onClick={() => setEditingDuration(option.value)}
-                  >
-                    {option.label}
-                  </div>
-                ))}
-              </div>
+                <span>{DURATION_OPTIONS.find(opt => opt.value === editingDuration)?.label || formatDuration(editingDuration)}</span>
+                <ChevronDownIcon className={`w-4 h-4 text-gray-500 transition-transform ${isDurationDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {isDurationDropdownOpen && (
+                <div 
+                  ref={durationDropdownRef}
+                  className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50 max-h-48 overflow-y-auto"
+                  // Add onWheel to the dropdown list itself if scroll sensitivity becomes an issue on the list items
+                  // For now, individual items are clicked.
+                >
+                  {DURATION_OPTIONS.map((option) => (
+                    <div
+                      key={option.value}
+                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 ${editingDuration === option.value ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                      onClick={() => {
+                        setEditingDuration(option.value);
+                        setIsDurationDropdownOpen(false);
+                      }}
+                    >
+                      {option.label} 
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Color</label>
+          {/* <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Color</label> */}
           <div className="grid grid-cols-8 gap-0.5">
             {TASK_COLORS.map(colorClass => (
               <button
