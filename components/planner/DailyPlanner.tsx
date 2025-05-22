@@ -26,10 +26,10 @@ import {
     TIMELINE_HEADER_HEIGHT_PX,
     GRID_LINE_STYLE
 } from '../../lib/constants';
-import { TaskCard } from './TaskCard';
+import { TaskCard, MemoizedTaskCard } from './TaskCard';
 import { EditTaskModal } from './EditTaskModal';
 import { getCalendarDateForColumn, getDateWithoutTime, isSameCalendarDate } from '../../utils/dateUtils';
-import { checkOverlap } from '../../utils/taskUtils';
+import { checkOverlap, resolveCollisionsForResize, resolveCollisionsForDrag } from '../../utils/taskUtils';
 
 export default function DailyPlanner() {
   const {
@@ -91,6 +91,12 @@ export default function DailyPlanner() {
     isClient,
   } = useDailyPlanner();
 
+  const [currentTimeForMarker, setCurrentTimeForMarker] = useState(new Date());
+  useEffect(() => {
+      const timerId = setInterval(() => setCurrentTimeForMarker(new Date()), 60000); // Update every minute
+      return () => clearInterval(timerId); // Cleanup on unmount
+  }, []); // Empty dependency array ensures this runs only once on mount and cleans up on unmount
+
   const TASK_HEIGHT = TIMELINE_COLUMN_HEIGHT - TASK_BASE_TOP - TASK_BASE_BOTTOM_PADDING;
 
   const timelineScrollRef = useRef<HTMLDivElement>(null);
@@ -132,8 +138,7 @@ export default function DailyPlanner() {
     let livePreviewDuration = initialDuration;
 
     // Determine the calendar date of the task being resized.
-    // This is important for fetching only relevant tasks for collision detection.
-    const taskCalendarDate = getDateWithoutTime(originalTaskAtResizeStart.baseDate);
+    // const taskCalendarDate = getDateWithoutTime(originalTaskAtResizeStart.baseDate); // Now handled within resolveCollisionsForResize
 
     if (edge === 'start') {
         let rawNewStartHour = initialStartHour + dHours;
@@ -143,58 +148,31 @@ export default function DailyPlanner() {
         }
         livePreviewStartHour = rawNewStartHour;
         livePreviewDuration = (initialStartHour + initialDuration) - livePreviewStartHour;
-
-        // Collision detection for start edge: Only consider tasks on the same absolute calendar date.
-        const otherTasksOnSameDay = tasks.filter(t => {
-            if (t.id === originalTaskAtResizeStart.id) return false;
-            const otherTaskCalendarDate = getDateWithoutTime(t.baseDate);
-            return isSameCalendarDate(otherTaskCalendarDate, taskCalendarDate);
-        });
-
-        let maxEndTimeOfCollidingTasks = -Infinity;
-        for (const otherTask of otherTasksOnSameDay) {
-            if (checkOverlap(livePreviewStartHour, livePreviewDuration, otherTask.startHour, otherTask.duration)) {
-                 // We are trying to move the start edge to the left, potentially over otherTask
-                 // So, the new startHour cannot be less than the end of otherTask
-                if (livePreviewStartHour < (otherTask.startHour + otherTask.duration)) {
-                    maxEndTimeOfCollidingTasks = Math.max(maxEndTimeOfCollidingTasks, otherTask.startHour + otherTask.duration);
-                }
-            }
-        }
-        if (maxEndTimeOfCollidingTasks > -Infinity && livePreviewStartHour < maxEndTimeOfCollidingTasks) {
-            livePreviewStartHour = maxEndTimeOfCollidingTasks;
-            livePreviewDuration = (initialStartHour + initialDuration) - livePreviewStartHour;
-        }
-
     } else { // edge === 'end'
         let rawNewEndHour = (initialStartHour + initialDuration) + dHours;
         const nearestSnapPoint = Math.round(rawNewEndHour * 4) / 4;
         if (Math.abs(rawNewEndHour - nearestSnapPoint) <= SNAP_THRESHOLD_HOURS) {
             rawNewEndHour = nearestSnapPoint;
         }
-        // livePreviewStartHour remains initialStartHour for end-edge resize
         livePreviewDuration = rawNewEndHour - initialStartHour;
-
-        // Collision detection for end edge: Only consider tasks on the same absolute calendar date.
-        const otherTasksOnSameDay = tasks.filter(t => { 
-            if (t.id === originalTaskAtResizeStart.id) return false;
-            const otherTaskCalendarDate = getDateWithoutTime(t.baseDate);
-            return isSameCalendarDate(otherTaskCalendarDate, taskCalendarDate);
-        });
-        let minStartTimeOfCollidingTasks = Infinity;
-        for (const otherTask of otherTasksOnSameDay) {
-            if (checkOverlap(livePreviewStartHour, livePreviewDuration, otherTask.startHour, otherTask.duration)) {
-                // We are trying to move the end edge to the right, potentially over otherTask
-                // So, the new end (start + duration) cannot be greater than the start of otherTask
-                if ((livePreviewStartHour + livePreviewDuration) > otherTask.startHour) {
-                    minStartTimeOfCollidingTasks = Math.min(minStartTimeOfCollidingTasks, otherTask.startHour);
-                }
-            }
-        }
-        if (minStartTimeOfCollidingTasks < Infinity && (livePreviewStartHour + livePreviewDuration) > minStartTimeOfCollidingTasks) {
-            livePreviewDuration = minStartTimeOfCollidingTasks - livePreviewStartHour;
-        }
     }
+
+    // Resolve collisions using the new helper function
+    const collisionResult = resolveCollisionsForResize(
+      { 
+        id: originalTaskAtResizeStart.id, 
+        baseDate: originalTaskAtResizeStart.baseDate,
+        initialStartHour: initialStartHour, // Pass initial start for duration recalculation if needed by helper
+        initialDuration: initialDuration // Pass initial duration
+      },
+      livePreviewStartHour, 
+      livePreviewDuration, 
+      tasks, 
+      edge
+    );
+
+    livePreviewStartHour = collisionResult.startHour;
+    livePreviewDuration = collisionResult.duration;
 
     // --- Apply Minimal Constraints for Live Preview (to the potentially magnetically snapped AND collision-adjusted values) ---
     livePreviewDuration = Math.max(APP_MIN_TASK_DURATION, livePreviewDuration);
@@ -207,7 +185,7 @@ export default function DailyPlanner() {
         livePreviewDuration = Math.max(APP_MIN_TASK_DURATION, livePreviewDuration);
         livePreviewDuration = Math.min(livePreviewDuration, APP_TIMELINE_END_HOUR - livePreviewStartHour);
     } else { // edge === 'end'
-        livePreviewStartHour = initialStartHour; // Start is fixed
+        // livePreviewStartHour remains initialStartHour for end-edge resize (already set before collision check)
         livePreviewDuration = Math.min(livePreviewDuration, APP_TIMELINE_END_HOUR - livePreviewStartHour);
         livePreviewDuration = Math.max(APP_MIN_TASK_DURATION, livePreviewDuration);
     }
@@ -290,42 +268,25 @@ export default function DailyPlanner() {
       newStartHour = Math.max(APP_TIMELINE_START_HOUR, newStartHour);
       newStartHour = Math.min(APP_TIMELINE_END_HOUR - taskDuration, newStartHour);
       
-      let snappedNewStartHour = Math.round(newStartHour * 4) / 4;
+      let snappedNewStartHourBeforeCollision = Math.round(newStartHour * 4) / 4;
 
-      // Collision detection for dragging
+      // Collision detection for dragging using the new helper function
       const targetColumnDate = getCalendarDateForColumn(targetDayOffset as number);
+      
+      const collisionResult = resolveCollisionsForDrag(
+        { 
+          id: draggedTaskItem.id, 
+          duration: taskDuration, 
+          baseDate: draggedTaskItem.baseDate // Pass current baseDate, helper uses it for context if needed
+        },
+        snappedNewStartHourBeforeCollision,
+        targetColumnDate,
+        tasks,
+        APP_TIMELINE_START_HOUR,
+        APP_TIMELINE_END_HOUR
+      );
 
-      const otherTasksOnTargetDate = tasks.filter(t => {
-        if (t.id === draggedTaskItem.id) return false;
-        const taskAbsDate = getDateWithoutTime(t.baseDate);
-        
-        return isSameCalendarDate(taskAbsDate, targetColumnDate);
-      });
-
-      let canMove = true;
-      for (const otherTask of otherTasksOnTargetDate) { 
-        const draggedAbsDate = getDateWithoutTime(draggedTaskItem.baseDate);
-        const otherAbsDate = getDateWithoutTime(otherTask.baseDate);
-        
-        const overlaps = checkOverlap(snappedNewStartHour, taskDuration, otherTask.startHour, otherTask.duration);
-
-        if (overlaps) {
-          if (snappedNewStartHour < otherTask.startHour) {
-            snappedNewStartHour = otherTask.startHour - taskDuration;
-          } else { 
-            snappedNewStartHour = otherTask.startHour + otherTask.duration;
-          }
-          snappedNewStartHour = Math.max(APP_TIMELINE_START_HOUR, snappedNewStartHour);
-          snappedNewStartHour = Math.min(APP_TIMELINE_END_HOUR - taskDuration, snappedNewStartHour);
-          snappedNewStartHour = Math.round(snappedNewStartHour * 4) / 4; // Re-snap after adjustment
-
-          // Final check if the adjusted position is still overlapping (e.g. squeezed between two tasks)
-          if (checkOverlap(snappedNewStartHour, taskDuration, otherTask.startHour, otherTask.duration)) {
-             canMove = false; // If still overlaps after trying to adjust, then prevent move for this iteration
-          }
-          break; // For simplicity, handle first collision encountered. More complex logic could find best fit.
-        }
-      }
+      const { snappedNewStartHour, canMove } = collisionResult;
 
       if (canMove) {
         setDraggingTask(prev => {
@@ -464,11 +425,6 @@ export default function DailyPlanner() {
     });
     const columnHeight = TIMELINE_COLUMN_HEIGHT; 
     const isTargetCopyDay = copyingTaskData && targetCopyDayOffset === dayOffset;
-    const [currentTimeForMarker, setCurrentTimeForMarker] = useState(new Date());
-    useEffect(() => {
-        const timerId = setInterval(() => setCurrentTimeForMarker(new Date()), 60000);
-        return () => clearInterval(timerId);
-    }, []);
     let currentTimeMarker = null;
     if (dayOffset === 0) {
       const now = currentTimeForMarker;
@@ -703,7 +659,7 @@ export default function DailyPlanner() {
                   onClick={(e) => e.stopPropagation()}
                   onDoubleClick={(e) => e.stopPropagation()}
                 >
-                    <TaskCard
+                    <MemoizedTaskCard
                       task={displayTask}
                       height={TASK_HEIGHT}
                       onStartEdit={openEditModal}
@@ -728,7 +684,7 @@ export default function DailyPlanner() {
         </div>
       </div>
     );
-  }, [tasks, APP_PIXELS_PER_HOUR, APP_PIXELS_PER_MINUTE, APP_TIMELINE_START_HOUR, APP_TIMELINE_END_HOUR, APP_TIMELINE_SPLIT_HOUR_1, APP_TIMELINE_SPLIT_HOUR_2, copyingTaskData, targetCopyDayOffset, draggingTask, resizingTask, openEditModal, handleDeleteTask, startCopy, TASK_COLORS, topDayOffset, setCopyingTaskData, handleDropCopy, activeEditModalTask]);
+  }, [tasks, APP_PIXELS_PER_HOUR, APP_PIXELS_PER_MINUTE, APP_TIMELINE_START_HOUR, APP_TIMELINE_END_HOUR, APP_TIMELINE_SPLIT_HOUR_1, APP_TIMELINE_SPLIT_HOUR_2, copyingTaskData, targetCopyDayOffset, draggingTask, resizingTask, openEditModal, handleDeleteTask, startCopy, TASK_COLORS, topDayOffset, setCopyingTaskData, handleDropCopy, activeEditModalTask, currentTimeForMarker]);
 
   /**
    * Handles the submission of the new task form.

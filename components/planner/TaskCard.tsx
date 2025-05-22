@@ -182,4 +182,6 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       )}
     </>
   );
-}; 
+};
+
+export const MemoizedTaskCard = React.memo(TaskCard); 
