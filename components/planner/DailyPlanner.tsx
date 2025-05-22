@@ -685,10 +685,10 @@ export default function DailyPlanner() {
                   onDoubleClick={(e) => e.stopPropagation()}
                 >
                     <MemoizedTaskCard
-                      task={displayTask}
-                      height={TASK_HEIGHT}
-                      onStartEdit={openEditModal}
-                      onCopy={startCopy}
+                    task={displayTask}
+                    height={TASK_HEIGHT}
+                    onStartEdit={openEditModal} 
+                    onCopy={startCopy} 
                     />
                   {/*!(activeEditModalTask?.id === displayTask.id) &&*/ (
                       <>
@@ -759,7 +759,7 @@ export default function DailyPlanner() {
     if (taskToDrag) {
       document.body.style.cursor = 'grabbing';
       // currentTarget should be the div on which onMouseDown is attached
-      const taskElement = e.currentTarget as HTMLDivElement; 
+      const taskElement = e.currentTarget as HTMLDivElement;
       const rect = taskElement.getBoundingClientRect();
       const offsetX = e.clientX - rect.left;
 
@@ -791,6 +791,7 @@ export default function DailyPlanner() {
             onPinTask={handlePinTask}
             onMoveToPool={copyTaskToPool}
             pinnedTasks={pinnedTasks}
+            onDelete={handleDeleteTask}
           />
         )}
 
@@ -922,29 +923,29 @@ export default function DailyPlanner() {
               const destinationDayLabel = getDateLabel(destinationDayViewOffset);
 
               return (
-                <div className="fixed inset-0 bg-black/30 dark:bg-black/50 flex items-center justify-center z-[1001]">
-                  <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-xl max-w-md w-full">
-                    <h3 className="text-xl font-bold mb-2 dark:text-white">Clone Tasks</h3>
-                    <p className="text-gray-600 dark:text-gray-300 mb-4">
+              <div className="fixed inset-0 bg-black/30 dark:bg-black/50 flex items-center justify-center z-[1001]">
+                <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-xl max-w-md w-full">
+                  <h3 className="text-xl font-bold mb-2 dark:text-white">Clone Tasks</h3>
+                  <p className="text-gray-600 dark:text-gray-300 mb-4">
                       {isClient ? `Clone tasks from ${sourceDayLabel} to ${destinationDayLabel}.` : "Loading details..."}
-                    </p>
-                    <div className="mb-4">
-                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Conflict Strategy:</h4>
-                      <div className="space-y-2">
-                          {['skip', 'replace', 'adjust'].map(strategy => (
-                              <label key={`conflict-strategy-${strategy}`} className="flex items-center">
-                                  <input type="radio" name="conflictStrategy" value={strategy} checked={cloneConflictStrategy === strategy} onChange={() => setCloneConflictStrategy(strategy as any)} className="mr-2"/>
-                                  <span className="capitalize text-gray-800 dark:text-white">{strategy}</span>
-                        </label>
-                          ))}
-                          </div>
-                          </div>
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" onClick={cancelCloneDay}>Cancel</Button>
-                      <Button onClick={handleConfirmClone}>Clone Tasks</Button>
-                    </div>
+                  </p>
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Conflict Strategy:</h4>
+                    <div className="space-y-2">
+                        {['skip', 'replace', 'adjust'].map(strategy => (
+                            <label key={`conflict-strategy-${strategy}`} className="flex items-center">
+                                <input type="radio" name="conflictStrategy" value={strategy} checked={cloneConflictStrategy === strategy} onChange={() => setCloneConflictStrategy(strategy as any)} className="mr-2"/>
+                                <span className="capitalize text-gray-800 dark:text-white">{strategy}</span>
+                      </label>
+                        ))}
+                        </div>
+                        </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={cancelCloneDay}>Cancel</Button>
+                    <Button onClick={handleConfirmClone}>Clone Tasks</Button>
                   </div>
                 </div>
+              </div>
               )} )()}
 
             {colorPickerState && (

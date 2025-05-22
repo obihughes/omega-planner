@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import ReactDOM from 'react-dom';
 import { Input, Button } from "@/components/ui"; // Assuming Button is also from ui
-import { PinIcon, FolderPlus } from 'lucide-react';
+import { PinIcon, FolderPlus, Trash2, X as XIcon } from 'lucide-react';
 import { Task, PinnedTask } from '../../types/planner'; // Adjusted path
 import { ActiveModalTask } from '../../hooks/useModalManager'; // Adjusted path
 import { TASK_COLORS, TIMELINE_START_HOUR, TIMELINE_END_HOUR, MIN_TASK_DURATION } from '../../lib/constants'; // Adjusted path
@@ -26,6 +26,7 @@ export interface EditTaskModalProps {
   onSave: (taskData: Partial<Task>) => void; // Simplified: useModalManager's saveTaskFromModal will know if it's new
   onClose: () => void;
   onColorChange: (taskId: string, color: string) => void; // For changing color live
+  onDelete?: (taskId: string) => void; // Add onDelete prop
   onPinTask?: (task: Task) => void;
   onMoveToPool?: (taskId: string) => void;
   pinnedTasks?: PinnedTask[]; // To check if already pinned
@@ -36,6 +37,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   onSave,
   onClose,
   onColorChange,
+  onDelete, // Destructure onDelete
   onPinTask,
   onMoveToPool,
   pinnedTasks = [],
@@ -100,6 +102,13 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
     onClose();
   };
 
+  const handleDelete = () => {
+    if (onDelete && taskToEdit.id && !taskToEdit.isNew) { // Only allow delete for existing tasks
+      onDelete(taskToEdit.id);
+      onClose(); // Close modal after delete
+    }
+  };
+
   const handleLiveColorChange = (color: string) => {
     setEditingColor(color);
     // For existing tasks, we can call onColorChange to update the hook immediately
@@ -124,8 +133,17 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
       }}
       onClick={stopPropagation} // Prevent modal closing when clicking inside
     >
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+      <div className="space-y-3">
+        <button 
+          type="button"
+          onClick={onClose}
+          className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors z-10"
+          aria-label="Close modal"
+        >
+          <XIcon className="w-5 h-5" />
+        </button>
+
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-white pt-1 pr-8">
           {taskToEdit.isNew ? 'Create New Task' : 'Edit Task'}
         </h2>
 
@@ -233,13 +251,13 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
           </div>
         </div>
 
-        {(onPinTask || onMoveToPool) && (
-          <div className="flex gap-2">
+        {(onPinTask || onMoveToPool || (onDelete && !taskToEdit.isNew)) && (
+          <div className="flex gap-2 pt-2">
             {onPinTask && !isTaskPinned && !taskToEdit.isNew && (
               <button
                 type="button"
                 className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                onClick={(e) => { stopPropagation(e); onPinTask(taskToEdit); }}
+                onClick={(e) => { stopPropagation(e); if (taskToEdit) onPinTask(taskToEdit); }}
               >
                 <PinIcon className="w-4 h-4" />
                 Pin Task
@@ -255,19 +273,26 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
               <button
                 type="button"
                 className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                onClick={(e) => { stopPropagation(e); if (onMoveToPool) onMoveToPool(taskToEdit.id); }}
+                onClick={(e) => { stopPropagation(e); if (onMoveToPool && taskToEdit.id) onMoveToPool(taskToEdit.id); }}
               >
                 <FolderPlus className="w-4 h-4" />
                 Move to Pool
+              </button>
+            )}
+            {onDelete && !taskToEdit.isNew && (
+              <button
+                type="button"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30 rounded-md hover:bg-red-200 dark:hover:bg-red-800/50 transition-colors"
+                onClick={(e) => { stopPropagation(e); handleDelete();}}
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete
               </button>
             )}
           </div>
         )}
 
         <div>
-          <label htmlFor={`editNotesInput-${taskToEdit.id}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Notes
-          </label>
           <textarea
             id={`editNotesInput-${taskToEdit.id}`}
             value={editingNotes}
@@ -280,20 +305,15 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
           />
         </div>
 
-        <div className="flex gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-          <Button
-            variant="outline"
-            onClick={handleCancel}
-            className="flex-1"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSaveEdits}
-            className="flex-1"
-          >
-            {taskToEdit.isNew ? 'Create Task' : 'Save Changes'}
-          </Button>
+        <div className="flex justify-end items-center pt-2 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleSaveEdits}
+              className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white font-semibold"
+            >
+              {taskToEdit.isNew ? 'Create Task' : 'Save Changes'}
+            </Button>
+          </div>
         </div>
       </div>
     </div>,
