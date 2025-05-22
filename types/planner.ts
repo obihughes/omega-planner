@@ -22,6 +22,12 @@ export interface Task {
   
   /** ISO string of the date when the task was created (reference date for dayOffset) */
   baseDate: string;
+  
+  /** Notes associated with the task */
+  notes?: string;
+  
+  /** Indicates whether the task is completed */
+  completed?: boolean;
 }
 
 /**

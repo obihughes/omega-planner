@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Task } from '../types/planner';
+import { Task } from '@/types/planner';
 
 /**
  * Interface for modal-related task data
@@ -14,8 +14,8 @@ export interface ActiveModalTask extends Task {
  * Contains information about which day and period is being cloned
  */
 export interface CloneConfirmationData {
-  dayOffset: number; 
-  period: 'morning' | 'afternoon' | 'evening';
+  dayOffset: number;
+  date: Date;
 }
 
 /**
@@ -33,7 +33,7 @@ export interface UseModalManagerProps {
   onClearPool: () => void;
   
   /** Callback to clone tasks from one day to another */
-  onCloneTasks: (sourceDayOffset: number, targetDayOffset: number) => void;
+  onCloneTasks: (fromDayOffset: number, toDayOffset: number) => void;
   
   /** The current top day offset to use as the target for cloning */
   topDayOffset: number;
@@ -51,21 +51,8 @@ export interface ModalManagerState {
   /** Data for the clone confirmation modal, or null if not visible */
   showCloneConfirmation: CloneConfirmationData | null;
   
-  /** The task currently being edited in the modal, or null if not visible */
-  activeEditModalTask: ActiveModalTask | null;
-  
   /** State for the color picker, or null if not visible */
   colorPickerState: { taskId: string; x: number; y: number } | null;
-  
-  // Edit Modal Functions
-  /** Opens the edit modal for a task */
-  openEditModal: (taskToEdit: Task, isFromPool?: boolean) => void;
-  
-  /** Closes the edit modal */
-  closeEditModal: () => void;
-  
-  /** Saves changes made in the edit modal */
-  saveTaskFromModal: (updatedTaskData: Partial<Task> & { id: string }) => void;
   
   // Color Picker Functions
   /** Toggles the color picker for a task */
@@ -97,7 +84,6 @@ export interface ModalManagerState {
   // State Setters (if direct access is needed)
   setShowClearPoolConfirmation: React.Dispatch<React.SetStateAction<boolean>>;
   setShowCloneConfirmation: React.Dispatch<React.SetStateAction<CloneConfirmationData | null>>;
-  setActiveEditModalTask: React.Dispatch<React.SetStateAction<ActiveModalTask | null>>;
   setColorPickerState: React.Dispatch<React.SetStateAction<{ taskId: string; x: number; y: number } | null>>;
 }
 
@@ -118,56 +104,16 @@ export function useModalManager({
   // Modal visibility states
   const [showClearPoolConfirmation, setShowClearPoolConfirmation] = useState<boolean>(false);
   const [showCloneConfirmation, setShowCloneConfirmation] = useState<CloneConfirmationData | null>(null);
-  const [activeEditModalTask, setActiveEditModalTask] = useState<ActiveModalTask | null>(null);
   const [colorPickerState, setColorPickerState] = useState<{ taskId: string; x: number; y: number } | null>(null);
 
   /**
-   * Opens the edit modal for a task
-   * @param taskToEdit - The task to edit
-   * @param isFromPool - Whether the task is from the pool
-   */
-  const openEditModal = useCallback((taskToEdit: Task, isFromPool: boolean = false) => {
-    setActiveEditModalTask({ ...taskToEdit, isFromPool });
-  }, []);
-
-  /**
-   * Closes the edit modal
-   */
-  const closeEditModal = useCallback(() => {
-    setActiveEditModalTask(null);
-  }, []);
-
-  /**
-   * Saves changes made in the edit modal
-   * @param updatedTaskData - The updated task data
-   */
-  const saveTaskFromModal = useCallback((updatedTaskData: Partial<Task> & { id: string }) => {
-    const { id, name, startHour, duration, color, dayOffset } = updatedTaskData;
-    const taskToSave: Partial<Task> = {};
-    if (name !== undefined) taskToSave.name = name;
-    if (startHour !== undefined) taskToSave.startHour = startHour;
-    if (duration !== undefined) taskToSave.duration = duration;
-    if (color !== undefined) taskToSave.color = color;
-    if (dayOffset !== undefined) taskToSave.dayOffset = dayOffset;
-
-    if (activeEditModalTask?.isFromPool) {
-      onUpdatePoolTask(id, taskToSave);
-    } else {
-      onUpdateTask(id, taskToSave);
-    }
-    closeEditModal();
-  }, [activeEditModalTask, onUpdateTask, onUpdatePoolTask, closeEditModal]);
-
-  /**
    * Toggles the color picker for a task
-   * @param taskId - The ID of the task
-   * @param e - The mouse event
    */
   const toggleColorPicker = useCallback((taskId: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent event from bubbling up
+    e.stopPropagation();
     setColorPickerState(prevState => {
       if (prevState && prevState.taskId === taskId) {
-        return null; // Close if already open for this task
+        return null;
       } else {
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
         return { taskId, x: rect.left, y: rect.bottom + 5 };
@@ -177,17 +123,11 @@ export function useModalManager({
 
   /**
    * Applies a new color to a task
-   * @param taskId - The ID of the task
-   * @param newColor - The new color to apply
    */
   const handleTaskColorChange = useCallback((taskId: string, newColor: string) => {
-    if (activeEditModalTask?.isFromPool && activeEditModalTask?.id === taskId) {
-      onUpdatePoolTask(taskId, { color: newColor });
-    } else {
-      onUpdateTask(taskId, { color: newColor });
-    }
-    setColorPickerState(null); // Close color picker after selection
-  }, [activeEditModalTask, onUpdateTask, onUpdatePoolTask]);
+    onUpdateTask(taskId, { color: newColor });
+    setColorPickerState(null);
+  }, [onUpdateTask]);
 
   /**
    * Shows the clear pool confirmation modal
@@ -213,7 +153,6 @@ export function useModalManager({
 
   /**
    * Shows the clone day confirmation modal
-   * @param data - Data about which day and period to clone
    */
   const showCloneModal = useCallback((data: CloneConfirmationData) => {
     setShowCloneConfirmation(data);
@@ -224,7 +163,6 @@ export function useModalManager({
    */
   const confirmCloneDay = useCallback(() => {
     if (showCloneConfirmation) {
-      // Clone from the dayOffset in the confirmation to the top day
       onCloneTasks(showCloneConfirmation.dayOffset, topDayOffset);
       setShowCloneConfirmation(null);
     }
@@ -241,13 +179,7 @@ export function useModalManager({
     // States
     showClearPoolConfirmation,
     showCloneConfirmation,
-    activeEditModalTask,
     colorPickerState,
-
-    // Edit Modal Functions
-    openEditModal,
-    closeEditModal,
-    saveTaskFromModal,
 
     // Color Picker Functions
     toggleColorPicker,
@@ -266,7 +198,6 @@ export function useModalManager({
     // State Setters (if direct access is needed)
     setShowClearPoolConfirmation,
     setShowCloneConfirmation,
-    setActiveEditModalTask,
     setColorPickerState,
   };
 } 

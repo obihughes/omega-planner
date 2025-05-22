@@ -3,32 +3,45 @@
  * Each color includes both light and dark mode variants
  */
 export const TASK_COLORS = [
-  "bg-red-300 dark:bg-red-700",
-  "bg-red-200 dark:bg-red-600",     // Lighter Red
-  "bg-rose-300 dark:bg-rose-700",
-  "bg-pink-300 dark:bg-pink-700",
-  "bg-orange-300 dark:bg-orange-700",
-  "bg-amber-300 dark:bg-amber-700",
-  "bg-yellow-300 dark:bg-yellow-700", 
-  "bg-yellow-200 dark:bg-yellow-500", // Lighter Yellow
-  // Row 2: Greens -> Blues
-  "bg-lime-300 dark:bg-lime-700",
-  "bg-green-300 dark:bg-green-700",
-  "bg-green-200 dark:bg-green-600",   // Lighter Green
-  "bg-emerald-300 dark:bg-emerald-700",
-  "bg-teal-300 dark:bg-teal-700",
-  "bg-cyan-300 dark:bg-cyan-700",
-  "bg-sky-300 dark:bg-sky-700",
-  "bg-blue-300 dark:bg-blue-700",
-  // Row 3: Blues -> Purples -> Greys
-  "bg-blue-200 dark:bg-blue-600",    // Lighter Blue
-  "bg-indigo-300 dark:bg-indigo-700",
-  "bg-violet-300 dark:bg-violet-700",
-  "bg-purple-300 dark:bg-purple-700",
-  "bg-fuchsia-300 dark:bg-fuchsia-700",
-  "bg-gray-300 dark:bg-gray-600",    // Grey 1
-  "bg-slate-300 dark:bg-slate-600",   // Grey 2
-  "bg-stone-300 dark:bg-stone-600",   // Grey 3 (Brownish)
+  // Row 1: Deep & Light Reds, Pinks, Oranges
+  'bg-red-400 dark:bg-red-800',          // Deep Red
+  'bg-red-200 dark:bg-red-600',          // Light Red
+  'bg-pink-400 dark:bg-pink-800',        // Deep Pink
+  'bg-pink-200 dark:bg-pink-600',        // Light Pink
+  'bg-rose-200 dark:bg-rose-600',        // Light Rose (softer pink/red)
+  'bg-orange-400 dark:bg-orange-800',    // Deep Orange
+  'bg-orange-200 dark:bg-orange-600',    // Light Orange
+  'bg-amber-200 dark:bg-amber-600',      // Light Amber (transition to yellow)
+
+  // Row 2: Yellows, Greens, Teals, Cyans
+  'bg-yellow-200 dark:bg-yellow-600',    // Light Yellow
+  'bg-lime-200 dark:bg-lime-600',        // Light Lime Green
+  'bg-emerald-400 dark:bg-emerald-800',  // Deep Emerald Green
+  'bg-green-200 dark:bg-green-600',      // Light Green
+  'bg-emerald-200 dark:bg-emerald-600',  // Light Emerald
+  'bg-teal-200 dark:bg-teal-600',        // Light Teal
+  'bg-cyan-400 dark:bg-cyan-800',        // Deep Cyan
+  'bg-cyan-200 dark:bg-cyan-600',        // Light Cyan
+
+  // Row 3: Sky Blues, Blues, Indigos, Violets, Purples
+  'bg-sky-200 dark:bg-sky-600',          // Light Sky Blue
+  'bg-blue-400 dark:bg-blue-800',        // Deep Blue
+  'bg-blue-200 dark:bg-blue-600',        // Light Blue
+  'bg-indigo-200 dark:bg-indigo-600',    // Light Indigo
+  'bg-violet-200 dark:bg-violet-600',    // Light Violet
+  'bg-purple-400 dark:bg-purple-800',    // Deep Purple
+  'bg-purple-200 dark:bg-purple-600',    // Light Purple
+  'bg-fuchsia-400 dark:bg-fuchsia-800',  // Deep Fuchsia
+  
+  // Row 4: Fuchsias & Greys
+  'bg-fuchsia-200 dark:bg-fuchsia-600',  // Light Fuchsia
+  'bg-slate-300 dark:bg-slate-700',      // Deeper Slate
+  'bg-slate-200 dark:bg-slate-600',      // Light Slate
+  'bg-zinc-300 dark:bg-zinc-700',        // Deeper Zinc
+  'bg-zinc-200 dark:bg-zinc-600',        // Light Zinc
+  'bg-gray-200 dark:bg-gray-600',        // Light Gray
+  'bg-neutral-200 dark:bg-neutral-600',  // Light Neutral
+  'bg-stone-200 dark:bg-stone-600',      // Light Stone
 ];
 
 /** The earliest hour shown on the timeline (4 AM) */

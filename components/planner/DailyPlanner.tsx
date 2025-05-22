@@ -759,22 +759,6 @@ export default function DailyPlanner() {
     }
     // Modal closing is handled by confirmCloneDay from the hook, which should be called by the modal itself if this is just a handler
   };
-  
-  const [editModalName, setEditModalName] = useState("");
-  const [editModalStartHour, setEditModalStartHour] = useState(9);
-  const [editModalDuration, setEditModalDuration] = useState(1);
-  const [editModalColor, setEditModalColor] = useState(TASK_COLORS[0]);
-  const [editModalNotes, setEditModalNotes] = useState("");
-
-  useEffect(() => {
-    if (activeEditModalTask) {
-      setEditModalName(activeEditModalTask.name);
-      setEditModalStartHour(activeEditModalTask.startHour);
-      setEditModalDuration(activeEditModalTask.duration);
-      setEditModalColor(activeEditModalTask.color || TASK_COLORS[0]);
-      setEditModalNotes("");
-    }
-  }, [activeEditModalTask, TASK_COLORS]);
 
   // Diagnostic useEffect to check for duplicate task IDs in the main tasks state
   useEffect(() => {
@@ -804,18 +788,6 @@ export default function DailyPlanner() {
       }
     }
   }, [tasks]);
-
-  const handleSaveFromMainModal = () => {
-    if (!activeEditModalTask) return;
-    saveTaskFromModal({ 
-        id: activeEditModalTask.id, 
-        name: editModalName,
-        startHour: editModalStartHour,
-        duration: editModalDuration,
-        color: editModalColor,
-    });
-    closeEditModal();
-  };
 
   const handleClearPool = () => {
     showClearPoolModal(); 
@@ -1031,46 +1003,6 @@ export default function DailyPlanner() {
                   </div>
                 </div>
               </div>
-            )}
-
-            {activeEditModalTask && (
-                 <div className="fixed inset-0 bg-black/30 dark:bg-black/50 flex items-center justify-center z-[1002]">
-                    <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-xl max-w-lg w-full">
-                        <h3 className="text-xl font-bold mb-4 dark:text-white">Edit Task: {activeEditModalTask.name}</h3>
-                  <div className="space-y-4">
-                    <div>
-                                <label htmlFor="editModalTaskName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Task Name</label>
-                                <Input id="editModalTaskName" type="text" value={editModalName} onChange={(e) => setEditModalName(e.target.value)} />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                                    <label htmlFor="editModalStartHour" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Hour</label>
-                                    <Input id="editModalStartHour" type="number" value={editModalStartHour} onChange={(e) => setEditModalStartHour(parseFloat(e.target.value))} step="0.25" />
-                                </div>
-                                <div>
-                                    <label htmlFor="editModalDuration" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duration</label>
-                                    <select id="editModalDuration" value={editModalDuration} onChange={(e) => setEditModalDuration(parseFloat(e.target.value))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md dark:bg-gray-800 dark:text-white">
-                                         {[0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4].map(d => <option key={d} value={d}>{formatDuration(d)}</option>)}
-                        </select>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Color</label>
-                      <div className="grid grid-cols-8 gap-1.5">
-                                    {TASK_COLORS.map((color) => (<button key={`color-button-${color}-${editModalName}`} type="button" className={`w-6 h-6 rounded-full ${color} ${editModalColor === color ? 'ring-2 ring-offset-2 ring-blue-500 dark:ring-blue-400' : ''}`} onClick={() => setEditModalColor(color)}/>))}
-                      </div>
-                    </div>
-                            <div>
-                                <label htmlFor="editModalNotes" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
-                                <textarea id="editModalNotes" value={editModalNotes} onChange={(e) => setEditModalNotes(e.target.value)} rows={3} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md dark:bg-gray-800 dark:text-white" placeholder="Add notes..."></textarea>
-                  </div>
-                        </div>
-                  <div className="flex justify-end mt-6 gap-2">
-                            <Button variant="outline" onClick={closeEditModal}>Cancel</Button>
-                            <Button onClick={handleSaveFromMainModal}>Save Changes</Button>
-                        </div>
-                    </div>
-                 </div>
             )}
 
             {colorPickerState && (
