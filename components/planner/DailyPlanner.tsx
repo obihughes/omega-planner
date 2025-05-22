@@ -10,59 +10,26 @@ import { Task, PinnedTask } from '../../types/planner';
 import { TaskPoolSidebar } from './TaskPoolSidebar';
 import { PinnedTasksSidebar } from './PinnedTasksSidebar';
 import { useDailyPlanner } from '../../hooks/useDailyPlannerState';
-import { TASK_COLORS } from '../../lib/constants';
+import { 
+    TASK_COLORS, 
+    TIMELINE_START_HOUR as APP_TIMELINE_START_HOUR, // Renamed to avoid conflict with local variables if any
+    TIMELINE_END_HOUR as APP_TIMELINE_END_HOUR,
+    MIN_TASK_DURATION as APP_MIN_TASK_DURATION,
+    PIXELS_PER_HOUR as APP_PIXELS_PER_HOUR,
+    PIXELS_PER_MINUTE as APP_PIXELS_PER_MINUTE,
+    // Import new constants
+    TIMELINE_COLUMN_HEIGHT,
+    TASK_BASE_TOP,
+    TASK_BASE_BOTTOM_PADDING,
+    TIMELINE_SPLIT_HOUR_1 as APP_TIMELINE_SPLIT_HOUR_1,
+    TIMELINE_SPLIT_HOUR_2 as APP_TIMELINE_SPLIT_HOUR_2,
+    TIMELINE_HEADER_HEIGHT_PX,
+    GRID_LINE_STYLE
+} from '../../lib/constants';
 import { TaskCard } from './TaskCard';
 import { EditTaskModal } from './EditTaskModal';
-
-// Helper function to check for task overlap
-const checkOverlap = (
-  task1Start: number, task1Duration: number,
-  task2Start: number, task2Duration: number
-): boolean => {
-  const task1End = task1Start + task1Duration;
-  const task2End = task2Start + task2Duration;
-  // Check if task1 overlaps task2.
-  // Tasks overlap if one starts before the other ends, AND one ends after the other starts.
-  return task1Start < task2End && task1End > task2Start;
-};
-
-/**
- * Helper function to get the actual calendar date for a column offset from the current day.
- * The date is normalized to midnight (00:00:00:000).
- * @param {number} columnDayOffset - The number of days to offset from the current date.
- * @returns {Date} The calculated calendar date, normalized to midnight.
- */
-const getCalendarDateForColumn = (columnDayOffset: number): Date => {
-  const date = new Date(); // Today's actual date
-  date.setHours(0, 0, 0, 0); // Normalize to start of day
-  date.setDate(date.getDate() + columnDayOffset);
-  return date;
-};
-
-/**
- * Helper function to extract a Date object representing the calendar date (normalized to midnight)
- * from an ISO date string.
- * @param {string} isoDateString - The ISO string representation of a date.
- * @returns {Date} A Date object normalized to midnight of the given ISO string's date.
- */
-const getDateWithoutTime = (isoDateString: string): Date => {
-  const date = new Date(isoDateString);
-  date.setHours(0, 0, 0, 0);
-  return date;
-};
-
-/**
- * Helper function to compare two Date objects to see if they fall on the same calendar date,
- * ignoring the time component.
- * @param {Date} date1 - The first date.
- * @param {Date} date2 - The second date.
- * @returns {boolean} True if both dates are on the same calendar day, false otherwise.
- */
-const isSameCalendarDate = (date1: Date, date2: Date): boolean => {
-  return date1.getFullYear() === date2.getFullYear() &&
-         date1.getMonth() === date2.getMonth() &&
-         date1.getDate() === date2.getDate();
-};
+import { getCalendarDateForColumn, getDateWithoutTime, isSameCalendarDate } from '../../utils/dateUtils';
+import { checkOverlap } from '../../utils/taskUtils';
 
 export default function DailyPlanner() {
   const {
@@ -79,10 +46,6 @@ export default function DailyPlanner() {
     setPoolTasks,
     setPinnedTasks,
     setActiveSidebarTab,
-    TIMELINE_START_HOUR,
-    TIMELINE_END_HOUR,
-    PIXELS_PER_HOUR,
-    MIN_TASK_DURATION,
     showClearPoolConfirmation,
     showCloneConfirmation,
     draggingTask,
@@ -128,15 +91,7 @@ export default function DailyPlanner() {
     isClient,
   } = useDailyPlanner();
 
-  const TIMELINE_COLUMN_HEIGHT = 100;
-  const TASK_BASE_TOP = 0;
-  const TASK_BASE_BOTTOM_PADDING = 33;
   const TASK_HEIGHT = TIMELINE_COLUMN_HEIGHT - TASK_BASE_TOP - TASK_BASE_BOTTOM_PADDING;
-  const TIMELINE_SPLIT_HOUR_1 = 11;
-  const TIMELINE_SPLIT_HOUR_2 = 18;
-  const TIMELINE_HEADER_HEIGHT_PX = 28;
-  const GRID_LINE_STYLE = "border-l-2 border-gray-400 z-10";
-  const PIXELS_PER_MINUTE = PIXELS_PER_HOUR / 60;
 
   const timelineScrollRef = useRef<HTMLDivElement>(null);
   const topDayTimelineRef = useRef<HTMLDivElement>(null);
@@ -170,7 +125,7 @@ export default function DailyPlanner() {
     const { task: originalTaskAtResizeStart, edge, initialMouseX, initialStartHour, initialDuration } = resizingTask;
     
     const dx = e.clientX - initialMouseX;
-    const dHours = dx / PIXELS_PER_HOUR;
+    const dHours = dx / APP_PIXELS_PER_HOUR;
     const SNAP_THRESHOLD_HOURS = 2 / 60; // 2 minutes
 
     let livePreviewStartHour = initialStartHour;
@@ -242,25 +197,25 @@ export default function DailyPlanner() {
     }
 
     // --- Apply Minimal Constraints for Live Preview (to the potentially magnetically snapped AND collision-adjusted values) ---
-    livePreviewDuration = Math.max(MIN_TASK_DURATION, livePreviewDuration);
+    livePreviewDuration = Math.max(APP_MIN_TASK_DURATION, livePreviewDuration);
 
     if (edge === 'start') {
         const originalTaskEnd = initialStartHour + initialDuration;
-        livePreviewStartHour = Math.min(livePreviewStartHour, originalTaskEnd - MIN_TASK_DURATION);
-        livePreviewStartHour = Math.max(TIMELINE_START_HOUR, livePreviewStartHour);
+        livePreviewStartHour = Math.min(livePreviewStartHour, originalTaskEnd - APP_MIN_TASK_DURATION);
+        livePreviewStartHour = Math.max(APP_TIMELINE_START_HOUR, livePreviewStartHour);
         livePreviewDuration = originalTaskEnd - livePreviewStartHour; // Recalculate duration based on constrained start
-        livePreviewDuration = Math.max(MIN_TASK_DURATION, livePreviewDuration);
-        livePreviewDuration = Math.min(livePreviewDuration, TIMELINE_END_HOUR - livePreviewStartHour);
+        livePreviewDuration = Math.max(APP_MIN_TASK_DURATION, livePreviewDuration);
+        livePreviewDuration = Math.min(livePreviewDuration, APP_TIMELINE_END_HOUR - livePreviewStartHour);
     } else { // edge === 'end'
         livePreviewStartHour = initialStartHour; // Start is fixed
-        livePreviewDuration = Math.min(livePreviewDuration, TIMELINE_END_HOUR - livePreviewStartHour);
-        livePreviewDuration = Math.max(MIN_TASK_DURATION, livePreviewDuration);
+        livePreviewDuration = Math.min(livePreviewDuration, APP_TIMELINE_END_HOUR - livePreviewStartHour);
+        livePreviewDuration = Math.max(APP_MIN_TASK_DURATION, livePreviewDuration);
     }
 
     // Final boundary checks for start hour and resulting duration
-    livePreviewStartHour = Math.max(TIMELINE_START_HOUR, livePreviewStartHour);
-    livePreviewStartHour = Math.min(livePreviewStartHour, TIMELINE_END_HOUR - MIN_TASK_DURATION);
-    livePreviewDuration = Math.max(MIN_TASK_DURATION, Math.min(livePreviewDuration, TIMELINE_END_HOUR - livePreviewStartHour));
+    livePreviewStartHour = Math.max(APP_TIMELINE_START_HOUR, livePreviewStartHour);
+    livePreviewStartHour = Math.min(livePreviewStartHour, APP_TIMELINE_END_HOUR - APP_MIN_TASK_DURATION);
+    livePreviewDuration = Math.max(APP_MIN_TASK_DURATION, Math.min(livePreviewDuration, APP_TIMELINE_END_HOUR - livePreviewStartHour));
 
     setResizingTask(prev => {
       if (!prev) return null;
@@ -274,7 +229,7 @@ export default function DailyPlanner() {
       };
     });
 
-  }, [resizingTask, PIXELS_PER_HOUR, MIN_TASK_DURATION, TIMELINE_START_HOUR, TIMELINE_END_HOUR, setResizingTask, tasks]);
+  }, [resizingTask, APP_PIXELS_PER_HOUR, APP_MIN_TASK_DURATION, APP_TIMELINE_START_HOUR, APP_TIMELINE_END_HOUR, setResizingTask, tasks]);
 
   /**
    * Handles mouse move events during a task drag operation.
@@ -292,7 +247,7 @@ export default function DailyPlanner() {
     let targetDayOffset: number | null = null;
     let targetPeriod: 'morning' | 'afternoon' | 'evening' | null = null;
     let relativeXInTimelineSegment = 0;
-    let baseHourForCalc = TIMELINE_START_HOUR;
+    let baseHourForCalc = APP_TIMELINE_START_HOUR;
 
     const elementsUnderMouse = document.elementsFromPoint(e.clientX, e.clientY);
     let dropZone: HTMLElement | null = null;
@@ -309,12 +264,6 @@ export default function DailyPlanner() {
       const dayOffsetAttr = dropZone.getAttribute('data-day-offset');
       const periodAttr = dropZone.getAttribute('data-section-period') as 'morning' | 'afternoon' | 'evening' | null;
       
-      // console.log(`[DragDebug] Mouse at (${e.clientX}, ${e.clientY}). DropZone found. data-day-offset: ${dayOffsetAttr}, data-section-period: ${periodAttr}`);
-      if (dropZone.closest('.p-3')?.querySelector('.flex.items-center.justify-between span.font-medium')) {
-        // const viewLabel = dropZone.closest('.p-3')?.querySelector('.flex.items-center.justify-between span.font-medium')?.textContent;
-        // console.log(`[DragDebug] DropZone appears to be in view: ${viewLabel} (dayOffset for this view is likely ${dayOffsetAttr})`);
-      }
-
       if (dayOffsetAttr && periodAttr) {
         targetDayOffset = parseInt(dayOffsetAttr, 10);
         targetPeriod = periodAttr;
@@ -326,58 +275,48 @@ export default function DailyPlanner() {
         relativeXInTimelineSegment = (e.clientX - rect.left) - currentOffsetX;
 
         switch (targetPeriod) {
-          case 'morning': baseHourForCalc = TIMELINE_START_HOUR; break;
-          case 'afternoon': baseHourForCalc = TIMELINE_SPLIT_HOUR_1; break;
-          case 'evening': baseHourForCalc = TIMELINE_SPLIT_HOUR_2; break;
+          case 'morning': baseHourForCalc = APP_TIMELINE_START_HOUR; break;
+          case 'afternoon': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_1; break;
+          case 'evening': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_2; break;
         }
       }
     }
 
     if (targetDayOffset !== null && targetPeriod !== null) {
-      const hourInBlock = relativeXInTimelineSegment / PIXELS_PER_HOUR;
+      const hourInBlock = relativeXInTimelineSegment / APP_PIXELS_PER_HOUR;
       let newStartHour = baseHourForCalc + hourInBlock;
 
-      const taskDuration = draggedTaskItem.duration || MIN_TASK_DURATION;
-      newStartHour = Math.max(TIMELINE_START_HOUR, newStartHour);
-      newStartHour = Math.min(TIMELINE_END_HOUR - taskDuration, newStartHour);
+      const taskDuration = draggedTaskItem.duration || APP_MIN_TASK_DURATION;
+      newStartHour = Math.max(APP_TIMELINE_START_HOUR, newStartHour);
+      newStartHour = Math.min(APP_TIMELINE_END_HOUR - taskDuration, newStartHour);
       
       let snappedNewStartHour = Math.round(newStartHour * 4) / 4;
 
       // Collision detection for dragging
       const targetColumnDate = getCalendarDateForColumn(targetDayOffset as number);
-      // console.log(`[CollisionDebug] Dragging. Target column date: ${targetColumnDate.toISOString().substring(0,10)}`);
 
       const otherTasksOnTargetDate = tasks.filter(t => {
         if (t.id === draggedTaskItem.id) return false;
         const taskAbsDate = getDateWithoutTime(t.baseDate);
         
-        console.log(`[FilterCheck] Task ID: ${t.id.substring(0,4)}, Raw BaseDate: ${t.baseDate}, Normalized TaskAbsDate: ${taskAbsDate.toISOString().substring(0,10)}, TargetColumnDate: ${targetColumnDate.toISOString().substring(0,10)}, isSame: ${isSameCalendarDate(taskAbsDate, targetColumnDate)}`);
-
         return isSameCalendarDate(taskAbsDate, targetColumnDate);
       });
-
-      console.log(`[PreCollisionDebug] TargetDate: ${targetColumnDate.toISOString().substring(0,10)}. Filtered otherTasksOnTargetDate count: ${otherTasksOnTargetDate.length}. IDs: ${otherTasksOnTargetDate.map(t => t.id.substring(0,4) + "@" + getDateWithoutTime(t.baseDate).toISOString().substring(0,10)).join(', ')}`);
 
       let canMove = true;
       for (const otherTask of otherTasksOnTargetDate) { 
         const draggedAbsDate = getDateWithoutTime(draggedTaskItem.baseDate);
         const otherAbsDate = getDateWithoutTime(otherTask.baseDate);
-        console.log(`[CollisionCheck] Comparing Dragged ID ${draggedTaskItem.id.substring(0,4)} (Date: ${draggedAbsDate.toISOString().substring(0,10)}, Hr: ${snappedNewStartHour}, Dur: ${taskDuration}) WITH Other ID ${otherTask.id.substring(0,4)} (Date: ${otherAbsDate.toISOString().substring(0,10)}, Hr: ${otherTask.startHour}, Dur: ${otherTask.duration})`);
         
         const overlaps = checkOverlap(snappedNewStartHour, taskDuration, otherTask.startHour, otherTask.duration);
-        console.log(`[CollisionCheck] Result of checkOverlap: ${overlaps}`);
 
         if (overlaps) {
-          console.log(`[CollisionDetected] Collision between ${draggedTaskItem.id.substring(0,4)} and ${otherTask.id.substring(0,4)}. Initial snappedNewStartHour: ${snappedNewStartHour}`);
           if (snappedNewStartHour < otherTask.startHour) {
             snappedNewStartHour = otherTask.startHour - taskDuration;
-            console.log(`[CollisionResolution] Adjusted snappedNewStartHour (left of other): ${snappedNewStartHour}`);
           } else { 
             snappedNewStartHour = otherTask.startHour + otherTask.duration;
-            console.log(`[CollisionResolution] Adjusted snappedNewStartHour (right of other): ${snappedNewStartHour}`);
           }
-          snappedNewStartHour = Math.max(TIMELINE_START_HOUR, snappedNewStartHour);
-          snappedNewStartHour = Math.min(TIMELINE_END_HOUR - taskDuration, snappedNewStartHour);
+          snappedNewStartHour = Math.max(APP_TIMELINE_START_HOUR, snappedNewStartHour);
+          snappedNewStartHour = Math.min(APP_TIMELINE_END_HOUR - taskDuration, snappedNewStartHour);
           snappedNewStartHour = Math.round(snappedNewStartHour * 4) / 4; // Re-snap after adjustment
 
           // Final check if the adjusted position is still overlapping (e.g. squeezed between two tasks)
@@ -399,7 +338,6 @@ export default function DailyPlanner() {
             const currentTargetCalendarDate = getCalendarDateForColumn(targetDayOffset as number);
             newBaseDateIso = currentTargetCalendarDate.toISOString();
             newDayOffset = 0; 
-            console.log(`[DragDebugBaseDateSet] Setting draggingTask.task.baseDate to: ${newBaseDateIso} (derived from targetDayOffset: ${targetDayOffset})`);
           }
           
           return {
@@ -417,12 +355,12 @@ export default function DailyPlanner() {
   }, [
     draggingTask, 
     setDraggingTask, 
-    PIXELS_PER_HOUR, 
-    TIMELINE_START_HOUR, 
-    TIMELINE_SPLIT_HOUR_1, 
-    TIMELINE_SPLIT_HOUR_2, 
-    TIMELINE_END_HOUR,
-    MIN_TASK_DURATION,
+    APP_PIXELS_PER_HOUR, 
+    APP_TIMELINE_START_HOUR, 
+    APP_TIMELINE_SPLIT_HOUR_1, 
+    APP_TIMELINE_SPLIT_HOUR_2, 
+    APP_TIMELINE_END_HOUR,
+    APP_MIN_TASK_DURATION,
     tasks // Added tasks to dependency array
   ]);
 
@@ -464,22 +402,22 @@ export default function DailyPlanner() {
   const renderTimeline = useCallback((period: 'morning' | 'afternoon' | 'evening') => {
     let startHour, endHour;
     switch (period) {
-      case 'morning': startHour = TIMELINE_START_HOUR; endHour = TIMELINE_SPLIT_HOUR_1; break;
-      case 'afternoon': startHour = TIMELINE_SPLIT_HOUR_1; endHour = TIMELINE_SPLIT_HOUR_2; break;
-      case 'evening': startHour = TIMELINE_SPLIT_HOUR_2; endHour = TIMELINE_END_HOUR; break; 
+      case 'morning': startHour = APP_TIMELINE_START_HOUR; endHour = APP_TIMELINE_SPLIT_HOUR_1; break;
+      case 'afternoon': startHour = APP_TIMELINE_SPLIT_HOUR_1; endHour = APP_TIMELINE_SPLIT_HOUR_2; break;
+      case 'evening': startHour = APP_TIMELINE_SPLIT_HOUR_2; endHour = APP_TIMELINE_END_HOUR; break; 
     }
     const timelineHours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
     return (
       <div className="flex h-8 border-b border-neutral-700 dark:border-neutral-800 sticky top-0 bg-neutral-900 dark:bg-neutral-900 z-20">
         {timelineHours.map((hour) => (
-          <div key={`timeline-hour-${hour}-${period}`} className="flex-none text-xs text-neutral-300 pt-1 pl-0.5 border-l border-neutral-700 dark:border-neutral-700" style={{ width: `${PIXELS_PER_HOUR}px`, boxSizing: 'border-box' }}>
+          <div key={`timeline-hour-${hour}-${period}`} className="flex-none text-xs text-neutral-300 pt-1 pl-0.5 border-l border-neutral-700 dark:border-neutral-700" style={{ width: `${APP_PIXELS_PER_HOUR}px`, boxSizing: 'border-box' }}>
             {formatTime(hour)}
           </div>
         ))}
          <div key={`timeline-end-marker-${period}`} className="flex-none border-l-2 border-neutral-700 dark:border-neutral-700" style={{ width: `2px`, boxSizing: 'border-box' }}></div>
       </div>
     );
-  }, [PIXELS_PER_HOUR, TIMELINE_START_HOUR, TIMELINE_END_HOUR]); 
+  }, [APP_PIXELS_PER_HOUR, APP_TIMELINE_START_HOUR, APP_TIMELINE_END_HOUR, APP_TIMELINE_SPLIT_HOUR_1, APP_TIMELINE_SPLIT_HOUR_2]); 
 
   /**
    * Renders a single column in the timeline for a specific day offset and period (morning, afternoon, evening).
@@ -492,9 +430,9 @@ export default function DailyPlanner() {
   const renderColumn = useCallback((dayOffset: number, period: 'morning' | 'afternoon' | 'evening') => {
     let startHour, endHour;
     switch (period) {
-      case 'morning': startHour = TIMELINE_START_HOUR; endHour = TIMELINE_SPLIT_HOUR_1; break;
-      case 'afternoon': startHour = TIMELINE_SPLIT_HOUR_1; endHour = TIMELINE_SPLIT_HOUR_2; break;
-      case 'evening': startHour = TIMELINE_SPLIT_HOUR_2; endHour = TIMELINE_END_HOUR; break;
+      case 'morning': startHour = APP_TIMELINE_START_HOUR; endHour = APP_TIMELINE_SPLIT_HOUR_1; break;
+      case 'afternoon': startHour = APP_TIMELINE_SPLIT_HOUR_1; endHour = APP_TIMELINE_SPLIT_HOUR_2; break;
+      case 'evening': startHour = APP_TIMELINE_SPLIT_HOUR_2; endHour = APP_TIMELINE_END_HOUR; break;
     }
 
     const columnCalendarDate = getCalendarDateForColumn(dayOffset);
@@ -505,13 +443,6 @@ export default function DailyPlanner() {
         const draggingTaskTargetDate = getDateWithoutTime(draggingTask.task.baseDate);
         const decision = isSameCalendarDate(draggingTaskTargetDate, columnCalendarDate);
         
-        // DEBUGGING: Log decision making for dragging task in renderColumn
-        // console.log(`[RenderColumnDebug] Dragging Task (ID: ${t.id.substring(0,4)}...) in renderColumn for dayOffset: ${dayOffset}`,
-        //   `\n  ColumnDate: ${columnCalendarDate.toISOString().substring(0,10)}`,
-        //   `\n  DraggingTask.baseDate: ${draggingTask.task.baseDate} (evaluates to ${draggingTaskTargetDate.toISOString().substring(0,10)})`,
-        //   `\n  isSameCalendarDate result: ${decision}`
-        // );
-
         return decision;
       }
 
@@ -543,7 +474,7 @@ export default function DailyPlanner() {
       const now = currentTimeForMarker;
       const currentHourFloat = now.getHours() + now.getMinutes() / 60;
       if (currentHourFloat >= startHour && currentHourFloat < endHour) {
-        const markerLeft = (currentHourFloat - startHour) * PIXELS_PER_HOUR;
+        const markerLeft = (currentHourFloat - startHour) * APP_PIXELS_PER_HOUR;
         currentTimeMarker = (
           <div 
             className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-[120] pointer-events-none flex flex-col justify-end items-center"
@@ -583,13 +514,13 @@ export default function DailyPlanner() {
         let baseHourForCalc: number;
 
         switch (sectionClicked) {
-            case 'morning': baseHourForCalc = TIMELINE_START_HOUR; break;
-            case 'afternoon': baseHourForCalc = TIMELINE_SPLIT_HOUR_1; break;
-            case 'evening': baseHourForCalc = TIMELINE_SPLIT_HOUR_2; break;
+            case 'morning': baseHourForCalc = APP_TIMELINE_START_HOUR; break;
+            case 'afternoon': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_1; break;
+            case 'evening': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_2; break;
             default: return;
         }
 
-        const hourInBlock = (clickXrelative / PIXELS_PER_HOUR);
+        const hourInBlock = (clickXrelative / APP_PIXELS_PER_HOUR);
         const calculatedNewStartHour = baseHourForCalc + hourInBlock;
         const snappedNewStartHour = Math.round(calculatedNewStartHour * 4) / 4;
 
@@ -614,20 +545,20 @@ export default function DailyPlanner() {
         let baseHourForCalc: number;
 
         switch (sectionClicked) {
-            case 'morning': baseHourForCalc = TIMELINE_START_HOUR; break;
-            case 'afternoon': baseHourForCalc = TIMELINE_SPLIT_HOUR_1; break;
-            case 'evening': baseHourForCalc = TIMELINE_SPLIT_HOUR_2; break;
+            case 'morning': baseHourForCalc = APP_TIMELINE_START_HOUR; break;
+            case 'afternoon': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_1; break;
+            case 'evening': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_2; break;
             default: return;
         }
 
-        const hourInBlock = (clickXrelative / PIXELS_PER_HOUR);
+        const hourInBlock = (clickXrelative / APP_PIXELS_PER_HOUR);
         const calculatedNewStartHour = baseHourForCalc + hourInBlock;
         // Snap to nearest 15-minute interval
         let snappedNewStartHour = Math.round(calculatedNewStartHour * 4) / 4;
 
         // Ensure snappedNewStartHour is within timeline boundaries
-        snappedNewStartHour = Math.max(TIMELINE_START_HOUR, snappedNewStartHour);
-        snappedNewStartHour = Math.min(TIMELINE_END_HOUR - MIN_TASK_DURATION, snappedNewStartHour); // Ensure task can have min duration
+        snappedNewStartHour = Math.max(APP_TIMELINE_START_HOUR, snappedNewStartHour);
+        snappedNewStartHour = Math.min(APP_TIMELINE_END_HOUR - APP_MIN_TASK_DURATION, snappedNewStartHour); // Ensure task can have min duration
         
         const targetDate = getCalendarDateForColumn(dayOffsetClicked);
         const newTempId = `temp-new-task-${Date.now()}`;
@@ -636,7 +567,7 @@ export default function DailyPlanner() {
             id: newTempId,
             name: "New Task", // Or perhaps an empty string to force user input
             startHour: snappedNewStartHour,
-            duration: MIN_TASK_DURATION, // Default to min task duration
+            duration: APP_MIN_TASK_DURATION, // Default to min task duration
             baseDate: targetDate.toISOString(),
             dayOffset: 0, // Always 0 for absolute dates
             color: TASK_COLORS[0],
@@ -652,8 +583,8 @@ export default function DailyPlanner() {
         <div 
           className={`relative border border-gray-200 dark:border-neutral-800 rounded-md ${isTargetCopyDay ? 'ring-2 ring-inset ring-blue-500 bg-blue-50/50 dark:bg-blue-900/30' : ''}`}
           style={{ 
-            width: `${PIXELS_PER_HOUR * (endHour - startHour)}px`, 
-            minWidth: `${PIXELS_PER_HOUR * (endHour - startHour)}px`,
+            width: `${APP_PIXELS_PER_HOUR * (endHour - startHour)}px`, 
+            minWidth: `${APP_PIXELS_PER_HOUR * (endHour - startHour)}px`,
             maxWidth: '100%', height: `${columnHeight}px`, overflow: 'hidden'
           }}
           data-section-period={period} 
@@ -685,8 +616,8 @@ export default function DailyPlanner() {
             {Array.from({ length: endHour - startHour + 1 }, (_, i) => (
               <div 
                 key={`grid-${i}-${dayOffset}-${period}`} 
-                className={`border-l-2 border-neutral-700 dark:border-neutral-700 z-10`}
-                style={{ left: `${i * PIXELS_PER_HOUR}px`, height: '100%', top: 0, borderLeftStyle: 'dashed', position: 'absolute'}} 
+                className={`border-l-2 border-neutral-700 dark:border-neutral-700 z-10 ${GRID_LINE_STYLE}`}
+                style={{ left: `${i * APP_PIXELS_PER_HOUR}px`, height: '100%', top: 0, borderLeftStyle: 'dashed', position: 'absolute'}} 
               />
             ))}
             {tasksToRender.map((task) => {
@@ -706,7 +637,6 @@ export default function DailyPlanner() {
               const isBeingDragged = draggingTask?.task.id === displayTask.id; 
               const isBeingResized = resizingTask?.task.id === displayTask.id; 
               const isBeingCopied = copyingTaskData?.id === displayTask.id;
-              // const isCurrentlyEditing = activeEditModalTask?.id === displayTask.id; // No longer needed for TaskCard styling if modal is global
               
               // Determine global operation state
               const globalResizingActive = !!resizingTask;
@@ -738,12 +668,12 @@ export default function DailyPlanner() {
               
               const taskStartRelativeToSection = Math.max(0, displayTask.startHour - startHour);
               const taskEndRelativeToSection = Math.min(endHour - startHour, (displayTask.startHour + displayTask.duration) - startHour);
-              const renderLeft = taskStartRelativeToSection * PIXELS_PER_HOUR;
-              const renderWidth = Math.max(PIXELS_PER_MINUTE * 15, (taskEndRelativeToSection - taskStartRelativeToSection) * PIXELS_PER_HOUR);
+              const renderLeft = taskStartRelativeToSection * APP_PIXELS_PER_HOUR;
+              const renderWidth = Math.max(APP_PIXELS_PER_MINUTE * 15, (taskEndRelativeToSection - taskStartRelativeToSection) * APP_PIXELS_PER_HOUR);
               
               if (renderWidth <= 0 && !isBeingDragged) return null;
               
-              const zIndex = (isBeingDragged || isBeingResized ? 100 : 40); // activeEditModalTask?.id === displayTask.id no longer needed for z-index here
+              const zIndex = (isBeingDragged || isBeingResized ? 100 : 40);
               const taskCardBaseClassName = `absolute select-none transition-transform duration-100 ease-out hover:shadow-md group ${isBeingDragged || isBeingResized ? 'opacity-95 shadow-lg scale-[1.01] ring-1 ring-white' : 'shadow-sm'} ${isBeingCopied ? 'ring-2 ring-offset-1 ring-blue-500' : ''} ${isPastTask ? 'filter saturate-50 brightness-75' : ''}`;
 
               const taskStyleObj: React.CSSProperties = {
@@ -764,7 +694,6 @@ export default function DailyPlanner() {
                   onMouseDown={(e) => {
                     const target = e.target as HTMLElement;
                     const isButton = target.tagName === 'BUTTON' || target.closest('button') || target.tagName === 'INPUT' || target.closest('.resize-handle');
-                    // const isCurrentlyEditing = activeEditModalTask?.id === displayTask.id; // Not needed for this check anymore
                     const isDraggableArea = target.classList.contains('draggable-area') || target.closest('.draggable-area');
                     
                     if (/*!isCurrentlyEditing &&*/ !isBeingCopied && !isButton && isDraggableArea) {
@@ -777,15 +706,8 @@ export default function DailyPlanner() {
                     <TaskCard
                       task={displayTask}
                       height={TASK_HEIGHT}
-                      onStartEdit={openEditModal} // This is the openEditModal from useDailyPlanner hook
-                      // onUpdateTask={handleUpdateTask} // Removed, modal handles save
-                      // onDelete={handleDeleteTask} // Keep if TaskCard has a direct delete button, otherwise remove
-                      onCopy={startCopy} // This is startCopy from useDailyPlanner hook
-                      // onColorChange={handleTaskColorChange} // Removed, modal handles color
-                      // editingTaskId={activeEditModalTask?.id} // Removed
-                      // setEditingTaskId={setDraggingTask} // Incorrect, Removed
-                      // onMoveToPool={copyTaskToPool} // Removed, modal handles
-                      // onPinTask={handlePinTask} // Removed, modal handles
+                      onStartEdit={openEditModal}
+                      onCopy={startCopy}
                     />
                   {/*!(activeEditModalTask?.id === displayTask.id) &&*/ (
                       <>
@@ -806,7 +728,7 @@ export default function DailyPlanner() {
         </div>
       </div>
     );
-  }, [tasks, PIXELS_PER_HOUR, PIXELS_PER_MINUTE, TIMELINE_START_HOUR, TIMELINE_END_HOUR, copyingTaskData, targetCopyDayOffset, draggingTask, resizingTask, /*editingTaskId, No longer needed*/ openEditModal, handleDeleteTask, startCopy, /*handleTaskColorChange, No longer needed here*/ /*setEditingTaskId, No longer needed here*/ /*copyTaskToPool, No longer needed here*/ /*handlePinTask, No longer needed here*/ TASK_COLORS, topDayOffset, setCopyingTaskData, handleDropCopy, activeEditModalTask]); // Added activeEditModalTask for isCurrentlyEditing checks if any remain, and removed others.
+  }, [tasks, APP_PIXELS_PER_HOUR, APP_PIXELS_PER_MINUTE, APP_TIMELINE_START_HOUR, APP_TIMELINE_END_HOUR, APP_TIMELINE_SPLIT_HOUR_1, APP_TIMELINE_SPLIT_HOUR_2, copyingTaskData, targetCopyDayOffset, draggingTask, resizingTask, openEditModal, handleDeleteTask, startCopy, TASK_COLORS, topDayOffset, setCopyingTaskData, handleDropCopy, activeEditModalTask]);
 
   /**
    * Handles the submission of the new task form.
@@ -814,29 +736,6 @@ export default function DailyPlanner() {
    * Then, it calls handleAddTask with this specific targetDate, the task details from the form,
    * and a dayOffset of 0 (as targetDate now represents the task's absolute date).
    */
-  // const handleSubmitNewTaskForm = () => { // REMOVED
-  //   if (newTaskName.trim() === "") return;
-  //   
-  //   // Calculate the targetDate using the helper function and newTaskDayOffset
-  //   const targetDate = getCalendarDateForColumn(newTaskDayOffset);
-  //
-  //   // newTaskHour is already set. The dayOffset for handleAddTask will be 0
-  //   // as targetDate now represents the specific date for the task.
-  //   handleAddTask(targetDate, newTaskHour, { 
-  //     name: newTaskName,
-  //     duration: newTaskDuration,
-  //     color: newTaskColor,
-  //   }, 0); // Pass 0 for the new dayOffset argument
-  //
-  //   setShowTaskForm(false); // Close form
-  //   // Reset fields to default for next generic open, but not strictly necessary if button re-initializes
-  //   setNewTaskName("");
-  //   setNewTaskHour(9);
-  //   setNewTaskDuration(1);
-  //   setNewTaskColor(TASK_COLORS[0]);
-  //   setNewTaskDayOffset(topDayOffset); // Default to top day for next generic open
-  // };
-  
   const [cloneConflictStrategy, setCloneConflictStrategy] = useState<'skip' | 'replace' | 'adjust'>('skip');
   const handleConfirmClone = () => {
     if (cloneDayTasks && showCloneConfirmation) {
@@ -850,13 +749,6 @@ export default function DailyPlanner() {
 
       cloneDayTasks(sourceDate, destinationDate);
     }
-    // Modal closing is handled by confirmCloneDay from the useModalManager hook,
-    // which is called by the modal's confirm button. This function here is an additional handler
-    // if the modal itself doesn't directly call the hook's confirm function that includes onCloneTasks.
-    // For now, assume the modal's confirm button will eventually call modalManager.confirmCloneDay().
-    // If this handleConfirmClone is directly tied to a button that bypasses the modalManager's own confirm, 
-    // then we might need to call modalManager.cancelCloneDay() or similar to close the modal from here.
-    // Best practice: Modal's confirm button should call modalManager.confirmCloneDay().
   };
 
   // Diagnostic useEffect to check for duplicate task IDs in the main tasks state
@@ -868,7 +760,6 @@ export default function DailyPlanner() {
     const duplicates = Object.entries(idCounts).filter(([id, count]) => count > 1);
     if (duplicates.length > 0) {
       console.warn('Duplicate task IDs found in tasks state in DailyPlanner.tsx:', Object.fromEntries(duplicates));
-      // console.log('Full tasks array with duplicates:', tasks); // Optionally log full array
       
       // Fix duplicate task IDs by keeping only the first occurrence of each ID
       const uniqueTaskIds = new Set<string>();
@@ -892,12 +783,8 @@ export default function DailyPlanner() {
     showClearPoolModal(); 
   };
 
-  // confirmClearPool is provided by the hook and handles its own logic including modal closure.
-  // The local confirmClearPool can be removed if the button directly calls the hook's version.
-  // For now, let's assume the button calls this local version, which then calls the hook's setPoolTasks.
   const confirmClearPool = () => { 
     if (setPoolTasks) setPoolTasks(() => []);
-    // Hook's confirmClearPool implies modal closing.
   };
 
   const handleCloneDay = (dayOffset: number) => {
@@ -1018,7 +905,6 @@ export default function DailyPlanner() {
                         color: TASK_COLORS[0],
                         notes: "",
                         completed: false,
-                        // No need to specify isRecurring or subTasks if not part of base Task interface or handled by modal
                       };
                       openEditModal(newTaskDefaults, { isNew: true, isFromPool: false });
                     }}

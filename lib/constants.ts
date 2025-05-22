@@ -67,3 +67,15 @@ export const DEFAULT_TOP_DAY_OFFSET = 0;
 
 /** Default day offset for the bottom timeline (Yesterday) */
 export const DEFAULT_BOTTOM_DAY_OFFSET = -1; 
+
+// Constants from DailyPlanner.tsx
+export const TIMELINE_COLUMN_HEIGHT = 100;
+export const TASK_BASE_TOP = 0;
+export const TASK_BASE_BOTTOM_PADDING = 33;
+// TASK_HEIGHT is derived: TIMELINE_COLUMN_HEIGHT - TASK_BASE_TOP - TASK_BASE_BOTTOM_PADDING;
+// It can be calculated where needed or defined here if preferred, like:
+// export const TASK_HEIGHT = TIMELINE_COLUMN_HEIGHT - TASK_BASE_TOP - TASK_BASE_BOTTOM_PADDING;
+export const TIMELINE_SPLIT_HOUR_1 = 11; // Morning/Afternoon split
+export const TIMELINE_SPLIT_HOUR_2 = 18; // Afternoon/Evening split
+export const TIMELINE_HEADER_HEIGHT_PX = 28;
+export const GRID_LINE_STYLE = "border-l-2 border-gray-400 z-10"; // Example, might need to be Tailwind class string 
