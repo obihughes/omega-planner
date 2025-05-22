@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Task, PinnedTask } from '../types/planner';
+import { Task, PinnedTask } from '../types/planner'; // Removed PlannerMode, TaskColor, CloneConfirmationData, ModalOpenOptions
 import TaskStorage, { DayViewSettings } from '../utils/storage'; // TaskStorage is default, DayViewSettings is named
 // import { TASK_COLORS } from '../components/planner/DailyPlanner'; // TODO: Decouple this, maybe move to a constants file
 import { formatTime, formatDuration } from '../utils/formatters'; // Ensure this is imported
@@ -31,6 +31,49 @@ interface ResizingTaskState {
 interface ActiveModalTask extends Task {
   isFromPool?: boolean;
 }
+
+// --- START: DUPLICATED HELPER FUNCTIONS (for immediate debugging) ---
+// TODO: Move these to a shared utils file and import
+
+/**
+ * Helper function to get the actual calendar date for a column offset from the current day.
+ * The date is normalized to midnight (00:00:00:000).
+ * @param {number} columnDayOffset - The number of days to offset from the current date.
+ * @returns {Date} The calculated calendar date, normalized to midnight.
+ */
+const getCalendarDateForColumn = (columnDayOffset: number): Date => {
+  const date = new Date(); // Today's actual date
+  date.setHours(0, 0, 0, 0); // Normalize to start of day
+  date.setDate(date.getDate() + columnDayOffset);
+  return date;
+};
+
+/**
+ * Helper function to extract a Date object representing the calendar date (normalized to midnight)
+ * from an ISO date string.
+ * @param {string} isoDateString - The ISO string representation of a date.
+ * @returns {Date} A Date object normalized to midnight of the given ISO string's date.
+ */
+const getDateWithoutTime = (isoDateString: string): Date => {
+  const date = new Date(isoDateString);
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
+/**
+ * Helper function to compare two Date objects to see if they fall on the same calendar date,
+ * ignoring the time component.
+ * @param {Date} date1 - The first date.
+ * @param {Date} date2 - The second date.
+ * @returns {boolean} True if both dates are on the same calendar day, false otherwise.
+ */
+const isSameCalendarDate = (date1: Date, date2: Date): boolean => {
+  return date1.getFullYear() === date2.getFullYear() &&
+         date1.getMonth() === date2.getMonth() &&
+         date1.getDate() === date2.getDate();
+};
+
+// --- END: DUPLICATED HELPER FUNCTIONS ---
 
 export function useDailyPlanner() {
   // --- STATE ---
@@ -160,25 +203,32 @@ export function useDailyPlanner() {
 
   /**
    * Adds a new task to the main timeline.
-   * The new task's 'baseDate' is set to midnight of the current day (client-side).
-   * The 'dayOffset' property then determines its calendar day relative to this 'baseDate'.
-   * @param {number} dayOffset - The day offset from the current day for the new task.
+   * The new task's 'baseDate' is set to midnight of the provided 'targetDate'.
+   * Its 'dayOffset' will be 0 relative to this 'baseDate'.
+   * @param {Date} targetDate - The specific calendar date for the new task.
    * @param {number} startHour - The start hour for the new task.
    * @param {object} taskData - Object containing name, duration, and color for the new task.
+   * @param {number} [dayOffset=0] - Should generally be 0 as targetDate now defines the specific day.
+   *                                 Included for flexibility but defaults to 0.
    */
-  const handleAddTask = useCallback((dayOffset: number, startHour: number, taskData: { name: string; duration: number; color: string }) => {
-    // Create a base date with time set to midnight
-    const baseDate = new Date();
-    baseDate.setHours(0, 0, 0, 0);
+  const handleAddTask = useCallback((
+    targetDate: Date,
+    startHour: number,
+    taskData: { name: string; duration: number; color: string },
+    dayOffset: number = 0 // Default dayOffset to 0
+  ) => {
+    // Create a normalized base date from the targetDate with time set to midnight
+    const normalizedBaseDate = new Date(targetDate);
+    normalizedBaseDate.setHours(0, 0, 0, 0);
     
     const newTask: Task = {
       id: getNextId(),
       name: taskData.name,
       startHour,
       duration: taskData.duration,
-      dayOffset,
+      dayOffset, // Use the provided dayOffset, defaulting to 0
       color: taskData.color,
-      baseDate: baseDate.toISOString()
+      baseDate: normalizedBaseDate.toISOString() // baseDate is the normalized targetDate
     };
     setTasks(prevTasks => [...prevTasks, newTask]);
   }, [getNextId]);
@@ -235,6 +285,16 @@ export function useDailyPlanner() {
     return false;
   }, [tasks]);
 
+  // Helper function to check for task overlap (ensure this is defined before use in cloneDayTasks)
+  const checkOverlap = useCallback((
+    task1Start: number, task1Duration: number,
+    task2Start: number, task2Duration: number
+  ): boolean => {
+    const task1End = task1Start + task1Duration;
+    const task2End = task2Start + task2Duration;
+    return task1Start < task2End && task1End > task2Start;
+  }, []);
+
   // Add TIMELINE_SPLIT_HOUR constants here if they are used by handleMouseMoveDrag and not passed in
   // These values should match those in DailyPlanner.tsx
   const TIMELINE_SPLIT_HOUR_1 = 11; // As in DailyPlanner.tsx
@@ -242,38 +302,52 @@ export function useDailyPlanner() {
 
   // --- Global Mouse Event Handlers ---
   const handleMouseUpGlobal = useCallback(() => {
-    let dragTaskToFinalize: Task | null = null;
+    if (draggingTask) {
+      const { task: finalDraggedTaskData, taskIndex, initialStartHour: originalStartHourBeforeDrag, initialDayOffset: originalDayOffsetBeforeDrag } = draggingTask;
+      
+      console.log('[MouseUpGlobal] Finalizing drag for Task ID:', finalDraggedTaskData.id.substring(0,4), 
+                  'Proposed Start:', finalDraggedTaskData.startHour, 
+                  'Proposed Duration:', finalDraggedTaskData.duration,
+                  'Proposed BaseDate:', finalDraggedTaskData.baseDate.substring(0,10));
 
-    if (draggingTask && draggingTask.task) {
-      // Before finalizing, ensure the task duration is valid
-      const taskToUpdate = { ...draggingTask.task };
-      if (!taskToUpdate.duration || taskToUpdate.duration < MIN_TASK_DURATION) {
-        taskToUpdate.duration = MIN_TASK_DURATION;
-      }
-      // Ensure start hour is within bounds considering the duration
-      taskToUpdate.startHour = Math.max(TIMELINE_START_HOUR, taskToUpdate.startHour);
-      taskToUpdate.startHour = Math.min(TIMELINE_END_HOUR - taskToUpdate.duration, taskToUpdate.startHour);
+      const finalTargetDate = getDateWithoutTime(finalDraggedTaskData.baseDate);
 
-      // Final check for conflicts before setting the task
-      if (!hasConflict(taskToUpdate.id, taskToUpdate.dayOffset, taskToUpdate.startHour, taskToUpdate.duration)) {
-        dragTaskToFinalize = taskToUpdate;
-        setTasks(currentTasks =>
-          currentTasks.map(t => (t.id === dragTaskToFinalize!.id ? { ...dragTaskToFinalize! } : t))
-        );
-      } else {
-        // Handle conflict: e.g., revert to original position or find nearest available slot (more complex)
-        // For now, if there's a conflict on drop, we might just not update, or revert.
-        // The live preview already tries to avoid this, but this is a final safeguard.
-        // Reverting to original task position if drop results in conflict:
-        const originalTask = tasks.find(t => t.id === draggingTask.task.id);
-        if (originalTask) {
-          setTasks(currentTasks => 
-            currentTasks.map(t => (t.id === originalTask.id ? {...originalTask} : t))
-          );
+      const otherTasksOnFinalDate = tasks.filter(t => {
+        if (t.id === finalDraggedTaskData.id) return false;
+        const otherTaskDate = getDateWithoutTime(t.baseDate);
+        return isSameCalendarDate(otherTaskDate, finalTargetDate);
+      });
+
+      console.log('[MouseUpGlobal] Checking against other tasks on date:', finalTargetDate.toISOString().substring(0,10), 
+                  'Count:', otherTasksOnFinalDate.length, 
+                  'IDs:', otherTasksOnFinalDate.map(t => t.id.substring(0,4) + '@' + t.startHour).join(', '));
+
+      let conflict = false;
+      for (const otherTask of otherTasksOnFinalDate) {
+        console.log('[MouseUpGlobal_CheckOverlap] Comparing dropped Task ID:', finalDraggedTaskData.id.substring(0,4), 
+                    `(Hr: ${finalDraggedTaskData.startHour}, Dur: ${finalDraggedTaskData.duration})`,
+                    'WITH Other Task ID:', otherTask.id.substring(0,4),
+                    `(Hr: ${otherTask.startHour}, Dur: ${otherTask.duration}, BaseDate: ${otherTask.baseDate.substring(0,10)})`);
+        
+        if (checkOverlap(finalDraggedTaskData.startHour, finalDraggedTaskData.duration, otherTask.startHour, otherTask.duration)) {
+          console.warn('[MouseUpGlobal_Conflict!] Conflict detected with Other Task ID:', otherTask.id.substring(0,4),
+                       'Dragged Task Attempted:', `Hr: ${finalDraggedTaskData.startHour}, Dur: ${finalDraggedTaskData.duration}`,
+                       'Other Task:', `Hr: ${otherTask.startHour}, Dur: ${otherTask.duration}`);
+          conflict = true;
+          break;
         }
-        console.warn("Conflict detected on drag end, task reverted or not moved.");
       }
-      setDraggingTask(null);
+
+      if (conflict) {
+        console.warn('[MouseUpGlobal] Conflict detected on drag end, task will not be moved to the conflicting spot. Task remains at its state before this specific conflicting drop attempt.');
+      } else {
+        console.log('[MouseUpGlobal] No conflict on drag end. Updating task.');
+        const newTasks = tasks.map(task =>
+          task.id === finalDraggedTaskData.id ? { ...finalDraggedTaskData } : task
+        );
+        setTasks(newTasks);
+      }
+      setDraggingTask(null); 
     }
 
     if (resizingTask) {
@@ -523,25 +597,25 @@ export function useDailyPlanner() {
   }, [setCopyingTaskData, setTargetCopyDayOffset]);
 
   /**
-   * Creates a new task when a copied task is dropped onto the timeline.
-   * The new task's 'baseDate' is set to midnight of the current day (client-side).
-   * Its 'dayOffset' and 'startHour' are determined by the drop target.
-   * @param {number} targetDayOffset - The day offset where the task is dropped.
+   * Creates a new task when a copied task (from timeline or pool) is dropped onto the timeline.
+   * The new task's 'baseDate' is set to midnight of the provided 'targetDate'.
+   * Its 'dayOffset' is set to 0, and 'startHour' is determined by the drop target.
+   * @param {Date} targetDate - The specific calendar date where the task is dropped.
    * @param {number} targetStartHour - The start hour where the task is dropped.
    */
-  const handleDropCopy = useCallback((targetDayOffset: number, targetStartHour: number) => {
+  const handleDropCopy = useCallback((targetDate: Date, targetStartHour: number) => {
     if (!copyingTaskData) return;
 
-    // Create a base date with time set to midnight for today
-    const baseDate = new Date();
-    baseDate.setHours(0, 0, 0, 0);
+    // Normalize the targetDate to midnight for the baseDate
+    const normalizedBaseDate = new Date(targetDate);
+    normalizedBaseDate.setHours(0, 0, 0, 0);
 
     const newTask: Task = {
-      ...copyingTaskData,
-      id: getNextId(),
-      dayOffset: targetDayOffset,
+      ...copyingTaskData, // Spread properties from the source task being copied
+      id: getNextId(),     // Assign a new ID
+      dayOffset: 0,        // dayOffset is 0 because baseDate is the specific target date
       startHour: targetStartHour,
-      baseDate: baseDate.toISOString() // Use today as the base date for copied tasks
+      baseDate: normalizedBaseDate.toISOString() // Use the specific target date
     };
 
     setTasks(prevTasks => [...prevTasks, newTask]);
@@ -550,63 +624,86 @@ export function useDailyPlanner() {
   }, [copyingTaskData, getNextId, setTasks, setCopyingTaskData, setTargetCopyDayOffset]);
 
   /**
-   * Clones all tasks from a source day offset to a destination day offset.
-   * New tasks created during cloning have their 'baseDate' set to midnight of the current day (client-side).
-   * The 'dayOffset' is set to the destination day's offset.
+   * Clones all tasks from a source calendar date to a destination calendar date.
+   * New tasks created during cloning have their 'baseDate' set to the 'destinationDate' (normalized to midnight).
+   * Their 'dayOffset' is set to 0.
    * Handles conflicts based on the 'cloneConflictStrategy'.
-   * @param {number} sourceDayOffset - The day offset of the tasks to clone.
-   * @param {number} destinationDayOffset - The day offset where the cloned tasks will be placed.
+   * @param {Date} sourceCalendarDate - The specific calendar date from which to clone tasks (normalized to midnight).
+   * @param {Date} destinationCalendarDate - The specific calendar date to which tasks will be cloned (normalized to midnight).
    */
-  const cloneDayTasks = useCallback((sourceDayOffset: number, destinationDayOffset: number) => {
-    const sourceTasks = tasks.filter(t => t.dayOffset === sourceDayOffset);
-    const destinationTasks = tasks.filter(t => t.dayOffset === destinationDayOffset);
+  const cloneDayTasks = useCallback((sourceCalendarDate: Date, destinationCalendarDate: Date) => {
+    // Ensure dates are normalized (although they should be by the caller)
+    const normalizedSourceDate = new Date(sourceCalendarDate);
+    normalizedSourceDate.setHours(0, 0, 0, 0);
+    const normalizedDestinationDate = new Date(destinationCalendarDate);
+    normalizedDestinationDate.setHours(0, 0, 0, 0);
+
+    const sourceTasksToClone = tasks.filter(t => {
+      const taskAbsDate = new Date(t.baseDate);
+      // taskAbsDate is already normalized if our system is consistent, dayOffset should be 0
+      return taskAbsDate.getTime() === normalizedSourceDate.getTime() && t.dayOffset === 0;
+    });
+
+    // Filter existing tasks on the destination day for conflict checking
+    const existingDestinationTasks = tasks.filter(t => {
+      const taskAbsDate = new Date(t.baseDate);
+      return taskAbsDate.getTime() === normalizedDestinationDate.getTime() && t.dayOffset === 0;
+    });
     
-    // Create a base date with time set to midnight for today
-    const baseDate = new Date();
-    baseDate.setHours(0, 0, 0, 0);
-    
-    const newTasks = sourceTasks.map(sourceTask => {
+    const newClonedTasks = sourceTasksToClone.map(sourceTask => {
       const newTask: Task = {
         ...sourceTask,
         id: getNextId(),
-        dayOffset: destinationDayOffset,
-        baseDate: baseDate.toISOString() // Use today as the base date for cloned tasks
+        dayOffset: 0, // dayOffset is 0 because baseDate is the specific destination date
+        baseDate: normalizedDestinationDate.toISOString() // Set baseDate to the specific destination date
       };
       return newTask;
     });
 
     // Handle conflicts based on strategy
-    const finalTasks = newTasks.filter(newTask => {
-      const hasConflict = destinationTasks.some(existingTask => 
-        checkOverlap(newTask.startHour, newTask.duration, existingTask.startHour, existingTask.duration)
+    const finalTasksToApply = newClonedTasks.filter(clonedTask => {
+      const hasConflictWithExisting = existingDestinationTasks.some(existingTask => 
+        checkOverlap(clonedTask.startHour, clonedTask.duration, existingTask.startHour, existingTask.duration)
       );
       
-      if (hasConflict) {
+      if (hasConflictWithExisting) {
         switch (cloneConflictStrategy) {
           case 'skip':
             return false;
           case 'replace':
-            return true;
+            // This strategy would imply removing conflicting tasks from existingDestinationTasks first.
+            // For simplicity, we'll allow it, and duplicates might appear if not handled by a unique constraint elsewhere.
+            // Or, more robustly, filter out the tasks from `tasks` that would be replaced.
+            // Current: it will just add it, potentially creating an overlap that UI might hide or show.
+            return true; 
           case 'adjust':
-            // Find a new time slot
-            let adjustedStartHour = newTask.startHour;
-            while (destinationTasks.some(existingTask => 
-              checkOverlap(adjustedStartHour, newTask.duration, existingTask.startHour, existingTask.duration)
-            )) {
+            let adjustedStartHour = clonedTask.startHour;
+            const maxAttempts = (TIMELINE_END_HOUR - TIMELINE_START_HOUR) * 4; // Max 15-min slots in a day
+            let attempts = 0;
+            while (existingDestinationTasks.some(existingTask => 
+              checkOverlap(adjustedStartHour, clonedTask.duration, existingTask.startHour, existingTask.duration)
+            ) && attempts < maxAttempts) {
               adjustedStartHour += 0.25; // Move by 15 minutes
-              if (adjustedStartHour + newTask.duration > TIMELINE_END_HOUR) {
+              if (adjustedStartHour + clonedTask.duration > TIMELINE_END_HOUR) {
                 return false; // Skip if can't find a slot
               }
+              attempts++;
             }
-            newTask.startHour = adjustedStartHour;
+            if (attempts >= maxAttempts) return false; // Could not find a slot
+            clonedTask.startHour = adjustedStartHour;
             return true;
         }
       }
       return true;
     });
 
-    setTasks(prevTasks => [...prevTasks, ...finalTasks]);
-  }, [tasks, getNextId, cloneConflictStrategy, TIMELINE_END_HOUR, setTasks]);
+    setTasks(prevTasks => {
+      // If 'replace' strategy, we might need to remove tasks from prevTasks that are on destinationDate and conflict.
+      // This is a simplified addition. A true replace would be more complex here.
+      return [...prevTasks, ...finalTasksToApply];
+    });
+
+  }, [tasks, getNextId, cloneConflictStrategy, TIMELINE_END_HOUR, TIMELINE_START_HOUR, checkOverlap, setTasks]);
 
   // For updating pool tasks from the modal
   const handleUpdatePoolTask = useCallback((taskId: string, updatedFields: Partial<Omit<Task, 'id'>>) => {
@@ -617,18 +714,9 @@ export function useDailyPlanner() {
     );
   }, [setPoolTasks]);
 
-  // Helper function to check for task overlap
-  const checkOverlap = useCallback((
-    task1Start: number, task1Duration: number,
-    task2Start: number, task2Duration: number
-  ): boolean => {
-    const task1End = task1Start + task1Duration;
-    const task2End = task2Start + task2Duration;
-    return task1Start < task2End && task1End > task2Start;
-  }, []);
-
   // --- Use Modal Manager ---
   const modalManager = useModalManager({
+    onAddTask: handleAddTask,
     onUpdateTask: handleUpdateTask,
     onUpdatePoolTask: handleUpdatePoolTask,
     onClearPool: clearPool,
