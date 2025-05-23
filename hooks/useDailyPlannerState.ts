@@ -428,26 +428,28 @@ export function useDailyPlanner() {
 
   // --- Pinned Task Functions ---
   const handlePinTask = useCallback((originalTask: Task) => {
-    const taskToPin = { ...originalTask }; // Create a copy
+    const taskToPin = { ...originalTask };
 
-    // Ensure baseDate is treated as UTC midnight for calculation
-    const sourceBaseDate = new Date(taskToPin.baseDate);
-    const year = sourceBaseDate.getUTCFullYear();
-    const month = sourceBaseDate.getUTCMonth(); // 0-11
-    const day = sourceBaseDate.getUTCDate();
+    // 1. Reconstruct the Date object for the UTC moment representing local midnight.
+    const tempUtcDate = new Date(taskToPin.baseDate);
 
-    const hours = Math.floor(taskToPin.startHour);
-    const minutes = Math.round((taskToPin.startHour % 1) * 60);
+    // 2. Get the LOCAL calendar date components from this Date object.
+    const localYear = tempUtcDate.getFullYear();
+    const localMonth = tempUtcDate.getMonth();
+    const localDay = tempUtcDate.getDate();
 
-    // Create the dueDate explicitly in UTC
-    const dueDateEpoch = Date.UTC(year, month, day, hours, minutes, 0, 0);
-    const dueDate = new Date(dueDateEpoch);
+    // 3. Get the LOCAL time components from the task's startHour.
+    const taskHours = Math.floor(taskToPin.startHour);
+    const taskMinutes = Math.round((taskToPin.startHour % 1) * 60);
+
+    // 4. Create a NEW Date object using these LOCAL components.
+    const localDueDate = new Date(localYear, localMonth, localDay, taskHours, taskMinutes, 0, 0);
 
     const newPinnedTask: PinnedTask = {
-      ...taskToPin, // Spread original task properties
+      ...taskToPin,
       originalId: taskToPin.id,
-      pinnedId: getNextId(), // Unique ID for this pinned instance
-      dueDate: dueDate, // Use the correctly calculated dueDate
+      pinnedId: getNextId(),
+      dueDate: localDueDate, // Use the correctly constructed localDueDate
     };
     setPinnedTasks(prevPinnedTasks => [...prevPinnedTasks, newPinnedTask].sort((a,b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()));
   }, [getNextId, setPinnedTasks]);
