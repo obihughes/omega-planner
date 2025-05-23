@@ -335,7 +335,9 @@ export default function DailyPlanner() {
    * Handles mouse move events during a task drag operation.
    * Updates the `draggingTask` state with the new `startHour`, `baseDate` (absolute date of the target column),
    * and `dayOffset` (set to 0 relative to the new `baseDate`).
-   * @param e - The mouse event.
+   * It identifies the target column and period under the mouse, calculates the potential new start hour,
+   * resolves collisions, and updates the dragging task preview if the move is valid and results in a change.
+   * @param {MouseEvent} e - The mouse event.
    */
   const handleMouseMoveDrag = useCallback((e: MouseEvent) => {
     if (!draggingTask || !draggingTask.taskElement || !draggingTask.task) return;
@@ -487,6 +489,12 @@ export default function DailyPlanner() {
     };
   }, [draggingTask, resizingTask, handleMouseMoveResize, handleMouseMoveDrag]);
 
+  /**
+   * Renders the timeline header for a specific period (morning, afternoon, evening).
+   * Displays hour markers within the given period.
+   * @param {'morning' | 'afternoon' | 'evening'} period - The period to render the timeline for.
+   * @returns {JSX.Element} The timeline header element.
+   */
   const renderTimeline = useCallback((period: 'morning' | 'afternoon' | 'evening') => {
     let startHour, endHour;
     switch (period) {
@@ -508,12 +516,14 @@ export default function DailyPlanner() {
   }, [APP_PIXELS_PER_HOUR, APP_TIMELINE_START_HOUR, APP_TIMELINE_END_HOUR, APP_TIMELINE_SPLIT_HOUR_1, APP_TIMELINE_SPLIT_HOUR_2]); 
 
   /**
-   * Renders a single column in the timeline for a specific day offset and period (morning, afternoon, evening).
-   * Filters tasks to display only those that belong to the column's calendar date and fall within the period's time range.
-   * Task date association relies on `task.baseDate` (an ISO string normalized to midnight) and `task.dayOffset`.
-   * The column's calendar date is determined by `dayOffset` relative to the current actual date.
+   * Renders a single column in the timeline for a specific day offset and period.
+   * This includes the timeline header for that period and all tasks that fall within it.
+   * Handles task rendering, drag/resize previews, click/double-click events for pasting/creating tasks,
+   * and the current time marker for the present day.
+   *
    * @param {number} dayOffset - The offset from the current day for this column.
    * @param {'morning' | 'afternoon' | 'evening'} period - The time period this column represents.
+   * @returns {JSX.Element} The column element with its header and tasks.
    */
   const renderColumn = useCallback((dayOffset: number, period: 'morning' | 'afternoon' | 'evening') => {
     let startHour, endHour;
@@ -887,7 +897,9 @@ export default function DailyPlanner() {
   };
 
   /**
-   * Initiates a task drag operation.
+   * Initiates a task drag operation when a mousedown event occurs on a draggable task area.
+   * Sets up the `draggingTask` state with initial values and the task being dragged.
+   * Also cancels any active copy or resize operations.
    * @param {Task} taskToDrag - The task object being dragged.
    * @param {React.MouseEvent} e - The mouse event that triggered the drag.
    */

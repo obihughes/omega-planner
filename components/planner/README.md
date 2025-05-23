@@ -65,4 +65,24 @@ export interface TaskCardProps {
 **Features:**
 - Shows pinned tasks sorted by due time
 - Displays time remaining for each task
-- Allows unpinning tasks 
+- Allows unpinning tasks
+- Allows clearing all overdue pinned tasks
+- Allows syncing pinned tasks with the timeline
+
+### EditTaskModal
+
+`EditTaskModal` is a dialog component used for creating new tasks or editing existing tasks (from the timeline, task pool, or pinned tasks).
+
+**Features:**
+- Form for task name, duration, color, notes, etc.
+- Handles both new task creation and updates to existing tasks.
+- Integrates with color picker.
+- Provides actions like Pin, Copy to Pool, Delete.
+
+### ViewTaskNotesModal
+
+`ViewTaskNotesModal` is a dialog component used for displaying the full notes of a task.
+
+**Features:**
+- Read-only view of task notes.
+- Option to quickly open the `EditTaskModal` for the viewed task. 
