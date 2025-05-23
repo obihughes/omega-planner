@@ -1,9 +1,19 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ChevronDown, ChevronUp, Clock } from 'lucide-react'; // Example icons
+import { formatTime } from '@/utils/formatters'; // Assuming formatTime is in formatters
 
+/**
+ * Props for the CustomTimePicker component.
+ */
 interface CustomTimePickerProps {
-  value: number; // Current start hour (e.g., 9.5 for 9:30 AM)
-  onChange: (newStartHour: number) => void;
+  /** The current time value, represented as a decimal number (e.g., 9.5 for 9:30 AM). */
+  value: number;
+  /** Callback function invoked when the time value changes. */
+  onChange: (value: number) => void;
+  /** Optional ID for the component. */
+  id?: string;
+  /** Optional CSS class name for the component. */
+  className?: string;
   minHour?: number; // e.g., TIMELINE_START_HOUR
   maxHour?: number; // e.g., TIMELINE_END_HOUR - MIN_TASK_DURATION
 }
@@ -17,9 +27,16 @@ const formatTimeToDisplay = (hour24: number): string => {
   return `${displayHour.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${period}`;
 };
 
+/**
+ * A custom time picker component that allows users to select a time.
+ * It displays the time and provides a popover with controls to adjust hours, minutes, and AM/PM.
+ * The time is represented internally as a decimal number (e.g., 9.5 for 9:30 AM).
+ */
 const CustomTimePicker: React.FC<CustomTimePickerProps> = ({
   value,
   onChange,
+  id,
+  className,
   minHour = 0, 
   maxHour = 23.75, // 11:45 PM as a default
 }) => {

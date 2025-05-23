@@ -1,26 +1,48 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Task } from '../../types/planner';
 import { X, Check, Trash2, Calendar as CalendarIcon, Info, Copy, Pin, ChevronDownIcon } from 'lucide-react';
-import { DURATION_OPTIONS, TASK_COLORS } from '@/lib/constants';
+import { DURATION_OPTIONS, TASK_COLORS, DEFAULT_TASK_COLOR_INDEX } from '@/lib/constants';
 import { formatDuration, formatTime } from '@/utils/formatters';
-import CustomTimePicker from '../primitives/CustomTimePicker';
+import { CustomTimePicker } from '@/components/primitives';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getDateWithoutTime } from '@/utils/dateUtils';
 
+/**
+ * Props for the EditTaskModal component.
+ */
 interface EditTaskModalProps {
+  /** The task object to be edited or the template for a new task. 
+   *  `isNew` indicates if the task is being created.
+   *  `isFromPool` indicates if the task originated from the task pool.
+   *  `isPinned` indicates if the task is currently pinned (though this prop seems unused directly for pin status display).
+  */
   taskToEdit: Task & { isNew?: boolean, isFromPool?: boolean, isPinned?: boolean };
+  /** Callback function to save the task. */
   onSave: (task: Task, options?: { isNew?: boolean, isFromPool?: boolean }) => void;
+  /** Callback function to close the modal. */
   onClose: () => void;
+  /** Optional callback for when the task color is changed (currently not directly used by a color picker in this modal but could be for future use or direct prop passing). */
   onColorChange?: (taskId: string, color: string) => void;
+  /** Optional callback to delete the task. If provided, a delete button is shown for existing tasks. */
   onDelete?: (taskId: string) => void;
+  /** Optional callback to pin the task. If provided, a pin button is shown. */
   onPinTask?: (task: Task) => void;
+  /** Optional callback to move the task to the task pool. If provided, a "To Pool" button is shown for existing, non-pool tasks. */
   onMoveToPool?: (taskId: string) => void;
+  /** Optional array of currently pinned tasks, used to determine if the task being edited is already pinned. Defaults to an empty array. */
   pinnedTasks?: Task[];
+  /** Optional callback to copy the current task's data, close the modal, and enter paste mode. */
+  onCopyAndEnterPasteMode?: (taskData: Omit<Task, 'id'>) => void; 
 }
 
+/**
+ * A modal component for creating new tasks or editing existing ones.
+ * It includes fields for task name, date, start time, duration, color, and notes.
+ * Provides options to save, delete, pin, or move tasks to a pool.
+ */
 export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   taskToEdit,
   onSave,
@@ -30,11 +52,12 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   onPinTask,
   onMoveToPool,
   pinnedTasks = [],
+  onCopyAndEnterPasteMode,
 }) => {
   const [name, setName] = useState(taskToEdit.name);
   const [startHour, setStartHour] = useState(taskToEdit.startHour);
   const [duration, setDuration] = useState(taskToEdit.duration);
-  const [color, setColor] = useState(taskToEdit.color || TASK_COLORS[0]);
+  const [color, setColor] = useState(taskToEdit.color || TASK_COLORS[DEFAULT_TASK_COLOR_INDEX]);
   const [notes, setNotes] = useState(taskToEdit.notes || '');
   const [selectedDate, setSelectedDate] = useState<Date>(
     taskToEdit.baseDate ? getDateWithoutTime(taskToEdit.baseDate) : getDateWithoutTime(new Date().toISOString())
@@ -51,7 +74,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
     setName(taskToEdit.name);
     setStartHour(taskToEdit.startHour);
     setDuration(taskToEdit.duration);
-    setColor(taskToEdit.color || TASK_COLORS[0]);
+    setColor(taskToEdit.color || TASK_COLORS[DEFAULT_TASK_COLOR_INDEX]);
     setNotes(taskToEdit.notes || '');
     setSelectedDate(
       taskToEdit.baseDate ? getDateWithoutTime(taskToEdit.baseDate) : getDateWithoutTime(new Date().toISOString())
@@ -62,19 +85,40 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
     }
   }, [taskToEdit]);
 
+  // This effect is purely for the duration dropdown.
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutsideDuration = (event: MouseEvent) => {
       if (durationDropdownRef.current && !durationDropdownRef.current.contains(event.target as Node) &&
           durationControlRef.current && !durationControlRef.current.contains(event.target as Node)) {
         setIsDurationDropdownOpen(false);
       }
+    };
+    document.addEventListener('mousedown', handleClickOutsideDuration);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutsideDuration);
+    };
+  }, []); // Corrected dependency array to empty as it only affects internal state of dropdown
+
+  // New useEffect for Modal Close on Escape and Click Outside
+  useEffect(() => {
+    const handleClickOutsideModal = (event: MouseEvent) => {
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-        // onClose(); // Re-evaluate if closing on outside click is desired for the whole modal
+        onClose();
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutsideModal);
+    document.addEventListener('keydown', handleKeyDown);
+
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutsideModal);
+      document.removeEventListener('keydown', handleKeyDown);
     };
   }, [onClose]);
 
@@ -132,7 +176,8 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {/* Date, Time, Duration, Color Section */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-4">
             <div>
               <label htmlFor="taskDate" className="block text-xs font-medium text-neutral-400 mb-1">Date</label>
               <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
@@ -164,6 +209,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                 </PopoverContent>
               </Popover>
             </div>
+            
             <div>
               <label htmlFor="taskStartTime" className="block text-xs font-medium text-neutral-400 mb-1">Start Time</label>
               <CustomTimePicker
@@ -171,9 +217,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                 onChange={setStartHour}
               />
             </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-3">
+
             <div>
                 <label htmlFor="taskDuration" className="block text-xs font-medium text-neutral-400 mb-1">Duration</label>
                 <div ref={durationControlRef} className="relative">
@@ -204,9 +248,11 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                     )}
                 </div>
             </div>
+
             <div>
                 {/* <label className="block text-xs font-medium text-neutral-400 mb-1">Color</label> */}
-                <div className="grid grid-cols-8 gap-1 pt-5"> {/* Increased gap for color buttons */} 
+                {/* Adjusting top padding for alignment in the new grid structure */}
+                <div className="grid grid-cols-8 gap-1 pt-1 md:pt-[26px]"> {/* pt-1 for mobile, pt-[26px] for md+ to align with label+input above */}
                     {TASK_COLORS.map(c => (
                         <button
                         type="button"
@@ -218,7 +264,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                 </div>
             </div>
           </div>
-
+          
           <div>
             {/* <label htmlFor="taskNotes" className="block text-sm font-medium text-neutral-300 mb-1">Notes</label> */}
             <textarea
@@ -231,73 +277,79 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
             />
           </div>
 
-          <div className="pt-2 space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-md text-sm font-medium transition-colors"
+          {/* Modal Footer with Action Buttons - Revised Layout */}
+          <div className="flex items-center justify-between pt-4 border-t border-neutral-700 mt-4">
+            {/* Group for left-aligned action buttons */}
+            <div className="flex items-center gap-2">
+              {!taskToEdit.isNew && onDelete && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => { onDelete(taskToEdit.id); onClose(); }}
+                  className="px-3 py-2 text-sm text-red-500 border-red-500 hover:bg-red-500/10 hover:text-red-400"
                 >
-                  {taskToEdit.isNew ? 'Create Task' : 'Save Changes'}
-                </button>
-                {!taskToEdit.isNew && onDelete && (
-                  <button
-                    type="button"
-                    onClick={() => { if (onDelete) onDelete(taskToEdit.id); onClose(); }}
-                    className="px-3 py-2 bg-red-700 hover:bg-red-600 text-white rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors"
-                    title="Delete Task"
-                  >
-                    <Trash2 className="w-4 h-4" /> 
-                  </button>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2">
-                {onPinTask && !taskToEdit.isFromPool && (
-                  isTaskPinned ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="text-xs px-2 py-1 h-auto bg-neutral-700 border-neutral-600 text-sky-400 hover:bg-neutral-600 hover:text-sky-300 cursor-default"
-                      disabled
-                    >
-                      <Pin className="w-3 h-3 mr-1.5 fill-sky-400" /> Already Pinned
-                    </Button>
-                  ) : (
-                    <Button
-                      type="button"
-                      onClick={() => { 
-                        const taskToPin: Task = {
-                          ...taskToEdit, name, startHour, duration, color, notes,
-                          baseDate: getDateWithoutTime(selectedDate.toISOString()).toISOString(), dayOffset: 0
-                        };
-                        onPinTask(taskToPin); 
-                        onClose(); 
-                      }}
-                      variant="outline"
-                      size="sm"
-                      className="text-xs px-2 py-1 h-auto bg-neutral-700 border-neutral-600 hover:bg-neutral-600 text-neutral-300 hover:text-white"
-                      title="Pin this task"
-                    >
-                      <Pin className="w-3 h-3 mr-1.5" /> Pin Task
-                    </Button>
-                  )
-                )}
-                {onMoveToPool && !taskToEdit.isNew && !taskToEdit.isFromPool && (
-                   <Button
-                    type="button"
-                    onClick={() => { if (onMoveToPool) onMoveToPool(taskToEdit.id); onClose(); }}
-                    variant="outline"
-                    size="sm"
-                    className="text-xs px-2 py-1 h-auto bg-neutral-700 border-neutral-600 hover:bg-neutral-600 text-neutral-300 hover:text-white"
-                    title="Move to Task Pool"
-                  >
-                    <Copy className="w-3 h-3 mr-1.5" /> To Pool
-                  </Button>
-                )}
-              </div>
+                  <Trash2 className="w-4 h-4 mr-1.5" /> Delete
+                </Button>
+              )}
+              {onCopyAndEnterPasteMode && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const { isNew, isFromPool, ...taskDataForCopy } = taskToEdit;
+                    onCopyAndEnterPasteMode({
+                      name,
+                      startHour,
+                      duration,
+                      color,
+                      notes,
+                      baseDate: selectedDate.toISOString(),
+                      dayOffset: 0,
+                      completed: taskDataForCopy.completed,
+                    });
+                  }}
+                  className="px-3 py-2 text-sm text-neutral-300 border-neutral-600 hover:bg-neutral-700 hover:text-neutral-100"
+                >
+                  <Copy className="w-4 h-4 mr-1.5" /> Copy
+                </Button>
+              )}
+              {onPinTask && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const taskToPin = { 
+                      ...taskToEdit, 
+                      name, startHour, duration, color, notes, 
+                      baseDate: selectedDate.toISOString(), dayOffset: 0 
+                    };
+                    onPinTask(taskToPin);
+                  }}
+                  disabled={isTaskPinned}
+                  className={`px-3 py-2 text-sm border-neutral-600 hover:bg-neutral-700 ${isTaskPinned ? 'text-blue-400 hover:text-blue-300' : 'text-neutral-300 hover:text-neutral-100'}`}
+                >
+                  <Pin className="w-4 h-4 mr-1.5" /> {isTaskPinned ? 'Pinned' : 'Pin'}
+                </Button>
+              )}
+              {!taskToEdit.isFromPool && onMoveToPool && !taskToEdit.isNew && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => { if (onMoveToPool) { onMoveToPool(taskToEdit.id); onClose();} }}
+                  className="px-3 py-2 text-sm text-neutral-300 border-neutral-600 hover:bg-neutral-700 hover:text-neutral-100"
+                >
+                  To Pool
+                </Button>
+              )}
             </div>
+
+            {/* Right-aligned Save Button */}
+            <Button 
+              type="submit" 
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm font-medium" // Kept slightly larger padding for primary, added font-medium
+            >
+              <Check className="w-4 h-4 mr-1.5" /> Save Changes
+            </Button>
           </div>
         </form>
       </div>

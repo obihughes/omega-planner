@@ -25,7 +25,7 @@ export const TASK_COLORS = [
 
   // Row 3: Sky Blues, Blues, Indigos, Violets, Purples
   'bg-sky-200 dark:bg-sky-600',          // Light Sky Blue
-  'bg-blue-400 dark:bg-blue-800',        // Deep Blue
+  'bg-blue-400 dark:bg-blue-800',        // Deep Blue (Index 16)
   'bg-blue-200 dark:bg-blue-600',        // Light Blue
   'bg-indigo-200 dark:bg-indigo-600',    // Light Indigo
   'bg-violet-200 dark:bg-violet-600',    // Light Violet
@@ -65,8 +65,11 @@ export const DEFAULT_TASK_DURATION = 1;
 /** Default day offset for the top timeline (Today) */
 export const DEFAULT_TOP_DAY_OFFSET = 0;
 
-/** Default day offset for the bottom timeline (Yesterday) */
-export const DEFAULT_BOTTOM_DAY_OFFSET = -1; 
+/** Default day offset for the bottom timeline (Next Day) */
+export const DEFAULT_BOTTOM_DAY_OFFSET = 1; 
+
+/** Default color index for newly created tasks (Deep Blue) */
+export const DEFAULT_TASK_COLOR_INDEX = 16;
 
 // Constants from DailyPlanner.tsx
 export const TIMELINE_COLUMN_HEIGHT = 100;

@@ -103,8 +103,16 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
                         <span>{formatTime(dueDateObj.getHours() + dueDateObj.getMinutes()/60)}</span>
                     </div>
 
-                    <div className={`text-sm font-bold text-right ${isOverdue ? 'text-red-400' : 'text-sky-300'} pt-1`}>
-                      {timeRemainingText}
+                    <div className="mt-auto pt-2 text-right">
+                      <span 
+                        className={`text-xs ${
+                          isOverdue 
+                            ? 'text-red-400' 
+                            : 'text-sky-400'
+                        }`}
+                      >
+                        {timeRemainingText}
+                      </span>
                     </div>
                   </div>
                 </div>

@@ -136,60 +136,60 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
             {poolTasks.map(task => (
               <div 
                 key={task.id}
-                className={`${task.color || 'bg-blue-600'} opacity-60 hover:opacity-80 px-2 py-1.5 rounded text-white text-xs relative group transition-all duration-150`}
+                draggable
+                onDragStart={(e) => handleDragStartPoolItem(e, task)}
+                className={`bg-neutral-700 p-2 rounded-md shadow-sm cursor-grab active:cursor-grabbing group border border-transparent hover:border-neutral-600 transition-all duration-150 flex flex-col justify-between text-left text-white ${task.color || 'bg-opacity-50'}`}
+                onClick={() => openEditModal(task, true)}
               >
-                <div className="font-medium line-clamp-2 pr-6">{task.name}</div>
-                <div className="text-[10px] opacity-80">{formatDuration(task.duration)}</div>
-                <div className="absolute top-1 right-1 flex space-x-0.5">
-                  <button
-                    type="button"
-                    className="h-5 w-5 rounded bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      const poolTask = poolTasks.find(t => t.id === task.id);
-                      if (poolTask) {
-                        // Call onAddTaskToTimeline to copy to schedule
-                        onAddTaskToTimeline(poolTask, topDayOffset); 
-                      }
-                    }}
-                    title="Copy to Schedule"
-                  >
-                    <CopyPlus className="w-3.5 h-3.5" />
-                  </button>
-                  {/* <button
-                    type="button"
-                    className="h-5 w-5 rounded bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (onDeletePoolTask) onDeletePoolTask(task.id);
-                    }}
-                    title="Delete task"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button> */}
-                  <button
-                    type="button"
-                    className="h-5 w-5 rounded bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setViewingPoolTask(task);
-                    }}
-                    title="View Notes"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    className="h-5 w-5 rounded bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      openEditModal(task, true);
-                    }}
-                    title="Edit Pool Task"
-                  >
-                    <Edit3 className="w-3.5 h-3.5" />
-                  </button>
+                <div className="flex-grow">
+                  <p className="font-medium text-xs leading-snug break-words">
+                    {task.name || "Untitled Task"}
+                  </p>
+                </div>
+                <div className="mt-1.5 flex items-center text-neutral-400">
+                  <span className="text-[11px]"> 
+                    {formatDuration(task.duration)}
+                  </span>
+                  <div className="flex items-center gap-1.5 ml-auto">
+                    <button
+                      type="button"
+                      className="h-5 w-5 rounded bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        const poolTask = poolTasks.find(t => t.id === task.id);
+                        if (poolTask) {
+                          // Call onAddTaskToTimeline to copy to schedule
+                          onAddTaskToTimeline(poolTask, topDayOffset); 
+                        }
+                      }}
+                      title="Copy to Schedule"
+                    >
+                      <CopyPlus className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      className="h-5 w-5 rounded bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setViewingPoolTask(task);
+                      }}
+                      title="View Notes"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      className="h-5 w-5 rounded bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        openEditModal(task, true);
+                      }}
+                      title="Edit Pool Task"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

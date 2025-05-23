@@ -24,10 +24,12 @@ import {
     TIMELINE_SPLIT_HOUR_1 as APP_TIMELINE_SPLIT_HOUR_1,
     TIMELINE_SPLIT_HOUR_2 as APP_TIMELINE_SPLIT_HOUR_2,
     TIMELINE_HEADER_HEIGHT_PX,
-    GRID_LINE_STYLE
+    GRID_LINE_STYLE,
+    DEFAULT_TASK_COLOR_INDEX // Added import for default color index
 } from '../../lib/constants';
 import { TaskCard, MemoizedTaskCard } from './TaskCard';
 import { EditTaskModal } from './EditTaskModal';
+import { ViewTaskNotesModal } from './ViewTaskNotesModal';
 import { getCalendarDateForColumn, getDateWithoutTime, isSameCalendarDate } from '../../utils/dateUtils';
 import { checkOverlap, resolveCollisionsForResize, resolveCollisionsForDrag } from '../../utils/taskUtils';
 
@@ -88,6 +90,11 @@ export default function DailyPlanner() {
     getRelativeDayLabel,
     isSidebarCollapsed,
     setIsSidebarCollapsed,
+    handleCopyAndEnterPasteMode,
+    viewingTaskNotes, 
+    openViewNotesModal, 
+    closeViewNotesModal,
+    setColorPickerState
   } = useDailyPlanner();
 
   const [currentTimeForMarker, setCurrentTimeForMarker] = useState(new Date());
@@ -102,6 +109,80 @@ export default function DailyPlanner() {
   const topDayTimelineRef = useRef<HTMLDivElement>(null);
   const bottomDayTimelineRef = useRef<HTMLDivElement>(null);
   const lastDoubleClickTimestampRef = useRef<number>(0); // Added for double-click cooldown
+
+  // Refs for inline modals
+  const colorPickerRef = useRef<HTMLDivElement>(null);
+  const cloneModalRef = useRef<HTMLDivElement>(null);
+  const clearPoolModalRef = useRef<HTMLDivElement>(null);
+
+  // Effect for Color Picker
+  useEffect(() => {
+    if (!colorPickerState) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (colorPickerRef.current && !colorPickerRef.current.contains(event.target as Node)) {
+        setColorPickerState(null);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setColorPickerState(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [colorPickerState, setColorPickerState]);
+
+  // Effect for Clone Confirmation Modal
+  useEffect(() => {
+    if (!showCloneConfirmation) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (cloneModalRef.current && !cloneModalRef.current.contains(event.target as Node)) {
+        cancelCloneDay();
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        cancelCloneDay();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showCloneConfirmation, cancelCloneDay]);
+
+  // Effect for Clear Pool Confirmation Modal
+  useEffect(() => {
+    if (!showClearPoolConfirmation) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (clearPoolModalRef.current && !clearPoolModalRef.current.contains(event.target as Node)) {
+        cancelClearPool();
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        cancelClearPool();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showClearPoolConfirmation, cancelClearPool]);
 
   const handleResizeStart = (task: Task, edge: 'start' | 'end', e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
@@ -510,7 +591,7 @@ export default function DailyPlanner() {
         const now = Date.now();
         if (now - lastDoubleClickTimestampRef.current < 2000) { // 2-second cooldown
             // Optionally, provide some feedback to the user, e.g., a quick flash or console log
-            console.log("Double-click cooldown active.");
+            // console.log("Double-click cooldown active.");
             return;
         }
 
@@ -551,7 +632,7 @@ export default function DailyPlanner() {
             duration: 1, // Default duration to 1 hour
             baseDate: targetDate.toISOString(),
             dayOffset: 0, 
-            color: TASK_COLORS[0],
+            color: TASK_COLORS[DEFAULT_TASK_COLOR_INDEX],
             notes: "",
             completed: false,
         };
@@ -713,6 +794,7 @@ export default function DailyPlanner() {
                     height={TASK_HEIGHT}
                     onStartEdit={openEditModal} 
                     onCopy={startCopy} 
+                    onViewNotes={openViewNotesModal}
                     />
                   {/*!(activeEditModalTask?.id === displayTask.id) &&*/ (
                       <>
@@ -816,6 +898,7 @@ export default function DailyPlanner() {
             onMoveToPool={copyTaskToPool}
             pinnedTasks={pinnedTasks}
             onDelete={handleDeleteTask}
+            onCopyAndEnterPasteMode={handleCopyAndEnterPasteMode}
           />
         )}
 
@@ -900,35 +983,45 @@ export default function DailyPlanner() {
 
           {/* Main Content Area */}
           <div className={`flex-1 space-y-2 min-w-0 overflow-x-auto transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'ml-0' : 'ml-0'}`} ref={timelineScrollRef}>
+            {/* Single Correct Top Day View Block - START */}
             <div className="bg-neutral-900 p-3 rounded-lg shadow-sm border border-neutral-800 overflow-auto">
+              {/* Header for Top Day View */}
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-neutral-800">
-                <div className="flex items-center space-x-2">
-                  <button type="button" className="p-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-white transition-colors" onClick={() => setTopDayOffset(topDayOffset - 7)} title="Previous week">◀◀</button>
-                  <button type="button" className="p-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-white transition-colors" onClick={() => setTopDayOffset(topDayOffset - 1)} title="Previous day">◀</button>
-                  <span className="text-white font-medium text-center">
+                {/* Date Navigation Controls for topDayOffset */}
+                <div className="flex items-center justify-start">
+                  <div className="flex items-center space-x-2">
+                    <button type="button" className="p-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-white transition-colors" onClick={() => setTopDayOffset(topDayOffset - 7)} title="Previous week">◀◀</button>
+                    <button type="button" className="p-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-white transition-colors" onClick={() => setTopDayOffset(topDayOffset - 1)} title="Previous day">◀</button>
+                  </div>
+                  <span className="text-white font-medium text-center px-3 mx-2 w-52 flex-shrink-0">
                     {isClient ? getDateLabel(topDayOffset) : "Loading date..."}
                   </span>
-                  <button type="button" className="p-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-white transition-colors" onClick={() => setTopDayOffset(topDayOffset + 1)} title="Next day">▶</button>
-                  <button type="button" className="p-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-white transition-colors" onClick={() => setTopDayOffset(topDayOffset + 7)} title="Next week">▶▶</button>
-                  {isClient && getRelativeDayLabel(topDayOffset) && (
-                    <span className="text-xs text-neutral-300 ml-3 px-1.5 py-0.5 bg-neutral-700 rounded-sm font-normal">
-                      {getRelativeDayLabel(topDayOffset)}
-                    </span>
-                  )}
+                  <div className="flex items-center space-x-2">
+                    <button type="button" className="p-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-white transition-colors" onClick={() => setTopDayOffset(topDayOffset + 1)} title="Next day">▶</button>
+                    <button type="button" className="p-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-white transition-colors" onClick={() => setTopDayOffset(topDayOffset + 7)} title="Next week">▶▶</button>
+                    {isClient && getRelativeDayLabel(topDayOffset) && (
+                      <span className="text-xs text-neutral-300 ml-2 px-1.5 py-0.5 bg-neutral-700 rounded-sm font-normal flex-shrink-0">
+                        {getRelativeDayLabel(topDayOffset)}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center justify-end space-x-4">
-                  <button type="button" className="bg-neutral-700 hover:bg-neutral-600 text-white px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors"
+                {/* Action Buttons for topDayOffset */}
+                <div className="flex items-center justify-end space-x-2 ml-auto">
+                  <button
+                    type="button"
+                    className="bg-neutral-700 hover:bg-neutral-600 text-white px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors"
                     onClick={() => {
                       const newTempId = `temp-new-task-${Date.now()}`;
                       const targetDateForNewTask = getCalendarDateForColumn(topDayOffset);
                       const newTaskDefaults: Task = {
                         id: newTempId,
                         name: "New Task",
-                        startHour: 9, // Default start time
-                        duration: 1,  // Default duration to 1 hour
+                        startHour: 9,
+                        duration: 1,
                         baseDate: targetDateForNewTask.toISOString(),
-                        dayOffset: 0, 
-                        color: TASK_COLORS[0],
+                        dayOffset: 0,
+                        color: TASK_COLORS[DEFAULT_TASK_COLOR_INDEX],
                         notes: "",
                         completed: false,
                       };
@@ -939,45 +1032,62 @@ export default function DailyPlanner() {
                   </button>
                 </div>
               </div>
+              {/* Timeline Content for Top Day View */}
               <div className="flex flex-col gap-px">
                   {renderColumn(topDayOffset, 'morning')}
                   {renderColumn(topDayOffset, 'afternoon')}
                   {renderColumn(topDayOffset, 'evening')}
               </div>
             </div>
+            {/* Single Correct Top Day View Block - END */}
 
+            {/* Bottom Day View Block - START */}
             <div className="bg-neutral-900 p-3 rounded-lg shadow-sm border border-neutral-800 overflow-auto">
+              {/* Header for Bottom Day View */}
               <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-2">
-                  <button type="button" className="p-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-white transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset - 7)} title="Previous week">◀◀</button>
-                  <button type="button" className="p-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-white transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset - 1)} title="Previous day">◀</button>
-                  <span className="text-white font-medium text-center">
+                {/* Date Navigation Controls for bottomDayOffset */}
+                <div className="flex items-center justify-start">
+                  <div className="flex items-center space-x-2">
+                    <button type="button" className="p-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-white transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset - 7)} title="Previous week">◀◀</button>
+                    <button type="button" className="p-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-white transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset - 1)} title="Previous day">◀</button>
+                  </div>
+                  <span className="text-white font-medium text-center px-3 mx-2 w-52 flex-shrink-0">
                     {isClient ? getDateLabel(bottomDayOffset) : "Loading date..."}
                   </span>
-                  <button type="button" className="p-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-white transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset + 1)} title="Next day">▶</button>
-                  <button type="button" className="p-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-white transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset + 7)} title="Next week">▶▶</button>
-                  {isClient && getRelativeDayLabel(bottomDayOffset) && (
-                    <span className="text-xs text-neutral-300 ml-3 px-1.5 py-0.5 bg-neutral-700 rounded-sm font-normal">
-                      {getRelativeDayLabel(bottomDayOffset)}
-                    </span>
-                  )}
+                  <div className="flex items-center space-x-2">
+                    <button type="button" className="p-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-white transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset + 1)} title="Next day">▶</button>
+                    <button type="button" className="p-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-white transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset + 7)} title="Next week">▶▶</button>
+                    {isClient && getRelativeDayLabel(bottomDayOffset) && (
+                      <span className="text-xs text-neutral-300 ml-2 px-1.5 py-0.5 bg-neutral-700 rounded-sm font-normal flex-shrink-0">
+                        {getRelativeDayLabel(bottomDayOffset)}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <button type="button" className="border border-neutral-600 text-neutral-300 hover:bg-neutral-700 hover:text-neutral-100 px-3 py-1.5 rounded-lg font-medium flex items-center gap-2 transition-colors duration-200" 
-                  onClick={() => {
-                    const date = getCalendarDateForColumn(bottomDayOffset);
-                    showCloneModal({ dayOffset: bottomDayOffset, date });
-                  }}
-                  title="Clone tasks from this day to the top day"
-                >
-                  <span>↑</span><span>Clone to Top Day</span>
-                </button>
+                {/* Action Buttons for bottomDayOffset */}
+                <div className="flex items-center space-x-2 ml-auto">
+                  <button
+                    type="button"
+                    className="border border-neutral-600 text-neutral-300 hover:bg-neutral-700 hover:text-neutral-100 px-3 py-1.5 rounded-lg font-medium flex items-center gap-2 transition-colors duration-200"
+                    onClick={() => {
+                      const date = getCalendarDateForColumn(bottomDayOffset);
+                      showCloneModal({ dayOffset: bottomDayOffset, date });
+                    }}
+                    title="Clone tasks from this day to the other visible day"
+                  >
+                    <span>{topDayOffset === bottomDayOffset ? '↕' : (bottomDayOffset < topDayOffset ? '↑' : '↓')}</span>
+                    <span>Clone to {topDayOffset === bottomDayOffset ? 'Other' : (bottomDayOffset < topDayOffset ? 'Top' : 'Bottom')} Day</span>
+                  </button>
+                </div>
               </div>
+              {/* Timeline Content for Bottom Day View */}
               <div className="flex flex-col gap-px">
                   {renderColumn(bottomDayOffset, 'morning')}
                   {renderColumn(bottomDayOffset, 'afternoon')}
                   {renderColumn(bottomDayOffset, 'evening')}
               </div>
             </div>
+            {/* Bottom Day View Block - END */}
 
             {showCloneConfirmation && (() => {
               // Determine source and destination labels for the message
@@ -1000,7 +1110,7 @@ export default function DailyPlanner() {
               const destinationDayLabel = getDateLabel(destinationDayViewOffset);
 
               return (
-              <div className="fixed inset-0 bg-black/30 dark:bg-black/50 flex items-center justify-center z-[1001]">
+              <div ref={cloneModalRef} className="fixed inset-0 bg-black/30 dark:bg-black/50 flex items-center justify-center z-[1001]">
                 <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-xl max-w-md w-full">
                   <h3 className="text-xl font-bold mb-2 dark:text-white">Clone Tasks</h3>
                   <p className="text-gray-600 dark:text-gray-300 mb-4">
@@ -1026,7 +1136,8 @@ export default function DailyPlanner() {
               )} )()}
 
             {colorPickerState && (
-              <div 
+              <div
+                ref={colorPickerRef}
                 className="fixed z-[1005] bg-white dark:bg-gray-800 p-2 rounded-md shadow-lg border dark:border-gray-700"
                 style={{ top: colorPickerState.y, left: colorPickerState.x }}
               >
@@ -1043,7 +1154,7 @@ export default function DailyPlanner() {
               </div>
             )}
             {showClearPoolConfirmation && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1001]">
+                <div ref={clearPoolModalRef} className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1001]">
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl">
                         <h3 className="text-lg font-semibold mb-4 dark:text-white">Clear Task Pool?</h3>
                         <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
@@ -1061,6 +1172,16 @@ export default function DailyPlanner() {
                   </div>
                 </div>
               </div>
+            )}
+            {viewingTaskNotes && (
+              <ViewTaskNotesModal 
+                task={viewingTaskNotes} 
+                onClose={closeViewNotesModal} 
+                onEdit={(taskToEdit: Task) => { 
+                  openEditModal(taskToEdit); 
+                  // closeViewNotesModal(); // Already called in ViewTaskNotesModal's handleEdit if preferred there
+                }} 
+              />
             )}
           </div>
         </div>
