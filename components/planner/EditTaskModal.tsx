@@ -7,7 +7,7 @@ import { CustomTimePicker } from '@/components/primitives';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn } from "../../lib/utils";
 import { getDateWithoutTime } from '@/utils/dateUtils';
 
 /**
@@ -27,7 +27,7 @@ interface EditTaskModalProps {
   /** Optional callback for when the task color is changed (currently not directly used by a color picker in this modal but could be for future use or direct prop passing). */
   onColorChange?: (taskId: string, color: string) => void;
   /** Optional callback to delete the task. If provided, a delete button is shown for existing tasks. */
-  onDelete?: (taskId: string) => void;
+  onDelete?: (taskId: string, isFromPool?: boolean) => void;
   /** Optional callback to pin the task. If provided, a pin button is shown. */
   onPinTask?: (task: Task) => void;
   /** Optional callback to move the task to the task pool. If provided, a "To Pool" button is shown for existing, non-pool tasks. */
@@ -285,7 +285,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => { onDelete(taskToEdit.id); onClose(); }}
+                  onClick={() => { onDelete(taskToEdit.id, taskToEdit.isFromPool); onClose(); }}
                   className="px-3 py-2 text-sm text-red-500 border-red-500 hover:bg-red-500/10 hover:text-red-400"
                 >
                   <Trash2 className="w-4 h-4 mr-1.5" /> Delete
@@ -313,7 +313,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                   <Copy className="w-4 h-4 mr-1.5" /> Copy
                 </Button>
               )}
-              {onPinTask && (
+              {onPinTask && !taskToEdit.isFromPool && (
                 <Button
                   type="button"
                   variant="outline"

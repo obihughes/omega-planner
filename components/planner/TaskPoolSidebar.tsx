@@ -119,9 +119,6 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
           <Button variant="ghost" size="icon" onClick={() => setShowPoolTaskForm(!showPoolTaskForm)} className="text-neutral-400 hover:text-white w-7 h-7">
             <CopyPlus className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} className="text-neutral-400 hover:text-white w-7 h-7">
-            <PinOff className="w-4 h-4" />
-          </Button>
         </div>
       </div>
 

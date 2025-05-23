@@ -652,7 +652,8 @@ export function useDailyPlanner() {
       id: 'temp-copy-id'
     };
     startCopy(taskToCopy);
-  }, [startCopy]);
+    mmCloseEditModal(); // Close the modal after starting copy
+  }, [startCopy, mmCloseEditModal]);
 
   const openViewNotesModal = useCallback((task: Task) => {
     setViewingTaskNotes(task);

@@ -184,6 +184,36 @@ export default function DailyPlanner() {
     };
   }, [showClearPoolConfirmation, cancelClearPool]);
 
+  // Effect to handle exiting paste mode (copyingTaskData)
+  useEffect(() => {
+    if (!copyingTaskData) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        cancelCopy();
+      }
+    };
+
+    const handleClickOutsideTimeline = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      // Check if the click is outside any timeline area
+      if (!target.closest('[data-testid^="timeline-area-"]')) {
+        // Further check: if the click was on a button that initiated copy (e.g. from TaskCard or EditModal), 
+        // this might cancel too soon. For now, this is a general click-outside.
+        // A more specific check could be if (!target.closest('.copy-button-class-if-any'))
+        cancelCopy();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', handleClickOutsideTimeline);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', handleClickOutsideTimeline);
+    };
+  }, [copyingTaskData, cancelCopy]);
+
   const handleResizeStart = (task: Task, edge: 'start' | 'end', e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
     e.preventDefault();
@@ -884,6 +914,14 @@ export default function DailyPlanner() {
     }
   }, [cancelCopy, setResizingTask, setDraggingTask]); // Removed tasks from dependency array
 
+  const deleteTaskHandlerForModal = (taskId: string, isFromPool?: boolean) => {
+    if (isFromPool) {
+      handleDeletePoolTask(taskId);
+    } else {
+      handleDeleteTask(taskId);
+    }
+  };
+
   return (
     <div className="min-h-screen p-2 bg-transparent text-white transition-colors">
       <div className="w-full mx-auto">
@@ -897,7 +935,7 @@ export default function DailyPlanner() {
             onPinTask={handlePinTask}
             onMoveToPool={copyTaskToPool}
             pinnedTasks={pinnedTasks}
-            onDelete={handleDeleteTask}
+            onDelete={deleteTaskHandlerForModal}
             onCopyAndEnterPasteMode={handleCopyAndEnterPasteMode}
           />
         )}
