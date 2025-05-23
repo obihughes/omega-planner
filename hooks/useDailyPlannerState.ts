@@ -496,10 +496,10 @@ export function useDailyPlanner() {
       if (days > 0) text = `Overdue by ${days} day${days > 1 ? 's' : ''}`;
       else {
         const hours = Math.floor(absDiffMs / (1000 * 60 * 60));
-        if (hours > 0) text = `Overdue by ${hours} hour${hours > 1 ? 's' : ''}`;
+        if (hours > 0) text = `Overdue by ${hours} hr${hours > 1 ? 's' : ''}`;
         else {
           const mins = Math.floor(absDiffMs / (1000 * 60));
-          text = `Overdue by ${mins} minute${mins > 1 ? 's' : ''}`;
+          text = `Overdue by ${mins} min${mins > 1 ? 's' : ''}`;
         }
       }
     } else {
@@ -507,9 +507,9 @@ export function useDailyPlanner() {
       const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
 
-      if (days > 0) text = `Due in ${days} day${days > 1 ? 's' : ''}${hours > 0 ? ` ${hours} hour${hours > 1 ? 's' : ''}` : ''}`;
-      else if (hours > 0) text = `Due in ${hours} hour${hours > 1 ? 's' : ''}${mins > 0 ? ` ${mins} minute${mins > 1 ? 's' : ''}` : ''}`;
-      else if (mins > 0) text = `Due in ${mins} minute${mins > 1 ? 's' : ''}`;
+      if (days > 0) text = `Due in ${days} day${days > 1 ? 's' : ''}${hours > 0 ? ` ${hours} hr${hours > 1 ? 's' : ''}` : ''}`;
+      else if (hours > 0) text = `Due in ${hours} hr${hours > 1 ? 's' : ''}${mins > 0 ? ` ${mins} min${mins > 1 ? 's' : ''}` : ''}`;
+      else if (mins > 0) text = `Due in ${mins} min${mins > 1 ? 's' : ''}`;
       else text = "Due now";
     }
     return { text, isOverdue };

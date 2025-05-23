@@ -136,10 +136,10 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
             {poolTasks.map(task => (
               <div 
                 key={task.id}
-                className={`${task.color || 'bg-blue-600'} opacity-60 hover:opacity-80 px-1.5 py-1 rounded text-white text-[11px] relative group transition-all duration-150`}
+                className={`${task.color || 'bg-blue-600'} opacity-60 hover:opacity-80 px-2 py-1.5 rounded text-white text-xs relative group transition-all duration-150`}
               >
                 <div className="font-medium line-clamp-2 pr-6">{task.name}</div>
-                <div className="text-[9px] opacity-80">{formatDuration(task.duration)}</div>
+                <div className="text-[10px] opacity-80">{formatDuration(task.duration)}</div>
                 <div className="absolute top-1 right-1 flex space-x-0.5">
                   <button
                     type="button"

@@ -99,6 +99,7 @@ export default function DailyPlanner() {
   const timelineScrollRef = useRef<HTMLDivElement>(null);
   const topDayTimelineRef = useRef<HTMLDivElement>(null);
   const bottomDayTimelineRef = useRef<HTMLDivElement>(null);
+  const lastDoubleClickTimestampRef = useRef<number>(0); // Added for double-click cooldown
 
   const handleResizeStart = (task: Task, edge: 'start' | 'end', e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
@@ -504,6 +505,13 @@ export default function DailyPlanner() {
         if (e.detail !== 2) return; // Ensure it's a double click
         if (copyingTaskData) return; // Don't create task if in copy mode
 
+        const now = Date.now();
+        if (now - lastDoubleClickTimestampRef.current < 2000) { // 2-second cooldown
+            // Optionally, provide some feedback to the user, e.g., a quick flash or console log
+            console.log("Double-click cooldown active.");
+            return;
+        }
+
         const sectionClicked = e.currentTarget.getAttribute('data-section-period') as 'morning' | 'afternoon' | 'evening' | null; // Keep period for start hour calc
         const dayOffsetClickedAttr = e.currentTarget.getAttribute('data-day-offset');
         const dayOffsetClicked = dayOffsetClickedAttr ? parseInt(dayOffsetClickedAttr) : null;
@@ -547,6 +555,7 @@ export default function DailyPlanner() {
         };
 
         openEditModal(newTaskDefaults, { isNew: true, isFromPool: false });
+        lastDoubleClickTimestampRef.current = now; // Update timestamp after successful action
     };
 
     return (
@@ -841,6 +850,7 @@ export default function DailyPlanner() {
                 pinnedTasks={pinnedTasks} 
                 onUnpinTask={handleUnpinTask} 
                 formatTimeRemaining={formatTimeRemaining} 
+                openEditModal={openEditModal}
               />
             )}
           </div>

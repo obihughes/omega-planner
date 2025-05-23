@@ -1,12 +1,13 @@
 import React from 'react';
-import { PinnedTask } from '../../types/planner';
-import { PinOff, Eye as EyeIcon, CalendarDays } from 'lucide-react';
+import { PinnedTask, Task } from '../../types/planner';
+import { PinOff, Eye as EyeIcon, CalendarDays, Edit3 } from 'lucide-react';
 import { formatTime } from '@/utils/formatters';
 
 interface PinnedTasksSidebarProps {
   pinnedTasks: PinnedTask[];
   onUnpinTask: (pinnedId: string) => void;
   formatTimeRemaining: (dueDate: Date) => { text: string; isOverdue: boolean };
+  openEditModal: (task: Task, options?: { isNew?: boolean, isFromPool?: boolean, isPinned?: boolean }) => void;
   // activeTab: 'pool' | 'pinned'; // May not be needed if parent controls rendering
   // openEditModal: (task: PinnedTask, options?: { isNew?: boolean, isFromPool?: boolean, isPinned?: boolean }) => void; // For viewing/editing
 }
@@ -15,7 +16,7 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
   pinnedTasks,
   onUnpinTask,
   formatTimeRemaining,
-  // openEditModal, 
+  openEditModal, 
 }) => {
   const [viewingPinnedTaskNotes, setViewingPinnedTaskNotes] = React.useState<PinnedTask | null>(null);
   const viewModalRef = React.useRef<HTMLDivElement>(null);
@@ -58,10 +59,21 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
                 >
                   <div className="flex flex-col gap-1">
                     <div className="flex justify-between items-start">
-                      <p className="font-semibold text-base text-white truncate pr-12 flex-grow min-w-0">
+                      <p className="font-semibold text-base text-white truncate pr-24 flex-grow min-w-0">
                         {pinnedTask.name}
                       </p>
                       <div className="absolute top-2 right-2 flex items-center space-x-1.5">
+                        <button
+                          type="button"
+                          className="h-6 w-6 rounded-md bg-black/20 hover:bg-black/30 flex items-center justify-center text-slate-200 hover:text-white transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditModal(pinnedTask as Task, { isPinned: true });
+                          }}
+                          title="Edit Task"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
                         <button
                           type="button"
                           className="h-6 w-6 rounded-md bg-black/20 hover:bg-black/30 flex items-center justify-center text-slate-200 hover:text-white transition-colors"
