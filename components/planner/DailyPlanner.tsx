@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import ReactDOM from 'react-dom';
 import { Card, CardContent, Button, Input } from "@/components/ui";
-import { Edit3, Copy, Pin, CopyPlus, Trash2, PinOff } from 'lucide-react';
+import { Edit3, Copy, Pin, CopyPlus, Trash2, PinOff, PanelLeftClose, PanelRightClose, PanelLeftOpen } from 'lucide-react';
 
 import { formatDuration, formatTime } from '@/utils/formatters';
 import { Task, PinnedTask } from '../../types/planner';
@@ -86,6 +86,8 @@ export default function DailyPlanner() {
     cancelClearPool,
     isClient,
     getRelativeDayLabel,
+    isSidebarCollapsed,
+    setIsSidebarCollapsed,
   } = useDailyPlanner();
 
   const [currentTimeForMarker, setCurrentTimeForMarker] = useState(new Date());
@@ -817,45 +819,87 @@ export default function DailyPlanner() {
           />
         )}
 
-        <div className="flex gap-2">
-          <div className="w-56 bg-neutral-900 border border-neutral-800 rounded-lg shadow-xl flex flex-col sticky top-4 h-[calc(100vh-2rem-env(safe-area-inset-bottom))] overflow-hidden z-[150]">
-            <div className="flex border-b border-neutral-700">
-              <button type="button" className={`flex-1 p-2 text-sm font-medium text-center transition-colors focus:outline-none ${activeSidebarTab === 'pool' ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100'}`} onClick={() => setActiveSidebarTab('pool')}>Task Pool</button>
-              <button type="button" className={`flex-1 p-2 text-sm font-medium text-center transition-colors focus:outline-none ${activeSidebarTab === 'pinned' ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100'}`} onClick={() => setActiveSidebarTab('pinned')}>Pinned Tasks</button>
+        <div className={`flex gap-2 transition-all duration-300 ease-in-out`}>
+          {/* Sidebar Section */}
+          <div 
+            className={`bg-neutral-900 border border-neutral-800 rounded-lg shadow-xl flex flex-col sticky top-4 h-[calc(100vh-2rem-env(safe-area-inset-bottom))] overflow-hidden z-[150] transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'w-14' : 'w-56'}`}
+          >
+            <div className={`flex border-b border-neutral-700 ${isSidebarCollapsed ? 'justify-center' : ''}`}>
+              {!isSidebarCollapsed && (
+                <>
+                  <button type="button" className={`flex-1 p-2 text-sm font-medium text-center transition-colors focus:outline-none ${activeSidebarTab === 'pool' ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100'}`} onClick={() => setActiveSidebarTab('pool')}>Task Pool</button>
+                  <button type="button" className={`flex-1 p-2 text-sm font-medium text-center transition-colors focus:outline-none ${activeSidebarTab === 'pinned' ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100'}`} onClick={() => setActiveSidebarTab('pinned')}>Pinned Tasks</button>
+                </>
+              )}
             </div>
-            {activeSidebarTab === 'pool' && (
-              <TaskPoolSidebar
-                poolTasks={poolTasks} 
-                TASK_COLORS={TASK_COLORS} 
-                activeTab={activeSidebarTab} 
-                topDayOffset={topDayOffset} 
-                isOpen={isTaskPoolOpen}
-                setIsOpen={setIsTaskPoolOpen}
-                onActualAddPoolTask={handleActualAddPoolTask} 
-                onAddTaskToTimeline={(taskFromPool, dayOffsetForDrop) => {
-                  if (startCopy) startCopy(taskFromPool); 
-                  const dropStartHour = taskFromPool.startHour !== 0 ? taskFromPool.startHour : 9; // Default or actual start hour
-                  const targetDate = getCalendarDateForColumn(dayOffsetForDrop);
-                  if (handleDropCopy) handleDropCopy(targetDate, dropStartHour);
-                }} 
-                onDeletePoolTask={handleDeletePoolTask} 
-                onClearPool={clearPool} 
-                openEditModal={(task, isFromPool) => {
-                  openEditModal(task, { isFromPool: isFromPool });
-                }} 
-              />
+            {!isSidebarCollapsed ? (
+              <>
+                {activeSidebarTab === 'pool' && (
+                  <TaskPoolSidebar
+                    poolTasks={poolTasks} 
+                    TASK_COLORS={TASK_COLORS} 
+                    activeTab={activeSidebarTab} 
+                    topDayOffset={topDayOffset} 
+                    isOpen={isTaskPoolOpen}
+                    setIsOpen={setIsTaskPoolOpen}
+                    onActualAddPoolTask={handleActualAddPoolTask} 
+                    onAddTaskToTimeline={(taskFromPool, dayOffsetForDrop) => {
+                      if (startCopy) startCopy(taskFromPool);
+                      const dropStartHour = taskFromPool.startHour !== 0 ? taskFromPool.startHour : 9;
+                      const targetDate = getCalendarDateForColumn(dayOffsetForDrop);
+                      if (handleDropCopy) handleDropCopy(targetDate, dropStartHour);
+                    }} 
+                    onDeletePoolTask={handleDeletePoolTask} 
+                    onClearPool={clearPool} 
+                    openEditModal={(task, isFromPool) => {
+                      openEditModal(task, { isFromPool: isFromPool });
+                    }} 
+                  />
+                )}
+                {activeSidebarTab === 'pinned' && (
+                  <PinnedTasksSidebar
+                    pinnedTasks={pinnedTasks} 
+                    onUnpinTask={handleUnpinTask} 
+                    formatTimeRemaining={formatTimeRemaining} 
+                    openEditModal={openEditModal}
+                  />
+                )}
+              </>
+            ) : (
+              <div className="flex flex-col items-center py-2 space-y-2 flex-grow">
+                  <button 
+                    type="button" 
+                    className={`p-2 rounded-md transition-colors focus:outline-none w-10 h-10 flex items-center justify-center ${activeSidebarTab === 'pool' ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100'}`}
+                    onClick={() => { setActiveSidebarTab('pool'); setIsSidebarCollapsed(false); }}
+                    title="Task Pool"
+                  >
+                    <CopyPlus className="w-5 h-5" />
+                  </button>
+                  <button 
+                    type="button" 
+                    className={`p-2 rounded-md transition-colors focus:outline-none w-10 h-10 flex items-center justify-center ${activeSidebarTab === 'pinned' ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100'}`}
+                    onClick={() => { setActiveSidebarTab('pinned'); setIsSidebarCollapsed(false); }}
+                    title="Pinned Tasks"
+                  >
+                    <Pin className="w-5 h-5" />
+                  </button>
+              </div>
             )}
-            {activeSidebarTab === 'pinned' && (
-              <PinnedTasksSidebar
-                pinnedTasks={pinnedTasks} 
-                onUnpinTask={handleUnpinTask} 
-                formatTimeRemaining={formatTimeRemaining} 
-                openEditModal={openEditModal}
-              />
-            )}
+             {/* Collapse/Expand Button - Placed at the bottom of the sidebar container */}
+            <div className={`mt-auto border-t border-neutral-700 p-1.5 flex ${isSidebarCollapsed ? 'justify-center' : 'justify-end'}`}>
+                <button 
+                    type="button"
+                    onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                    className="p-2 rounded-md text-neutral-400 hover:text-neutral-100 hover:bg-neutral-700 transition-colors"
+                    title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+                >
+                    {isSidebarCollapsed ? <PanelLeftOpen className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
+                </button>
+            </div>
           </div>
 
-          <div className="flex-1 space-y-2 min-w-0 overflow-x-auto" ref={timelineScrollRef}>
+          {/* Main Content Area */}
+          <div className={`flex-1 space-y-2 min-w-0 overflow-x-auto transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'ml-0' : 'ml-0'}`} ref={timelineScrollRef}>
             <div className="bg-neutral-900 p-3 rounded-lg shadow-sm border border-neutral-800 overflow-auto">
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-neutral-800">
                 <div className="flex items-center space-x-2">

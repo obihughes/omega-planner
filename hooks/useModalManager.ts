@@ -119,10 +119,12 @@ export interface ModalManagerState {
    * The `taskDataFromForm` for a new task must include `baseDate` (as specific target date) and `name`.
    * `dayOffset` for `onAddTask` will be 0 as `baseDate` is specific.
    * If `activeEditModalTask.isNew` is false, it calls `onUpdateTask` or `onUpdatePoolTask` based on `activeEditModalTask` context.
-   * @param {Partial<Task>} taskDataFromForm - The task data from the form.
-   * @param {boolean} isNewTaskFlag - DEPRECATED: This parameter is no longer used. The new/edit status is derived from activeEditModalTask.
+   * @param {Task} taskDataFromForm - The complete task data from the form.
+   * @param {object} [options] - Options indicating if the task is new or from the pool.
+   * @param {boolean} [options.isNew] - Indicates if the task is new.
+   * @param {boolean} [options.isFromPool] - Indicates if the task is from the pool.
    */
-  saveTaskFromModal: (taskDataFromForm: Partial<Task>, isNewTaskFlag?: boolean /* Param now effectively ignored */) => void;
+  saveTaskFromModal: (taskDataFromForm: Task, options?: { isNew?: boolean; isFromPool?: boolean; }) => void;
   
   // State Setters (if direct access is needed)
   setShowClearPoolConfirmation: React.Dispatch<React.SetStateAction<boolean>>;
@@ -308,45 +310,55 @@ export function useModalManager({
    * The `taskDataFromForm` for a new task must include `baseDate` (as specific target date) and `name`.
    * `dayOffset` for `onAddTask` will be 0 as `baseDate` is specific.
    * If `activeEditModalTask.isNew` is false, it calls `onUpdateTask` or `onUpdatePoolTask` based on `activeEditModalTask` context.
-   * @param {Partial<Task>} taskDataFromForm - The task data from the form.
-   * @param {boolean} isNewTaskFlag - DEPRECATED: This parameter is no longer used. The new/edit status is derived from activeEditModalTask.
+   * @param {Task} taskDataFromForm - The complete task data from the form.
+   * @param {object} [options] - Options indicating if the task is new or from the pool.
+   * @param {boolean} [options.isNew] - Indicates if the task is new.
+   * @param {boolean} [options.isFromPool] - Indicates if the task is from the pool.
    */
-  const saveTaskFromModal = useCallback((taskDataFromForm: Partial<Task>, isNewTaskFlag?: boolean /* Param now effectively ignored */) => {
-    if (!activeEditModalTask) return;
+  const saveTaskFromModal = useCallback((taskDataFromForm: Task, options?: { isNew?: boolean; isFromPool?: boolean; }) => {
+    const isNew = options?.isNew ?? activeEditModalTask?.isNew ?? false;
+    const isFromPool = options?.isFromPool ?? activeEditModalTask?.isFromPool ?? false;
 
-    // The isNew status should come from the activeEditModalTask
-    const isActuallyNew = activeEditModalTask.isNew || false;
-    // The original ID should be used for updates, or a new one generated if it was a temp ID.
-    const taskIdToUse = activeEditModalTask.id;
+    console.log("[useModalManager] saveTaskFromModal called. isNew:", isNew, "isFromPool:", isFromPool, "Task ID:", taskDataFromForm.id);
+    console.log("[useModalManager] Task data from form:", JSON.parse(JSON.stringify(taskDataFromForm)));
 
-    // Ensure critical fields for new tasks are present
-    if (isActuallyNew) {
-      if (!taskDataFromForm.name || !taskDataFromForm.baseDate || typeof taskDataFromForm.startHour !== 'number' || typeof taskDataFromForm.duration !== 'number') {
-        console.error("SaveTaskFromModal: New task is missing required fields (name, baseDate, startHour, duration).", taskDataFromForm);
-        // Optionally, show a user-facing error here
+    if (isNew) {
+      if (!taskDataFromForm.name || !taskDataFromForm.baseDate) {
+        console.error("[useModalManager] New task is missing name or baseDate:", taskDataFromForm);
+        // Optionally, show an error to the user
+        alert("New task must have a name and a date.");
         return;
       }
-      const newBaseDate = new Date(taskDataFromForm.baseDate); // Ensure it's a date object
-      newBaseDate.setHours(0,0,0,0); // Normalize
-
+      // Ensure baseDate is a Date object before passing to onAddTask
+      const targetDate = new Date(taskDataFromForm.baseDate);
+      // onAddTask expects dayOffset to be 0 if targetDate is the specific calendar date.
+      // taskDataFromForm should have duration, color, notes, completed already set.
       onAddTask(
-        newBaseDate, 
-        taskDataFromForm.startHour, 
-        { 
-          name: taskDataFromForm.name, 
-          duration: taskDataFromForm.duration, 
+        targetDate,
+        taskDataFromForm.startHour,
+        {
+          name: taskDataFromForm.name,
+          duration: taskDataFromForm.duration,
           color: taskDataFromForm.color || TASK_COLORS[0],
-          notes: taskDataFromForm.notes, 
+          notes: taskDataFromForm.notes,
           completed: taskDataFromForm.completed
         },
-        0 // dayOffset is always 0 because baseDate is absolute
+        0 // dayOffset is 0 because targetDate is specific
       );
     } else {
-      // Update existing task
-      if (activeEditModalTask.isFromPool) {
-        onUpdatePoolTask(taskIdToUse, taskDataFromForm);
+      // Existing task: needs id and partial fields to update.
+      if (!taskDataFromForm.id) {
+        console.error("[useModalManager] Existing task is missing ID:", taskDataFromForm);
+        alert("Cannot update task: ID is missing.");
+        return;
+      }
+      const { id, ...updatedFields } = taskDataFromForm;
+      if (isFromPool) {
+        console.log("[useModalManager] Updating POOL task ID:", id, "with fields:", updatedFields);
+        onUpdatePoolTask(id, updatedFields);
       } else {
-        onUpdateTask(taskIdToUse, taskDataFromForm);
+        console.log("[useModalManager] Updating TIMELINE task ID:", id, "with fields:", updatedFields);
+        onUpdateTask(id, updatedFields);
       }
     }
     closeEditModal();

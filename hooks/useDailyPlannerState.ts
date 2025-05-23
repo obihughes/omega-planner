@@ -76,6 +76,7 @@ export function useDailyPlanner() {
   const [cloneConflictStrategy, setCloneConflictStrategy] = useState<'skip' | 'replace' | 'adjust'>('skip');
 
   const [isClient, setIsClient] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false); // New state for sidebar collapse
 
   useEffect(() => {
     setIsClient(true);
@@ -752,6 +753,31 @@ export function useDailyPlanner() {
         console.log('✅ useDailyPlanner: Initial load complete.');
     }, 100);
 
+    // Check for mobile view and persisted sidebar state
+    if (typeof window !== 'undefined') {
+      const mobileMediaQuery = window.matchMedia("(max-width: 768px)");
+      const persistedCollapseState = TaskStorage.loadSidebarCollapsed();
+
+      if (mobileMediaQuery.matches) {
+        setIsSidebarCollapsed(true);
+      } else if (persistedCollapseState !== null) {
+        setIsSidebarCollapsed(persistedCollapseState);
+      }
+      // Listener for future changes (e.g. resizing window across breakpoint)
+      const handleResize = () => {
+        if (mobileMediaQuery.matches) {
+          setIsSidebarCollapsed(true);
+        } else {
+          // If not mobile, and there was a persisted state, use it. Otherwise, default to false (expanded).
+          const nonMobilePersistedState = TaskStorage.loadSidebarCollapsed();
+          setIsSidebarCollapsed(nonMobilePersistedState !== null ? nonMobilePersistedState : false);
+        }
+      };
+      mobileMediaQuery.addEventListener('change', handleResize);
+      // Cleanup listener on unmount
+      return () => mobileMediaQuery.removeEventListener('change', handleResize);
+    }
+
   }, []); // Empty dependency array means this runs once on mount
 
   // Save tasks whenever they change
@@ -777,6 +803,18 @@ export function useDailyPlanner() {
       TaskStorage.savePinnedTasks(pinnedTasks);
     }
   }, [pinnedTasks]);
+
+  // Save sidebar collapsed state
+  useEffect(() => {
+    if (initialLoadComplete.current && typeof window !== 'undefined') {
+      // Only save if not on mobile, as mobile defaults to collapsed
+      const mobileMediaQuery = window.matchMedia("(max-width: 768px)");
+      if (!mobileMediaQuery.matches) {
+        console.log('💾 Saving sidebar collapsed state to storage...', isSidebarCollapsed);
+        TaskStorage.saveSidebarCollapsed(isSidebarCollapsed);
+      }
+    }
+  }, [isSidebarCollapsed]);
 
   // Save day view settings whenever they change
   useEffect(() => {
@@ -854,6 +892,7 @@ export function useDailyPlanner() {
     TIMELINE_END_HOUR,
     isTaskPoolOpen,
     isClient,
+    isSidebarCollapsed, // Expose new state
 
     // State Setters (some might be replaced by dedicated functions later)
     // setTasks, // No longer returning setTasks if only used internally now
@@ -867,6 +906,7 @@ export function useDailyPlanner() {
     setTopDayOffset,
     setBottomDayOffset,
     setIsTaskPoolOpen,
+    setIsSidebarCollapsed, // Expose new setter
 
     // Date & View
     getDateLabel,

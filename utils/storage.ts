@@ -11,6 +11,7 @@ const PINNED_STORAGE_KEY = 'daily-planner-pinned-tasks';
 const STORAGE_VERSION = '1.0';
 const DAY_VIEW_SETTINGS_KEY = 'daily-planner-day-view-settings';
 const TASK_ID_COUNTER_KEY = 'daily-planner-task-id-counter';
+const SIDEBAR_COLLAPSED_KEY = 'sidebarCollapsed';
 
 export interface DayViewSettings {
   topDayOffset: number;
@@ -241,21 +242,8 @@ const TaskStorage = {
   // Load day view settings from localStorage
   loadDayViewSettings: (): DayViewSettings | null => {
     if (typeof window === 'undefined') return null;
-    const savedData = localStorage.getItem(DAY_VIEW_SETTINGS_KEY);
-    if (!savedData) return null;
-
-    try {
-      const settings = JSON.parse(savedData);
-      // Basic validation
-      if (typeof settings.topDayOffset !== 'number' || typeof settings.bottomDayOffset !== 'number') {
-        console.error('Loaded day view settings are invalid: ', settings);
-        return null;
-      }
-      return settings;
-    } catch (err) {
-      console.error('Failed to parse day view settings from localStorage. Data was: ', savedData, err);
-      return null;
-    }
+    const settings = localStorage.getItem(DAY_VIEW_SETTINGS_KEY);
+    return settings ? JSON.parse(settings) : null;
   },
 
   // Load next ID from localStorage
@@ -278,6 +266,17 @@ const TaskStorage = {
     } catch (err) {
       console.error('Failed to save next ID to localStorage', err);
     }
+  },
+
+  // Sidebar Collapsed State
+  saveSidebarCollapsed: (isCollapsed: boolean): void => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, JSON.stringify(isCollapsed));
+  },
+  loadSidebarCollapsed: (): boolean | null => {
+    if (typeof window === 'undefined') return null;
+    const collapsedState = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+    return collapsedState ? JSON.parse(collapsedState) : null;
   }
 };
 
