@@ -849,18 +849,18 @@ export default function DailyPlanner() {
             <div className="bg-neutral-900 p-3 rounded-lg shadow-sm border border-neutral-800 overflow-auto">
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-neutral-800">
                 <div className="flex items-center space-x-2">
-                  <button type="button" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors" onClick={() => setTopDayOffset(topDayOffset - 7)} title="Previous week">◀◀</button>
-                  <button type="button" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors" onClick={() => setTopDayOffset(topDayOffset - 1)} title="Previous day">◀</button>
-                  <span className="text-white font-medium w-[250px] text-center">
+                  <button type="button" className="p-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-white transition-colors" onClick={() => setTopDayOffset(topDayOffset - 7)} title="Previous week">◀◀</button>
+                  <button type="button" className="p-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-white transition-colors" onClick={() => setTopDayOffset(topDayOffset - 1)} title="Previous day">◀</button>
+                  <span className="text-white font-medium text-center">
                     {isClient ? getDateLabel(topDayOffset) : "Loading date..."}
                   </span>
+                  <button type="button" className="p-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-white transition-colors" onClick={() => setTopDayOffset(topDayOffset + 1)} title="Next day">▶</button>
+                  <button type="button" className="p-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-white transition-colors" onClick={() => setTopDayOffset(topDayOffset + 7)} title="Next week">▶▶</button>
                   {isClient && getRelativeDayLabel(topDayOffset) && (
-                    <span className="text-xs text-neutral-300 ml-2 px-1.5 py-0.5 bg-neutral-700 rounded-sm font-normal">
+                    <span className="text-xs text-neutral-300 ml-3 px-1.5 py-0.5 bg-neutral-700 rounded-sm font-normal">
                       {getRelativeDayLabel(topDayOffset)}
                     </span>
                   )}
-                  <button type="button" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors" onClick={() => setTopDayOffset(topDayOffset + 1)} title="Next day">▶</button>
-                  <button type="button" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors" onClick={() => setTopDayOffset(topDayOffset + 7)} title="Next week">▶▶</button>
                 </div>
                 <div className="flex items-center justify-end space-x-4">
                   <button type="button" className="bg-neutral-700 hover:bg-neutral-600 text-white px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors"
@@ -895,18 +895,18 @@ export default function DailyPlanner() {
             <div className="bg-neutral-900 p-3 rounded-lg shadow-sm border border-neutral-800 overflow-auto">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-2">
-                  <button type="button" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset - 7)} title="Previous week">◀◀</button>
-                  <button type="button" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset - 1)} title="Previous day">◀</button>
-                  <span className="text-white font-medium w-[250px] text-center">
+                  <button type="button" className="p-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-white transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset - 7)} title="Previous week">◀◀</button>
+                  <button type="button" className="p-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-white transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset - 1)} title="Previous day">◀</button>
+                  <span className="text-white font-medium text-center">
                     {isClient ? getDateLabel(bottomDayOffset) : "Loading date..."}
                   </span>
+                  <button type="button" className="p-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-white transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset + 1)} title="Next day">▶</button>
+                  <button type="button" className="p-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-white transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset + 7)} title="Next week">▶▶</button>
                   {isClient && getRelativeDayLabel(bottomDayOffset) && (
-                    <span className="text-xs text-neutral-300 ml-2 px-1.5 py-0.5 bg-neutral-700 rounded-sm font-normal">
+                    <span className="text-xs text-neutral-300 ml-3 px-1.5 py-0.5 bg-neutral-700 rounded-sm font-normal">
                       {getRelativeDayLabel(bottomDayOffset)}
                     </span>
                   )}
-                  <button type="button" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset + 1)} title="Next day">▶</button>
-                  <button type="button" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset + 7)} title="Next week">▶▶</button>
                 </div>
                 <button type="button" className="border border-neutral-600 text-neutral-300 hover:bg-neutral-700 hover:text-neutral-100 px-3 py-1.5 rounded-lg font-medium flex items-center gap-2 transition-colors duration-200" 
                   onClick={() => {

@@ -64,29 +64,31 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       >
         <div className="flex flex-col min-w-0 flex-grow">
           <div className="flex flex-row justify-between items-start min-w-0 draggable-area h-full gap-1">
-            <div className="flex-grow flex flex-col min-w-0">
-              <div className={`
-                dark:text-white break-words
-                ${isCompressed ? 'text-[8px] writing-mode-vertical-lr transform h-full flex items-center justify-center overflow-hidden leading-tight' : 'text-xs line-clamp-2'}
-                font-bold
-              `}
-              onClick={(e) => { 
-                  if (e.detail === 2) {
-                      onStartEdit(task, {isNew: false}); 
-                  }
-              }}
-              >
-                {task.name}
+            <div className="flex-grow flex flex-col min-w-0 justify-between">
+              <div>
+                <div className={`
+                  dark:text-white break-words
+                  ${isCompressed ? 'text-[8px] writing-mode-vertical-lr transform h-full flex items-center justify-center overflow-hidden leading-tight' : 'text-xs line-clamp-2'}
+                  font-bold
+                `}
+                onClick={(e) => { 
+                    if (e.detail === 2) {
+                        onStartEdit(task, {isNew: false}); 
+                    }
+                }}
+                >
+                  {task.name}
+                </div>
               </div>
               {!isCompressed && (
-                <>
-                  <div className="text-[9px] text-gray-500 dark:text-gray-400 font-medium mt-px">
+                <div className="mt-1">
+                  <div className="text-[9px] text-neutral-600 dark:text-neutral-300 font-medium">
                     {formatTime(task.startHour)} - {formatTime(endTime)}
                   </div>
-                  <div className="text-[8px] text-gray-700 dark:text-gray-200 font-semibold mt-px mb-0.5">
+                  <div className="text-[8px] text-neutral-700 dark:text-neutral-200 font-semibold mt-px mb-0.5">
                     {formatDuration(task.duration)}
                   </div>
-                </>
+                </div>
               )}
             </div>
 

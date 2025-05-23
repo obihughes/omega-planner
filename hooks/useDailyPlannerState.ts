@@ -121,27 +121,57 @@ export function useDailyPlanner() {
     if (!isClient) {
       return ""; 
     }
-    const date = new Date();
-    date.setHours(0,0,0,0); // Normalize current date for the target dayOffset
-    date.setDate(date.getDate() + dayOffset);
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
 
-    if (date.getTime() === today.getTime()) {
-      return 'Today';
-    } else if (date.getTime() === tomorrow.getTime()) {
-      return 'Tomorrow';
-    } else if (date.getTime() === yesterday.getTime()) {
-      return 'Yesterday';
+    const targetDate = new Date(today);
+    targetDate.setDate(today.getDate() + dayOffset);
+
+    if (dayOffset === 0) return 'Today';
+    if (dayOffset === 1) return 'Tomorrow';
+    if (dayOffset === -1) return 'Yesterday';
+
+    const diffDays = dayOffset; // Since dayOffset is the difference in days
+
+    if (diffDays > 0) { // Future dates
+      if (diffDays < 7) return `In ${diffDays} days`;
+      if (diffDays < 14) return `Next week`; // Approx.
+      if (diffDays < 21) return `In 2 weeks`;
+      if (diffDays < 28) return `In 3 weeks`;
+      
+      const todayMonth = today.getMonth();
+      const targetMonth = targetDate.getMonth();
+      const todayYear = today.getFullYear();
+      const targetYear = targetDate.getFullYear();
+
+      if (targetYear > todayYear || (targetYear === todayYear && targetMonth > todayMonth)) {
+        if (targetYear === todayYear && targetMonth === todayMonth + 1) return 'Next month';
+        if (targetYear > todayYear && targetDate.getMonth() === 0 && today.getMonth() === 11) return 'Next month'; // Dec to Jan
+        // Could add "In X months" for larger differences
+      }
+    } else { // Past dates
+      const absDiffDays = Math.abs(diffDays);
+      if (absDiffDays < 7) return `${absDiffDays} days ago`;
+      if (absDiffDays < 14) return `Last week`; // Approx.
+      if (absDiffDays < 21) return `2 weeks ago`;
+      if (absDiffDays < 28) return `3 weeks ago`;
+
+      const todayMonth = today.getMonth();
+      const targetMonth = targetDate.getMonth();
+      const todayYear = today.getFullYear();
+      const targetYear = targetDate.getFullYear();
+
+      if (targetYear < todayYear || (targetYear === todayYear && targetMonth < todayMonth)) {
+        if (targetYear === todayYear && targetMonth === todayMonth - 1) return 'Last month';
+        if (targetYear < todayYear && targetDate.getMonth() === 11 && today.getMonth() === 0) return 'Last month'; // Jan to Dec
+        // Could add "X months ago"
+      }
     }
-    return ''; // Return empty if not today, tomorrow, or yesterday
+    
+    // Fallback if no specific relative label applies (e.g., >3 weeks but not clearly "next month")
+    // The main getDateLabel will show the full date anyway.
+    return ''; 
   }, [isClient]);
 
   const getOrderedDayOffsets = useCallback((): number[] => {
@@ -463,13 +493,13 @@ export function useDailyPlanner() {
       isOverdue = true;
       const absDiffMs = Math.abs(diffMs);
       const days = Math.floor(absDiffMs / (1000 * 60 * 60 * 24));
-      if (days > 0) text = `Overdue by ${days}d`;
+      if (days > 0) text = `Overdue by ${days} day${days > 1 ? 's' : ''}`;
       else {
         const hours = Math.floor(absDiffMs / (1000 * 60 * 60));
-        if (hours > 0) text = `Overdue by ${hours}h`;
+        if (hours > 0) text = `Overdue by ${hours} hour${hours > 1 ? 's' : ''}`;
         else {
           const mins = Math.floor(absDiffMs / (1000 * 60));
-          text = `Overdue by ${mins}m`;
+          text = `Overdue by ${mins} minute${mins > 1 ? 's' : ''}`;
         }
       }
     } else {
@@ -477,9 +507,9 @@ export function useDailyPlanner() {
       const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
 
-      if (days > 0) text = `In ${days}d ${hours}h`;
-      else if (hours > 0) text = `In ${hours}h ${mins}m`;
-      else if (mins > 0) text = `In ${mins}m`;
+      if (days > 0) text = `Due in ${days} day${days > 1 ? 's' : ''}${hours > 0 ? ` ${hours} hour${hours > 1 ? 's' : ''}` : ''}`;
+      else if (hours > 0) text = `Due in ${hours} hour${hours > 1 ? 's' : ''}${mins > 0 ? ` ${mins} minute${mins > 1 ? 's' : ''}` : ''}`;
+      else if (mins > 0) text = `Due in ${mins} minute${mins > 1 ? 's' : ''}`;
       else text = "Due now";
     }
     return { text, isOverdue };
