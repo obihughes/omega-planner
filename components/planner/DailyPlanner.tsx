@@ -94,7 +94,9 @@ export default function DailyPlanner() {
     viewingTaskNotes, 
     openViewNotesModal, 
     closeViewNotesModal,
-    setColorPickerState
+    setColorPickerState,
+    clearOverduePinnedTasks,
+    syncPinnedTasksWithTimeline
   } = useDailyPlanner();
 
   const [currentTimeForMarker, setCurrentTimeForMarker] = useState(new Date());
@@ -184,7 +186,10 @@ export default function DailyPlanner() {
     };
   }, [showClearPoolConfirmation, cancelClearPool]);
 
-  // Effect to handle exiting paste mode (copyingTaskData)
+  /**
+   * Effect to handle exiting paste mode (when copyingTaskData is active).
+   * Listens for 'Escape' keydown or mousedown outside of timeline areas to cancel paste mode.
+   */
   useEffect(() => {
     if (!copyingTaskData) return;
 
@@ -983,6 +988,8 @@ export default function DailyPlanner() {
                     onUnpinTask={handleUnpinTask} 
                     formatTimeRemaining={formatTimeRemaining} 
                     openEditModal={openEditModal}
+                    onClearOverduePinnedTasks={clearOverduePinnedTasks}
+                    onSyncPinnedTasks={syncPinnedTasksWithTimeline}
                   />
                 )}
               </>

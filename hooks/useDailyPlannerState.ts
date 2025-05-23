@@ -427,6 +427,11 @@ export function useDailyPlanner() {
   }, [setPoolTasks]);
 
   // --- Pinned Task Functions ---
+  /**
+   * Creates a new pinned task from an existing timeline task.
+   * The pinned task's dueDate is calculated based on the original task's
+   * local date and local start time.
+   */
   const handlePinTask = useCallback((originalTask: Task) => {
     const taskToPin = { ...originalTask };
 
@@ -457,6 +462,67 @@ export function useDailyPlanner() {
   const handleUnpinTask = useCallback((pinnedIdToUnpin: string) => {
     setPinnedTasks(prevPinnedTasks => prevPinnedTasks.filter(pt => pt.pinnedId !== pinnedIdToUnpin));
   }, [setPinnedTasks]);
+
+  /**
+   * Clears all pinned tasks that are overdue (dueDate is in the past).
+   */
+  const clearOverduePinnedTasks = useCallback(() => {
+    const now = new Date();
+    setPinnedTasks(prevPinnedTasks => 
+      prevPinnedTasks.filter(task => new Date(task.dueDate).getTime() >= now.getTime())
+    );
+    // TODO: Consider adding a confirmation modal before this operation
+  }, [setPinnedTasks]);
+
+  /**
+   * Syncs pinned tasks with their corresponding tasks on the timeline.
+   * Updates name, duration, color, startHour, baseDate, and dueDate of pinned tasks
+   * if they differ from the timeline task.
+   */
+  const syncPinnedTasksWithTimeline = useCallback(() => {
+    const timelineTasksMap = new Map(tasks.map(task => [task.id, task]));
+    let updatedOccurred = false;
+
+    const newPinnedTasks = pinnedTasks.map(pinnedTask => {
+      const correspondingTimelineTask = timelineTasksMap.get(pinnedTask.originalId);
+      if (correspondingTimelineTask) {
+        // Recalculate dueDate based on timeline task's local date and time
+        const tempUtcDate = new Date(correspondingTimelineTask.baseDate);
+        const localYear = tempUtcDate.getFullYear();
+        const localMonth = tempUtcDate.getMonth();
+        const localDay = tempUtcDate.getDate();
+        const taskHours = Math.floor(correspondingTimelineTask.startHour);
+        const taskMinutes = Math.round((correspondingTimelineTask.startHour % 1) * 60);
+        const newDueDate = new Date(localYear, localMonth, localDay, taskHours, taskMinutes, 0, 0);
+
+        // Check if an update is needed
+        if (
+          pinnedTask.name !== correspondingTimelineTask.name ||
+          pinnedTask.duration !== correspondingTimelineTask.duration ||
+          pinnedTask.color !== correspondingTimelineTask.color ||
+          new Date(pinnedTask.dueDate).getTime() !== newDueDate.getTime()
+        ) {
+          updatedOccurred = true;
+          return {
+            ...pinnedTask,
+            name: correspondingTimelineTask.name,
+            duration: correspondingTimelineTask.duration,
+            color: correspondingTimelineTask.color,
+            // Ensure startHour from timeline task is also updated on pinned task, if it's used directly by PinnedTask type
+            startHour: correspondingTimelineTask.startHour, 
+            baseDate: correspondingTimelineTask.baseDate, // also sync baseDate, as dueDate depends on it
+            dueDate: newDueDate,
+          };
+        }
+      }
+      return pinnedTask;
+    });
+
+    if (updatedOccurred) {
+      setPinnedTasks(newPinnedTasks.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()));
+    }
+    // TODO: Optionally, provide feedback to the user if sync occurred or not.
+  }, [tasks, pinnedTasks, setPinnedTasks]);
 
   const formatTimeRemaining = useCallback((dueDate: Date): { text: string; isOverdue: boolean } => {
     const now = new Date().getTime();
@@ -648,6 +714,10 @@ export function useDailyPlanner() {
     setInitialStartHourForModal
   } = modalManager;
 
+  /**
+   * Sets the task data for copying, enters paste mode, and closes the edit modal.
+   * @param {Omit<Task, 'id'>} taskData - The data of the task to be copied.
+   */
   const handleCopyAndEnterPasteMode = useCallback((taskData: Omit<Task, 'id'>) => {
     const taskToCopy: Task = {
       ...taskData,
@@ -919,6 +989,8 @@ export function useDailyPlanner() {
     // Pinned Task Functions
     handlePinTask,
     handleUnpinTask,
+    clearOverduePinnedTasks,
+    syncPinnedTasksWithTimeline,
     formatTimeRemaining,
 
     // Copying / Cloning Functions

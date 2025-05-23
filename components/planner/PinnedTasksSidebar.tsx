@@ -1,13 +1,18 @@
 import React from 'react';
 import { PinnedTask, Task } from '../../types/planner';
-import { PinOff, Eye as EyeIcon, CalendarDays, Edit3 } from 'lucide-react';
+import { PinOff, Eye as EyeIcon, CalendarDays, Edit3, Trash2, RefreshCw } from 'lucide-react';
 import { formatTime } from '@/utils/formatters';
+import { Button } from "@/components/ui";
 
 interface PinnedTasksSidebarProps {
   pinnedTasks: PinnedTask[];
   onUnpinTask: (pinnedId: string) => void;
   formatTimeRemaining: (dueDate: Date) => { text: string; isOverdue: boolean };
   openEditModal: (task: Task, options?: { isNew?: boolean, isFromPool?: boolean, isPinned?: boolean }) => void;
+  /** Optional callback to clear all overdue pinned tasks. */
+  onClearOverduePinnedTasks?: () => void;
+  /** Optional callback to sync pinned tasks with the timeline. */
+  onSyncPinnedTasks?: () => void;
   // activeTab: 'pool' | 'pinned'; // May not be needed if parent controls rendering
   // openEditModal: (task: PinnedTask, options?: { isNew?: boolean, isFromPool?: boolean, isPinned?: boolean }) => void; // For viewing/editing
 }
@@ -17,6 +22,8 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
   onUnpinTask,
   formatTimeRemaining,
   openEditModal, 
+  onClearOverduePinnedTasks,
+  onSyncPinnedTasks,
 }) => {
   const [viewingPinnedTaskNotes, setViewingPinnedTaskNotes] = React.useState<PinnedTask | null>(null);
   const viewModalRef = React.useRef<HTMLDivElement>(null);
@@ -39,9 +46,37 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
     return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   };
 
+  const hasOverdueTasks = pinnedTasks.some(task => new Date(task.dueDate).getTime() < new Date().getTime());
+
   return (
     <>
       <div className="flex flex-col flex-grow overflow-hidden">
+        {( (onClearOverduePinnedTasks && hasOverdueTasks) || onSyncPinnedTasks ) && pinnedTasks.length > 0 && (
+          <div className="p-2 border-b border-slate-700 flex items-center gap-2">
+            {onClearOverduePinnedTasks && hasOverdueTasks && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-auto text-slate-300 border-slate-600 hover:bg-slate-700 hover:text-slate-100"
+                onClick={onClearOverduePinnedTasks}
+                title="Clear all overdue pinned tasks"
+              >
+                <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Clear Overdue
+              </Button>
+            )}
+            {onSyncPinnedTasks && (
+              <Button
+                variant="outline"
+                size="icon"
+                className="text-slate-300 border-slate-600 hover:bg-slate-700 hover:text-slate-100 flex-none"
+                onClick={onSyncPinnedTasks}
+                title="Sync Pinned Tasks with Timeline"
+              >
+                <RefreshCw className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
+        )}
         <div className="p-2 space-y-2 overflow-y-auto flex-grow">
           {pinnedTasks.length === 0 ? (
             <p className="text-slate-400 text-sm text-center pt-4">No tasks pinned yet.</p> 
