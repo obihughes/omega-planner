@@ -85,6 +85,7 @@ export default function DailyPlanner() {
     cancelCloneDay,
     cancelClearPool,
     isClient,
+    getRelativeDayLabel,
   } = useDailyPlanner();
 
   const [currentTimeForMarker, setCurrentTimeForMarker] = useState(new Date());
@@ -193,6 +194,12 @@ export default function DailyPlanner() {
 
     setResizingTask(prev => {
       if (!prev) return null;
+
+      // Check if the snapped 15-min values have actually changed
+      if (prev.task.startHour === livePreviewStartHour && prev.task.duration === livePreviewDuration) {
+        return prev; // No change in 15-min interval, return previous state
+      }
+
       return {
         ...prev, 
         task: { 
@@ -296,6 +303,11 @@ export default function DailyPlanner() {
             newBaseDateIso = currentTargetCalendarDate.toISOString();
             newDayOffset = 0; 
           }
+
+          // Check if snapped start hour or baseDate (column) has changed
+          if (prev.task.startHour === snappedNewStartHour && prev.task.baseDate === newBaseDateIso) {
+            return prev; // No change, return previous state
+          }
           
           return {
             ...prev,
@@ -303,7 +315,7 @@ export default function DailyPlanner() {
               ...prev.task,
               startHour: snappedNewStartHour,
               baseDate: newBaseDateIso,
-              dayOffset: newDayOffset,
+              dayOffset: newDayOffset, // Ensure it's set
             }
           };
         });
@@ -694,13 +706,13 @@ export default function DailyPlanner() {
                   {/*!(activeEditModalTask?.id === displayTask.id) &&*/ (
                       <>
                         <div
-                        className={`resize-handle absolute left-0 top-0 bottom-0 w-3 ${isBeingResized ? 'cursor-inherit' : 'cursor-ew-resize'} hover:bg-blue-200/70 active:bg-blue-300/70 z-30`}
+                        className={`resize-handle absolute left-0 top-0 bottom-0 w-1.5 ${isBeingResized ? 'cursor-inherit' : 'cursor-ew-resize'} group-hover:bg-blue-500/20 active:bg-blue-500/30 z-30 transition-colors duration-150 ease-in-out`}
                         onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(displayTask, 'start', e); }}
-                      ><div className={`absolute inset-y-0 right-0 w-0.5 ${isBeingDragged || isBeingResized ? 'bg-white' : 'bg-transparent group-hover:bg-gray-300/50'}`}></div></div>
+                      ><div className={`absolute inset-y-0 right-0 w-px ${isBeingDragged || isBeingResized ? 'bg-white/70' : 'bg-transparent group-hover:bg-blue-300/70'}`}></div></div>
                       <div
-                        className={`resize-handle absolute right-0 top-0 bottom-0 w-3 ${isBeingResized ? 'cursor-inherit' : 'cursor-ew-resize'} hover:bg-blue-200/70 active:bg-blue-300/70 z-30`}
+                        className={`resize-handle absolute right-0 top-0 bottom-0 w-1.5 ${isBeingResized ? 'cursor-inherit' : 'cursor-ew-resize'} group-hover:bg-blue-500/20 active:bg-blue-500/30 z-30 transition-colors duration-150 ease-in-out`}
                         onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(displayTask, 'end', e); }}
-                      ><div className={`absolute inset-y-0 left-0 w-0.5 ${isBeingDragged || isBeingResized ? 'bg-white' : 'bg-transparent group-hover:bg-gray-300/50'}`}></div></div>
+                      ><div className={`absolute inset-y-0 left-0 w-px ${isBeingDragged || isBeingResized ? 'bg-white/70' : 'bg-transparent group-hover:bg-blue-300/70'}`}></div></div>
                       </>
                     )}
                 </div>
@@ -842,6 +854,11 @@ export default function DailyPlanner() {
                   <span className="text-white font-medium w-[250px] text-center">
                     {isClient ? getDateLabel(topDayOffset) : "Loading date..."}
                   </span>
+                  {isClient && getRelativeDayLabel(topDayOffset) && (
+                    <span className="text-xs text-neutral-300 ml-2 px-1.5 py-0.5 bg-neutral-700 rounded-sm font-normal">
+                      {getRelativeDayLabel(topDayOffset)}
+                    </span>
+                  )}
                   <button type="button" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors" onClick={() => setTopDayOffset(topDayOffset + 1)} title="Next day">▶</button>
                   <button type="button" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors" onClick={() => setTopDayOffset(topDayOffset + 7)} title="Next week">▶▶</button>
                 </div>
@@ -883,6 +900,11 @@ export default function DailyPlanner() {
                   <span className="text-white font-medium w-[250px] text-center">
                     {isClient ? getDateLabel(bottomDayOffset) : "Loading date..."}
                   </span>
+                  {isClient && getRelativeDayLabel(bottomDayOffset) && (
+                    <span className="text-xs text-neutral-300 ml-2 px-1.5 py-0.5 bg-neutral-700 rounded-sm font-normal">
+                      {getRelativeDayLabel(bottomDayOffset)}
+                    </span>
+                  )}
                   <button type="button" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset + 1)} title="Next day">▶</button>
                   <button type="button" className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset + 7)} title="Next week">▶▶</button>
                 </div>

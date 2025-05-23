@@ -1,8 +1,9 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Task } from '../../types/planner';
 import { Input, Button } from "@/components/ui";
-import { CopyPlus, Trash2, Edit3, Pin, PinOff, GripVertical } from 'lucide-react';
+import { CopyPlus, Trash2, Edit3, Pin, PinOff, GripVertical, X as XIcon, ChevronDownIcon, Eye } from 'lucide-react';
 import { formatDuration } from '@/utils/formatters';
+import { DURATION_OPTIONS as APP_DURATION_OPTIONS, TASK_COLORS as APP_TASK_COLORS } from '../../lib/constants';
 
 // Imported from DailyPlanner's constants, or pass as prop
 // For now, let's assume TASK_COLORS is passed as a prop.
@@ -43,7 +44,37 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
   const [showPoolTaskForm, setShowPoolTaskForm] = useState<boolean>(false);
   const [newPoolTaskName, setNewPoolTaskName] = useState<string>("");
   const [newPoolTaskDuration, setNewPoolTaskDuration] = useState<number>(1); // Default duration 1h
-  const [newPoolTaskColor, setNewPoolTaskColor] = useState<string>(TASK_COLORS[0] || "bg-gray-300 dark:bg-gray-600"); // Default to first color or a fallback
+  const [newPoolTaskColor, setNewPoolTaskColor] = useState<string>(APP_TASK_COLORS[0]);
+  const [viewingPoolTask, setViewingPoolTask] = useState<Task | null>(null);
+
+  const poolFormMenuRef = useRef<HTMLDivElement>(null);
+  const viewPoolTaskModalRef = useRef<HTMLDivElement>(null); // Ref for the view modal
+
+  // Handle clicks outside the add pool task form to close it
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showPoolTaskForm && poolFormMenuRef.current && !poolFormMenuRef.current.contains(event.target as Node)) {
+        setShowPoolTaskForm(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showPoolTaskForm]);
+
+  // Handle clicks outside the view pool task modal to close it
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (viewingPoolTask && viewPoolTaskModalRef.current && !viewPoolTaskModalRef.current.contains(event.target as Node)) {
+        setViewingPoolTask(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [viewingPoolTask]);
 
   if (!isOpen) {
     return null;
@@ -56,17 +87,15 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
       duration: newPoolTaskDuration,
       color: newPoolTaskColor,
     });
-    // Reset form
     setNewPoolTaskName("");
     setNewPoolTaskDuration(1);
-    setNewPoolTaskColor(TASK_COLORS[0] || "bg-gray-300 dark:bg-gray-600");
+    setNewPoolTaskColor(APP_TASK_COLORS[0]);
     setShowPoolTaskForm(false);
   }, [
     newPoolTaskName, 
     newPoolTaskDuration, 
     newPoolTaskColor, 
-    onActualAddPoolTask, 
-    TASK_COLORS
+    onActualAddPoolTask,
   ]);
   
   // If the parent controls rendering based on activeTab, this check might be redundant
@@ -127,7 +156,7 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
                   >
                     <CopyPlus className="w-3.5 h-3.5" />
                   </button>
-                  <button
+                  {/* <button
                     type="button"
                     className="h-5 w-5 rounded bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
                     onClick={(e) => {
@@ -137,6 +166,18 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
                     title="Delete task"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
+                  </button> */}
+                  <button
+                    type="button"
+                    className="h-5 w-5 rounded bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setViewingPoolTask(task);
+                    }}
+                    title="View Notes"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
                   </button>
                   <button
                     type="button"
@@ -178,73 +219,112 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
       </div>
 
       {showPoolTaskForm && (
-        <div className="fixed inset-0 bg-black/30 dark:bg-black/50 flex items-center justify-center z-[130]">
-          <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-xl max-w-sm w-full">
-            <h3 className="text-xl font-bold mb-4 dark:text-white">Add Task to Pool</h3>
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="newPoolTaskNameInput" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Task Name</label>
-                <Input
-                  id="newPoolTaskNameInput"
-                  type="text"
-                  value={newPoolTaskName}
-                  onChange={(e) => setNewPoolTaskName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
-                  placeholder="Enter task name"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+        <div className="fixed inset-0 bg-black/40 dark:bg-black/60 flex items-center justify-center z-[1000] p-4">
+          <div 
+            ref={poolFormMenuRef}
+            className="relative bg-white dark:bg-gray-900 rounded-lg shadow-xl border border-gray-200 dark:border-gray-800 p-4 min-w-[300px] max-w-[400px] w-full space-y-3"
+          >
+            <button 
+              type="button"
+              onClick={() => setShowPoolTaskForm(false)}
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors z-10"
+              aria-label="Close form"
+            >
+              <XIcon className="w-5 h-5" />
+            </button>
+
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-white pt-1 pr-8">Add Task to Pool</h3>
+            
+            <div>
+              <label htmlFor="newPoolTaskNameInput" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Task Name</label>
+              <Input
+                id="newPoolTaskNameInput"
+                type="text"
+                value={newPoolTaskName}
+                onChange={(e) => setNewPoolTaskName(e.target.value)}
+                className="w-full text-sm"
+                placeholder="Enter task name"
+                autoFocus
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="newPoolTaskDurationSelect" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duration</label>
                   <select
                     id="newPoolTaskDurationSelect"
                     value={newPoolTaskDuration}
                     onChange={(e) => setNewPoolTaskDuration(parseFloat(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
                   >
-                    <option value="0.25">15m</option>
-                    <option value="0.5">30m</option>
-                    <option value="0.75">45m</option>
-                    <option value="1">1h</option>
-                    <option value="1.5">1h30m</option>
-                    <option value="2">2h</option>
-                    <option value="3">3h</option>
-                    <option value="4">4h</option>
+                    {APP_DURATION_OPTIONS.map((opt: { value: number; label: string }) => (
+                        <option key={`pool-dur-${opt.value}`} value={opt.value}>{opt.label}</option>
+                    ))}
                   </select>
                 </div>
-                <div>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Color</label>
-                <div className="grid grid-cols-8 gap-1.5">
-                  {TASK_COLORS.map((color) => (
-                    <button
-                      key={color}
-                      type="button"
-                      className={`w-6 h-6 rounded-full ${color} ${newPoolTaskColor === color ? 'ring-2 ring-offset-2 ring-blue-500 dark:ring-blue-400' : ''}`}
-                      onClick={() => setNewPoolTaskColor(color)}
-                      title={color.split(' ')[0].replace('bg-', '').replace('-200', '').replace('-300', '')}
-                    />
-                  ))}
-                </div>
+                 {/* Placeholder for potential second item in grid if needed */}
+                <div></div>
+            </div>
+
+            <div>
+              <div className="grid grid-cols-8 gap-1">
+                {APP_TASK_COLORS.map((color) => (
+                  <button
+                    key={`pool-color-${color}`}
+                    type="button"
+                    className={`w-8 h-8 rounded-md ${color} hover:ring-2 ring-gray-400 transition-all ${newPoolTaskColor === color ? 'ring-2 ring-blue-500' : ''}`}
+                    onClick={() => setNewPoolTaskColor(color)}
+                    title={color.split(' ')[0].replace('bg-', '').replace('-200', '').replace('-300', '')}
+                  />
+                ))}
               </div>
             </div>
-            <div className="flex justify-end mt-6 gap-2">
-              <button
-                type="button"
-                className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
-                onClick={() => setShowPoolTaskForm(false)}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
-                onClick={handleAddPoolTaskSubmit}
-              >
-                Add to Pool
-              </button>
+            
+            <div className="flex justify-end items-center pt-2 border-t border-gray-200 dark:border-gray-700">
+                <Button 
+                  onClick={handleAddPoolTaskSubmit}
+                  className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white font-semibold"
+                >
+                  Add to Pool
+                </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {viewingPoolTask && (
+        <div className="fixed inset-0 bg-black/40 dark:bg-black/60 flex items-center justify-center z-[1001] p-4">
+          <div 
+            ref={viewPoolTaskModalRef}
+            className="relative bg-white dark:bg-gray-900 rounded-lg shadow-xl border border-gray-200 dark:border-gray-800 p-4 min-w-[300px] max-w-[400px] w-full space-y-3"
+            onDoubleClick={() => setViewingPoolTask(null)} // Double click to close
+          >
+            <button 
+              type="button"
+              onClick={() => setViewingPoolTask(null)}
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors z-10"
+              aria-label="Close notes view"
+            >
+              <XIcon className="w-5 h-5" />
+            </button>
+
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white pt-1 pr-8 line-clamp-2">
+              {viewingPoolTask.name}
+            </h3>
+
+            {viewingPoolTask.notes && viewingPoolTask.notes.trim() !== "" && (
+              <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap max-h-60 overflow-y-auto border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
+                {viewingPoolTask.notes}
+              </div>
+            )}
+
+            <div className="flex justify-end items-center pt-2 border-t border-gray-200 dark:border-gray-700 mt-3">
+                <Button 
+                  variant="outline"
+                  onClick={() => setViewingPoolTask(null)}
+                >
+                  Close
+                </Button>
             </div>
           </div>
         </div>

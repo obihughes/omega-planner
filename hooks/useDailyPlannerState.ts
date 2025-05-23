@@ -109,16 +109,24 @@ export function useDailyPlanner() {
    */
   const getDateLabel = useCallback((dayOffset: number): string => {
     if (!isClient) {
-      return "Loading date..."; // Static placeholder for SSR
+      return "Loading date...";
     }
-
-    // Client-side logic - use absolute dates instead of relative offsets
-    // This is a key change - using toLocaleDateString for display dates ensures consistency
     const date = new Date();
     date.setDate(date.getDate() + dayOffset);
-    
+    // Always return full date format
+    return date.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+  }, [isClient]);
+
+  const getRelativeDayLabel = useCallback((dayOffset: number): string => {
+    if (!isClient) {
+      return ""; 
+    }
+    const date = new Date();
+    date.setHours(0,0,0,0); // Normalize current date for the target dayOffset
+    date.setDate(date.getDate() + dayOffset);
+
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Normalize to start of day
+    today.setHours(0, 0, 0, 0);
     
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -126,25 +134,14 @@ export function useDailyPlanner() {
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
-    // Normalize the date for comparison (remove time part)
-    const dateForComparison = new Date(date);
-    dateForComparison.setHours(0, 0, 0, 0);
-
-    let dayName = '';
-    
-    // Compare dates ignoring time
-    if (dateForComparison.getTime() === today.getTime()) {
-      dayName = 'Today';
-    } else if (dateForComparison.getTime() === tomorrow.getTime()) {
-      dayName = 'Tomorrow';
-    } else if (dateForComparison.getTime() === yesterday.getTime()) {
-      dayName = 'Yesterday';
-    } else {
-      dayName = date.toLocaleDateString(undefined, { weekday: 'short' });
+    if (date.getTime() === today.getTime()) {
+      return 'Today';
+    } else if (date.getTime() === tomorrow.getTime()) {
+      return 'Tomorrow';
+    } else if (date.getTime() === yesterday.getTime()) {
+      return 'Yesterday';
     }
-    
-    // Use the same date format string for both server and client
-    return `${dayName}, ${date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+    return ''; // Return empty if not today, tomorrow, or yesterday
   }, [isClient]);
 
   const getOrderedDayOffsets = useCallback((): number[] => {
@@ -428,47 +425,64 @@ export function useDailyPlanner() {
 
   // --- Pinned Task Functions ---
   const handlePinTask = useCallback((taskToPin: Task) => {
-    const now = new Date();
-    const taskStartDate = new Date();
-    taskStartDate.setDate(now.getDate() + taskToPin.dayOffset);
-    taskStartDate.setHours(Math.floor(taskToPin.startHour), (taskToPin.startHour % 1) * 60, 0, 0);
+    // Correctly derive dueDate from task's absolute baseDate and startHour
+    const taskBaseDate = new Date(taskToPin.baseDate); // baseDate is already normalized to midnight UTC
+    
+    // Create the dueDate by setting the hours and minutes from taskToPin.startHour onto the taskBaseDate
+    const dueDate = new Date(taskBaseDate);
+    // Assuming startHour is in local time context of the day represented by baseDate
+    // If baseDate is midnight UTC, and startHour is e.g., 9 for 9 AM local time,
+    // we need to be careful with UTC vs local. 
+    // For simplicity, if taskToPin.startHour is meant to be local time for that baseDate,
+    // then setting local hours is more direct if dueDate is intended to be compared with local `new Date()` in formatTimeRemaining.
+    // However, task.baseDate IS an ISO string (midnight UTC). task.startHour is an offset from that.
+    // Let's use setUTCHours, as baseDate is UTC.
+    dueDate.setUTCHours(Math.floor(taskToPin.startHour), (taskToPin.startHour % 1) * 60, 0, 0);
 
     const newPinnedTask: PinnedTask = {
       ...taskToPin, // Spread original task properties
       originalId: taskToPin.id,
       pinnedId: getNextId(), // Unique ID for this pinned instance
-      dueDate: taskStartDate,
+      dueDate: dueDate, // Use the correctly calculated dueDate
     };
-    setPinnedTasks(prevPinnedTasks => [...prevPinnedTasks, newPinnedTask].sort((a,b) => a.dueDate.getTime() - b.dueDate.getTime()));
+    setPinnedTasks(prevPinnedTasks => [...prevPinnedTasks, newPinnedTask].sort((a,b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()));
   }, [getNextId, setPinnedTasks]);
 
   const handleUnpinTask = useCallback((pinnedIdToUnpin: string) => {
     setPinnedTasks(prevPinnedTasks => prevPinnedTasks.filter(pt => pt.pinnedId !== pinnedIdToUnpin));
   }, [setPinnedTasks]);
 
-  const formatTimeRemaining = useCallback((dueDate: Date): string => {
+  const formatTimeRemaining = useCallback((dueDate: Date): { text: string; isOverdue: boolean } => {
     const now = new Date().getTime();
     const dueTime = dueDate.getTime();
     const diffMs = dueTime - now;
+    let isOverdue = false;
+    let text = "";
 
     if (diffMs <= 0) {
+      isOverdue = true;
       const absDiffMs = Math.abs(diffMs);
       const days = Math.floor(absDiffMs / (1000 * 60 * 60 * 24));
-      if (days > 0) return `Overdue by ${days}d`;
-      const hours = Math.floor(absDiffMs / (1000 * 60 * 60));
-      if (hours > 0) return `Overdue by ${hours}h`;
-      const mins = Math.floor(absDiffMs / (1000 * 60));
-      return `Overdue by ${mins}m`;
+      if (days > 0) text = `Overdue by ${days}d`;
+      else {
+        const hours = Math.floor(absDiffMs / (1000 * 60 * 60));
+        if (hours > 0) text = `Overdue by ${hours}h`;
+        else {
+          const mins = Math.floor(absDiffMs / (1000 * 60));
+          text = `Overdue by ${mins}m`;
+        }
+      }
+    } else {
+      const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+      if (days > 0) text = `In ${days}d ${hours}h`;
+      else if (hours > 0) text = `In ${hours}h ${mins}m`;
+      else if (mins > 0) text = `In ${mins}m`;
+      else text = "Due now";
     }
-
-    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-
-    if (days > 0) return `In ${days}d ${hours}h`;
-    if (hours > 0) return `In ${hours}h ${mins}m`;
-    if (mins > 0) return `In ${mins}m`;
-    return "Due now";
+    return { text, isOverdue };
   }, []);
 
   // --- Copying / Cloning Functions ---
@@ -826,6 +840,7 @@ export function useDailyPlanner() {
 
     // Date & View
     getDateLabel,
+    getRelativeDayLabel,
     getOrderedDayOffsets,
 
     // Core Task Actions

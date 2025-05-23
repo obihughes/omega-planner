@@ -4,23 +4,9 @@ import { Input, Button } from "@/components/ui"; // Assuming Button is also from
 import { PinIcon, FolderPlus, Trash2, X as XIcon, ChevronDownIcon } from 'lucide-react';
 import { Task, PinnedTask } from '../../types/planner'; // Adjusted path
 import { ActiveModalTask } from '../../hooks/useModalManager'; // Adjusted path
-import { TASK_COLORS, TIMELINE_START_HOUR, TIMELINE_END_HOUR, MIN_TASK_DURATION } from '../../lib/constants'; // Adjusted path
+import { TASK_COLORS, TIMELINE_START_HOUR, TIMELINE_END_HOUR, MIN_TASK_DURATION, DURATION_OPTIONS } from '../../lib/constants'; // Adjusted path
 import { formatDuration } from "@/utils/formatters";
 import CustomTimePicker from '../primitives/CustomTimePicker'; // Import the new component
-
-// Duration options (can be kept here or moved to constants)
-const DURATION_OPTIONS = [
-    { value: 0.25, label: '15 minutes' },
-    { value: 0.5, label: '30 minutes' },
-    { value: 0.75, label: '45 minutes' },
-    { value: 1, label: '1 hour' },        // Reverted to Xh Ym format
-    { value: 1.5, label: '1 hour 30 minutes' }, // Reverted
-    { value: 2, label: '2 hours' },      // Reverted
-    { value: 3, label: '3 hours' },      // Reverted
-    { value: 4, label: '4 hours' },      // Reverted
-    { value: 6, label: '6 hours' },      // Reverted
-    { value: 8, label: '8 hours' }       // Reverted
-];
 
 export interface EditTaskModalProps {
   taskToEdit: ActiveModalTask; // The task object from activeEditModalTask
@@ -236,7 +222,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
 
         <div>
           {/* <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Color</label> */}
-          <div className="grid grid-cols-8 gap-0.5">
+          <div className="grid grid-cols-8 gap-1">
             {TASK_COLORS.map(colorClass => (
               <button
                 key={`color-button-${colorClass}-${taskToEdit.id}`}

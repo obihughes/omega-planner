@@ -54,6 +54,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           p-1.5
           rounded-md
           ${color}
+          border border-gray-300 dark:border-gray-700
           hover:ring-1 hover:ring-gray-400 dark:hover:ring-gray-300
           transition-all duration-200
           ${isCompressed ? 'min-h-[24px]' : ''}
@@ -62,7 +63,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex flex-col min-w-0 flex-grow">
-          <div className="flex flex-row justify-between items-start min-w-0 draggable-area h-full gap-1 px-1.5">
+          <div className="flex flex-row justify-between items-start min-w-0 draggable-area h-full gap-1">
             <div className="flex-grow flex flex-col min-w-0">
               <div className={`
                 dark:text-white break-words
