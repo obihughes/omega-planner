@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { memo } from 'react';
 import { ProjectTask } from '@/types';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -26,7 +26,7 @@ interface TaskItemProps {
   onDelete: (taskId: string) => void;
 }
 
-export function TaskItem({ id, task, taskIndex, totalTasks, onStatusChange, onEdit, onDelete }: TaskItemProps) {
+function TaskItemComponent({ id, task, taskIndex, totalTasks, onStatusChange, onEdit, onDelete }: TaskItemProps) {
   const {
     attributes,
     listeners,
@@ -156,17 +156,27 @@ export function TaskItem({ id, task, taskIndex, totalTasks, onStatusChange, onEd
                 </div>
               )}
 
-              {/* Meta Information - Simplified */}
+              {/* Meta Information */}
               <div className="flex items-center space-x-4 mt-2 text-xs text-muted-foreground">
-                {/* Due Date */}
-                {task.dueDate && (
+                {/* Completion Date for Completed Tasks */}
+                {task.status === 'completed' && task.completedAt && (
+                  <div className="flex items-center space-x-1 text-green-600">
+                    <CheckCircle2 className="w-3 h-3" />
+                    <span>
+                      Completed {new Date(task.completedAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                )}
+
+                {/* Due Date for Non-Completed Tasks */}
+                {task.status !== 'completed' && task.dueDate && (
                   <div className={cn(
                     "flex items-center space-x-1",
                     isOverdue && "text-red-500"
                   )}>
                     <Calendar className="w-3 h-3" />
                     <span>
-                      {isOverdue ? 'Overdue' : new Date(task.dueDate).toLocaleDateString()}
+                      {isOverdue ? 'Overdue' : `Due ${new Date(task.dueDate).toLocaleDateString()}`}
                     </span>
                   </div>
                 )}
@@ -175,7 +185,10 @@ export function TaskItem({ id, task, taskIndex, totalTasks, onStatusChange, onEd
                 {task.estimatedHours && (
                   <div className="flex items-center space-x-1">
                     <Clock className="w-3 h-3" />
-                    <span>{task.estimatedHours}h</span>
+                    <span>{task.estimatedHours}h est.</span>
+                    {task.actualHours && (
+                      <span className="text-muted-foreground">/ {task.actualHours}h actual</span>
+                    )}
                   </div>
                 )}
               </div>
@@ -193,4 +206,19 @@ export function TaskItem({ id, task, taskIndex, totalTasks, onStatusChange, onEd
       </div>
     </div>
   );
-} 
+}
+
+// Memoize TaskItem to prevent unnecessary re-renders
+export const TaskItem = memo(TaskItemComponent, (prevProps, nextProps) => {
+  // Only re-render if task data, index, or total has changed
+  return (
+    prevProps.task.id === nextProps.task.id &&
+    prevProps.task.status === nextProps.task.status &&
+    prevProps.task.title === nextProps.task.title &&
+    prevProps.task.completedAt === nextProps.task.completedAt &&
+    prevProps.task.dueDate === nextProps.task.dueDate &&
+    prevProps.task.updatedAt === nextProps.task.updatedAt &&
+    prevProps.taskIndex === nextProps.taskIndex &&
+    prevProps.totalTasks === nextProps.totalTasks
+  );
+}); 

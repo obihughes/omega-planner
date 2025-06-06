@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProjects } from '@/hooks/useProjects';
 import { Project, ProjectTask } from '@/types';
@@ -60,7 +60,6 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
     }
   }, [project?.tasks]);
 
-
   useEffect(() => {
     if (!loading && !project) {
       router.push('/projects');
@@ -90,6 +89,63 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
     })
   );
 
+  // Memoize expensive filtering and sorting operations
+  const filteredAndSortedTasks = useMemo(() => {
+    return tasks
+      .filter(task => statusFilter === 'all' || task.status === statusFilter)
+      .sort((a, b) => a.order - b.order);
+  }, [tasks, statusFilter]);
+
+  // Memoize handlers to prevent unnecessary re-renders
+  const handleTaskStatusChange = useCallback((taskId: string, status: ProjectTask['status']) => {
+    if (!project) return;
+    updateTaskInProject(project.id, taskId, { status });
+    setTasks(current => current.map(t => t.id === taskId ? {...t, status} : t));
+  }, [project, updateTaskInProject]);
+
+  const handleEditTask = useCallback((task: ProjectTask) => {
+    console.log('Edit task:', task.id);
+  }, []);
+
+  const handleDeleteTask = useCallback((taskId: string) => {
+    if (!project) return;
+    deleteTaskFromProject(project.id, taskId);
+    setTasks(current => current.filter(t => t.id !== taskId));
+  }, [project, deleteTaskFromProject]);
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    if (!project) return;
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setTasks((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+        const newOrder = arrayMove(items, oldIndex, newIndex);
+
+        // Update the backend
+        reorderTasksInProject(project.id, active.id as string, over.id as string);
+        
+        return newOrder;
+      });
+    }
+  }, [project, reorderTasksInProject]);
+
+  const handleAddTask = useCallback(() => {
+    if (!project || !newTaskTitle.trim()) return;
+    
+    const addedTask = addTaskToProject(project.id, {
+      title: newTaskTitle.trim(),
+      status: 'todo',
+      priority: 'medium'
+    });
+    if(addedTask) {
+      setTasks(current => [...current, addedTask]);
+    }
+    setNewTaskTitle('');
+  }, [project, newTaskTitle, addTaskToProject]);
+
+  // Early returns after all hooks are defined
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -137,54 +193,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
     return { text: `Due in ${diffDays} days`, isOverdue: false };
   };
 
-  const filteredAndSortedTasks = tasks
-    .filter(task => statusFilter === 'all' || task.status === statusFilter)
-    .sort((a, b) => a.order - b.order);
 
-  const handleAddTask = () => {
-    if (newTaskTitle.trim()) {
-      const addedTask = addTaskToProject(project.id, {
-        title: newTaskTitle.trim(),
-        status: 'todo',
-        priority: 'medium'
-      });
-      if(addedTask) {
-        setTasks(current => [...current, addedTask]);
-      }
-      setNewTaskTitle('');
-    }
-  };
-
-  const handleTaskStatusChange = (taskId: string, status: ProjectTask['status']) => {
-    updateTaskInProject(project.id, taskId, { status });
-    setTasks(current => current.map(t => t.id === taskId ? {...t, status} : t));
-  };
-
-  const handleEditTask = (task: ProjectTask) => {
-    console.log('Edit task:', task.id);
-  };
-
-  const handleDeleteTask = (taskId: string) => {
-    deleteTaskFromProject(project.id, taskId);
-    setTasks(current => current.filter(t => t.id !== taskId));
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      setTasks((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over.id);
-        const newOrder = arrayMove(items, oldIndex, newIndex);
-
-        // Update the backend
-        reorderTasksInProject(project.id, active.id as string, over.id as string);
-        
-        return newOrder;
-      });
-    }
-  };
   
   const completedTasks = tasks.filter(task => task.status === 'completed').length || 0;
   const totalTasks = tasks.length || 0;

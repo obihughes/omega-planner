@@ -1,7 +1,9 @@
 'use client';
 
-import React from 'react';
-import { DailyPlanner } from '@/components';
+import React, { lazy, Suspense } from 'react';
+
+// Lazy load the heavy DailyPlanner component
+const DailyPlanner = lazy(() => import('@/components/planner/DailyPlanner'));
 import { Navigation } from '@/components/ui/Navigation';
 
 export default function Home() {
@@ -10,7 +12,13 @@ export default function Home() {
       <Navigation />
       <main className="p-4">
         <div className="max-w-7xl mx-auto">
-          <DailyPlanner />
+          <Suspense fallback={
+            <div className="flex items-center justify-center h-96">
+              <div className="text-muted-foreground">Loading planner...</div>
+            </div>
+          }>
+            <DailyPlanner />
+          </Suspense>
         </div>
       </main>
     </div>

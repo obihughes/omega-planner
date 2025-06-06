@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import { Project } from '@/types';
 import { Calendar, Clock, CheckCircle2, Circle, MoreVertical, Folder, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -12,7 +12,7 @@ interface ProjectCardProps {
   onClick: (project: Project) => void;
 }
 
-export function ProjectCard({ project, onEdit, onDelete, onClick }: ProjectCardProps) {
+function ProjectCardComponent({ project, onEdit, onDelete, onClick }: ProjectCardProps) {
   const getStatusIcon = (status: Project['status']) => {
     switch (status) {
       case 'completed':
@@ -47,11 +47,6 @@ export function ProjectCard({ project, onEdit, onDelete, onClick }: ProjectCardP
     }
   };
 
-  // Ensure tasks array exists and calculate metrics safely
-  const tasks = project.tasks || [];
-  const completedTasks = tasks.filter(task => task?.status === 'completed').length;
-  const totalTasks = tasks.length;
-
   const formatTimeRemaining = (dueDate: string): { text: string; isOverdue: boolean } => {
     const now = new Date();
     const due = new Date(dueDate);
@@ -67,6 +62,21 @@ export function ProjectCard({ project, onEdit, onDelete, onClick }: ProjectCardP
     if (diffDays === 1) return { text: 'Due tomorrow', isOverdue: false };
     return { text: `Due in ${diffDays} days`, isOverdue: false };
   };
+
+  // Memoize expensive calculations
+  const { tasks, completedTasks, totalTasks, timeRemaining } = useMemo(() => {
+    const projectTasks = project.tasks || [];
+    const completed = projectTasks.filter(task => task?.status === 'completed').length;
+    const total = projectTasks.length;
+    const timeRemainingData = project.endDate ? formatTimeRemaining(project.endDate) : null;
+    
+    return {
+      tasks: projectTasks,
+      completedTasks: completed,
+      totalTasks: total,
+      timeRemaining: timeRemainingData
+    };
+  }, [project.tasks, project.endDate, formatTimeRemaining]);
 
   const handleCardClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -91,7 +101,7 @@ export function ProjectCard({ project, onEdit, onDelete, onClick }: ProjectCardP
       );
     }
 
-    const maxCircles = 8; // Maximum circles to show
+    const maxCircles = 30; // Maximum circles to show
     const circlesToShow = Math.min(totalTasks, maxCircles);
     const showEllipsis = totalTasks > maxCircles;
 
@@ -183,16 +193,25 @@ export function ProjectCard({ project, onEdit, onDelete, onClick }: ProjectCardP
             <span>Started {new Date(project.startDate).toLocaleDateString()}</span>
           </div>
         )}
-        {project.endDate && (() => {
-          const { text, isOverdue } = formatTimeRemaining(project.endDate);
-          return (
-            <div className={cn("flex items-center space-x-1", isOverdue ? "text-red-500" : "")}>
-              <Clock className="w-3 h-3" />
-              <span>{text}</span>
-            </div>
-          );
-        })()}
+        {timeRemaining && (
+          <div className={cn("flex items-center space-x-1", timeRemaining.isOverdue ? "text-red-500" : "")}>
+            <Clock className="w-3 h-3" />
+            <span>{timeRemaining.text}</span>
+          </div>
+        )}
       </div>
     </div>
   );
-} 
+}
+
+// Memoize ProjectCard to prevent unnecessary re-renders
+export const ProjectCard = memo(ProjectCardComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.project.id === nextProps.project.id &&
+    prevProps.project.name === nextProps.project.name &&
+    prevProps.project.status === nextProps.project.status &&
+    prevProps.project.progress === nextProps.project.progress &&
+    prevProps.project.updatedAt === nextProps.project.updatedAt &&
+    prevProps.project.tasks?.length === nextProps.project.tasks?.length
+  );
+}); 

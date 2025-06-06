@@ -21,6 +21,9 @@ export interface ProjectTask {
   /** Due date */
   dueDate?: string;
   
+  /** Completion timestamp - when the task was marked as completed */
+  completedAt?: string;
+  
   /** Assigned to (for future use) */
   assignedTo?: string;
   

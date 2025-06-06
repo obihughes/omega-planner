@@ -1,11 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProjects } from '@/hooks/useProjects';
 import { Project } from '@/types';
 import { ProjectCard } from '@/components/projects/ProjectCard';
 import { Navigation } from '@/components/ui/Navigation';
+
+// Lazy load the modal to reduce initial bundle size
+const ProjectFormModal = lazy(() => import('@/components/modals/ProjectFormModal').then(module => ({ default: module.ProjectFormModal })));
 import { 
   Plus, 
   Search, 
@@ -18,12 +21,16 @@ import {
 
 export default function ProjectsPage() {
   const router = useRouter();
-  const { projects, loading, createProject, addTaskToProject } = useProjects();
+  const { projects, loading, createProject, updateProject, deleteProject, addTaskToProject } = useProjects();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<Project['status'] | 'all'>('all');
   const [sortBy, setSortBy] = useState<'name' | 'progress' | 'updated'>('updated');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  
+  // Project form modal state
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
 
   // Create sample projects if none exist
   useEffect(() => {
@@ -151,13 +158,8 @@ export default function ProjectsPage() {
     });
 
   const handleCreateProject = () => {
-    const newProject = createProject({
-      name: 'New Project',
-      description: 'Project description',
-      status: 'planning',
-      color: '#3B82F6'
-    });
-    // TODO: Open edit modal for the new project
+    setEditingProject(null);
+    setIsProjectModalOpen(true);
   };
 
   const handleProjectClick = (project: Project) => {
@@ -165,13 +167,25 @@ export default function ProjectsPage() {
   };
 
   const handleEditProject = (project: Project) => {
-    // TODO: Open edit modal
-    console.log('Edit project:', project.id);
+    setEditingProject(project);
+    setIsProjectModalOpen(true);
   };
 
   const handleDeleteProject = (projectId: string) => {
-    // TODO: Show confirmation dialog
-    console.log('Delete project:', projectId);
+    deleteProject(projectId);
+  };
+
+  const handleSaveProject = (projectData: Partial<Project>, isNew: boolean) => {
+    if (isNew) {
+      createProject(projectData as Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'tasks' | 'progress'>);
+    } else if (editingProject) {
+      updateProject(editingProject.id, projectData);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setIsProjectModalOpen(false);
+    setEditingProject(null);
   };
 
   if (loading) {
@@ -302,6 +316,19 @@ export default function ProjectsPage() {
           </div>
         )}
       </div>
+
+      {/* Project Form Modal */}
+      {isProjectModalOpen && (
+        <Suspense fallback={null}>
+          <ProjectFormModal
+            isOpen={isProjectModalOpen}
+            onClose={handleCloseModal}
+            project={editingProject}
+            onSave={handleSaveProject}
+            onDelete={handleDeleteProject}
+          />
+        </Suspense>
+      )}
     </div>
   );
 } 

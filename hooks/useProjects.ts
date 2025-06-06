@@ -119,11 +119,23 @@ export function useProjects() {
   const updateTaskInProject = useCallback((projectId: string, taskId: string, updates: Partial<ProjectTask>) => {
     const updatedProjects = projects.map(project => {
       if (project.id === projectId) {
-        const updatedTasks = project.tasks.map(task =>
-          task.id === taskId 
-            ? { ...task, ...updates, updatedAt: new Date().toISOString() }
-            : task
-        );
+        const updatedTasks = project.tasks.map(task => {
+          if (task.id === taskId) {
+            const updatedTask = { ...task, ...updates, updatedAt: new Date().toISOString() };
+            
+            // Auto-set completedAt when task is marked as completed
+            if (updates.status === 'completed' && task.status !== 'completed') {
+              updatedTask.completedAt = new Date().toISOString();
+            }
+            // Clear completedAt when task is no longer completed
+            else if (updates.status && updates.status !== 'completed' && task.status === 'completed') {
+              updatedTask.completedAt = undefined;
+            }
+            
+            return updatedTask;
+          }
+          return task;
+        });
         
         const completedTasks = updatedTasks.filter(task => task.status === 'completed').length;
         const progress = updatedTasks.length > 0 ? Math.round((completedTasks / updatedTasks.length) * 100) : 0;
