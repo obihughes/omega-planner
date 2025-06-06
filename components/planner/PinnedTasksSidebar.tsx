@@ -42,8 +42,10 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
     };
   }, [viewingPinnedTaskNotes]);
 
-  const formatDateForPinnedTask = (date: Date): string => {
-    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  const formatDateTimeForPinnedTask = (date: Date): string => {
+    const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const timeStr = formatTime(date.getHours() + date.getMinutes()/60);
+    return `${dateStr} at ${timeStr}`;
   };
 
   const hasOverdueTasks = pinnedTasks.some(task => new Date(task.dueDate).getTime() < new Date().getTime());
@@ -52,12 +54,12 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
     <>
       <div className="flex flex-col flex-grow overflow-hidden">
         {( (onClearOverduePinnedTasks && hasOverdueTasks) || onSyncPinnedTasks ) && pinnedTasks.length > 0 && (
-          <div className="p-2 border-b border-slate-700 flex items-center gap-2">
+          <div className="p-2 border-b border-border flex items-center gap-2">
             {onClearOverduePinnedTasks && hasOverdueTasks && (
               <Button
                 variant="outline"
                 size="sm"
-                className="flex-auto text-slate-300 border-slate-600 hover:bg-slate-700 hover:text-slate-100"
+                className="flex-auto text-muted-foreground border-border hover:bg-accent hover:text-foreground"
                 onClick={onClearOverduePinnedTasks}
                 title="Clear all overdue pinned tasks"
               >
@@ -68,7 +70,7 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
               <Button
                 variant="outline"
                 size="icon"
-                className="text-slate-300 border-slate-600 hover:bg-slate-700 hover:text-slate-100 flex-none"
+                className="text-muted-foreground border-border hover:bg-accent hover:text-foreground flex-none"
                 onClick={onSyncPinnedTasks}
                 title="Sync Pinned Tasks with Timeline"
               >
@@ -79,75 +81,70 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
         )}
         <div className="p-2 space-y-2 overflow-y-auto flex-grow">
           {pinnedTasks.length === 0 ? (
-            <p className="text-slate-400 text-sm text-center pt-4">No tasks pinned yet.</p> 
+            <p className="text-muted-foreground text-sm text-center pt-4">No tasks pinned yet.</p> 
           ) : (
             pinnedTasks.map(pinnedTask => {
               const { text: timeRemainingText, isOverdue } = formatTimeRemaining(new Date(pinnedTask.dueDate));
-              const cardBg = pinnedTask.color || 'bg-slate-700';
-              const overdueClasses = isOverdue ? 'opacity-60 saturate-50 filter grayscale-[20%]' : 'opacity-90';
               const dueDateObj = new Date(pinnedTask.dueDate);
 
               return (
                 <div 
                   key={pinnedTask.pinnedId} 
-                  className={`relative p-2.5 rounded-lg shadow-md ${cardBg} ${overdueClasses} transition-all duration-150 group border border-slate-600/50`}
+                  className="relative p-3 rounded-lg bg-card border border-border hover:shadow-md transition-all duration-150 group"
                 >
-                  <div className="flex flex-col gap-1">
-                    <div className="flex justify-between items-start">
-                      <p className="font-semibold text-base text-white truncate pr-24 flex-grow min-w-0">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm text-foreground truncate pr-20">
                         {pinnedTask.name}
                       </p>
-                      <div className="absolute top-2 right-2 flex items-center space-x-1.5">
-                        <button
-                          type="button"
-                          className="h-6 w-6 rounded-md bg-black/20 hover:bg-black/30 flex items-center justify-center text-slate-200 hover:text-white transition-colors"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openEditModal(pinnedTask as Task, { isPinned: true });
-                          }}
-                          title="Edit Task"
+                      <div className="flex items-center justify-between text-xs text-muted-foreground mt-1">
+                        <div className="flex items-center space-x-2">
+                          <CalendarDays className="w-3 h-3" />
+                          <span>{formatDateTimeForPinnedTask(dueDateObj)}</span>
+                        </div>
+                        <span 
+                          className={`${
+                            isOverdue 
+                              ? 'text-red-500' 
+                              : 'text-blue-500'
+                          }`}
                         >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          className="h-6 w-6 rounded-md bg-black/20 hover:bg-black/30 flex items-center justify-center text-slate-200 hover:text-white transition-colors"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setViewingPinnedTaskNotes(pinnedTask);
-                          }}
-                          title="View Notes"
-                        >
-                          <EyeIcon className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          className="h-6 w-6 rounded-md bg-black/20 hover:bg-black/30 flex items-center justify-center text-slate-200 hover:text-white transition-colors"
-                          onClick={() => onUnpinTask(pinnedTask.pinnedId)}
-                          title="Unpin task"
-                        >
-                          <PinOff className="w-4 h-4" />
-                        </button>
+                          {timeRemainingText}
+                        </span>
                       </div>
                     </div>
-
-                    <div className="flex items-center text-xs text-slate-300">
-                        <CalendarDays className="w-3 h-3 mr-1.5 opacity-70" />
-                        <span>{formatDateForPinnedTask(dueDateObj)}</span>
-                        <span className="mx-1.5">•</span>
-                        <span>{formatTime(dueDateObj.getHours() + dueDateObj.getMinutes()/60)}</span>
-                    </div>
-
-                    <div className="mt-auto pt-2 text-right">
-                      <span 
-                        className={`text-xs ${
-                          isOverdue 
-                            ? 'text-red-400' 
-                            : 'text-sky-400'
-                        }`}
+                    
+                    <div className="absolute top-2 right-2 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        type="button"
+                        className="h-6 w-6 rounded-md bg-accent hover:bg-accent/80 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEditModal(pinnedTask as Task, { isPinned: true });
+                        }}
+                        title="Edit Task"
                       >
-                        {timeRemainingText}
-                      </span>
+                        <Edit3 className="w-3 h-3" />
+                      </button>
+                      <button
+                        type="button"
+                        className="h-6 w-6 rounded-md bg-accent hover:bg-accent/80 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setViewingPinnedTaskNotes(pinnedTask);
+                        }}
+                        title="View Notes"
+                      >
+                        <EyeIcon className="w-3 h-3" />
+                      </button>
+                      <button
+                        type="button"
+                        className="h-6 w-6 rounded-md bg-accent hover:bg-accent/80 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={() => onUnpinTask(pinnedTask.pinnedId)}
+                        title="Unpin task"
+                      >
+                        <PinOff className="w-3 h-3" />
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -158,37 +155,37 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
       </div>
 
       {viewingPinnedTaskNotes && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[1002] p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-[1002] p-4">
           <div 
             ref={viewModalRef}
-            className="relative bg-slate-800 rounded-xl shadow-2xl border border-slate-700 p-5 w-full max-w-lg space-y-4 text-slate-100"
+            className="relative bg-card rounded-xl shadow-2xl border border-border p-6 w-full max-w-lg space-y-4"
             onDoubleClick={() => setViewingPinnedTaskNotes(null)}
           >
             <button 
               type="button"
               onClick={() => setViewingPinnedTaskNotes(null)}
-              className="absolute top-3 right-3 text-slate-400 hover:text-slate-200 transition-colors z-10 p-1 rounded-full hover:bg-slate-700"
+              className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors z-10 p-1 rounded-full hover:bg-accent"
               aria-label="Close notes view"
             >
               <PinOff className="w-5 h-5" />
             </button>
 
-            <h3 className="text-xl font-semibold pr-8 line-clamp-3">
+            <h3 className="text-xl font-semibold pr-8 line-clamp-3 text-foreground">
               {viewingPinnedTaskNotes.name}
             </h3>
 
             {(viewingPinnedTaskNotes.notes && viewingPinnedTaskNotes.notes.trim() !== "") ? (
-              <div className="text-sm text-slate-300 whitespace-pre-wrap max-h-72 overflow-y-auto border-t border-slate-700 pt-3 mt-3 styled-scrollbar">
+              <div className="text-sm text-muted-foreground whitespace-pre-wrap max-h-72 overflow-y-auto border-t border-border pt-3 mt-3">
                 {viewingPinnedTaskNotes.notes}
               </div>
             ) : (
-              <p className="text-sm text-slate-400 italic mt-3 pt-3 border-t border-slate-700">
+              <p className="text-sm text-muted-foreground italic mt-3 pt-3 border-t border-border">
                 No notes for this task.
               </p>
             )}
-            <div className="flex justify-end items-center pt-4 border-t border-slate-700 mt-4">
+            <div className="flex justify-end items-center pt-4 border-t border-border mt-4">
                 <button 
-                  className="px-4 py-2 text-sm bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors font-medium"
+                  className="px-4 py-2 text-sm bg-accent hover:bg-accent/80 rounded-lg transition-colors font-medium text-foreground"
                   onClick={() => setViewingPinnedTaskNotes(null)}
                 >
                   Close

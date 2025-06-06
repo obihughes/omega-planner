@@ -3,45 +3,37 @@
  * Each color includes both light and dark mode variants
  */
 export const TASK_COLORS = [
-  // Row 1: Deep & Light Reds, Pinks, Oranges
-  'bg-red-400 dark:bg-red-800',          // Deep Red
-  'bg-red-200 dark:bg-red-600',          // Light Red
-  'bg-pink-400 dark:bg-pink-800',        // Deep Pink
-  'bg-pink-200 dark:bg-pink-600',        // Light Pink
-  'bg-rose-200 dark:bg-rose-600',        // Light Rose (softer pink/red)
-  'bg-orange-400 dark:bg-orange-800',    // Deep Orange
-  'bg-orange-200 dark:bg-orange-600',    // Light Orange
-  'bg-amber-200 dark:bg-amber-600',      // Light Amber (transition to yellow)
+  // Row 1: Vibrant Reds, Pinks, Oranges
+  'bg-red-500 dark:bg-red-700',          // Vibrant Red
+  'bg-rose-500 dark:bg-rose-700',        // Vibrant Rose
+  'bg-pink-500 dark:bg-pink-700',        // Vibrant Pink
+  'bg-orange-500 dark:bg-orange-700',    // Vibrant Orange
+  'bg-amber-500 dark:bg-amber-700',      // Vibrant Amber
+  'bg-yellow-500 dark:bg-yellow-700',    // Vibrant Yellow
 
-  // Row 2: Yellows, Greens, Teals, Cyans
-  'bg-yellow-200 dark:bg-yellow-600',    // Light Yellow
-  'bg-lime-200 dark:bg-lime-600',        // Light Lime Green
-  'bg-emerald-400 dark:bg-emerald-800',  // Deep Emerald Green
-  'bg-green-200 dark:bg-green-600',      // Light Green
-  'bg-emerald-200 dark:bg-emerald-600',  // Light Emerald
-  'bg-teal-200 dark:bg-teal-600',        // Light Teal
-  'bg-cyan-400 dark:bg-cyan-800',        // Deep Cyan
-  'bg-cyan-200 dark:bg-cyan-600',        // Light Cyan
+  // Row 2: Vibrant Greens, Teals, Cyans
+  'bg-lime-500 dark:bg-lime-700',        // Vibrant Lime
+  'bg-green-500 dark:bg-green-700',      // Vibrant Green
+  'bg-emerald-500 dark:bg-emerald-700',  // Vibrant Emerald
+  'bg-teal-500 dark:bg-teal-700',        // Vibrant Teal
+  'bg-cyan-500 dark:bg-cyan-700',        // Vibrant Cyan
+  'bg-sky-500 dark:bg-sky-700',          // Vibrant Sky Blue
 
-  // Row 3: Sky Blues, Blues, Indigos, Violets, Purples
-  'bg-sky-200 dark:bg-sky-600',          // Light Sky Blue
-  'bg-blue-400 dark:bg-blue-800',        // Deep Blue (Index 16)
-  'bg-blue-200 dark:bg-blue-600',        // Light Blue
-  'bg-indigo-200 dark:bg-indigo-600',    // Light Indigo
-  'bg-violet-200 dark:bg-violet-600',    // Light Violet
-  'bg-purple-400 dark:bg-purple-800',    // Deep Purple
-  'bg-purple-200 dark:bg-purple-600',    // Light Purple
-  'bg-fuchsia-400 dark:bg-fuchsia-800',  // Deep Fuchsia
+  // Row 3: Vibrant Blues, Indigos, Purples
+  'bg-blue-500 dark:bg-blue-700',        // Vibrant Blue (Index 12)
+  'bg-indigo-500 dark:bg-indigo-700',    // Vibrant Indigo
+  'bg-violet-500 dark:bg-violet-700',    // Vibrant Violet
+  'bg-purple-500 dark:bg-purple-700',    // Vibrant Purple
+  'bg-fuchsia-500 dark:bg-fuchsia-700',  // Vibrant Fuchsia
+  'bg-magenta-500 dark:bg-magenta-700',  // Vibrant Magenta
   
-  // Row 4: Fuchsias & Greys
-  'bg-fuchsia-200 dark:bg-fuchsia-600',  // Light Fuchsia
-  'bg-slate-300 dark:bg-slate-700',      // Deeper Slate
-  'bg-slate-200 dark:bg-slate-600',      // Light Slate
-  'bg-zinc-300 dark:bg-zinc-700',        // Deeper Zinc
-  'bg-zinc-200 dark:bg-zinc-600',        // Light Zinc
-  'bg-gray-200 dark:bg-gray-600',        // Light Gray
-  'bg-neutral-200 dark:bg-neutral-600',  // Light Neutral
-  'bg-stone-200 dark:bg-stone-600',      // Light Stone
+  // Row 4: Neutral but modern grays and earth tones
+  'bg-slate-500 dark:bg-slate-700',      // Modern Slate
+  'bg-zinc-500 dark:bg-zinc-700',        // Modern Zinc  
+  'bg-stone-500 dark:bg-stone-700',      // Modern Stone
+  'bg-gray-500 dark:bg-gray-700',        // Modern Gray
+  'bg-neutral-500 dark:bg-neutral-700',  // Modern Neutral
+  'bg-gray-600 dark:bg-gray-800',        // Dark Gray
 ];
 
 /** The earliest hour shown on the timeline (4 AM) */
@@ -68,8 +60,8 @@ export const DEFAULT_TOP_DAY_OFFSET = 0;
 /** Default day offset for the bottom timeline (Next Day) */
 export const DEFAULT_BOTTOM_DAY_OFFSET = 1; 
 
-/** Default color index for newly created tasks (Deep Blue) */
-export const DEFAULT_TASK_COLOR_INDEX = 16;
+/** Default color index for newly created tasks (Vibrant Blue) */
+export const DEFAULT_TASK_COLOR_INDEX = 12;
 
 // Constants from DailyPlanner.tsx
 export const TIMELINE_COLUMN_HEIGHT = 100;
@@ -81,7 +73,7 @@ export const TASK_BASE_BOTTOM_PADDING = 33;
 export const TIMELINE_SPLIT_HOUR_1 = 11; // Morning/Afternoon split
 export const TIMELINE_SPLIT_HOUR_2 = 18; // Afternoon/Evening split
 export const TIMELINE_HEADER_HEIGHT_PX = 28;
-export const GRID_LINE_STYLE = "border-l-2 border-gray-400 z-10"; // Example, might need to be Tailwind class string 
+export const GRID_LINE_STYLE = "border-l-2 border-border z-10"; // Use semantic color for theme adaptability
 
 /** Duration options for task editing modals */
 export const DURATION_OPTIONS = [

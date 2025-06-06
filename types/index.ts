@@ -6,4 +6,10 @@ export type {
   Task, 
   StorageData, 
   PinnedTask 
-} from './planner'; 
+} from './planner';
+
+export type {
+  Project,
+  ProjectTask,
+  ProjectsStorageData
+} from './projects'; 

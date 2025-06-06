@@ -252,7 +252,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
             <div>
                 {/* <label className="block text-xs font-medium text-neutral-400 mb-1">Color</label> */}
                 {/* Adjusting top padding for alignment in the new grid structure */}
-                <div className="grid grid-cols-8 gap-1 pt-1 md:pt-[26px]"> {/* pt-1 for mobile, pt-[26px] for md+ to align with label+input above */}
+                <div className="grid grid-cols-6 gap-1 pt-1 md:pt-[26px]"> {/* pt-1 for mobile, pt-[26px] for md+ to align with label+input above */}
                     {TASK_COLORS.map(c => (
                         <button
                         type="button"
@@ -278,17 +278,17 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
           </div>
 
           {/* Modal Footer with Action Buttons - Revised Layout */}
-          <div className="flex items-center justify-between pt-4 border-t border-neutral-700 mt-4">
-            {/* Group for left-aligned action buttons */}
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-3 pt-4 border-t border-neutral-700 mt-4">
+            {/* Action buttons row */}
+            <div className="flex items-center gap-2 flex-wrap">
               {!taskToEdit.isNew && onDelete && (
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => { onDelete(taskToEdit.id, taskToEdit.isFromPool); onClose(); }}
-                  className="px-3 py-2 text-sm text-red-500 border-red-500 hover:bg-red-500/10 hover:text-red-400"
+                  className="px-3 py-1.5 text-xs text-red-500 border-red-500 hover:bg-red-500/10 hover:text-red-400"
                 >
-                  <Trash2 className="w-4 h-4 mr-1.5" /> Delete
+                  <Trash2 className="w-3 h-3 mr-1" /> Delete
                 </Button>
               )}
               {onCopyAndEnterPasteMode && (
@@ -308,9 +308,9 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                       completed: taskDataForCopy.completed,
                     });
                   }}
-                  className="px-3 py-2 text-sm text-neutral-300 border-neutral-600 hover:bg-neutral-700 hover:text-neutral-100"
+                  className="px-3 py-1.5 text-xs text-neutral-300 border-neutral-600 hover:bg-neutral-700 hover:text-neutral-100"
                 >
-                  <Copy className="w-4 h-4 mr-1.5" /> Copy
+                  <Copy className="w-3 h-3 mr-1" /> Copy
                 </Button>
               )}
               {onPinTask && !taskToEdit.isFromPool && (
@@ -326,9 +326,9 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                     onPinTask(taskToPin);
                   }}
                   disabled={isTaskPinned}
-                  className={`px-3 py-2 text-sm border-neutral-600 hover:bg-neutral-700 ${isTaskPinned ? 'text-blue-400 hover:text-blue-300' : 'text-neutral-300 hover:text-neutral-100'}`}
+                  className={`px-3 py-1.5 text-xs border-neutral-600 hover:bg-neutral-700 ${isTaskPinned ? 'text-blue-400 hover:text-blue-300' : 'text-neutral-300 hover:text-neutral-100'}`}
                 >
-                  <Pin className="w-4 h-4 mr-1.5" /> {isTaskPinned ? 'Pinned' : 'Pin'}
+                  <Pin className="w-3 h-3 mr-1" /> {isTaskPinned ? 'Pinned' : 'Pin'}
                 </Button>
               )}
               {!taskToEdit.isFromPool && onMoveToPool && !taskToEdit.isNew && (
@@ -336,19 +336,19 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                   type="button"
                   variant="outline"
                   onClick={() => { if (onMoveToPool) { onMoveToPool(taskToEdit.id); onClose();} }}
-                  className="px-3 py-2 text-sm text-neutral-300 border-neutral-600 hover:bg-neutral-700 hover:text-neutral-100"
+                  className="px-3 py-1.5 text-xs text-neutral-300 border-neutral-600 hover:bg-neutral-700 hover:text-neutral-100"
                 >
                   To Pool
                 </Button>
               )}
             </div>
 
-            {/* Right-aligned Save Button */}
+            {/* Save button row - full width */}
             <Button 
               type="submit" 
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm font-medium" // Kept slightly larger padding for primary, added font-medium
+              className="w-full bg-green-600 hover:bg-green-700 text-white py-2 text-sm font-medium"
             >
-              <Check className="w-4 h-4 mr-1.5" /> Save Changes
+              <Check className="w-4 h-4 mr-2" /> Save Changes
             </Button>
           </div>
         </form>

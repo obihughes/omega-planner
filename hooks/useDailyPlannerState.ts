@@ -500,6 +500,7 @@ export function useDailyPlanner() {
           pinnedTask.name !== correspondingTimelineTask.name ||
           pinnedTask.duration !== correspondingTimelineTask.duration ||
           pinnedTask.color !== correspondingTimelineTask.color ||
+          pinnedTask.notes !== correspondingTimelineTask.notes ||
           new Date(pinnedTask.dueDate).getTime() !== newDueDate.getTime()
         ) {
           updatedOccurred = true;
@@ -508,6 +509,7 @@ export function useDailyPlanner() {
             name: correspondingTimelineTask.name,
             duration: correspondingTimelineTask.duration,
             color: correspondingTimelineTask.color,
+            notes: correspondingTimelineTask.notes,
             // Ensure startHour from timeline task is also updated on pinned task, if it's used directly by PinnedTask type
             startHour: correspondingTimelineTask.startHour, 
             baseDate: correspondingTimelineTask.baseDate, // also sync baseDate, as dueDate depends on it
@@ -894,6 +896,12 @@ export function useDailyPlanner() {
       }
     }
   }, [tasks]); // This effect runs whenever the tasks array changes
+
+  // Effect to sync pinned tasks when main tasks change
+  useEffect(() => {
+    if (!initialLoadComplete.current) return; // Only run after initial load
+    syncPinnedTasksWithTimeline();
+  }, [tasks, syncPinnedTasksWithTimeline]); // Sync when tasks change
 
   // --- RETURNED STATE AND FUNCTIONS ---
   return {

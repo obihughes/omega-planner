@@ -2,6 +2,7 @@
 
 import "@/app/globals.css";
 import { Inter } from "next/font/google";
+import { ThemeProvider } from "next-themes";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -11,22 +12,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark" data-theme="dark" suppressHydrationWarning={true}>
+    <html lang="en" suppressHydrationWarning={true}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="theme-color" content="#0a0a0a" />
-        <meta name="color-scheme" content="dark" />
       </head>
-      <body className={`${inter.className} dark`} style={{ backgroundColor: '#0a0a0a', color: '#ffffff' }}>
-        <div style={{ 
-          minHeight: '100vh', 
-          backgroundColor: '#0a0a0a',
-          color: '#ffffff',
-          display: 'flex',
-          flexDirection: 'column'
-        }}>
-          {children}
-        </div>
+      <body className={inter.className}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem={true}
+          disableTransitionOnChange={false}
+        >
+          <div className="min-h-screen bg-background text-foreground">
+            {children}
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );
