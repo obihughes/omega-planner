@@ -504,13 +504,13 @@ export default function DailyPlanner() {
     }
     const timelineHours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
     return (
-      <div className="flex h-8 border-b border-border sticky top-0 bg-card z-20">
+                    <div className="flex h-8 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-card z-20">
         {timelineHours.map((hour) => (
-          <div key={`timeline-hour-${hour}-${period}`} className="flex-none text-xs text-muted-foreground pt-1 pl-0.5 border-l border-border" style={{ width: `${APP_PIXELS_PER_HOUR}px`, boxSizing: 'border-box' }}>
+                      <div key={`timeline-hour-${hour}-${period}`} className="flex-none text-xs text-muted-foreground pt-1 pl-0.5 border-l border-gray-200 dark:border-gray-700" style={{ width: `${APP_PIXELS_PER_HOUR}px`, boxSizing: 'border-box' }}>
             {formatTime(hour)}
           </div>
         ))}
-         <div key={`timeline-end-marker-${period}`} className="flex-none border-l-2 border-border" style={{ width: `2px`, boxSizing: 'border-box' }}></div>
+                     <div key={`timeline-end-marker-${period}`} className="flex-none border-l-2 border-gray-200 dark:border-gray-700" style={{ width: `2px`, boxSizing: 'border-box' }}></div>
       </div>
     );
   }, [APP_PIXELS_PER_HOUR, APP_TIMELINE_START_HOUR, APP_TIMELINE_END_HOUR, APP_TIMELINE_SPLIT_HOUR_1, APP_TIMELINE_SPLIT_HOUR_2]); 
@@ -689,7 +689,7 @@ export default function DailyPlanner() {
     return (
       <div className={`w-full transition-colors duration-200 relative ${isTargetCopyDay ? 'bg-blue-50/80 dark:bg-blue-900/20 ring-2 ring-blue-400 dark:ring-blue-500' : ''}`}>
         <div 
-          className={`relative border border-border rounded-md ${isTargetCopyDay ? 'ring-2 ring-inset ring-blue-500 bg-blue-50/50 dark:bg-blue-900/30' : ''}`}
+                        className={`relative border border-gray-200 dark:border-gray-700 rounded-md ${isTargetCopyDay ? 'ring-2 ring-inset ring-blue-500 bg-blue-50/50 dark:bg-blue-900/30' : ''}`}
           style={{ 
             width: `${APP_PIXELS_PER_HOUR * (endHour - startHour)}px`, 
             minWidth: `${APP_PIXELS_PER_HOUR * (endHour - startHour)}px`,
@@ -724,7 +724,7 @@ export default function DailyPlanner() {
             {Array.from({ length: endHour - startHour + 1 }, (_, i) => (
               <div 
                 key={`grid-${i}-${dayOffset}-${period}`} 
-                className={`border-l-2 border-border z-10 ${GRID_LINE_STYLE}`}
+                className={`border-l-2 border-gray-200 dark:border-gray-700 z-10 ${GRID_LINE_STYLE}`}
                 style={{ left: `${i * APP_PIXELS_PER_HOUR}px`, height: '100%', top: 0, borderLeftStyle: 'dashed', position: 'absolute'}} 
               />
             ))}
@@ -960,9 +960,9 @@ export default function DailyPlanner() {
         <div className={`flex gap-2 transition-all duration-300 ease-in-out`}>
           {/* Sidebar Section */}
           <div 
-            className={`bg-card border border-border rounded-lg shadow-xl flex flex-col sticky top-4 h-[calc(100vh-2rem-env(safe-area-inset-bottom))] overflow-hidden z-[150] transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'w-14' : 'w-56'}`}
+            className={`bg-card border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl flex flex-col sticky top-4 h-[calc(100vh-2rem-env(safe-area-inset-bottom))] overflow-hidden z-[150] transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'w-14' : 'w-56'}`}
           >
-            <div className={`flex border-b border-border ${isSidebarCollapsed ? 'justify-center' : ''}`}>
+                          <div className={`flex border-b border-gray-200 dark:border-gray-700 ${isSidebarCollapsed ? 'justify-center' : ''}`}>
               {!isSidebarCollapsed && (
                 <>
                   <button type="button" className={`flex-1 p-2 text-sm font-medium text-center transition-colors focus:outline-none ${activeSidebarTab === 'pool' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'}`} onClick={() => setActiveSidebarTab('pool')}>Task Pool</button>
@@ -1026,7 +1026,7 @@ export default function DailyPlanner() {
               </div>
             )}
              {/* Collapse/Expand Button - Placed at the bottom of the sidebar container */}
-            <div className={`mt-auto border-t border-border p-1.5 flex ${isSidebarCollapsed ? 'justify-center' : 'justify-end'}`}>
+            <div className={`mt-auto border-t border-gray-200 dark:border-gray-700 p-1.5 flex ${isSidebarCollapsed ? 'justify-center' : 'justify-end'}`}>
                 <button 
                     type="button"
                     onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
@@ -1041,9 +1041,9 @@ export default function DailyPlanner() {
           {/* Main Content Area */}
           <div className={`flex-1 space-y-2 min-w-0 overflow-x-auto transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'ml-0' : 'ml-0'}`} ref={timelineScrollRef}>
             {/* Single Correct Top Day View Block - START */}
-            <div className="bg-card p-3 rounded-lg shadow-sm border border-border overflow-auto">
+            <div className="bg-card p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-auto">
               {/* Header for Top Day View */}
-              <div className="flex items-center justify-between mb-4 pb-3 border-b border-border">
+                              <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
                 {/* Date Navigation Controls for topDayOffset */}
                 <div className="flex items-center justify-start">
                   <div className="flex items-center space-x-2">
@@ -1099,7 +1099,7 @@ export default function DailyPlanner() {
             {/* Single Correct Top Day View Block - END */}
 
             {/* Bottom Day View Block - START */}
-            <div className="bg-card p-3 rounded-lg shadow-sm border border-border overflow-auto">
+            <div className="bg-card p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-auto">
               {/* Header for Bottom Day View */}
               <div className="flex items-center justify-between mb-4">
                 {/* Date Navigation Controls for bottomDayOffset */}
@@ -1125,7 +1125,7 @@ export default function DailyPlanner() {
                 <div className="flex items-center space-x-2 ml-auto">
                   <button
                     type="button"
-                    className="border border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground px-3 py-1.5 rounded-lg font-medium flex items-center gap-2 transition-colors duration-200"
+                    className="border border-gray-200 dark:border-gray-700 text-muted-foreground hover:bg-accent hover:text-accent-foreground px-3 py-1.5 rounded-lg font-medium flex items-center gap-2 transition-colors duration-200"
                     onClick={() => {
                       const date = getCalendarDateForColumn(bottomDayOffset);
                       showCloneModal({ dayOffset: bottomDayOffset, date });

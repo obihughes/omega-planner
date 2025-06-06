@@ -54,12 +54,12 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
     <>
       <div className="flex flex-col flex-grow overflow-hidden">
         {( (onClearOverduePinnedTasks && hasOverdueTasks) || onSyncPinnedTasks ) && pinnedTasks.length > 0 && (
-          <div className="p-2 border-b border-border flex items-center gap-2">
+          <div className="p-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
             {onClearOverduePinnedTasks && hasOverdueTasks && (
               <Button
                 variant="outline"
                 size="sm"
-                className="flex-auto text-muted-foreground border-border hover:bg-accent hover:text-foreground"
+                className="flex-auto text-muted-foreground border-gray-200 dark:border-gray-700 hover:bg-accent hover:text-foreground"
                 onClick={onClearOverduePinnedTasks}
                 title="Clear all overdue pinned tasks"
               >
@@ -70,7 +70,7 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
               <Button
                 variant="outline"
                 size="icon"
-                className="text-muted-foreground border-border hover:bg-accent hover:text-foreground flex-none"
+                className="text-muted-foreground border-gray-200 dark:border-gray-700 hover:bg-accent hover:text-foreground flex-none"
                 onClick={onSyncPinnedTasks}
                 title="Sync Pinned Tasks with Timeline"
               >
@@ -90,7 +90,7 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
               return (
                 <div 
                   key={pinnedTask.pinnedId} 
-                  className="relative p-3 rounded-lg bg-card border border-border hover:shadow-md transition-all duration-150 group"
+                  className="relative p-3 rounded-lg bg-card border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-150 group"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
@@ -158,7 +158,7 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-[1002] p-4">
           <div 
             ref={viewModalRef}
-            className="relative bg-card rounded-xl shadow-2xl border border-border p-6 w-full max-w-lg space-y-4"
+            className="relative bg-card rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 p-6 w-full max-w-lg space-y-4"
             onDoubleClick={() => setViewingPinnedTaskNotes(null)}
           >
             <button 
@@ -175,15 +175,15 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
             </h3>
 
             {(viewingPinnedTaskNotes.notes && viewingPinnedTaskNotes.notes.trim() !== "") ? (
-              <div className="text-sm text-muted-foreground whitespace-pre-wrap max-h-72 overflow-y-auto border-t border-border pt-3 mt-3">
+              <div className="text-sm text-muted-foreground whitespace-pre-wrap max-h-72 overflow-y-auto border-t border-gray-200 dark:border-gray-700 pt-3 mt-3">
                 {viewingPinnedTaskNotes.notes}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground italic mt-3 pt-3 border-t border-border">
+              <p className="text-sm text-muted-foreground italic mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                 No notes for this task.
               </p>
             )}
-            <div className="flex justify-end items-center pt-4 border-t border-border mt-4">
+            <div className="flex justify-end items-center pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
                 <button 
                   className="px-4 py-2 text-sm bg-accent hover:bg-accent/80 rounded-lg transition-colors font-medium text-foreground"
                   onClick={() => setViewingPinnedTaskNotes(null)}
