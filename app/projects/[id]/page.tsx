@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProjects } from '@/hooks/useProjects';
 import { Project, ProjectTask } from '@/types';
@@ -35,6 +35,9 @@ interface ProjectDetailPageProps {
   params: { id: string };
 }
 
+// Lazy load the modal to reduce initial bundle size
+const ProjectTaskFormModal = lazy(() => import('@/components/modals/ProjectTaskFormModal').then(module => ({ default: module.ProjectTaskFormModal })));
+
 export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   const router = useRouter();
   const { 
@@ -48,6 +51,10 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   
   const [statusFilter, setStatusFilter] = useState<ProjectTask['status'] | 'all'>('all');
   const [newTaskTitle, setNewTaskTitle] = useState('');
+  
+  // Task form modal state
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<ProjectTask | null>(null);
 
   const project = projects.find(p => p.id === params.id);
   
@@ -99,7 +106,8 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   }, [project, updateTaskInProject]);
 
   const handleEditTask = useCallback((task: ProjectTask) => {
-    console.log('Edit task:', task.id);
+    setEditingTask(task);
+    setIsTaskModalOpen(true);
   }, []);
 
   const handleDeleteTask = useCallback((taskId: string) => {
@@ -128,6 +136,21 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
     
     setNewTaskTitle('');
   }, [project, newTaskTitle, addTaskToProject]);
+
+  const handleSaveTask = useCallback((taskData: Partial<ProjectTask>, isNew: boolean) => {
+    if (!project) return;
+    
+    if (isNew) {
+      addTaskToProject(project.id, taskData as Omit<ProjectTask, 'id' | 'createdAt' | 'updatedAt' | 'order'>);
+    } else if (editingTask) {
+      updateTaskInProject(project.id, editingTask.id, taskData);
+    }
+  }, [project, editingTask, addTaskToProject, updateTaskInProject]);
+
+  const handleCloseTaskModal = useCallback(() => {
+    setIsTaskModalOpen(false);
+    setEditingTask(null);
+  }, []);
 
   // Early returns after all hooks are defined
   if (loading) {
@@ -247,6 +270,17 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
               }}
             />
           </div>
+          <button
+            onClick={() => {
+              setEditingTask(null);
+              setIsTaskModalOpen(true);
+            }}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors flex items-center space-x-2"
+            title="Create detailed task"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">New Task</span>
+          </button>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as ProjectTask['status'] | 'all')}
@@ -295,6 +329,19 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
           </div>
         )}
       </div>
+
+      {/* Task Form Modal */}
+      <Suspense fallback={null}>
+        {isTaskModalOpen && (
+          <ProjectTaskFormModal
+            isOpen={isTaskModalOpen}
+            onClose={handleCloseTaskModal}
+            onSave={handleSaveTask}
+            onDelete={handleDeleteTask}
+            taskToEdit={editingTask}
+          />
+        )}
+      </Suspense>
     </div>
   );
 } 

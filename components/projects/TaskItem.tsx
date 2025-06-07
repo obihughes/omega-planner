@@ -13,6 +13,8 @@ import {
   MoreVertical,
   Flag,
   GripVertical,
+  Edit,
+  Trash2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -195,12 +197,26 @@ function TaskItemComponent({ id, task, taskIndex, totalTasks, onStatusChange, on
             </div>
 
             {/* Actions */}
-            <button
-              onClick={() => onEdit(task)}
-              className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-accent transition-all"
-            >
-              <MoreVertical className="w-4 h-4 text-muted-foreground" />
-            </button>
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+              <button
+                onClick={() => onEdit(task)}
+                className="p-1.5 rounded hover:bg-accent transition-colors"
+                title="Edit task"
+              >
+                <Edit className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+              </button>
+              <button
+                onClick={() => {
+                  if (confirm(`Are you sure you want to delete "${task.title}"?`)) {
+                    onDelete(task.id);
+                  }
+                }}
+                className="p-1.5 rounded hover:bg-red-50 transition-colors"
+                title="Delete task"
+              >
+                <Trash2 className="w-4 h-4 text-muted-foreground hover:text-red-500" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
