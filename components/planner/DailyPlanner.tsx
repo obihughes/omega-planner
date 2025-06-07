@@ -805,7 +805,7 @@ export default function DailyPlanner() {
               if (renderWidth <= 0 && !isBeingDragged) return null;
               
               const zIndex = (isBeingDragged || isBeingResized ? 100 : 40);
-              const taskCardBaseClassName = `absolute select-none transition-transform duration-100 ease-out hover:shadow-md group ${isBeingDragged || isBeingResized ? 'opacity-95 shadow-lg scale-[1.01] ring-1 ring-white' : 'shadow-sm'} ${isBeingCopied ? 'ring-2 ring-offset-1 ring-blue-500' : ''} ${isPastTask ? 'filter saturate-50 brightness-75' : ''}`;
+              const taskCardBaseClassName = `absolute select-none transition-transform duration-100 ease-out hover:shadow-md group ${isBeingDragged || isBeingResized ? 'opacity-95 shadow-lg scale-[1.01] ring-1 ring-white' : 'shadow-sm'} ${isBeingCopied ? 'ring-2 ring-offset-1 ring-blue-500' : ''} ${isPastTask ? 'opacity-60 saturate-50 dark:brightness-75' : ''}`;
 
               const taskStyleObj: React.CSSProperties = {
                 left: `${renderLeft}px`, width: `${renderWidth}px`,
