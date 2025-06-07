@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { useProjects } from '@/hooks/useProjects';
 import { Navigation } from '@/components/ui/Navigation';
 import { Project, ProjectTask } from '@/types';
@@ -9,6 +10,7 @@ import { cn } from '@/lib/utils';
 
 export default function CalendarPage() {
   const { projects, loading } = useProjects();
+  const router = useRouter();
   const [currentDate, setCurrentDate] = useState(new Date());
 
   // Get the first day of the current month and calculate calendar grid
@@ -202,11 +204,12 @@ export default function CalendarPage() {
                             <div
                               key={project.id}
                               className="relative group cursor-pointer"
+                              onClick={() => router.push(`/projects/${project.id}`)}
                             >
                               <div
                                 className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold hover:scale-110 transition-transform shadow-sm"
                                 style={{ backgroundColor: project.color }}
-                                title={`${project.name}: ${tasks.length} task(s) completed`}
+                                title={`${project.name}: ${tasks.length} task(s) completed - Click to view project`}
                               >
                                 {tasks.length}
                               </div>
@@ -252,7 +255,8 @@ export default function CalendarPage() {
                           key={project.id}
                           className="p-1 rounded text-xs cursor-pointer hover:opacity-80 transition-opacity"
                           style={{ backgroundColor: project.color + '20', borderLeft: `3px solid ${project.color}` }}
-                          title={`${project.name} - ${timeRemaining.text} • ${project.progress}% complete`}
+                          title={`${project.name} - ${timeRemaining.text} • ${project.progress}% complete - Click to view project`}
+                          onClick={() => router.push(`/projects/${project.id}`)}
                         >
                           <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center space-x-1 flex-1 min-w-0">
