@@ -1,39 +1,31 @@
 /**
  * Available color options for tasks in the daily planner
- * Each color includes both light and dark mode variants
+ * Simplified to 18 meaningful colors in a 6x3 grid
  */
 export const TASK_COLORS = [
-  // Row 1: Vibrant Reds, Pinks, Oranges
-  'bg-red-500 dark:bg-red-700',          // Vibrant Red
-  'bg-rose-500 dark:bg-rose-700',        // Vibrant Rose
-  'bg-pink-500 dark:bg-pink-700',        // Vibrant Pink
-  'bg-orange-500 dark:bg-orange-700',    // Vibrant Orange
-  'bg-amber-500 dark:bg-amber-700',      // Vibrant Amber
-  'bg-yellow-500 dark:bg-yellow-700',    // Vibrant Yellow
+  // Row 1: Warm colors
+  'bg-red-500',      // Red
+  'bg-orange-500',   // Orange  
+  'bg-amber-500',    // Amber
+  'bg-yellow-500',   // Yellow
+  'bg-lime-500',     // Lime
+  'bg-green-500',    // Green
 
-  // Row 2: Vibrant Greens, Teals, Cyans
-  'bg-lime-500 dark:bg-lime-700',        // Vibrant Lime
-  'bg-green-500 dark:bg-green-700',      // Vibrant Green
-  'bg-emerald-500 dark:bg-emerald-700',  // Vibrant Emerald
-  'bg-teal-500 dark:bg-teal-700',        // Vibrant Teal
-  'bg-cyan-500 dark:bg-cyan-700',        // Vibrant Cyan
-  'bg-sky-500 dark:bg-sky-700',          // Vibrant Sky Blue
+  // Row 2: Cool colors
+  'bg-emerald-500',  // Emerald
+  'bg-teal-500',     // Teal
+  'bg-cyan-500',     // Cyan
+  'bg-sky-500',      // Sky Blue
+  'bg-blue-500',     // Blue
+  'bg-indigo-500',   // Indigo
 
-  // Row 3: Vibrant Blues, Indigos, Purples
-  'bg-blue-500 dark:bg-blue-700',        // Vibrant Blue (Index 12)
-  'bg-indigo-500 dark:bg-indigo-700',    // Vibrant Indigo
-  'bg-violet-500 dark:bg-violet-700',    // Vibrant Violet
-  'bg-purple-500 dark:bg-purple-700',    // Vibrant Purple
-  'bg-fuchsia-500 dark:bg-fuchsia-700',  // Vibrant Fuchsia
-  'bg-magenta-500 dark:bg-magenta-700',  // Vibrant Magenta
-  
-  // Row 4: Neutral but modern grays and earth tones
-  'bg-slate-500 dark:bg-slate-700',      // Modern Slate
-  'bg-zinc-500 dark:bg-zinc-700',        // Modern Zinc  
-  'bg-stone-500 dark:bg-stone-700',      // Modern Stone
-  'bg-gray-500 dark:bg-gray-700',        // Modern Gray
-  'bg-neutral-500 dark:bg-neutral-700',  // Modern Neutral
-  'bg-gray-600 dark:bg-gray-800',        // Dark Gray
+  // Row 3: Purples and neutrals
+  'bg-violet-500',   // Violet
+  'bg-purple-500',   // Purple
+  'bg-fuchsia-500',  // Fuchsia
+  'bg-pink-500',     // Pink
+  'bg-slate-500',    // Slate
+  'bg-gray-500',     // Gray
 ];
 
 /** The earliest hour shown on the timeline (4 AM) */
@@ -60,8 +52,8 @@ export const DEFAULT_TOP_DAY_OFFSET = 0;
 /** Default day offset for the bottom timeline (Next Day) */
 export const DEFAULT_BOTTOM_DAY_OFFSET = 1; 
 
-/** Default color index for newly created tasks (Vibrant Blue) */
-export const DEFAULT_TASK_COLOR_INDEX = 12;
+/** Default color index for newly created tasks (Blue) */
+export const DEFAULT_TASK_COLOR_INDEX = 10;
 
 // Constants from DailyPlanner.tsx
 export const TIMELINE_COLUMN_HEIGHT = 100;

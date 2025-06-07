@@ -51,14 +51,8 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
 
   const project = projects.find(p => p.id === params.id);
   
-  // Local state for tasks to enable smooth D&D updates
-  const [tasks, setTasks] = useState<ProjectTask[]>([]);
-
-  useEffect(() => {
-    if (project?.tasks) {
-      setTasks(project.tasks);
-    }
-  }, [project?.tasks]);
+  // Use project tasks directly instead of local state to avoid sync issues
+  const tasks = project?.tasks || [];
 
   useEffect(() => {
     if (!loading && !project) {
@@ -99,8 +93,9 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   // Memoize handlers to prevent unnecessary re-renders
   const handleTaskStatusChange = useCallback((taskId: string, status: ProjectTask['status']) => {
     if (!project) return;
+    
+    // Update directly in the backend/localStorage - no local state needed
     updateTaskInProject(project.id, taskId, { status });
-    setTasks(current => current.map(t => t.id === taskId ? {...t, status} : t));
   }, [project, updateTaskInProject]);
 
   const handleEditTask = useCallback((task: ProjectTask) => {
@@ -110,7 +105,6 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   const handleDeleteTask = useCallback((taskId: string) => {
     if (!project) return;
     deleteTaskFromProject(project.id, taskId);
-    setTasks(current => current.filter(t => t.id !== taskId));
   }, [project, deleteTaskFromProject]);
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
@@ -118,30 +112,20 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      setTasks((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over.id);
-        const newOrder = arrayMove(items, oldIndex, newIndex);
-
-        // Update the backend
-        reorderTasksInProject(project.id, active.id as string, over.id as string);
-        
-        return newOrder;
-      });
+      // Update the backend directly
+      reorderTasksInProject(project.id, active.id as string, over.id as string);
     }
   }, [project, reorderTasksInProject]);
 
   const handleAddTask = useCallback(() => {
     if (!project || !newTaskTitle.trim()) return;
     
-    const addedTask = addTaskToProject(project.id, {
+    addTaskToProject(project.id, {
       title: newTaskTitle.trim(),
       status: 'todo',
       priority: 'medium'
     });
-    if(addedTask) {
-      setTasks(current => [...current, addedTask]);
-    }
+    
     setNewTaskTitle('');
   }, [project, newTaskTitle, addTaskToProject]);
 

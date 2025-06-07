@@ -157,36 +157,32 @@ export function useProjects() {
   const reorderTasksInProject = useCallback((projectId: string, activeId: string, overId: string) => {
     if (activeId === overId) return;
 
-    setProjects(prevProjects => {
-      const projectIndex = prevProjects.findIndex(p => p.id === projectId);
-      if (projectIndex === -1) return prevProjects;
+    const projectIndex = projects.findIndex(p => p.id === projectId);
+    if (projectIndex === -1) return;
 
-      const projectToUpdate = { ...prevProjects[projectIndex] };
-      const activeTaskIndex = projectToUpdate.tasks.findIndex(t => t.id === activeId);
-      const overTaskIndex = projectToUpdate.tasks.findIndex(t => t.id === overId);
+    const projectToUpdate = { ...projects[projectIndex] };
+    const activeTaskIndex = projectToUpdate.tasks.findIndex(t => t.id === activeId);
+    const overTaskIndex = projectToUpdate.tasks.findIndex(t => t.id === overId);
 
-      if (activeTaskIndex === -1 || overTaskIndex === -1) return prevProjects;
-      
-      const updatedTasks = Array.from(projectToUpdate.tasks);
-      const [movedTask] = updatedTasks.splice(activeTaskIndex, 1);
-      updatedTasks.splice(overTaskIndex, 0, movedTask);
+    if (activeTaskIndex === -1 || overTaskIndex === -1) return;
+    
+    const updatedTasks = Array.from(projectToUpdate.tasks);
+    const [movedTask] = updatedTasks.splice(activeTaskIndex, 1);
+    updatedTasks.splice(overTaskIndex, 0, movedTask);
 
-      const reorderedTasksWithUpdatedOrder = updatedTasks.map((task, index) => ({
-        ...task,
-        order: index,
-      }));
+    const reorderedTasksWithUpdatedOrder = updatedTasks.map((task, index) => ({
+      ...task,
+      order: index,
+    }));
 
-      projectToUpdate.tasks = reorderedTasksWithUpdatedOrder;
-      projectToUpdate.updatedAt = new Date().toISOString();
+    projectToUpdate.tasks = reorderedTasksWithUpdatedOrder;
+    projectToUpdate.updatedAt = new Date().toISOString();
 
-      const newProjects = [...prevProjects];
-      newProjects[projectIndex] = projectToUpdate;
-      
-      saveProjects(newProjects);
-      return newProjects;
-    });
-
-  }, [saveProjects]);
+    const newProjects = [...projects];
+    newProjects[projectIndex] = projectToUpdate;
+    
+    saveProjects(newProjects);
+  }, [projects, saveProjects]);
 
   // Delete task from project
   const deleteTaskFromProject = useCallback((projectId: string, taskId: string) => {

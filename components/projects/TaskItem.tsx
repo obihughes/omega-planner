@@ -210,15 +210,20 @@ function TaskItemComponent({ id, task, taskIndex, totalTasks, onStatusChange, on
 
 // Memoize TaskItem to prevent unnecessary re-renders
 export const TaskItem = memo(TaskItemComponent, (prevProps, nextProps) => {
-  // Only re-render if task data, index, or total has changed
-  return (
+  // Use a more comprehensive comparison to prevent false positives
+  const isEqual = (
+    prevProps.id === nextProps.id &&
     prevProps.task.id === nextProps.task.id &&
     prevProps.task.status === nextProps.task.status &&
     prevProps.task.title === nextProps.task.title &&
+    prevProps.task.description === nextProps.task.description &&
     prevProps.task.completedAt === nextProps.task.completedAt &&
     prevProps.task.dueDate === nextProps.task.dueDate &&
     prevProps.task.updatedAt === nextProps.task.updatedAt &&
+    prevProps.task.order === nextProps.task.order &&
     prevProps.taskIndex === nextProps.taskIndex &&
     prevProps.totalTasks === nextProps.totalTasks
   );
+  
+  return isEqual;
 }); 

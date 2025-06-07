@@ -2,8 +2,9 @@
 
 import React, { memo, useMemo } from 'react';
 import { Project } from '@/types';
-import { Calendar, Clock, CheckCircle2, Circle, MoreVertical, Folder, Plus } from 'lucide-react';
+import { Calendar, Clock, CheckCircle2, Circle, MoreVertical, Folder, Plus, Edit, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface ProjectCardProps {
   project: Project;
@@ -13,6 +14,7 @@ interface ProjectCardProps {
 }
 
 function ProjectCardComponent({ project, onEdit, onDelete, onClick }: ProjectCardProps) {
+
   const getStatusIcon = (status: Project['status']) => {
     switch (status) {
       case 'completed':
@@ -83,9 +85,16 @@ function ProjectCardComponent({ project, onEdit, onDelete, onClick }: ProjectCar
     onClick(project);
   };
 
-  const handleMoreClick = (e: React.MouseEvent) => {
+  const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // TODO: Add dropdown menu
+    onEdit(project);
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (confirm(`Are you sure you want to delete "${project.name}"? This action cannot be undone.`)) {
+      onDelete(project.id);
+    }
   };
 
   // Render progress circles
@@ -101,41 +110,43 @@ function ProjectCardComponent({ project, onEdit, onDelete, onClick }: ProjectCar
       );
     }
 
-    const maxCircles = 30; // Maximum circles to show
-    const circlesToShow = Math.min(totalTasks, maxCircles);
-    const showEllipsis = totalTasks > maxCircles;
+    const maxCirclesPerRow = 15; // Show 15 circles per row
+    const totalCircles = Math.min(totalTasks, 30); // Maximum 30 circles total (2 rows)
+    const showEllipsis = totalTasks > 30;
 
     return (
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-1">
-          {Array.from({ length: circlesToShow }, (_, i) => {
-            const isCompleted = i < completedTasks;
-            return (
-              <div
-                key={i}
-                className={cn(
-                  "w-2 h-2 rounded-full transition-colors",
-                  isCompleted 
-                    ? "bg-green-500" 
-                    : "bg-muted-foreground/30"
-                )}
-              />
-            );
-          })}
-          {showEllipsis && (
-            <span className="text-xs text-muted-foreground ml-1">...</span>
-          )}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex flex-wrap gap-1 max-w-[200px]">
+            {Array.from({ length: totalCircles }, (_, i) => {
+              const isCompleted = i < completedTasks;
+              return (
+                <div
+                  key={i}
+                  className={cn(
+                    "w-2 h-2 rounded-full transition-colors flex-shrink-0",
+                    isCompleted 
+                      ? "bg-green-500" 
+                      : "bg-muted-foreground/30"
+                  )}
+                />
+              );
+            })}
+            {showEllipsis && (
+              <span className="text-xs text-muted-foreground ml-1 whitespace-nowrap">+{totalTasks - 30}</span>
+            )}
+          </div>
+          <span className="text-sm font-medium text-foreground whitespace-nowrap ml-2">
+            {completedTasks}/{totalTasks}
+          </span>
         </div>
-        <span className="text-sm font-medium text-foreground">
-          {completedTasks}/{totalTasks}
-        </span>
       </div>
     );
   };
 
   return (
     <div 
-      className="bg-card border rounded-lg p-4 hover:shadow-md hover:border-primary/50 transition-all duration-200 cursor-pointer group"
+      className="bg-card border rounded-lg p-4 hover:shadow-md hover:border-primary/50 transition-all duration-200 cursor-pointer group relative"
       onClick={handleCardClick}
       title="Click to open project and manage tasks"
     >
@@ -161,13 +172,39 @@ function ProjectCardComponent({ project, onEdit, onDelete, onClick }: ProjectCar
           </div>
         </div>
         
-        <button
-          onClick={handleMoreClick}
-          className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-accent transition-all flex-shrink-0"
-          title="More options"
-        >
-          <MoreVertical className="w-4 h-4 text-muted-foreground" />
-        </button>
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-accent transition-all flex-shrink-0"
+              title="More options"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MoreVertical className="w-4 h-4 text-muted-foreground" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent 
+            className="w-40 p-0" 
+            align="end"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="py-1">
+              <button
+                onClick={handleEdit}
+                className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center space-x-2"
+              >
+                <Edit className="w-4 h-4" />
+                <span>Edit Project</span>
+              </button>
+              <button
+                onClick={handleDelete}
+                className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center space-x-2 text-destructive hover:text-destructive"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Delete Project</span>
+              </button>
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* Description */}
