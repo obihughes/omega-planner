@@ -82,6 +82,9 @@ export interface Project {
   
   /** Project progress (0-100) */
   progress: number;
+
+  /** Soft delete flag */
+  isDeleted?: boolean;
 }
 
 export interface ProjectsStorageData {

@@ -92,9 +92,7 @@ function ProjectCardComponent({ project, onEdit, onDelete, onClick }: ProjectCar
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm(`Are you sure you want to delete "${project.name}"? This action cannot be undone.`)) {
-      onDelete(project.id);
-    }
+    onDelete(project.id);
   };
 
   // Render progress circles

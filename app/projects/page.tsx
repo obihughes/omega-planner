@@ -133,6 +133,7 @@ export default function ProjectsPage() {
 
   // Filter and sort projects
   const filteredProjects = projects
+    .filter(project => !project.isDeleted)
     .filter(project => {
       const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            project.description?.toLowerCase().includes(searchTerm.toLowerCase());
