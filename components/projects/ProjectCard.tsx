@@ -2,18 +2,43 @@
 
 import React, { memo, useMemo } from 'react';
 import { Project } from '@/types';
-import { Calendar, Clock, CheckCircle2, Circle, MoreVertical, Folder, Plus, Edit, Trash2 } from 'lucide-react';
+import { Calendar, Clock, CheckCircle2, Circle, MoreVertical, Folder, Plus, Edit, Trash2, RotateCcw, GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CSS } from '@dnd-kit/utilities';
 
 interface ProjectCardProps {
   project: Project;
   onEdit: (project: Project) => void;
   onDelete: (projectId: string) => void;
+  onRestore?: (projectId: string) => void;
+  onPermanentlyDelete?: (projectId: string) => void;
   onClick: (project: Project) => void;
+  isArchived?: boolean;
+  // Drag and drop props
+  isDragging?: boolean;
+  transform?: { x: number; y: number; scaleX: number; scaleY: number } | null;
+  listeners?: Record<string, Function>;
+  attributes?: Record<string, any>;
+  setNodeRef?: (node: HTMLElement | null) => void;
+  dragOverlayStyle?: React.CSSProperties;
 }
 
-function ProjectCardComponent({ project, onEdit, onDelete, onClick }: ProjectCardProps) {
+function ProjectCardComponent({ 
+  project, 
+  onEdit, 
+  onDelete, 
+  onRestore,
+  onPermanentlyDelete,
+  onClick, 
+  isArchived = false,
+  isDragging = false,
+  transform,
+  listeners,
+  attributes,
+  setNodeRef,
+  dragOverlayStyle
+}: ProjectCardProps) {
 
   const getStatusIcon = (status: Project['status']) => {
     switch (status) {
@@ -80,7 +105,17 @@ function ProjectCardComponent({ project, onEdit, onDelete, onClick }: ProjectCar
     };
   }, [project.tasks, project.endDate, formatTimeRemaining]);
 
+  const style: React.CSSProperties = {
+    ...(transform ? {
+      transform: CSS.Transform.toString(transform)
+    } : {}),
+    ...(dragOverlayStyle || {}),
+    opacity: isDragging ? 0.5 : 1,
+    cursor: isDragging ? 'grabbing' : 'pointer'
+  };
+
   const handleCardClick = (e: React.MouseEvent) => {
+    if (isDragging) return;
     e.stopPropagation();
     onClick(project);
   };
@@ -93,6 +128,18 @@ function ProjectCardComponent({ project, onEdit, onDelete, onClick }: ProjectCar
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     onDelete(project.id);
+  };
+
+  const handleRestore = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onRestore?.(project.id);
+  };
+
+  const handlePermanentlyDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (confirm('Are you sure you want to permanently delete this project? This action cannot be undone.')) {
+      onPermanentlyDelete?.(project.id);
+    }
   };
 
   // Render progress circles
@@ -144,12 +191,30 @@ function ProjectCardComponent({ project, onEdit, onDelete, onClick }: ProjectCar
 
   return (
     <div 
-      className="bg-card border rounded-lg p-4 hover:shadow-md hover:border-primary/50 transition-all duration-200 cursor-pointer group relative"
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "bg-card border rounded-lg p-4 hover:shadow-md hover:border-primary/50 transition-all duration-200 cursor-pointer group relative",
+        isDragging && "rotate-3 scale-105",
+        isArchived && "opacity-75 bg-muted/30"
+      )}
       onClick={handleCardClick}
       title="Click to open project and manage tasks"
+      {...attributes}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
+        {/* Drag Handle - only show for non-archived projects */}
+        {!isArchived && (
+          <div 
+            className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing p-1 rounded hover:bg-accent transition-opacity flex-shrink-0"
+            {...listeners}
+            title="Drag to reorder"
+          >
+            <GripVertical className="w-4 h-4 text-muted-foreground" />
+          </div>
+        )}
+        
         <div className="flex items-center space-x-3 min-w-0 flex-1">
           <div 
             className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
@@ -158,8 +223,12 @@ function ProjectCardComponent({ project, onEdit, onDelete, onClick }: ProjectCar
             <Folder className="w-5 h-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+            <h3 className={cn(
+              "font-semibold group-hover:text-primary transition-colors truncate",
+              isArchived ? "text-muted-foreground" : "text-foreground"
+            )}>
               {project.name}
+              {isArchived && <span className="ml-2 text-xs">(Archived)</span>}
             </h3>
             <div className="flex items-center space-x-2 mt-1">
               {getStatusIcon(project.status)}
@@ -186,20 +255,42 @@ function ProjectCardComponent({ project, onEdit, onDelete, onClick }: ProjectCar
             onClick={(e) => e.stopPropagation()}
           >
             <div className="py-1">
-              <button
-                onClick={handleEdit}
-                className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center space-x-2"
-              >
-                <Edit className="w-4 h-4" />
-                <span>Edit Project</span>
-              </button>
-              <button
-                onClick={handleDelete}
-                className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center space-x-2 text-destructive hover:text-destructive"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>Delete Project</span>
-              </button>
+              {!isArchived && (
+                <>
+                  <button
+                    onClick={handleEdit}
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center space-x-2"
+                  >
+                    <Edit className="w-4 h-4" />
+                    <span>Edit Project</span>
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center space-x-2 text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Archive Project</span>
+                  </button>
+                </>
+              )}
+              {isArchived && (
+                <>
+                  <button
+                    onClick={handleRestore}
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center space-x-2"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    <span>Restore Project</span>
+                  </button>
+                  <button
+                    onClick={handlePermanentlyDelete}
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center space-x-2 text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Delete Forever</span>
+                  </button>
+                </>
+              )}
             </div>
           </PopoverContent>
         </Popover>
@@ -207,33 +298,34 @@ function ProjectCardComponent({ project, onEdit, onDelete, onClick }: ProjectCar
 
       {/* Description */}
       {project.description && (
-        <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
+        <p className={cn(
+          "text-sm mb-3 line-clamp-2",
+          isArchived ? "text-muted-foreground/70" : "text-muted-foreground"
+        )}>
           {project.description}
         </p>
       )}
 
-      {/* Progress */}
-      <div className="mb-4">
-        <div className="flex items-center justify-between text-sm mb-2">
-          <span className="text-muted-foreground">Tasks</span>
-        </div>
-        {renderProgressCircles()}
-      </div>
+      {/* Progress visualization */}
+      {renderProgressCircles()}
 
-      {/* Dates */}
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        {project.startDate && (
-          <div className="flex items-center space-x-1">
-            <Calendar className="w-3 h-3" />
-            <span>Started {new Date(project.startDate).toLocaleDateString()}</span>
-          </div>
-        )}
-        {timeRemaining && (
-          <div className={cn("flex items-center space-x-1", timeRemaining.isOverdue ? "text-red-500" : "")}>
-            <Clock className="w-3 h-3" />
-            <span>{timeRemaining.text}</span>
-          </div>
-        )}
+      {/* Project metrics */}
+      <div className="flex items-center justify-between text-xs text-muted-foreground mt-3 pt-3 border-t">
+        <div className="flex items-center space-x-4">
+          <span className="flex items-center space-x-1">
+            <span className="text-foreground font-medium">{project.progress}%</span>
+            <span>complete</span>
+          </span>
+          {timeRemaining && (
+            <span className={cn(
+              "flex items-center space-x-1",
+              timeRemaining.isOverdue ? "text-red-500" : "text-muted-foreground"
+            )}>
+              <Clock className="w-3 h-3" />
+              <span>{timeRemaining.text}</span>
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
