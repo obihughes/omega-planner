@@ -1,31 +1,31 @@
 /**
  * Available color options for tasks in the daily planner
- * Simplified to 18 meaningful colors in a 6x3 grid
+ * Using deeper, richer colors (600-level) for better visual impact
  */
 export const TASK_COLORS = [
   // Row 1: Warm colors
-  'bg-red-500',      // Red
-  'bg-orange-500',   // Orange  
-  'bg-amber-500',    // Amber
-  'bg-yellow-500',   // Yellow
-  'bg-lime-500',     // Lime
-  'bg-green-500',    // Green
+  'bg-red-600',      // Deep Red
+  'bg-orange-600',   // Deep Orange  
+  'bg-amber-600',    // Deep Amber
+  'bg-yellow-600',   // Deep Yellow
+  'bg-lime-600',     // Deep Lime
+  'bg-green-600',    // Deep Green
 
   // Row 2: Cool colors
-  'bg-emerald-500',  // Emerald
-  'bg-teal-500',     // Teal
-  'bg-cyan-500',     // Cyan
-  'bg-sky-500',      // Sky Blue
-  'bg-blue-500',     // Blue
-  'bg-indigo-500',   // Indigo
+  'bg-emerald-600',  // Deep Emerald
+  'bg-teal-600',     // Deep Teal
+  'bg-cyan-600',     // Deep Cyan
+  'bg-sky-600',      // Deep Sky Blue
+  'bg-blue-600',     // Deep Blue
+  'bg-indigo-600',   // Deep Indigo
 
   // Row 3: Purples and neutrals
-  'bg-violet-500',   // Violet
-  'bg-purple-500',   // Purple
-  'bg-fuchsia-500',  // Fuchsia
-  'bg-pink-500',     // Pink
-  'bg-slate-500',    // Slate
-  'bg-gray-500',     // Gray
+  'bg-violet-600',   // Deep Violet
+  'bg-purple-600',   // Deep Purple
+  'bg-fuchsia-600',  // Deep Fuchsia
+  'bg-pink-600',     // Deep Pink
+  'bg-slate-600',    // Deep Slate
+  'bg-gray-600',     // Deep Gray
 ];
 
 /** The earliest hour shown on the timeline (4 AM) */
