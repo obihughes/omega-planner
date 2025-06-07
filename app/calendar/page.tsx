@@ -14,8 +14,11 @@ export default function CalendarPage() {
   // Get the first day of the current month and calculate calendar grid
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
   const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+  
+  // Calculate the start date (first Sunday of the calendar grid)
   const startDate = new Date(firstDayOfMonth);
-  startDate.setDate(startDate.getDate() - firstDayOfMonth.getDay()); // Start on Sunday
+  const firstDayWeekday = firstDayOfMonth.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  startDate.setDate(firstDayOfMonth.getDate() - firstDayWeekday);
 
   const daysInCalendar = [];
   for (let i = 0; i < 42; i++) { // 6 weeks * 7 days

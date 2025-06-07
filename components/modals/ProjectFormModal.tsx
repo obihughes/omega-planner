@@ -250,7 +250,11 @@ export function ProjectFormModal({ isOpen, onClose, project, onSave, onDelete }:
                     {startDate ? startDate.toLocaleDateString() : "Select start date"}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 z-[1100]" align="start">
+                <PopoverContent 
+                  className="w-auto p-0 z-[1200]" 
+                  align="start"
+                  onInteractOutside={(e) => e.preventDefault()}
+                >
                   <Calendar
                     mode="single"
                     selected={startDate}
@@ -282,7 +286,11 @@ export function ProjectFormModal({ isOpen, onClose, project, onSave, onDelete }:
                     {endDate ? endDate.toLocaleDateString() : "Select due date"}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 z-[1100]" align="start">
+                <PopoverContent 
+                  className="w-auto p-0 z-[1200]" 
+                  align="start"
+                  onInteractOutside={(e) => e.preventDefault()}
+                >
                   <Calendar
                     mode="single"
                     selected={endDate}
