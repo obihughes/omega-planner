@@ -42,7 +42,7 @@ export function Navigation() {
         <div className="flex items-center justify-between h-16">
           {/* Logo/Brand */}
           <div className="flex items-center space-x-4">
-            <h1 className="text-xl font-bold text-foreground">Sunsama</h1>
+            {/* <h1 className="text-xl font-bold text-foreground">Sunsama</h1> */}
           </div>
 
           {/* Navigation Links */}

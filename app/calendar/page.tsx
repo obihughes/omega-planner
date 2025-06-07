@@ -199,24 +199,40 @@ export default function CalendarPage() {
                       <div className="flex flex-wrap gap-1">
                         {dayTaskCompletions.map(({ project, tasks }) => {
                           const totalEstimatedHours = tasks.reduce((sum, task) => sum + (task.estimatedHours || 0), 0);
-                          const taskTitles = tasks.map(t => t.title).join(', ');
+                          const projectInitials = project.name
+                            .split(' ')
+                            .map(word => word[0])
+                            .join('')
+                            .substring(0, 2)
+                            .toUpperCase();
+                          
                           return (
                             <div
                               key={project.id}
                               className="relative group cursor-pointer"
                               onClick={() => router.push(`/projects/${project.id}`)}
                             >
+                              {/* Project indicator with initials */}
                               <div
-                                className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold hover:scale-110 transition-transform shadow-sm"
+                                className="min-w-[28px] h-6 px-1 rounded-md flex items-center justify-center text-white text-xs font-bold hover:scale-105 transition-transform shadow-sm border border-white/20"
                                 style={{ backgroundColor: project.color }}
                                 title={`${project.name}: ${tasks.length} task(s) completed - Click to view project`}
                               >
-                                {tasks.length}
+                                <span className="mr-0.5">{projectInitials}</span>
+                                <span className="text-[10px] bg-white/20 rounded-full w-4 h-4 flex items-center justify-center">
+                                  {tasks.length}
+                                </span>
                               </div>
                               
-                              {/* Tooltip */}
+                              {/* Enhanced Tooltip */}
                               <div className="absolute top-8 left-0 z-10 bg-popover text-popover-foreground p-3 rounded-md shadow-lg border text-xs w-64 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                <div className="font-medium text-sm">{project.name}</div>
+                                <div className="flex items-center space-x-2 mb-2">
+                                  <div 
+                                    className="w-3 h-3 rounded-sm"
+                                    style={{ backgroundColor: project.color }}
+                                  ></div>
+                                  <div className="font-medium text-sm">{project.name}</div>
+                                </div>
                                 <div className="text-muted-foreground mb-2">
                                   {tasks.length} task{tasks.length !== 1 ? 's' : ''} completed
                                   {totalEstimatedHours > 0 && ` • ${totalEstimatedHours}h estimated`}
@@ -239,6 +255,13 @@ export default function CalendarPage() {
                           );
                         })}
                       </div>
+                      
+                      {/* Project summary text for quick scanning */}
+                      {dayTaskCompletions.length > 0 && (
+                        <div className="mt-1 text-[10px] text-muted-foreground">
+                          Worked on: {dayTaskCompletions.map(({ project }) => project.name).join(', ')}
+                        </div>
+                      )}
                     </div>
                   )}
                   
