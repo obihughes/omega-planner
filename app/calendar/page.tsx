@@ -3,8 +3,8 @@
 import React, { useState, useMemo } from 'react';
 import { useProjects } from '@/hooks/useProjects';
 import { Navigation } from '@/components/ui/Navigation';
-import { Project } from '@/types';
-import { Calendar, ChevronLeft, ChevronRight, Clock, Folder } from 'lucide-react';
+import { Project, ProjectTask } from '@/types';
+import { Calendar, ChevronLeft, ChevronRight, Clock, Folder, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function CalendarPage() {
@@ -45,6 +45,37 @@ export default function CalendarPage() {
     return grouped;
   }, [projects]);
 
+  // Group completed tasks by completion date and project
+  const taskCompletionsByDate = useMemo(() => {
+    const grouped: { [key: string]: { project: Project; tasks: ProjectTask[] }[] } = {};
+    
+    projects
+      .filter(project => !project.isDeleted)
+      .forEach(project => {
+        const completedTasks = project.tasks.filter(task => 
+          task.status === 'completed' && task.completedAt
+        );
+        
+        completedTasks.forEach(task => {
+          const completedDate = new Date(task.completedAt!);
+          const dateKey = completedDate.toDateString();
+          
+          if (!grouped[dateKey]) {
+            grouped[dateKey] = [];
+          }
+          
+          const existingProject = grouped[dateKey].find(item => item.project.id === project.id);
+          if (existingProject) {
+            existingProject.tasks.push(task);
+          } else {
+            grouped[dateKey].push({ project, tasks: [task] });
+          }
+        });
+      });
+    
+    return grouped;
+  }, [projects]);
+
   const navigateMonth = (direction: 'prev' | 'next') => {
     setCurrentDate(prev => {
       const newDate = new Date(prev);
@@ -64,6 +95,10 @@ export default function CalendarPage() {
 
   const getProjectsForDate = (date: Date) => {
     return projectsByDate[date.toDateString()] || [];
+  };
+
+  const getTaskCompletionsForDate = (date: Date) => {
+    return taskCompletionsByDate[date.toDateString()] || [];
   };
 
   const formatTimeRemaining = (dueDate: string): { text: string; isOverdue: boolean } => {
@@ -97,32 +132,25 @@ export default function CalendarPage() {
       <Navigation />
       
       <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-4">
-            <Calendar className="w-8 h-8 text-primary" />
-            <h1 className="text-3xl font-bold text-foreground">Project Calendar</h1>
-          </div>
+        {/* Month Navigation */}
+        <div className="flex items-center justify-center mb-6">
+          <button
+            onClick={() => navigateMonth('prev')}
+            className="p-2 rounded-lg hover:bg-accent transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
           
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => navigateMonth('prev')}
-              className="p-2 rounded-lg hover:bg-accent transition-colors"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            
-            <h2 className="text-xl font-semibold text-foreground min-w-[200px] text-center">
-              {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-            </h2>
-            
-            <button
-              onClick={() => navigateMonth('next')}
-              className="p-2 rounded-lg hover:bg-accent transition-colors"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
+          <h2 className="text-xl font-semibold text-foreground min-w-[200px] text-center mx-4">
+            {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+          </h2>
+          
+          <button
+            onClick={() => navigateMonth('next')}
+            className="p-2 rounded-lg hover:bg-accent transition-colors"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Calendar Grid */}
@@ -142,6 +170,7 @@ export default function CalendarPage() {
           <div className="grid grid-cols-7">
             {daysInCalendar.map((date, index) => {
               const dayProjects = getProjectsForDate(date);
+              const dayTaskCompletions = getTaskCompletionsForDate(date);
               const isCurrentMonthDay = isCurrentMonth(date);
               const isTodayDate = isToday(date);
               
@@ -149,7 +178,7 @@ export default function CalendarPage() {
                 <div
                   key={index}
                   className={cn(
-                    "min-h-[120px] p-2 border-r border-b border-border last:border-r-0",
+                    "min-h-[140px] p-2 border-r border-b border-border last:border-r-0",
                     !isCurrentMonthDay && "bg-muted/30",
                     isTodayDate && "bg-primary/10"
                   )}
@@ -162,33 +191,104 @@ export default function CalendarPage() {
                     {date.getDate()}
                   </div>
                   
+                  {/* Task Completions */}
+                  {dayTaskCompletions.length > 0 && (
+                    <div className="mb-3">
+                      <div className="flex flex-wrap gap-1">
+                        {dayTaskCompletions.map(({ project, tasks }) => {
+                          const totalEstimatedHours = tasks.reduce((sum, task) => sum + (task.estimatedHours || 0), 0);
+                          const taskTitles = tasks.map(t => t.title).join(', ');
+                          return (
+                            <div
+                              key={project.id}
+                              className="relative group cursor-pointer"
+                            >
+                              <div
+                                className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold hover:scale-110 transition-transform shadow-sm"
+                                style={{ backgroundColor: project.color }}
+                                title={`${project.name}: ${tasks.length} task(s) completed`}
+                              >
+                                {tasks.length}
+                              </div>
+                              
+                              {/* Tooltip */}
+                              <div className="absolute top-8 left-0 z-10 bg-popover text-popover-foreground p-3 rounded-md shadow-lg border text-xs w-64 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                <div className="font-medium text-sm">{project.name}</div>
+                                <div className="text-muted-foreground mb-2">
+                                  {tasks.length} task{tasks.length !== 1 ? 's' : ''} completed
+                                  {totalEstimatedHours > 0 && ` • ${totalEstimatedHours}h estimated`}
+                                </div>
+                                <div className="space-y-1">
+                                  {tasks.slice(0, 3).map(task => (
+                                    <div key={task.id} className="flex items-center space-x-1 text-muted-foreground">
+                                      <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                                      <span className="truncate">{task.title}</span>
+                                    </div>
+                                  ))}
+                                  {tasks.length > 3 && (
+                                    <div className="text-muted-foreground">
+                                      +{tasks.length - 3} more tasks
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Due Date Projects */}
                   <div className="space-y-1">
-                    {dayProjects.slice(0, 3).map(project => {
+                    {dayProjects.slice(0, 2).map(project => {
                       const timeRemaining = formatTimeRemaining(project.endDate!);
+                      const progressColor = project.progress >= 80 ? 'text-green-600' : 
+                                          project.progress >= 50 ? 'text-yellow-600' : 'text-red-600';
+                      const progressBgColor = project.progress >= 80 ? 'bg-green-500' : 
+                                            project.progress >= 50 ? 'bg-yellow-500' : 'bg-red-500';
                       return (
                         <div
                           key={project.id}
                           className="p-1 rounded text-xs cursor-pointer hover:opacity-80 transition-opacity"
                           style={{ backgroundColor: project.color + '20', borderLeft: `3px solid ${project.color}` }}
-                          title={`${project.name} - ${timeRemaining.text}`}
+                          title={`${project.name} - ${timeRemaining.text} • ${project.progress}% complete`}
                         >
-                          <div className="flex items-center space-x-1">
-                            <Folder className="w-3 h-3 flex-shrink-0" style={{ color: project.color }} />
-                            <span className="truncate font-medium">{project.name}</span>
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center space-x-1 flex-1 min-w-0">
+                              <Folder className="w-3 h-3 flex-shrink-0" style={{ color: project.color }} />
+                              <span className="truncate font-medium">{project.name}</span>
+                            </div>
+                            <div className={cn("text-xs font-medium ml-1", progressColor)}>
+                              {project.progress}%
+                            </div>
                           </div>
+                          
+                          {/* Progress Bar */}
+                          <div className="w-full bg-gray-200 rounded-full h-1.5 mb-1">
+                            <div 
+                              className={cn("h-1.5 rounded-full transition-all", progressBgColor)}
+                              style={{ width: `${project.progress}%` }}
+                            ></div>
+                          </div>
+                          
                           <div className={cn(
-                            "flex items-center space-x-1 mt-0.5",
+                            "flex items-center space-x-1",
                             timeRemaining.isOverdue ? "text-red-600" : "text-muted-foreground"
                           )}>
                             <Clock className="w-2.5 h-2.5" />
                             <span>{timeRemaining.text}</span>
+                            <span className="text-muted-foreground">•</span>
+                            <span className="text-muted-foreground">
+                              {project.tasks.filter(t => t.status === 'completed').length}/{project.tasks.length} tasks
+                            </span>
                           </div>
                         </div>
                       );
                     })}
-                    {dayProjects.length > 3 && (
+                    {dayProjects.length > 2 && (
                       <div className="text-xs text-muted-foreground p-1">
-                        +{dayProjects.length - 3} more
+                        +{dayProjects.length - 2} more due
                       </div>
                     )}
                   </div>
@@ -198,44 +298,44 @@ export default function CalendarPage() {
           </div>
         </div>
         
-        {/* Summary Stats */}
+        {/* Summary Statistics */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-card p-4 rounded-lg border">
-            <h3 className="font-semibold text-foreground mb-2">This Month</h3>
-            <p className="text-2xl font-bold text-primary">
-              {Object.entries(projectsByDate).reduce((count, [dateString, projects]) => {
-                const date = new Date(dateString);
-                return date.getMonth() === currentDate.getMonth() && date.getFullYear() === currentDate.getFullYear() 
-                  ? count + projects.length 
-                  : count;
-              }, 0)}
-            </p>
-            <p className="text-sm text-muted-foreground">Projects due</p>
+          <div className="bg-card border rounded-lg p-4">
+            <h3 className="text-sm font-medium text-foreground mb-2">This Month</h3>
+            <div className="text-2xl font-bold text-primary">
+              {Object.values(taskCompletionsByDate)
+                .filter(dayCompletions => {
+                  const dateKey = Object.keys(taskCompletionsByDate).find(key => taskCompletionsByDate[key] === dayCompletions);
+                  if (!dateKey) return false;
+                  const date = new Date(dateKey);
+                  return date.getMonth() === currentDate.getMonth() && date.getFullYear() === currentDate.getFullYear();
+                })
+                .reduce((total, dayCompletions) => total + dayCompletions.reduce((sum, { tasks }) => sum + tasks.length, 0), 0)
+              }
+            </div>
+            <div className="text-xs text-muted-foreground">Tasks completed</div>
           </div>
           
-          <div className="bg-card p-4 rounded-lg border">
-            <h3 className="font-semibold text-foreground mb-2">Overdue</h3>
-            <p className="text-2xl font-bold text-red-600">
-              {Object.entries(projectsByDate).reduce((count, [dateString, projects]) => {
-                const date = new Date(dateString);
-                const isOverdue = date < new Date(new Date().setHours(0, 0, 0, 0));
-                return isOverdue ? count + projects.length : count;
-              }, 0)}
-            </p>
-            <p className="text-sm text-muted-foreground">Projects overdue</p>
+          <div className="bg-card border rounded-lg p-4">
+            <h3 className="text-sm font-medium text-foreground mb-2">Days Active</h3>
+            <div className="text-2xl font-bold text-primary">
+              {Object.keys(taskCompletionsByDate)
+                .filter(dateKey => {
+                  const date = new Date(dateKey);
+                  return date.getMonth() === currentDate.getMonth() && date.getFullYear() === currentDate.getFullYear();
+                })
+                .length
+              }
+            </div>
+            <div className="text-xs text-muted-foreground">Days with completed tasks</div>
           </div>
           
-          <div className="bg-card p-4 rounded-lg border">
-            <h3 className="font-semibold text-foreground mb-2">Next 7 Days</h3>
-            <p className="text-2xl font-bold text-orange-600">
-              {Object.entries(projectsByDate).reduce((count, [dateString, projects]) => {
-                const date = new Date(dateString);
-                const today = new Date();
-                const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-                return date >= today && date <= nextWeek ? count + projects.length : count;
-              }, 0)}
-            </p>
-            <p className="text-sm text-muted-foreground">Projects due soon</p>
+          <div className="bg-card border rounded-lg p-4">
+            <h3 className="text-sm font-medium text-foreground mb-2">Active Projects</h3>
+            <div className="text-2xl font-bold text-primary">
+              {projects.filter(p => !p.isDeleted && p.status === 'active').length}
+            </div>
+            <div className="text-xs text-muted-foreground">Currently active</div>
           </div>
         </div>
       </div>
