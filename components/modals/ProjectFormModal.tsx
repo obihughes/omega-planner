@@ -81,6 +81,10 @@ export function ProjectFormModal({ isOpen, onClose, project, onSave, onDelete }:
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      // Do not close if a date picker is open or if the click is on a popover
+      if (isStartDateOpen || isEndDateOpen || (event.target as HTMLElement).closest('[data-radix-popper-content-wrapper]')) {
+        return;
+      }
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
         onClose();
       }
@@ -101,7 +105,7 @@ export function ProjectFormModal({ isOpen, onClose, project, onSave, onDelete }:
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, isStartDateOpen, isEndDateOpen]);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();

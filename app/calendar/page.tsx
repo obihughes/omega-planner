@@ -128,12 +128,14 @@ export default function CalendarPage() {
         {/* Calendar Grid */}
         <div className="bg-card border rounded-lg overflow-hidden">
           {/* Day Headers */}
-          <div className="grid grid-cols-7 border-b">
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="p-4 text-center font-medium text-muted-foreground bg-muted">
-                {day}
-              </div>
-            ))}
+          <div className="grid grid-cols-7 border-b text-center font-medium text-muted-foreground bg-muted">
+            <div className="p-4">Sun</div>
+            <div className="p-4">Mon</div>
+            <div className="p-4">Tue</div>
+            <div className="p-4">Wed</div>
+            <div className="p-4">Thu</div>
+            <div className="p-4">Fri</div>
+            <div className="p-4">Sat</div>
           </div>
           
           {/* Calendar Days */}

@@ -209,9 +209,11 @@ export default function ProjectsPage() {
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
           {/* Search */}
           <div className="relative flex-1">
+            <label htmlFor="search-projects" className="sr-only">Search Projects</label>
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
+              id="search-projects"
               placeholder="Search projects..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -222,29 +224,37 @@ export default function ProjectsPage() {
           {/* Controls Row */}
           <div className="flex items-center gap-3">
             {/* Status Filter */}
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as Project['status'] | 'all')}
-              className="px-3 py-2 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="all">All Status</option>
-              <option value="planning">Planning</option>
-              <option value="active">Active</option>
-              <option value="on-hold">On Hold</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
+            <div>
+              <label htmlFor="status-filter" className="sr-only">Filter by Status</label>
+              <select
+                id="status-filter"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as Project['status'] | 'all')}
+                className="px-3 py-2 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="all">All Status</option>
+                <option value="planning">Planning</option>
+                <option value="active">Active</option>
+                <option value="on-hold">On Hold</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
 
             {/* Sort */}
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as 'name' | 'progress' | 'updated')}
-              className="px-3 py-2 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="updated">Last Updated</option>
-              <option value="name">Name</option>
-              <option value="progress">Progress</option>
-            </select>
+            <div>
+              <label htmlFor="sort-by" className="sr-only">Sort by</label>
+              <select
+                id="sort-by"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as 'name' | 'progress' | 'updated')}
+                className="px-3 py-2 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="updated">Last Updated</option>
+                <option value="name">Name</option>
+                <option value="progress">Progress</option>
+              </select>
+            </div>
             
             <button
               onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
