@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Move, Edit } from 'lucide-react';
+import { Move, Edit, Bold, Italic } from 'lucide-react';
 
 // Type guard for caret positioning methods
 const hasCaretPositionFromPoint = (doc: Document): doc is Document & { caretPositionFromPoint: (x: number, y: number) => any } => {
@@ -125,17 +125,24 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
     });
 
     if (!wasClickInsideAnyBlock) {
-      // If clicked on the empty canvas, save the currently active block's content.
+      // If clicked on the empty canvas, save or delete the currently active block.
       if (activeBlockId) {
         const activeEl = blockElementsRef.current.get(activeBlockId)?.querySelector('[contenteditable]') as HTMLElement;
         if (activeEl) {
           const newContent = activeEl.innerHTML;
-          // Create a new array with the updated content.
-          const updatedBlocks = textBlocks.map(b => 
-            b.id === activeBlockId ? { ...b, content: newContent, isActive: false } : b
-          );
-          setTextBlocks(updatedBlocks);
-          handleContentChange(updatedBlocks);
+          // If content is empty or only whitespace, delete the block.
+          if (activeEl.textContent?.trim() === '') {
+            const updatedBlocks = textBlocks.filter(b => b.id !== activeBlockId);
+            setTextBlocks(updatedBlocks);
+            handleContentChange(updatedBlocks);
+          } else {
+            // Otherwise, save the content.
+            const updatedBlocks = textBlocks.map(b => 
+              b.id === activeBlockId ? { ...b, content: newContent, isActive: false } : b
+            );
+            setTextBlocks(updatedBlocks);
+            handleContentChange(updatedBlocks);
+          }
         }
       }
       setActiveBlockId(null); // Deactivate.
@@ -181,6 +188,14 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
     setTextBlocks(newBlocks);
     handleContentChange(newBlocks);
     setActiveBlockId(newBlock.id);
+
+    // After creating a new block, focus it so the user can type immediately.
+    setTimeout(() => {
+        const newBlockEl = blockElementsRef.current.get(newBlock.id)?.querySelector('[contenteditable]');
+        if (newBlockEl && newBlockEl instanceof HTMLElement) {
+            newBlockEl.focus();
+        }
+    }, 50); // Reduced delay for faster focus
   };
 
   const handleBlockChange = (blockId: string, newContent: string) => {
@@ -190,6 +205,21 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
       block.id === blockId ? { ...block, content: newContent } : block
     );
     setTextBlocks(updatedBlocks);
+
+    // If the block is empty after an update, remove it.
+    const editableEl = blockElementsRef.current.get(blockId)?.querySelector('[contenteditable]');
+    if (editableEl && editableEl instanceof HTMLElement && editableEl.textContent?.trim() === '') {
+        // Use a timeout to allow the user to continue typing if they just cleared the text
+        setTimeout(() => {
+            const currentBlock = textBlocks.find(b => b.id === blockId);
+            if (currentBlock && currentBlock.content.trim() === '') {
+                 const filteredBlocks = textBlocks.filter(b => b.id !== blockId);
+                 setTextBlocks(filteredBlocks);
+                 handleContentChange(filteredBlocks);
+                 setActiveBlockId(null);
+            }
+        }, 1500); // Wait 1.5s before deleting empty block
+    }
 
     // Debounce the final state propagation to the parent component.
     if (updateTimeoutRef.current) {
@@ -210,6 +240,13 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
       setTextBlocks(blocks => 
         blocks.map(block => ({ ...block, isActive: false }))
       );
+      return;
+    }
+
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      // Insert 4 non-breaking spaces for a standard tab
+      document.execCommand('insertHTML', false, '&nbsp;&nbsp;&nbsp;&nbsp;');
       return;
     }
 
@@ -289,23 +326,26 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
     };
   }, []);
 
+  const handleFormat = (command: string) => {
+    const activeEl = activeBlockId ? blockElementsRef.current.get(activeBlockId)?.querySelector('[contenteditable]') : null;
+    if (activeEl && activeEl instanceof HTMLElement) {
+      activeEl.focus();
+      document.execCommand(command, false);
+      // After formatting, re-capture the content
+      const newContent = activeEl.innerHTML;
+      handleBlockChange(activeBlockId!, newContent);
+    }
+  };
+
   return (
     <div className={className} style={style}>
-      {/* Mode Toggle Button */}
-      <div className="absolute top-2 right-2 z-10">
-        <button
-          onClick={() => setIsDragMode(!isDragMode)}
-          className={`flex items-center gap-2 px-3 py-1 rounded text-sm font-medium transition-colors ${
-            isDragMode 
-              ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' 
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-          title={isDragMode ? 'Switch to Edit Mode' : 'Switch to Drag Mode'}
-        >
-          {isDragMode ? <Edit size={16} /> : <Move size={16} />}
-          {isDragMode ? 'Edit Mode' : 'Drag Mode'}
-        </button>
-      </div>
+      {/* Floating Formatting Toolbar */}
+      {activeBlockId && !isDragMode && (
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 bg-muted rounded-lg shadow-lg p-1 flex items-center gap-1">
+          <button onClick={() => handleFormat('bold')} className="p-2 rounded hover:bg-background/50"><Bold size={16} /></button>
+          <button onClick={() => handleFormat('italic')} className="p-2 rounded hover:bg-background/50"><Italic size={16} /></button>
+        </div>
+      )}
 
       <div
         ref={canvasRef}
@@ -446,28 +486,43 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
             
             {/* Active block indicator */}
             {block.isActive && (
-              <>
-                <div className="absolute -left-2 top-0 w-1 h-full bg-blue-400 rounded-full" />
-                {/* Delete button - only in drag mode */}
-                {isDragMode && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const filtered = textBlocks.filter(b => b.id !== block.id);
-                      setTextBlocks(filtered);
-                      handleContentChange(filtered);
-                      setActiveBlockId(null);
-                    }}
-                    className="absolute -right-6 -top-1 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-colors opacity-70 hover:opacity-100"
-                    title="Delete block"
-                  >
-                    ×
-                  </button>
-                )}
-              </>
+              <div className="absolute -left-2 top-0 w-1 h-full bg-blue-400 rounded-full" />
+            )}
+            
+            {/* Delete button - only visible in drag mode */}
+            {isDragMode && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const filtered = textBlocks.filter(b => b.id !== block.id);
+                  setTextBlocks(filtered);
+                  handleContentChange(filtered);
+                  setActiveBlockId(null);
+                }}
+                className="absolute -right-6 -top-1 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-colors opacity-70 hover:opacity-100"
+                title="Delete block"
+              >
+                ×
+              </button>
             )}
           </div>
         ))}
+
+        {/* Mode Toggle Button - Moved to bottom right */}
+        <div className="absolute bottom-4 right-4 z-10">
+            <button
+              onClick={() => setIsDragMode(!isDragMode)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all shadow-lg ${
+                isDragMode 
+                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}
+              title={isDragMode ? 'Switch to Edit Mode' : 'Switch to Drag Mode'}
+            >
+              {isDragMode ? <Edit size={16} /> : <Move size={16} />}
+              <span>{isDragMode ? 'Editing' : 'Dragging'}</span>
+            </button>
+        </div>
 
         {/* Instruction text when no blocks exist */}
         {textBlocks.length === 0 && (
