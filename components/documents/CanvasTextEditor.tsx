@@ -43,132 +43,111 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
   const [isDragging, setIsDragging] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLDivElement>(null);
+  const blockElementsRef = useRef<Map<string, HTMLDivElement | null>>(new Map());
   const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // This ref tracks the last content that was sent to the parent component.
+  // It's used to prevent the component from re-initializing itself with old
+  // data if the parent component re-renders.
+  const lastPropagatedContent = useRef<string | null>(null);
 
-  // Snap position to grid
+  // This effect is now responsible for synchronizing the internal state with
+  // the external `content` prop. It will only re-initialize the blocks if
+  // the `content` prop changes to something different than what this component
+  // last sent out, which prevents the editor from wiping out the user's
+  // current typing.
+  useEffect(() => {
+    if (content !== lastPropagatedContent.current) {
+      let loadedBlocks: TextBlock[] = [];
+      if (content) {
+        try {
+          const parsed = JSON.parse(content);
+          if (Array.isArray(parsed)) loadedBlocks = parsed;
+        } catch (e) {
+          console.warn('Fallback to legacy text parser for backward compatibility.');
+          loadedBlocks = content.split('\n').map((line, i) => ({
+            id: `block-${Date.now()}-${i}`,
+            x: 0,
+            y: i * LINE_HEIGHT,
+            content: line,
+            isActive: false,
+          })).filter(block => block.content.trim());
+        }
+      }
+      
+      const snappedBlocks = loadedBlocks.map(block => ({
+        ...block,
+        ...snapToGrid(block.x, block.y),
+        isActive: block.id === activeBlockId // Preserve active state on reload
+      }));
+      setTextBlocks(snappedBlocks);
+    }
+  }, [content, activeBlockId]);
+
   const snapToGrid = (x: number, y: number) => ({
     x: Math.round(x / GRID_SIZE) * GRID_SIZE,
     y: Math.round(y / GRID_SIZE) * GRID_SIZE
   });
 
-  // Convert content string to/from text blocks
-  useEffect(() => {
-    if (content && textBlocks.length === 0) {
-      let loadedBlocks: TextBlock[] = [];
-      try {
-        // Try parsing as new JSON format
-        const parsed = JSON.parse(content);
-        if (Array.isArray(parsed)) {
-          loadedBlocks = parsed;
-        }
-      } catch (e) {
-        // Fallback to old plain text format for backward compatibility
-        console.warn('Failed to parse content as JSON, falling back to legacy text parser.');
-        const lines = content.split('\n');
-        lines.forEach((line, lineIndex) => {
-          if (line.trim()) {
-            loadedBlocks.push({
-              id: `block-${Date.now()}-${lineIndex}`,
-              x: 0,
-              y: lineIndex * LINE_HEIGHT,
-              content: line,
-              isActive: false,
-            });
-          }
-        });
-      }
-      
-      if (loadedBlocks.length > 0) {
-        // Snap loaded blocks to grid
-        const snappedBlocks = loadedBlocks.map(block => ({
-          ...block,
-          ...snapToGrid(block.x, block.y),
-        }));
-        setTextBlocks(snappedBlocks);
-      }
-    }
-  }, [content]); // Removed textBlocks.length to allow reloading if content prop changes
-
   const handleContentChange = (newBlocks: TextBlock[]) => {
-    onChange(JSON.stringify(newBlocks));
-  };
-
-  // Convert text blocks back to content string
-  const blocksToContent = (blocks: TextBlock[]): string => {
-    if (blocks.length === 0) return '';
-    
-    // Group blocks by approximate line
-    const lineHeight = 27.2;
-    const lineGroups: { [key: number]: TextBlock[] } = {};
-    
-    blocks.forEach(block => {
-      const lineNumber = Math.round(block.y / lineHeight);
-      if (!lineGroups[lineNumber]) {
-        lineGroups[lineNumber] = [];
-      }
-      lineGroups[lineNumber].push(block);
+    const newContent = JSON.stringify(newBlocks, (key, value) => {
+      if (key === 'isActive') return undefined; // Don't save `isActive` state
+      return value;
     });
-    
-    // Convert back to string
-    const maxLine = Math.max(...Object.keys(lineGroups).map(Number));
-    const lines: string[] = [];
-    
-    for (let i = 0; i <= maxLine; i++) {
-      if (lineGroups[i]) {
-        // Sort blocks by x position
-        const sortedBlocks = lineGroups[i].sort((a, b) => a.x - b.x);
-        let line = '';
-        let lastEndPos = 0;
-        
-        sortedBlocks.forEach(block => {
-          const blockStartChar = Math.round(block.x / 8.4);
-          const spacesNeeded = Math.max(0, blockStartChar - lastEndPos);
-          line += ' '.repeat(spacesNeeded) + block.content;
-          lastEndPos = blockStartChar + block.content.length;
-        });
-        
-        lines[i] = line;
-      } else {
-        lines[i] = '';
-      }
-    }
-    
-    return lines.join('\n');
+    lastPropagatedContent.current = newContent;
+    onChange(newContent);
   };
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Single click only activates existing blocks in edit mode
+    // This handler deactivates blocks when clicking on genuinely empty space.
+    // It uses getBoundingClientRect for pixel-perfect hit detection, which solves
+    // the bug where clicking on an empty line in a multi-line block would
+    // deactivate the editor.
     if (isDragging || isDragMode) return;
-    
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
 
-    const x = e.clientX - rect.left - 24; // Subtract padding
-    const y = e.clientY - rect.top - 32; // Subtract padding
+    // First, save any pending edits from the currently active block.
+    // This solves a race condition where clicking away too quickly could lose data.
+    if (activeBlockId) {
+      const activeEl = blockElementsRef.current.get(activeBlockId)?.querySelector('[contenteditable]') as HTMLElement;
+      if (activeEl) {
+        const newContent = activeEl.innerHTML;
+        const currentBlock = textBlocks.find(b => b.id === activeBlockId);
+        if (currentBlock && currentBlock.content !== newContent) {
+          const updatedBlocks = textBlocks.map(b =>
+            b.id === activeBlockId ? { ...b, content: newContent } : b
+          );
+          handleContentChange(updatedBlocks); // This will update parent state
+          setTextBlocks(updatedBlocks);     // and then internal state
+        }
+      }
+    }
 
-    // Check if clicking on an existing block
-    const clickedBlock = textBlocks.find(block => 
-      x >= block.x && 
-      x <= block.x + Math.max(20, block.content.length * CHAR_WIDTH) &&
-      Math.abs(y - block.y) < LINE_HEIGHT / 2
-    );
+    const clickX = e.clientX;
+    const clickY = e.clientY;
 
-    if (clickedBlock) {
-      // Activate existing block
-      setActiveBlockId(clickedBlock.id);
-      setTextBlocks(blocks => 
-        blocks.map(block => ({
-          ...block,
-          isActive: block.id === clickedBlock.id
-        }))
-      );
-    } else {
-      // Deactivate all blocks when clicking empty space
+    let wasClickInsideAnyBlock = false;
+    for (const element of Array.from(blockElementsRef.current.values())) {
+      if (!element) continue;
+      const blockRect = element.getBoundingClientRect();
+      if (
+        clickX >= blockRect.left &&
+        clickX <= blockRect.right &&
+        clickY >= blockRect.top &&
+        clickY <= blockRect.bottom
+      ) {
+        wasClickInsideAnyBlock = true;
+        break;
+      }
+    }
+
+    if (!wasClickInsideAnyBlock) {
+      // Click was on the empty canvas, so deactivate any active block.
       setActiveBlockId(null);
       setTextBlocks(blocks => 
-        blocks.map(block => ({ ...block, isActive: false }))
+        blocks.map(b => ({ ...b, isActive: false }))
       );
     }
+    // If the click was inside a block, its own handler manages activation.
   };
 
   const handleCanvasDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -190,22 +169,21 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
       isActive: true
     };
     
-    setTextBlocks(blocks => [
-      ...blocks.map(block => ({ ...block, isActive: false })),
+    const newBlocks = [
+      ...textBlocks.map(block => ({ ...block, isActive: false })),
       newBlock
-    ]);
+    ];
+    setTextBlocks(newBlocks);
+    handleContentChange(newBlocks);
     setActiveBlockId(newBlock.id);
   };
 
   const handleBlockChange = (blockId: string, newContent: string) => {
-    // Update local state and parent immediately (only called on blur now)
-    setTextBlocks(blocks => {
-      const updatedBlocks = blocks.map(block =>
-        block.id === blockId ? { ...block, content: newContent } : block
-      );
-      handleContentChange(updatedBlocks);
-      return updatedBlocks;
-    });
+    const updatedBlocks = textBlocks.map(block =>
+      block.id === blockId ? { ...block, content: newContent } : block
+    );
+    setTextBlocks(updatedBlocks);
+    handleContentChange(updatedBlocks);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -234,11 +212,9 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
     if ((e.key === 'Delete' && e.ctrlKey) || 
         ((e.key === 'Delete' || e.key === 'Backspace') && (!activeBlock?.content || activeBlock.content.trim() === ''))) {
       e.preventDefault();
-      setTextBlocks(blocks => {
-        const filtered = blocks.filter(block => block.id !== activeBlockId);
-        handleContentChange(filtered);
-        return filtered;
-      });
+      const filtered = textBlocks.filter(block => block.id !== activeBlockId);
+      setTextBlocks(filtered);
+      handleContentChange(filtered);
       setActiveBlockId(null);
       return;
     }
@@ -413,32 +389,28 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
           >
             {/* Editable content */}
             <div
-              ref={(el) => {
-                // When a block becomes active, set its content from state using innerHTML
-                if (el && block.isActive && el.innerHTML !== block.content) {
-                  el.innerHTML = block.content;
+              ref={(el: HTMLDivElement | null) => {
+                if (el) {
+                  blockElementsRef.current.set(block.id, el);
+                  // When a block becomes active, set its content from state using innerHTML
+                  if (block.isActive && el.innerHTML !== block.content) {
+                    el.innerHTML = block.content;
+                  }
                 }
               }}
               contentEditable={block.isActive}
               suppressContentEditableWarning={true}
-              onKeyDown={(e) => {
-                if (block.isActive) {
-                  handleKeyDown(e);
-                }
-              }}
+              onKeyDown={handleKeyDown}
               onBlur={(e) => {
-                if (block.isActive) {
-                  // On blur, save the HTML content back to state
-                  const newContent = e.currentTarget.innerHTML || '';
-                  handleBlockChange(block.id, newContent);
-                  
-                  // Deactivate block after a delay
-                  setTimeout(() => {
-                    setActiveBlockId(null);
-                    setTextBlocks(blocks => 
-                      blocks.map(b => ({ ...b, isActive: false }))
-                    );
-                  }, 100);
+                const newContent = e.currentTarget.innerHTML || '';
+                handleBlockChange(block.id, newContent);
+                
+                // Deactivate if focus moves outside the canvas
+                if (!e.relatedTarget || !canvasRef.current?.contains(e.relatedTarget as Node)) {
+                  setActiveBlockId(null);
+                  setTextBlocks(blocks => 
+                    blocks.map(b => ({ ...b, isActive: false }))
+                  );
                 }
               }}
               className={`outline-none ${block.isActive ? 'cursor-text' : ''}`}
@@ -466,11 +438,9 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setTextBlocks(blocks => {
-                        const filtered = blocks.filter(b => b.id !== block.id);
-                        handleContentChange(filtered);
-                        return filtered;
-                      });
+                      const filtered = textBlocks.filter(b => b.id !== block.id);
+                      setTextBlocks(filtered);
+                      handleContentChange(filtered);
                       setActiveBlockId(null);
                     }}
                     className="absolute -right-6 -top-1 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-colors opacity-70 hover:opacity-100"
