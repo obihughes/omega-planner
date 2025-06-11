@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Calendar, CalendarDays, FolderKanban, Sun, Moon } from 'lucide-react';
+import { Calendar, CalendarDays, FolderKanban, Sun, Moon, FileText } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
 
@@ -33,6 +33,12 @@ export function Navigation() {
       label: 'Calendar',
       icon: CalendarDays,
       active: pathname === '/calendar'
+    },
+    {
+      href: '/documents',
+      label: 'Text Canvas',
+      icon: FileText,
+      active: pathname === '/documents'
     }
   ];
 

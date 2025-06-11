@@ -12,4 +12,11 @@ export type {
   Project,
   ProjectTask,
   ProjectsStorageData
-} from './projects'; 
+} from './projects';
+
+export type {
+  Document,
+  DocumentsStorageData,
+  DocumentEditorProps,
+  DocumentListProps
+} from './documents'; 
