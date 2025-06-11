@@ -57,6 +57,12 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
   // last sent out, which prevents the editor from wiping out the user's
   // current typing.
   useEffect(() => {
+    // Don't re-initialize if we have an active block being edited
+    // This prevents content loss during auto-save
+    if (activeBlockId && content === lastPropagatedContent.current) {
+      return;
+    }
+    
     if (content !== lastPropagatedContent.current) {
       let loadedBlocks: TextBlock[] = [];
       if (content) {
@@ -78,9 +84,14 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
       const snappedBlocks = loadedBlocks.map(block => ({
         ...block,
         ...snapToGrid(block.x, block.y),
-        isActive: block.id === activeBlockId // Preserve active state on reload
+        isActive: false // Don't restore active state during re-initialization
       }));
       setTextBlocks(snappedBlocks);
+      
+      // Clear active block during re-initialization to prevent conflicts
+      if (!activeBlockId) {
+        setActiveBlockId(null);
+      }
     }
   }, [content, activeBlockId]);
 
@@ -90,69 +101,63 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
   });
 
   const handleContentChange = (newBlocks: TextBlock[]) => {
-    const newContent = JSON.stringify(newBlocks, (key, value) => {
-      if (key === 'isActive') return undefined; // Don't save `isActive` state
-      return value;
-    });
+    // We filter out the 'isActive' property before saving.
+    const newContent = JSON.stringify(newBlocks.map(({ isActive, ...rest }) => rest));
     lastPropagatedContent.current = newContent;
     onChange(newContent);
   };
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    // This handler deactivates blocks when clicking on genuinely empty space.
-    // It uses getBoundingClientRect for pixel-perfect hit detection, which solves
-    // the bug where clicking on an empty line in a multi-line block would
-    // deactivate the editor.
     if (isDragging || isDragMode) return;
 
-    // First, save any pending edits from the currently active block.
-    // This solves a race condition where clicking away too quickly could lose data.
-    if (activeBlockId) {
-      const activeEl = blockElementsRef.current.get(activeBlockId)?.querySelector('[contenteditable]') as HTMLElement;
-      if (activeEl) {
-        const newContent = activeEl.innerHTML;
-        const currentBlock = textBlocks.find(b => b.id === activeBlockId);
-        if (currentBlock && currentBlock.content !== newContent) {
-          const updatedBlocks = textBlocks.map(b =>
-            b.id === activeBlockId ? { ...b, content: newContent } : b
-          );
-          handleContentChange(updatedBlocks); // This will update parent state
-          setTextBlocks(updatedBlocks);     // and then internal state
-        }
-      }
-    }
-
+    // Check if the click was outside any block.
     const clickX = e.clientX;
     const clickY = e.clientY;
-
-    let wasClickInsideAnyBlock = false;
-    for (const element of Array.from(blockElementsRef.current.values())) {
-      if (!element) continue;
-      const blockRect = element.getBoundingClientRect();
-      if (
+    const wasClickInsideAnyBlock = Array.from(blockElementsRef.current.values()).some(el => {
+      if (!el) return false;
+      const blockRect = el.getBoundingClientRect();
+      return (
         clickX >= blockRect.left &&
         clickX <= blockRect.right &&
         clickY >= blockRect.top &&
         clickY <= blockRect.bottom
-      ) {
-        wasClickInsideAnyBlock = true;
-        break;
-      }
-    }
+      );
+    });
 
     if (!wasClickInsideAnyBlock) {
-      // Click was on the empty canvas, so deactivate any active block.
-      setActiveBlockId(null);
-      setTextBlocks(blocks => 
-        blocks.map(b => ({ ...b, isActive: false }))
-      );
+      // If clicked on the empty canvas, save the currently active block's content.
+      if (activeBlockId) {
+        const activeEl = blockElementsRef.current.get(activeBlockId)?.querySelector('[contenteditable]') as HTMLElement;
+        if (activeEl) {
+          const newContent = activeEl.innerHTML;
+          // Create a new array with the updated content.
+          const updatedBlocks = textBlocks.map(b => 
+            b.id === activeBlockId ? { ...b, content: newContent, isActive: false } : b
+          );
+          setTextBlocks(updatedBlocks);
+          handleContentChange(updatedBlocks);
+        }
+      }
+      setActiveBlockId(null); // Deactivate.
     }
-    // If the click was inside a block, its own handler manages activation.
   };
 
   const handleCanvasDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (isDragging || isDragMode) return;
     
+    // Save any pending changes from the previously active block.
+    if (activeBlockId) {
+        const activeEl = blockElementsRef.current.get(activeBlockId)?.querySelector('[contenteditable]') as HTMLElement;
+        if (activeEl) {
+          const newContent = activeEl.innerHTML;
+          const currentBlock = textBlocks.find(b => b.id === activeBlockId);
+          if (currentBlock && currentBlock.content !== newContent) {
+            const blockToUpdate = textBlocks.find(b => b.id === activeBlockId);
+            if(blockToUpdate) blockToUpdate.content = newContent;
+          }
+        }
+      }
+
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
 
@@ -179,11 +184,20 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
   };
 
   const handleBlockChange = (blockId: string, newContent: string) => {
+    // This function now only updates the local state immediately for a responsive UI.
+    // The debounced propagation to the parent is handled separately.
     const updatedBlocks = textBlocks.map(block =>
       block.id === blockId ? { ...block, content: newContent } : block
     );
     setTextBlocks(updatedBlocks);
-    handleContentChange(updatedBlocks);
+
+    // Debounce the final state propagation to the parent component.
+    if (updateTimeoutRef.current) {
+      clearTimeout(updateTimeoutRef.current);
+    }
+    updateTimeoutRef.current = setTimeout(() => {
+      handleContentChange(updatedBlocks);
+    }, 500); // Increased debounce time for smoother saving.
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -335,56 +349,66 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
             onMouseDown={(e) => handleMouseDown(e, block.id)}
             onClick={(e) => {
               e.stopPropagation();
-              if (!isDragging && !isDragMode) {
-                // Capture event values before they get nullified
-                const currentTarget = e.currentTarget;
-                const clientX = e.clientX;
-                const clientY = e.clientY;
-                
-                setActiveBlockId(block.id);
-                setTextBlocks(blocks => 
-                  blocks.map(b => ({ ...b, isActive: b.id === block.id }))
-                );
-                
-                // Set cursor position to where clicked after React finishes rendering
-                setTimeout(() => {
-                  const contentDiv = currentTarget.querySelector('[contenteditable]') as HTMLElement;
-                  if (contentDiv) {
-                    // Ensure content is set first
-                    if (contentDiv.textContent !== block.content) {
-                      contentDiv.textContent = block.content;
-                    }
-                    
-                    contentDiv.focus();
-                    
-                    // Use document.caretPositionFromPoint to get precise cursor position
+              if (isDragging || isDragMode) return;
+
+              // If there's a previously active block, save its content first.
+              if (activeBlockId && activeBlockId !== block.id) {
+                const activeEl = blockElementsRef.current.get(activeBlockId)?.querySelector('[contenteditable]') as HTMLElement;
+                if (activeEl) {
+                  const newContent = activeEl.innerHTML;
+                  const currentBlock = textBlocks.find(b => b.id === activeBlockId);
+                  if (currentBlock && currentBlock.content !== newContent) {
+                    // Directly update the blocks array without triggering a full state update yet
+                    const blockToUpdate = textBlocks.find(b => b.id === activeBlockId);
+                    if(blockToUpdate) blockToUpdate.content = newContent;
+                  }
+                }
+              }
+
+              // Now, activate the new block
+              setActiveBlockId(block.id);
+              const updatedBlocks = textBlocks.map(b => ({
+                ...b,
+                isActive: b.id === block.id,
+              }));
+              setTextBlocks(updatedBlocks);
+              
+              // Set cursor position after a delay
+              const currentTarget = e.currentTarget;
+              const clientX = e.clientX;
+              const clientY = e.clientY;
+              setTimeout(() => {
+                const contentDiv = currentTarget.querySelector('[contenteditable]') as HTMLElement;
+                if (contentDiv) {
+                  contentDiv.focus();
+                  try {
                     if (hasCaretPositionFromPoint(document)) {
                       const caretPos = document.caretPositionFromPoint(clientX, clientY);
                       if (caretPos) {
                         const range = document.createRange();
                         range.setStart(caretPos.offsetNode, caretPos.offset);
                         range.collapse(true);
-                        
-                        const selection = window.getSelection();
-                        if (selection) {
-                          selection.removeAllRanges();
-                          selection.addRange(range);
+                        const sel = window.getSelection();
+                        if (sel) {
+                          sel.removeAllRanges();
+                          sel.addRange(range);
                         }
                       }
                     } else if (hasCaretRangeFromPoint(document)) {
-                      // Fallback for WebKit browsers
                       const range = document.caretRangeFromPoint(clientX, clientY);
                       if (range) {
-                        const selection = window.getSelection();
-                        if (selection) {
-                          selection.removeAllRanges();
-                          selection.addRange(range);
+                        const sel = window.getSelection();
+                        if (sel) {
+                          sel.removeAllRanges();
+                          sel.addRange(range);
                         }
                       }
                     }
+                  } catch (error) {
+                    console.warn('Cursor positioning failed', error);
                   }
-                }, 50);
-              }
+                }
+              }, 50);
             }}
           >
             {/* Editable content */}
@@ -392,7 +416,6 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
               ref={(el: HTMLDivElement | null) => {
                 if (el) {
                   blockElementsRef.current.set(block.id, el);
-                  // When a block becomes active, set its content from state using innerHTML
                   if (block.isActive && el.innerHTML !== block.content) {
                     el.innerHTML = block.content;
                   }
@@ -400,25 +423,17 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
               }}
               contentEditable={block.isActive}
               suppressContentEditableWarning={true}
-              onKeyDown={handleKeyDown}
-              onBlur={(e) => {
-                const newContent = e.currentTarget.innerHTML || '';
-                handleBlockChange(block.id, newContent);
-                
-                // Deactivate if focus moves outside the canvas
-                if (!e.relatedTarget || !canvasRef.current?.contains(e.relatedTarget as Node)) {
-                  setActiveBlockId(null);
-                  setTextBlocks(blocks => 
-                    blocks.map(b => ({ ...b, isActive: false }))
-                  );
-                }
+              onInput={(e) => {
+                 // This is the most reliable way to handle content changes
+                 const newContent = e.currentTarget.innerHTML;
+                 handleBlockChange(block.id, newContent);
               }}
+              onKeyDown={handleKeyDown}
               className={`outline-none ${block.isActive ? 'cursor-text' : ''}`}
               style={{
                 minWidth: block.isActive ? '100px' : 'auto',
                 minHeight: '20px'
               }}
-              // For inactive blocks, render the saved HTML
               dangerouslySetInnerHTML={!block.isActive ? { __html: block.content } : undefined}
             >
               {/* This div's content is managed by the ref and dangerouslySetInnerHTML */}
