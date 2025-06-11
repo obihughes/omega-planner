@@ -1,108 +1,84 @@
-# Text Canvas Feature
+# Text Canvas - Zone-Based Text Management
 
-A minimalistic document editor integrated into the Sunsama productivity application, providing easy text document creation and management similar to Google Docs or Word, but with a clean, distraction-free interface. Features tab-based document switching and a collapsible formatting toolbar for maximum focus.
+The Text Canvas implements a hybrid zone-based text management system that combines the flexibility of free-form positioning with the stability of independent text zones.
 
-## Features
+## How It Works
 
-### Document Management
-- **Create Documents**: Quick document creation with auto-generated unique IDs
-- **Tab-based Navigation**: Clean tabs at the top for easy document switching
-- **Easy Switching**: Click any tab to switch between documents instantly
-- **Star Documents**: Mark important documents for quick access
-- **Auto-save**: Documents save automatically after 2 seconds of inactivity
-- **Manual Save**: Ctrl+S for instant saving
-- **Close Documents**: X button on tabs to close documents
+### Text Zones
+- Text is automatically organized into independent "zones" 
+- Zones are created when text sections are separated by **5 or more spaces**
+- Each zone can be edited independently without affecting other zones
+- Typing in one zone will not shift text in other zones
 
-### Text Editor
-- **Rich Text Editing**: Support for bold, italic, headers (H1, H2, H3), and lists
-- **Collapsible Toolbar**: Formatting toolbar that can be expanded/collapsed for distraction-free writing
-- **Minimalistic Interface**: Clean design focused on writing
-- **Live Preview**: WYSIWYG editing with real-time formatting
-- **Keyboard Shortcuts**: Standard shortcuts for formatting (Ctrl+B, Ctrl+I)
-- **Fixed Text Direction**: Proper left-to-right text input and cursor positioning
-- **Auto-focus**: Automatic focus management for seamless writing experience
+### Grid Positioning
+- Text snaps to a virtual grid (every 4 characters) for consistent alignment
+- Click anywhere to position text at that grid location
+- New zones are created automatically when clicking in safe areas
 
-### Organization
-- **Search**: Toggleable full-text search across document titles and content
-- **Smart Sorting**: Documents automatically sorted by starred status and last modified
-- **Tab Management**: Visual indicators for starred documents in tabs
-- **Clean Interface**: Minimal UI with toggle search to reduce clutter
+### Safe Areas
+- Areas that are at least 5 spaces away from existing text zones
+- Prevents accidental text collision
+- If you click too close to existing text, cursor moves to nearest safe position
 
-### Data Persistence
-- **Local Storage**: All documents saved to browser localStorage
-- **Auto-recovery**: Last opened document automatically selected on app load
-- **Export Ready**: Document structure ready for future export features
+## Key Features
 
-## Components
+### Independent Text Zones
+```
+Hello world     This is zone 1     Another zone here
+    ^                ^                    ^
+  Zone A           Zone B              Zone C
+```
+- Editing "Hello world" won't affect the other zones
+- Each zone maintains its own position and content
 
-### Documents (Main Component)
-- Orchestrates the entire documents section
-- Manages state for document list and selected document
-- Handles document operations (create, update, delete, star)
+### Smart Zone Detection
+- Text separated by 5+ spaces becomes independent zones
+- Zones on different lines are always independent
+- Perfect for layouts, diagrams, and structured text
 
-### DocumentList
-- Displays all documents in a sidebar
-- Provides search and filtering functionality
-- Shows document metadata (title, preview, date, starred status)
-- Handles document selection and quick actions
+### Grid Snapping
+- Text positions snap to 4-character boundaries
+- Ensures consistent alignment across the document
+- Maintains professional appearance
 
-### DocumentEditor
-- Rich text editor with formatting toolbar
-- Auto-save functionality with visual feedback
-- Title editing with automatic placeholder
-- Keyboard shortcuts for common actions
+## Usage Examples
 
-## Usage
+### Creating Independent Columns
+```
+Column 1          Column 2          Column 3
+--------          --------          --------
+Item A            Data X            Result 1
+Item B            Data Y            Result 2
+```
 
-### Creating a Document
-1. Click the "+" button in the documents sidebar
-2. A new "Untitled Document" is created and opened
-3. Start typing to edit the title and content
-4. Document auto-saves after 2 seconds of inactivity
+### Free-form Positioning
+```
+                    Title
+                    
+Left text                    Right text
+                    
+         Center text
+```
 
-### Editing Documents
-1. Select any document from the sidebar
-2. Use the formatting toolbar for rich text features
-3. Changes are automatically saved
-4. Use Ctrl+S for manual save
-
-### Organizing Documents
-1. Click the star icon to mark important documents
-2. Use the search bar to find specific documents
-3. Filter by starred documents using the "Starred" button
-4. Documents are automatically sorted by last modified date
-
-## Technical Details
-
-### Data Structure
-```typescript
-interface Document {
-  id: string;
-  title: string;
-  content: string; // HTML content from rich text editor
-  createdAt: string;
-  updatedAt: string;
-  tags?: string[];
-  isStarred?: boolean;
+### Code-like Layouts
+```
+function test() {        // Comment here
+    let x = 5;          // Another comment
+    return x;           // Final comment
 }
 ```
 
-### Storage
-- Documents stored in localStorage under key 'sunsama-documents'
-- Includes user settings like auto-save preferences
-- Maintains last opened document for session continuity
+## Technical Implementation
 
-### Rich Text Implementation
-- Uses contentEditable div with execCommand for formatting
-- Custom CSS classes for consistent styling
-- HTML sanitization through React's dangerouslySetInnerHTML
+- **Zone Parsing**: Content is parsed into zones using regex `/\s{5,}/`
+- **Grid System**: Positions snap to 4-character boundaries
+- **Collision Detection**: Prevents text placement within 5 spaces of existing zones
+- **Dynamic Updates**: Zones are recalculated on each edit for stability
 
-## Future Enhancements
+## Benefits
 
-- Document tags and categories
-- Export to PDF/Word/Markdown
-- Document templates
-- Collaborative editing
-- Document versioning
-- Full-text search indexing
-- Document sharing and permissions
+1. **Stability**: Text sections remain independent
+2. **Predictability**: Grid system ensures consistent positioning
+3. **Flexibility**: Free-form positioning within safe areas
+4. **Performance**: Efficient zone management with minimal overhead
+5. **User Experience**: Natural editing behavior without unexpected text shifts

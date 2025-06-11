@@ -1,5 +1,21 @@
 import React from 'react';
 
+// Text zone interface for managing independent text regions
+interface TextZone {
+  id: string;
+  line: number;
+  startColumn: number;
+  endColumn: number;
+  content: string;
+}
+
+// Virtual grid configuration
+const GRID_CONFIG = {
+  minZoneSpacing: 5, // Minimum spaces between zones
+  charWidth: 8.4, // Approximate character width for monospace
+  lineHeight: 24, // Line height in pixels
+};
+
 // Utility function to convert text with better space handling
 export const processTextForEditor = (text: string): string => {
   // Replace multiple spaces with non-breaking spaces to maintain formatting
@@ -12,8 +28,103 @@ export const processTextForEditor = (text: string): string => {
     });
 };
 
-// Calculate character position from pixel coordinates
-export const getCharacterPositionFromCoordinates = (
+// Parse content into independent text zones
+export const parseContentIntoZones = (content: string): TextZone[] => {
+  const lines = content.split('\n');
+  const zones: TextZone[] = [];
+  let zoneId = 0;
+
+  lines.forEach((line, lineIndex) => {
+    if (line.trim().length === 0) return; // Skip empty lines
+
+    // Find text segments separated by 5+ spaces
+    const segments = line.split(/\s{5,}/);
+    let currentColumn = 0;
+
+    segments.forEach((segment, segmentIndex) => {
+      if (segment.trim().length === 0) return;
+
+      // Find where this segment starts in the original line
+      const segmentStart = line.indexOf(segment, currentColumn);
+      
+      if (segmentStart !== -1) {
+        zones.push({
+          id: `zone-${zoneId++}`,
+          line: lineIndex,
+          startColumn: segmentStart,
+          endColumn: segmentStart + segment.length,
+          content: segment
+        });
+        currentColumn = segmentStart + segment.length;
+      }
+    });
+  });
+
+  return zones;
+};
+
+// Convert zones back to content string
+export const zonesToContent = (zones: TextZone[], totalLines: number): string => {
+  const lines: string[] = Array(totalLines).fill('').map(() => '');
+
+  zones.forEach(zone => {
+    if (zone.line < lines.length) {
+      const line = lines[zone.line];
+      const lineLength = line.length;
+      
+      // Pad with spaces if needed
+      if (lineLength < zone.startColumn) {
+        lines[zone.line] = line + ' '.repeat(zone.startColumn - lineLength) + zone.content;
+      } else {
+        // Replace content at position
+        const before = line.substring(0, zone.startColumn);
+        const after = line.substring(zone.endColumn);
+        lines[zone.line] = before + zone.content + after;
+      }
+    }
+  });
+
+  return lines.join('\n');
+};
+
+// Find which zone contains a specific position
+export const findZoneAtPosition = (zones: TextZone[], line: number, column: number): TextZone | null => {
+  return zones.find(zone => 
+    zone.line === line && 
+    column >= zone.startColumn && 
+    column <= zone.endColumn
+  ) || null;
+};
+
+// Check if a position is in a "safe" area (5+ spaces from any zone)
+export const isPositionSafe = (zones: TextZone[], line: number, column: number): boolean => {
+  const zonesOnLine = zones.filter(zone => zone.line === line);
+  
+  for (const zone of zonesOnLine) {
+    const distanceToStart = Math.abs(column - zone.startColumn);
+    const distanceToEnd = Math.abs(column - zone.endColumn);
+    const minDistance = Math.min(distanceToStart, distanceToEnd);
+    
+    if (minDistance < GRID_CONFIG.minZoneSpacing) {
+      return false;
+    }
+  }
+  
+  return true;
+};
+
+// Snap position to grid for consistent placement
+export const snapToGrid = (line: number, column: number): { line: number; column: number } => {
+  // Snap to nearest grid positions (every 4 characters for alignment)
+  const snappedColumn = Math.round(column / 4) * 4;
+  return {
+    line: Math.max(0, line),
+    column: Math.max(0, snappedColumn)
+  };
+};
+
+// Calculate character position from pixel coordinates with grid snapping
+export const getGridPositionFromCoordinates = (
   element: HTMLElement,
   clientX: number,
   clientY: number
@@ -32,19 +143,111 @@ export const getCharacterPositionFromCoordinates = (
   const context = canvas.getContext('2d');
   if (context) {
     context.font = `${fontSize}px ${computedStyle.fontFamily}`;
-    const charWidth = context.measureText('M').width; // Use 'M' as reference character
+    const charWidth = context.measureText('M').width;
     
     // Calculate line and column
     const line = Math.floor((relativeY - parseFloat(computedStyle.paddingTop)) / lineHeight);
     const column = Math.floor((relativeX - parseFloat(computedStyle.paddingLeft)) / charWidth);
     
-    return {
-      line: Math.max(0, line),
-      column: Math.max(0, column)
-    };
+    // Snap to grid
+    return snapToGrid(line, column);
   }
   
   return { line: 0, column: 0 };
+};
+
+// Create or update a zone at specific position
+export const createOrUpdateZone = (
+  zones: TextZone[],
+  line: number,
+  column: number,
+  content: string
+): TextZone[] => {
+  const existingZone = findZoneAtPosition(zones, line, column);
+  
+  if (existingZone) {
+    // Update existing zone
+    return zones.map(zone => 
+      zone.id === existingZone.id 
+        ? { ...zone, content, endColumn: zone.startColumn + content.length }
+        : zone
+    );
+  } else {
+    // Create new zone if position is safe
+    if (isPositionSafe(zones, line, column)) {
+      const newZone: TextZone = {
+        id: `zone-${Date.now()}`,
+        line,
+        startColumn: column,
+        endColumn: column + content.length,
+        content
+      };
+      return [...zones, newZone];
+    }
+  }
+  
+  return zones;
+};
+
+// Insert text at position with zone management
+export const insertTextWithZoneManagement = (
+  element: HTMLElement,
+  clientX: number,
+  clientY: number,
+  text: string
+): void => {
+  const position = getGridPositionFromCoordinates(element, clientX, clientY);
+  const currentContent = element.textContent || '';
+  const currentZones = parseContentIntoZones(currentContent);
+  
+  // Check if we're in an existing zone or creating a new one
+  const targetZone = findZoneAtPosition(currentZones, position.line, position.column);
+  
+  if (targetZone) {
+    // Insert within existing zone
+    const relativePosition = position.column - targetZone.startColumn;
+    const newContent = targetZone.content.slice(0, relativePosition) + text + targetZone.content.slice(relativePosition);
+    const updatedZones = createOrUpdateZone(currentZones, position.line, targetZone.startColumn, newContent);
+    
+    // Update element content
+    const totalLines = Math.max(position.line + 1, currentContent.split('\n').length);
+    element.textContent = zonesToContent(updatedZones, totalLines);
+  } else if (isPositionSafe(currentZones, position.line, position.column)) {
+    // Create new zone
+    const updatedZones = createOrUpdateZone(currentZones, position.line, position.column, text);
+    const totalLines = Math.max(position.line + 1, currentContent.split('\n').length);
+    element.textContent = zonesToContent(updatedZones, totalLines);
+  }
+};
+
+// Enhanced click positioning with zone management
+export const handleZoneBasedClick = (
+  element: HTMLElement,
+  clientX: number,
+  clientY: number
+): void => {
+  const position = getGridPositionFromCoordinates(element, clientX, clientY);
+  const currentContent = element.textContent || '';
+  const zones = parseContentIntoZones(currentContent);
+  
+  // Find if clicking in an existing zone
+  const targetZone = findZoneAtPosition(zones, position.line, position.column);
+  
+  if (targetZone) {
+    // Position cursor within the zone
+    const relativeColumn = position.column - targetZone.startColumn;
+    positionCursorAtCoordinates(element, position.line, targetZone.startColumn + relativeColumn);
+  } else if (isPositionSafe(zones, position.line, position.column)) {
+    // Position cursor at safe location for new zone
+    positionCursorAtCoordinates(element, position.line, position.column);
+  } else {
+    // Find nearest safe position
+    let nearestColumn = position.column;
+    while (!isPositionSafe(zones, position.line, nearestColumn) && nearestColumn < 200) {
+      nearestColumn += GRID_CONFIG.minZoneSpacing;
+    }
+    positionCursorAtCoordinates(element, position.line, nearestColumn);
+  }
 };
 
 // Get text content as lines array
@@ -144,8 +347,7 @@ export const handleFreeFormClick = (
   clientX: number,
   clientY: number
 ): void => {
-  const position = getCharacterPositionFromCoordinates(element, clientX, clientY);
-  positionCursorAtCoordinates(element, position.line, position.column);
+  handleZoneBasedClick(element, clientX, clientY);
 };
 
 // Utility function to get accurate cursor position from click coordinates
@@ -200,7 +402,7 @@ export const setCursorPosition = (node: Node, offset: number): void => {
   }
 };
 
-// Utility function to insert text while preserving formatting
+// Utility function to insert text while preserving formatting with zone awareness
 export const insertTextAtSelection = (text: string): void => {
   if (typeof window === 'undefined') return;
 
@@ -278,7 +480,7 @@ export const handleSmartIndent = (element: HTMLElement): void => {
   insertTextAtSelection('\n' + currentIndent);
 };
 
-// Component for enhanced text area with better space handling
+// Component for enhanced text area with zone-based management
 interface EnhancedTextAreaProps {
   content: string;
   onChange: (content: string) => void;
@@ -297,8 +499,8 @@ export const EnhancedTextArea: React.FC<EnhancedTextAreaProps> = ({
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
     
-    // Use free-form positioning for better click-to-type experience
-    handleFreeFormClick(target, e.clientX, e.clientY);
+    // Use zone-based positioning for independent text areas
+    handleZoneBasedClick(target, e.clientX, e.clientY);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
