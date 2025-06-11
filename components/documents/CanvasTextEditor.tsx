@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Move, Edit } from 'lucide-react';
 
 interface TextBlock {
   id: string;
@@ -21,7 +22,7 @@ interface CanvasTextEditorProps {
   style?: React.CSSProperties;
 }
 
-export const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
+const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
   content,
   onChange,
   className,
@@ -29,10 +30,11 @@ export const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
 }) => {
   const [textBlocks, setTextBlocks] = useState<TextBlock[]>([]);
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
+  const [isDragMode, setIsDragMode] = useState(false);
   const [isDragging, setIsDragging] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const activeTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Snap position to grid
   const snapToGrid = (x: number, y: number) => ({
@@ -121,7 +123,8 @@ export const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
   };
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isDragging) return; // Don't create blocks while dragging
+    // Single click only activates existing blocks in edit mode
+    if (isDragging || isDragMode) return;
     
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -132,7 +135,7 @@ export const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
     // Check if clicking on an existing block
     const clickedBlock = textBlocks.find(block => 
       x >= block.x && 
-      x <= block.x + (block.content.length * CHAR_WIDTH) &&
+      x <= block.x + Math.max(20, block.content.length * CHAR_WIDTH) &&
       Math.abs(y - block.y) < LINE_HEIGHT / 2
     );
 
@@ -146,27 +149,38 @@ export const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
         }))
       );
     } else {
-      // Create new block at click position (snapped to grid)
-      const snapped = snapToGrid(Math.max(0, x), Math.max(0, y));
-      const newBlock: TextBlock = {
-        id: `block-${Date.now()}`,
-        x: snapped.x,
-        y: snapped.y,
-        content: '',
-        isActive: true
-      };
-      
-      setTextBlocks(blocks => [
-        ...blocks.map(block => ({ ...block, isActive: false })),
-        newBlock
-      ]);
-      setActiveBlockId(newBlock.id);
+      // Deactivate all blocks when clicking empty space
+      setActiveBlockId(null);
+      setTextBlocks(blocks => 
+        blocks.map(block => ({ ...block, isActive: false }))
+      );
     }
+  };
 
-    // Focus the textarea for typing
-    setTimeout(() => {
-      textareaRef.current?.focus();
-    }, 0);
+  const handleCanvasDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isDragging || isDragMode) return;
+    
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const x = e.clientX - rect.left - 24; // Subtract padding
+    const y = e.clientY - rect.top - 32; // Subtract padding
+
+    // Create new block at double-click position (snapped to grid)
+    const snapped = snapToGrid(Math.max(0, x), Math.max(0, y));
+    const newBlock: TextBlock = {
+      id: `block-${Date.now()}`,
+      x: snapped.x,
+      y: snapped.y,
+      content: '',
+      isActive: true
+    };
+    
+    setTextBlocks(blocks => [
+      ...blocks.map(block => ({ ...block, isActive: false })),
+      newBlock
+    ]);
+    setActiveBlockId(newBlock.id);
   };
 
   const handleBlockChange = (blockId: string, newContent: string) => {
@@ -210,16 +224,14 @@ export const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
     }
   };
 
-  const handleInput = (e: React.FormEvent<HTMLTextAreaElement>) => {
-    if (activeBlockId) {
-      const newContent = e.currentTarget.value;
-      handleBlockChange(activeBlockId, newContent);
-    }
-  };
 
-  // Mouse handlers for dragging
+
+  // Mouse handlers for dragging (only in drag mode)
   const handleMouseDown = (e: React.MouseEvent, blockId: string) => {
-    if (e.button !== 0) return; // Only left click
+    if (e.button !== 0 || !isDragMode) return; // Only left click and in drag mode
+    
+    e.preventDefault();
+    e.stopPropagation();
     
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -261,14 +273,29 @@ export const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
     setDragOffset({ x: 0, y: 0 });
   };
 
-  const activeBlock = textBlocks.find(block => block.id === activeBlockId);
-
   return (
     <div className={className} style={style}>
+      {/* Mode Toggle Button */}
+      <div className="absolute top-2 right-2 z-10">
+        <button
+          onClick={() => setIsDragMode(!isDragMode)}
+          className={`flex items-center gap-2 px-3 py-1 rounded text-sm font-medium transition-colors ${
+            isDragMode 
+              ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' 
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+          title={isDragMode ? 'Switch to Edit Mode' : 'Switch to Drag Mode'}
+        >
+          {isDragMode ? <Edit size={16} /> : <Move size={16} />}
+          {isDragMode ? 'Edit Mode' : 'Drag Mode'}
+        </button>
+      </div>
+
       <div
         ref={canvasRef}
         className="relative w-full h-full cursor-text"
         onClick={handleCanvasClick}
+        onDoubleClick={handleCanvasDoubleClick}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         style={{
@@ -284,82 +311,94 @@ export const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
       >
         {/* Render all text blocks */}
         {textBlocks.map((block) => (
-          <div
-            key={block.id}
-            className={`absolute select-none group ${
-              block.isActive 
-                ? 'bg-blue-50 border border-blue-200 px-2 py-1 -mx-2 -my-1 rounded shadow-sm' 
-                : 'hover:bg-gray-50 px-1 -mx-1 rounded'
-            } ${isDragging === block.id ? 'cursor-grabbing shadow-lg z-10' : 'cursor-grab'}`}
-            style={{
-              left: block.x,
-              top: block.y,
-              fontFamily: 'inherit',
-              fontSize: 'inherit',
-              lineHeight: 'inherit',
-              whiteSpace: 'pre-wrap',
-              color: block.isActive ? '#1e40af' : 'inherit',
-              minWidth: '20px',
-              minHeight: '20px'
-            }}
-            onMouseDown={(e) => handleMouseDown(e, block.id)}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (!isDragging) {
-                setActiveBlockId(block.id);
-                setTextBlocks(blocks => 
-                  blocks.map(b => ({ ...b, isActive: b.id === block.id }))
-                );
-                setTimeout(() => textareaRef.current?.focus(), 0);
-              }
-            }}
-          >
-            {block.content || (block.isActive ? '|' : '')}
-            {/* Drag handle */}
-            <div className={`absolute -left-1 -top-1 w-2 h-2 bg-blue-500 rounded-full opacity-0 ${
-              block.isActive ? 'group-hover:opacity-100' : ''
-            } transition-opacity cursor-grab`} />
+          <div key={block.id}>
+            {/* Visible textarea for active block */}
+            {block.isActive ? (
+              <textarea
+                ref={activeTextareaRef}
+                value={block.content}
+                onChange={(e) => handleBlockChange(block.id, e.target.value)}
+                onKeyDown={handleKeyDown}
+                onBlur={() => {
+                  setTimeout(() => {
+                    if (document.activeElement !== activeTextareaRef.current) {
+                      setActiveBlockId(null);
+                      setTextBlocks(blocks => 
+                        blocks.map(block => ({ ...block, isActive: false }))
+                      );
+                    }
+                  }, 100);
+                }}
+                className="absolute border-2 border-blue-400 rounded px-2 py-1 resize-none outline-none"
+                style={{
+                  left: block.x,
+                  top: block.y,
+                  fontFamily: 'inherit',
+                  fontSize: 'inherit',
+                  lineHeight: 'inherit',
+                  background: 'rgba(59, 130, 246, 0.1)',
+                  minWidth: '100px',
+                  minHeight: '20px',
+                  whiteSpace: 'pre-wrap',
+                  overflow: 'hidden'
+                }}
+                autoFocus
+                spellCheck={false}
+              />
+            ) : (
+              /* Static text display for inactive blocks */
+              <div
+                className={`absolute select-none group ${
+                  isDragMode 
+                    ? 'cursor-grab hover:bg-gray-100 px-1 -mx-1 rounded' 
+                    : 'cursor-text hover:bg-gray-50 px-1 -mx-1 rounded'
+                }`}
+                style={{
+                  left: block.x,
+                  top: block.y,
+                  fontFamily: 'inherit',
+                  fontSize: 'inherit',
+                  lineHeight: 'inherit',
+                  whiteSpace: 'pre-wrap',
+                  minWidth: '20px',
+                  minHeight: '20px'
+                }}
+                onMouseDown={(e) => handleMouseDown(e, block.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!isDragging && !isDragMode) {
+                    setActiveBlockId(block.id);
+                    setTextBlocks(blocks => 
+                      blocks.map(b => ({ ...b, isActive: b.id === block.id }))
+                    );
+                  }
+                }}
+              >
+                {block.content || ''}
+                {/* Drag handle - only visible in drag mode */}
+                {isDragMode && (
+                  <div className="absolute -left-1 -top-1 w-2 h-2 bg-blue-500 rounded-full opacity-60 group-hover:opacity-100 transition-opacity cursor-grab" />
+                )}
+              </div>
+            )}
           </div>
         ))}
 
-        {/* Hidden textarea for capturing keyboard input */}
-        <textarea
-          ref={textareaRef}
-          value={activeBlock?.content || ''}
-          onChange={handleInput}
-          onKeyDown={handleKeyDown}
-          onBlur={() => {
-            // Don't deactivate immediately to allow for re-focusing
-            setTimeout(() => {
-              if (document.activeElement !== textareaRef.current) {
-                setActiveBlockId(null);
-                setTextBlocks(blocks => 
-                  blocks.map(block => ({ ...block, isActive: false }))
-                );
-              }
-            }, 100);
-          }}
-          style={{
-            position: 'absolute',
-            left: '-9999px',
-            opacity: 0,
-            pointerEvents: 'none',
-            resize: 'none'
-          }}
-          autoComplete="off"
-        />
+
 
         {/* Instruction text when no blocks exist */}
         {textBlocks.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
             <div className="text-center">
-              <p className="text-lg mb-2">Click anywhere to start typing</p>
-              <p className="text-sm">Each click creates an independent text block</p>
-              <p className="text-xs mt-2">• Drag blocks to reposition • Enter for new lines • Ctrl+Del to delete</p>
+              <p className="text-lg mb-2">Double-click anywhere to start typing</p>
+              <p className="text-sm">Each double-click creates an independent text block</p>
+              <p className="text-xs mt-2">• Toggle drag mode to reposition • Enter for new lines • Ctrl+Del to delete</p>
             </div>
           </div>
         )}
       </div>
     </div>
   );
-}; 
+};
+
+export default CanvasTextEditor; 
