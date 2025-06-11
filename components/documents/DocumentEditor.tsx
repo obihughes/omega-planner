@@ -5,6 +5,14 @@ import { Document, DocumentEditorProps } from '@/types';
 import { Save, X, Trash2, Star, StarOff, Bold, Italic, List, ListOrdered, ChevronDown, ChevronUp, Type } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { 
+  getCursorPositionFromClick, 
+  setCursorPosition, 
+  insertTextAtSelection, 
+  handleSmartIndent,
+  EnhancedTextArea,
+  handleFreeFormClick
+} from './EditorUtils';
 
 interface ExtendedDocumentEditorProps extends DocumentEditorProps {
   onStar?: () => void;
@@ -82,6 +90,108 @@ export const DocumentEditor: React.FC<ExtendedDocumentEditorProps> = ({
     }
   };
 
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    
+    // Use free-form positioning for click-anywhere text placement
+    handleFreeFormClick(target, e.clientX, e.clientY);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+
+    if (e.key === 'Tab') {
+      e.preventDefault();
+             insertTextAtSelection('    '); // Insert 4 spaces
+       const newContent = target.textContent || '';
+       setContent(newContent);
+       setHasUnsavedChanges(true);
+      return;
+    }
+
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSmartIndent(target);
+      const newContent = target.textContent || '';
+      setContent(newContent);
+      setHasUnsavedChanges(true);
+      return;
+    }
+
+    if (e.key === 'Backspace') {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const startContainer = range.startContainer;
+        const startOffset = range.startOffset;
+
+        // Check if we're at the start of 4 spaces (tab-like behavior)
+        if (startContainer.nodeType === Node.TEXT_NODE && startOffset >= 4) {
+          const text = startContainer.textContent || '';
+          const beforeCursor = text.substring(startOffset - 4, startOffset);
+          
+          if (beforeCursor === '    ') {
+            e.preventDefault();
+            // Delete 4 spaces at once
+            range.setStart(startContainer, startOffset - 4);
+            range.setEnd(startContainer, startOffset);
+            range.deleteContents();
+            const newContent = target.textContent || '';
+            setContent(newContent);
+            setHasUnsavedChanges(true);
+            return;
+          }
+        }
+      }
+    }
+
+    // Handle formatting shortcuts
+    if (e.ctrlKey || e.metaKey) {
+      switch (e.key) {
+        case 'b':
+          e.preventDefault();
+          handleBold();
+          break;
+        case 'i':
+          e.preventDefault();
+          handleItalic();
+          break;
+        case '1':
+          e.preventDefault();
+          handleHeading(1);
+          break;
+        case '2':
+          e.preventDefault();
+          handleHeading(2);
+          break;
+        case '3':
+          e.preventDefault();
+          handleHeading(3);
+          break;
+      }
+    }
+  };
+
+  const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const newContent = target.textContent || '';
+    setContent(newContent);
+    setHasUnsavedChanges(true);
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData('text/plain');
+    // Convert tabs to spaces for consistent formatting
+    const processedText = text.replace(/\t/g, '    ');
+    insertTextAtSelection(processedText);
+    
+    const target = e.currentTarget;
+    const newContent = target.textContent || '';
+    setContent(newContent);
+    setHasUnsavedChanges(true);
+  };
+
   const formatText = (command: string, value?: string) => {
     if (typeof window !== 'undefined' && window.document) {
       window.document.execCommand(command, false, value);
@@ -90,18 +200,22 @@ export const DocumentEditor: React.FC<ExtendedDocumentEditorProps> = ({
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Save on Ctrl+S
-    if (e.ctrlKey && e.key === 's') {
-      e.preventDefault();
-      handleSave();
-    }
+  const handleBold = () => {
+    formatText('bold');
+  };
+
+  const handleItalic = () => {
+    formatText('italic');
+  };
+
+  const handleHeading = (level: number) => {
+    formatText('formatBlock', `h${level}`);
   };
 
   if (!document) return null;
 
   return (
-    <div className="flex flex-col h-full" onKeyDown={handleKeyDown}>
+    <div className="flex flex-col h-full">
       {/* Minimal Header */}
       <div className="border-b bg-background/95 backdrop-blur">
         {/* Title Row */}
@@ -158,7 +272,7 @@ export const DocumentEditor: React.FC<ExtendedDocumentEditorProps> = ({
           </div>
         </div>
 
-        {/* Minimal Formatting Controls */}
+        {/* Enhanced Formatting Controls */}
         <div className="px-6 py-2 border-t border-border/50">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -166,7 +280,7 @@ export const DocumentEditor: React.FC<ExtendedDocumentEditorProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => formatText('bold')}
+                onClick={handleBold}
                 className="h-7 px-2 text-xs font-medium"
                 title="Bold (Ctrl+B)"
               >
@@ -176,7 +290,7 @@ export const DocumentEditor: React.FC<ExtendedDocumentEditorProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => formatText('italic')}
+                onClick={handleItalic}
                 className="h-7 px-2 text-xs font-medium"
                 title="Italic (Ctrl+I)"
               >
@@ -283,19 +397,21 @@ export const DocumentEditor: React.FC<ExtendedDocumentEditorProps> = ({
         </div>
       </div>
 
-      {/* Clean Editor Content */}
+      {/* Professional Editor Content with Enhanced Space Handling */}
       <div className="flex-1 overflow-hidden bg-background">
         <div
           ref={contentRef}
           contentEditable
           suppressContentEditableWarning
-          onInput={handleContentChange}
-          onPaste={handleContentChange}
-          dangerouslySetInnerHTML={{ __html: content }}
+          onInput={handleInput}
+          onClick={handleClick}
+          onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
           className={cn(
-            "h-full px-6 py-8 outline-none overflow-y-auto",
+            "h-full px-6 py-8 outline-none overflow-y-auto cursor-text",
             "focus:ring-0 focus:outline-none",
             "text-foreground leading-relaxed",
+            // Remove prose styling for better space control
             "[&>h1]:text-2xl [&>h1]:font-bold [&>h1]:mb-4 [&>h1]:mt-8 [&>h1]:first:mt-0",
             "[&>h2]:text-xl [&>h2]:font-semibold [&>h2]:mb-3 [&>h2]:mt-6",
             "[&>h3]:text-lg [&>h3]:font-medium [&>h3]:mb-2 [&>h3]:mt-5",
@@ -308,11 +424,18 @@ export const DocumentEditor: React.FC<ExtendedDocumentEditorProps> = ({
             minHeight: '100%',
             fontSize: '16px',
             lineHeight: '1.7',
-            fontFamily: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+            fontFamily: '"JetBrains Mono", "Fira Code", Consolas, "Liberation Mono", Menlo, Courier, monospace',
             direction: 'ltr',
-            textAlign: 'left'
+            textAlign: 'left',
+            whiteSpace: 'pre-wrap', // Critical for space preservation
+            tabSize: 4,
+            wordWrap: 'break-word',
+            overflowWrap: 'break-word',
+            // Enhanced cursor styling
+            caretColor: 'rgb(var(--foreground))'
           }}
           dir="ltr"
+          spellCheck={false}
         />
       </div>
 
