@@ -5,19 +5,19 @@ import { Document, DocumentEditorProps } from '@/types';
 import { Save, X, Trash2, Star, StarOff, Bold, Italic, List, ListOrdered, ChevronDown, ChevronUp, Type } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { CanvasTextEditor } from './CanvasTextEditor';
+import CanvasTextEditor from './CanvasTextEditor';
 
 interface ExtendedDocumentEditorProps extends DocumentEditorProps {
   onStar?: () => void;
 }
 
-export const DocumentEditor: React.FC<ExtendedDocumentEditorProps> = ({
+export default function DocumentEditor({
   document,
   onSave,
   onClose,
   onDelete,
   onStar
-}) => {
+}: ExtendedDocumentEditorProps) {
   const [title, setTitle] = useState(document?.title || '');
   const [content, setContent] = useState(document?.content || '');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -320,4 +320,4 @@ export const DocumentEditor: React.FC<ExtendedDocumentEditorProps> = ({
       </div>
     </div>
   );
-}; 
+} 

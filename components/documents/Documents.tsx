@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Document } from '@/types';
-import { DocumentEditor } from './DocumentEditor';
+import DocumentEditor from './DocumentEditor';
 import { useDocuments } from '@/hooks/useDocuments';
 import { Plus, X, Star, Search, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
