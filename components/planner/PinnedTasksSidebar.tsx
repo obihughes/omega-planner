@@ -49,19 +49,50 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
   };
 
   const formatCompactTimeRemaining = (timeRemaining: string): string => {
-    // Convert verbose time remaining to compact format
+    // Handle complex patterns first (e.g., "Due in 2 days 3 hrs")
+    const dayHourMatch = timeRemaining.match(/(\d+)\s+day\w*\s+(\d+)\s+hr/);
+    if (dayHourMatch) {
+      const days = dayHourMatch[1];
+      const hours = dayHourMatch[2];
+      return `${days}d ${hours}h`;
+    }
+    
+    // Handle overdue patterns
+    if (timeRemaining.includes('Overdue by')) {
+      if (timeRemaining.includes('day')) {
+        const days = timeRemaining.match(/(\d+)\s+day/)?.[1];
+        return `${days}d overdue`;
+      } else if (timeRemaining.includes('hr')) {
+        const hrs = timeRemaining.match(/(\d+)\s+hr/)?.[1];
+        return `${hrs}h overdue`;
+      } else if (timeRemaining.includes('min')) {
+        const mins = timeRemaining.match(/(\d+)\s+min/)?.[1];
+        return `${mins}m overdue`;
+      }
+    }
+    
+    // Handle single time units
     if (timeRemaining.includes('min')) {
       const mins = timeRemaining.match(/(\d+)/)?.[1];
       return `${mins}m`;
     }
     if (timeRemaining.includes('hr')) {
       const hrs = timeRemaining.match(/(\d+)/)?.[1];
+      // Convert large hour values to days
+      const hourNum = parseInt(hrs || '0');
+      if (hourNum >= 24) {
+        const days = Math.floor(hourNum / 24);
+        const remainingHours = hourNum % 24;
+        return remainingHours > 0 ? `${days}d ${remainingHours}h` : `${days}d`;
+      }
       return `${hrs}h`;
     }
     if (timeRemaining.includes('day')) {
       const days = timeRemaining.match(/(\d+)/)?.[1];
       return `${days}d`;
     }
+    
+    // Return as-is for edge cases
     return timeRemaining;
   };
 

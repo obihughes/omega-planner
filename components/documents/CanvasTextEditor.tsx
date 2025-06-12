@@ -532,6 +532,21 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
                   if (block.isActive && el.innerHTML !== block.content) {
                     el.innerHTML = block.content;
                   }
+                  // Auto-focus newly created active blocks
+                  if (block.isActive && block.content === '') {
+                    setTimeout(() => {
+                      el.focus();
+                      // Set cursor to end
+                      const range = document.createRange();
+                      const sel = window.getSelection();
+                      range.selectNodeContents(el);
+                      range.collapse(false);
+                      if (sel) {
+                        sel.removeAllRanges();
+                        sel.addRange(range);
+                      }
+                    }, 10);
+                  }
                 }
               }}
               contentEditable={block.isActive}
