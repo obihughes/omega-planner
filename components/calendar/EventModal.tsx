@@ -98,36 +98,42 @@ export function EventModal({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-6">
           {/* Title */}
           <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">
-              Title
+            <label className="text-sm font-semibold text-foreground mb-3 block">
+              Event Title *
             </label>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Event title"
-              className="w-full"
+              placeholder="Enter event title..."
+              className="w-full text-base"
+              autoFocus
             />
           </div>
 
           {/* Date */}
           <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">
-              Date
+            <label className="text-sm font-semibold text-foreground mb-3 block">
+              Date *
             </label>
             <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
-                    "w-full justify-start text-left font-normal",
+                    "w-full justify-start text-left font-normal text-base h-11",
                     !date && "text-muted-foreground"
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? date.toLocaleDateString() : "Pick a date"}
+                  <CalendarIcon className="mr-3 h-4 w-4" />
+                  {date ? date.toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  }) : "Select a date"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0 z-50" align="start">
@@ -148,22 +154,23 @@ export function EventModal({
 
           {/* Color */}
           <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">
+            <label className="text-sm font-semibold text-foreground mb-3 block">
               Color
             </label>
-            <div className="grid grid-cols-9 gap-2">
+            <div className="grid grid-cols-8 gap-3">
               {EVENT_COLORS.map((eventColor) => (
                 <button
                   key={eventColor}
                   type="button"
                   className={cn(
-                    "w-8 h-8 rounded-full border-2 transition-all",
+                    "w-10 h-10 rounded-lg border-2 transition-all shadow-sm hover:shadow-md",
                     color === eventColor 
-                      ? "border-foreground scale-110" 
-                      : "border-transparent hover:scale-105"
+                      ? "border-foreground scale-105 shadow-md" 
+                      : "border-border/30 hover:scale-105 hover:border-border/60"
                   )}
                   style={{ backgroundColor: eventColor }}
                   onClick={() => setColor(eventColor)}
+                  title={eventColor}
                 />
               ))}
             </div>
@@ -171,33 +178,33 @@ export function EventModal({
 
           {/* Description */}
           <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">
+            <label className="text-sm font-semibold text-foreground mb-3 block">
               Description (optional)
             </label>
             <Textarea
               value={description}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
-              placeholder="Event description"
-              className="w-full"
+              placeholder="Add a description for this event..."
+              className="w-full text-base resize-none"
               rows={3}
             />
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-3 pt-6 border-t">
             <Button
               onClick={handleSave}
               disabled={!title.trim()}
-              className="flex-1"
+              className="flex-1 h-11 text-base font-semibold"
             >
-              {event ? 'Update' : 'Add'} Event
+              {event ? 'Update Event' : 'Create Event'}
             </Button>
             
             {event && onDelete && (
               <Button
-                variant="outline"
+                variant="destructive"
                 onClick={handleDelete}
-                className="text-destructive hover:text-destructive"
+                className="h-11 px-6"
               >
                 <Trash2 className="w-4 h-4" />
               </Button>

@@ -10,7 +10,7 @@ import {
   getWeekDays,
   getPeriodSegmentsForMonth
 } from '@/utils/calendar';
-import { ChevronLeft, ChevronRight, Plus, Edit2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Edit2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EventModal } from './EventModal';
 import { PeriodModal } from './PeriodModal';
@@ -19,6 +19,112 @@ interface YearCalendarProps extends CalendarProps {
   className?: string;
   headerLeftControls?: React.ReactNode;
   headerRightControls?: React.ReactNode;
+}
+
+// Day Details Modal Component
+function DayDetailsModal({ 
+  isOpen, 
+  onClose, 
+  date, 
+  events, 
+  periods,
+  onEventEdit,
+  onPeriodEdit 
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  date: Date | null;
+  events: CalendarEvent[];
+  periods: CalendarPeriod[];
+  onEventEdit?: (event: CalendarEvent) => void;
+  onPeriodEdit?: (period: CalendarPeriod) => void;
+}) {
+  if (!isOpen || !date) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-background border rounded-lg shadow-lg max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-4 border-b">
+          <h3 className="text-lg font-semibold">
+            {date.toLocaleDateString('en-US', { 
+              weekday: 'long', 
+              month: 'long', 
+              day: 'numeric',
+              year: 'numeric'
+            })}
+          </h3>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+        
+        <div className="p-4 space-y-4">
+          {events.length === 0 && periods.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">No events or periods on this day</p>
+          ) : (
+            <>
+              {events.length > 0 && (
+                <div>
+                  <h4 className="font-medium mb-2 text-sm text-muted-foreground uppercase tracking-wide">Events</h4>
+                  <div className="space-y-2">
+                    {events.map(event => (
+                      <div 
+                        key={event.id}
+                        className="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer transition-colors"
+                        onClick={() => onEventEdit?.(event)}
+                      >
+                        <div 
+                          className="w-3 h-3 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: event.color }}
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium">{event.title}</div>
+                          {event.description && (
+                            <div className="text-sm text-muted-foreground">{event.description}</div>
+                          )}
+                        </div>
+                        <Edit2 className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {periods.length > 0 && (
+                <div>
+                  <h4 className="font-medium mb-2 text-sm text-muted-foreground uppercase tracking-wide">Periods</h4>
+                  <div className="space-y-2">
+                    {periods.map(period => (
+                      <div 
+                        key={period.id}
+                        className="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer transition-colors"
+                        onClick={() => onPeriodEdit?.(period)}
+                      >
+                        <div 
+                          className="w-6 h-2 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: period.color }}
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium">{period.title}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {period.startDate.toLocaleDateString()} - {period.endDate.toLocaleDateString()}
+                          </div>
+                          {period.description && (
+                            <div className="text-sm text-muted-foreground">{period.description}</div>
+                          )}
+                        </div>
+                        <Edit2 className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function YearCalendar({ 
@@ -38,6 +144,7 @@ export function YearCalendar({
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [eventModalOpen, setEventModalOpen] = useState(false);
   const [periodModalOpen, setPeriodModalOpen] = useState(false);
+  const [dayDetailsOpen, setDayDetailsOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [editingPeriod, setEditingPeriod] = useState<CalendarPeriod | null>(null);
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
@@ -58,7 +165,16 @@ export function YearCalendar({
   };
 
   const handleDateClick = (date: Date) => {
-    setSelectedDate(date);
+    const dayInfo = getDayInfo(date, date.getMonth(), data.events, data.periods, []);
+    
+    if (dayInfo.events.length > 0 || dayInfo.periods.length > 0) {
+      // Show day details if there are events or periods
+      setSelectedDate(date);
+      setDayDetailsOpen(true);
+    } else {
+      // Just select the date if empty
+      setSelectedDate(date);
+    }
   };
 
   const handleDateDoubleClick = (date: Date) => {
@@ -68,9 +184,20 @@ export function YearCalendar({
 
   const handleDateMouseDown = (date: Date) => {
     const timer = setTimeout(() => {
-      // Long press detected
-      setSelectedDate(date);
-      handleAddPeriod();
+      // Long press detected - create unnamed period directly
+      if (onPeriodAdd) {
+        const endDate = new Date(date);
+        endDate.setDate(date.getDate() + 6); // Default 1 week period
+        
+        onPeriodAdd({
+          title: 'New Period',
+          description: '',
+          startDate: date,
+          endDate: endDate,
+          color: '#f59e0b', // Default amber color
+          type: 'period'
+        });
+      }
       setLongPressTimer(null);
     }, 500);
     setLongPressTimer(timer);
@@ -91,6 +218,18 @@ export function YearCalendar({
 
   const handlePeriodClick = (period: CalendarPeriod, e: React.MouseEvent) => {
     e.stopPropagation();
+    setEditingPeriod(period);
+    setPeriodModalOpen(true);
+  };
+
+  const handleDayDetailsEventEdit = (event: CalendarEvent) => {
+    setDayDetailsOpen(false);
+    setEditingEvent(event);
+    setEventModalOpen(true);
+  };
+
+  const handleDayDetailsPeriodEdit = (period: CalendarPeriod) => {
+    setDayDetailsOpen(false);
     setEditingPeriod(period);
     setPeriodModalOpen(true);
   };
@@ -263,7 +402,7 @@ export function YearCalendar({
     const monthPeriods = getPeriodSegmentsForMonth(data.periods, currentYear, month);
     
     return (
-      <div key={month} className="min-h-[280px]">
+      <div key={month} className="min-h-[320px] bg-card/30 rounded-lg p-4 border border-border/20">
         {/* Month Header */}
         <div className="mb-3">
           <h3 className="text-lg font-semibold text-center text-foreground">
@@ -272,9 +411,9 @@ export function YearCalendar({
         </div>
 
         {/* Week Days Header */}
-        <div className="grid grid-cols-7 gap-1 mb-2">
+        <div className="grid grid-cols-7 gap-1 mb-3">
           {weekDays.map(day => (
-            <div key={day} className="text-xs font-medium text-muted-foreground text-center py-1">
+            <div key={day} className="text-sm font-semibold text-muted-foreground text-center py-2 uppercase tracking-wide">
               {day}
             </div>
           ))}
@@ -299,13 +438,14 @@ export function YearCalendar({
                 key={date.toISOString()}
                 data-date={date.toISOString()}
                 className={`
-                  relative min-h-[32px] p-1 text-sm rounded transition-colors
+                  relative min-h-[40px] border border-border/30 rounded-md transition-all duration-200
+                  flex items-center justify-center font-semibold text-base
                   ${isPast 
-                    ? 'text-muted-foreground opacity-40 cursor-default' 
-                    : 'text-foreground hover:bg-accent/50 cursor-pointer'
+                    ? 'text-muted-foreground/50 cursor-default bg-muted/20' 
+                    : 'text-foreground hover:bg-accent/30 hover:border-border/60 cursor-pointer hover:shadow-sm'
                   }
-                  ${dayInfo.isToday ? 'bg-primary text-primary-foreground font-semibold' : ''}
-                  ${selectedDate && date.toDateString() === selectedDate.toDateString() ? 'ring-2 ring-primary' : ''}
+                  ${dayInfo.isToday ? 'bg-primary text-primary-foreground font-bold shadow-md border-primary' : ''}
+                  ${selectedDate && date.toDateString() === selectedDate.toDateString() ? 'ring-2 ring-primary/50 bg-primary/5' : ''}
                 `}
                 style={eventBorderStyle}
                 onClick={() => !isPast && handleDateClick(date)}
@@ -316,7 +456,7 @@ export function YearCalendar({
                 onMouseMove={dragMode && !isPast ? (e) => handleDragMove(e, date) : undefined}
               >
                 {/* Day Number */}
-                <span className="relative z-20">
+                <span className="relative z-20 font-bold">
                   {date.getDate()}
                 </span>
 
@@ -488,6 +628,16 @@ export function YearCalendar({
         onDelete={onPeriodDelete}
         period={editingPeriod}
         initialDate={selectedDate || undefined}
+      />
+
+      <DayDetailsModal
+        isOpen={dayDetailsOpen}
+        onClose={() => setDayDetailsOpen(false)}
+        date={selectedDate}
+        events={selectedDate ? data.events.filter(e => e.date.toDateString() === selectedDate.toDateString()) : []}
+        periods={selectedDate ? data.periods.filter(p => p.startDate <= selectedDate && p.endDate >= selectedDate) : []}
+        onEventEdit={handleDayDetailsEventEdit}
+        onPeriodEdit={handleDayDetailsPeriodEdit}
       />
     </div>
   );
