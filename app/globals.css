@@ -161,8 +161,9 @@ html.resize-active .resize-handle {
 
 /* Enhanced button and interactive elements */
 .btn-primary {
-  @apply bg-primary text-primary-foreground hover:bg-primary/90 border border-primary/20;
-  box-shadow: 0 4px 12px rgba(147, 51, 234, 0.25);
+  @apply bg-primary text-primary-foreground hover:bg-primary/90;
+  @apply shadow-sm hover:shadow-md transition-all duration-200;
+  @apply border border-primary/20 hover:border-primary/40;
 }
 
 .btn-secondary {
@@ -209,7 +210,14 @@ input, textarea, select {
 
 /* Card enhancements */
 .card-enhanced {
-  @apply bg-card border border-border rounded-lg shadow-sm hover:shadow-md transition-shadow;
+  @apply bg-card/80 backdrop-blur-sm border border-border/50 rounded-xl shadow-sm;
+  @apply hover:shadow-lg hover:border-primary/30 transition-all duration-300;
+  background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--card))/0.8 100%);
+}
+
+.card-enhanced:hover {
+  background: linear-gradient(135deg, hsl(var(--card))/0.9 0%, hsl(var(--card))/0.7 100%);
+  transform: translateY(-2px);
 }
 
 /* Typography enhancements */
@@ -225,7 +233,8 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Navigation sidebar styling */
 .nav-item {
-  @apply flex items-center space-x-3 px-3 py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors;
+  @apply px-4 py-2.5 rounded-xl flex items-center space-x-2 text-sm font-medium transition-all duration-200;
+  @apply hover:bg-accent/80 hover:backdrop-blur-sm;
 }
 
 .nav-item.active {

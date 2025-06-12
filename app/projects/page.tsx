@@ -8,6 +8,19 @@ import { ProjectCard } from '@/components/projects/ProjectCard';
 import { ProjectsCalendar } from '@/components/projects/ProjectsCalendar';
 import { Navigation } from '@/components/ui/Navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { 
+  Plus, 
+  Search, 
+  Archive,
+  Calendar,
+  ChevronDown,
+  SortAsc,
+  SortDesc,
+  Grid3X3,
+  List
+} from 'lucide-react';
 
 // Drag and drop imports
 import {
@@ -31,17 +44,6 @@ import {
 
 // Lazy load the modal to reduce initial bundle size
 const ProjectFormModal = lazy(() => import('@/components/modals/ProjectFormModal').then(module => ({ default: module.ProjectFormModal })));
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  Grid3X3, 
-  List,
-  SortAsc,
-  SortDesc,
-  Archive,
-  Calendar
-} from 'lucide-react';
 
 // Sortable Project Card wrapper
 function SortableProjectCard({ 
@@ -107,7 +109,7 @@ export default function ProjectsPage() {
   const [sortBy, setSortBy] = useState<'name' | 'progress' | 'updated' | 'order'>('order');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [activeView, setActiveView] = useState<'active' | 'archived'>('active');
+  const [activeView, setActiveView] = useState<'active' | 'archived' | 'calendar'>('active');
   
   // Project form modal state
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
@@ -198,65 +200,36 @@ export default function ProjectsPage() {
 
         addTaskToProject(mobileProject.id, {
           title: 'UI/UX Design',
-          description: 'Design app interface and user experience',
+          description: 'Design user interface and experience mockups',
           status: 'in-progress',
           priority: 'high',
-          dueDate: '2024-02-15',
-          estimatedHours: 40
-        });
-
-        // Marketing project tasks
-        addTaskToProject(marketingProject.id, {
-          title: 'Social media campaign',
-          description: 'Execute social media marketing strategy',
-          status: 'completed',
-          priority: 'medium',
           estimatedHours: 30
         });
 
+        // Marketing campaign tasks
         addTaskToProject(marketingProject.id, {
-          title: 'Performance analysis',
-          description: 'Analyze campaign performance and ROI',
+          title: 'Define target audience',
+          description: 'Create detailed personas for the target audience',
           status: 'completed',
-          priority: 'low',
+          priority: 'high',
           estimatedHours: 8
         });
       }, 100);
     }
-  }, [loading, projects.length, createProject, addTaskToProject]);
+  }, [loading, projects.length]);
 
-  // Filter and sort projects
-  const filteredProjects = projects
-    .filter(project => activeView === 'active' ? !project.isDeleted : project.isDeleted)
-    .filter(project => {
-      const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           project.description?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
-      return matchesSearch && matchesStatus;
+
+  const activeProjects = projects
+    .filter(p => !p.isDeleted)
+    .filter(p => {
+      if (statusFilter === 'all') return true;
+      return p.status === statusFilter;
     })
-    .sort((a, b) => {
-      let comparison = 0;
-      
-      switch (sortBy) {
-        case 'name':
-          comparison = a.name.localeCompare(b.name);
-          break;
-        case 'progress':
-          comparison = a.progress - b.progress;
-          break;
-        case 'updated':
-          comparison = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
-          break;
-        case 'order':
-          comparison = (a.order || 0) - (b.order || 0);
-          break;
-      }
-      
-      return sortOrder === 'asc' ? comparison : -comparison;
-    });
+    .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
-  const activeProjects = filteredProjects.filter(p => !p.isDeleted);
-  const archivedProjects = filteredProjects.filter(p => p.isDeleted);
+  const archivedProjects = projects
+    .filter(p => p.isDeleted)
+    .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
   const handleCreateProject = () => {
     setEditingProject(null);
@@ -264,10 +237,7 @@ export default function ProjectsPage() {
   };
 
   const handleProjectClick = (project: Project) => {
-    // Don't navigate to archived projects
-    if (!project.isDeleted) {
-      router.push(`/projects/${project.id}`);
-    }
+    router.push(`/projects/${project.id}`);
   };
 
   const handleEditProject = (project: Project) => {
@@ -289,9 +259,14 @@ export default function ProjectsPage() {
 
   const handleSaveProject = (projectData: Partial<Project>, isNew: boolean) => {
     if (isNew) {
-      createProject(projectData as Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'tasks' | 'progress' | 'order'>);
-    } else if (editingProject) {
-      updateProject(editingProject.id, projectData);
+      createProject({
+        name: projectData.name || 'New Project',
+        description: projectData.description || '',
+        status: projectData.status || 'planning',
+        color: projectData.color || '#CCCCCC'
+      });
+    } else {
+      updateProject(editingProject!.id, projectData);
     }
   };
 
@@ -300,64 +275,49 @@ export default function ProjectsPage() {
     setEditingProject(null);
   };
 
-  // Drag and drop handlers
   function handleDragStart(event: DragStartEvent) {
     setActiveId(event.active.id);
   }
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
-    
+
     if (over && active.id !== over.id) {
       reorderProjects(active.id as string, over.id as string);
     }
-    
     setActiveId(null);
   }
 
   const activeProject = activeId ? projects.find(p => p.id === activeId) : null;
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navigation />
-        <div className="flex items-center justify-center h-96">
-          <div className="text-muted-foreground">Loading projects...</div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
       
-      <div className="container mx-auto px-4 py-8">
-        <Tabs value={activeView} onValueChange={(value: string) => setActiveView(value as 'active' | 'archived')}>
+      <div className="container mx-auto px-6 py-6">
+        <Tabs value={activeView} onValueChange={(value: string) => setActiveView(value as 'active' | 'archived' | 'calendar')}>
           <div className="flex items-center justify-between mb-6">
-            <TabsList className="grid w-fit grid-cols-2">
-              <TabsTrigger value="active" className="flex items-center space-x-2">
+            <TabsList className="grid w-fit grid-cols-3 bg-card/50 backdrop-blur-sm border border-border/50">
+              <TabsTrigger value="active" className="flex items-center space-x-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm">
                 <span>Active</span>
-                <span className="bg-muted text-muted-foreground px-2 py-1 rounded-full text-xs">
+                <span className="bg-muted text-muted-foreground data-[state=active]:bg-primary-foreground/20 data-[state=active]:text-primary-foreground px-1.5 py-0.5 rounded-full text-xs font-medium">
                   {activeProjects.length}
                 </span>
               </TabsTrigger>
-              <TabsTrigger value="archived" className="flex items-center space-x-2">
+              <TabsTrigger value="archived" className="flex items-center space-x-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm">
                 <Archive className="w-4 h-4" />
                 <span>Archived</span>
-                <span className="bg-muted text-muted-foreground px-2 py-1 rounded-full text-xs">
+                <span className="bg-muted text-muted-foreground data-[state=active]:bg-primary-foreground/20 data-[state=active]:text-primary-foreground px-1.5 py-0.5 rounded-full text-xs font-medium">
                   {archivedProjects.length}
                 </span>
               </TabsTrigger>
-              <TabsTrigger value="calendar" className="flex items-center space-x-2">
+              <TabsTrigger value="calendar" className="flex items-center space-x-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm">
                 <Calendar className="w-4 h-4" />
                 <span>Calendar</span>
               </TabsTrigger>
             </TabsList>
 
-            {/* Filters and Controls */}
-            <div className="flex items-center space-x-4">
-              {/* Search */}
+            <div className="flex items-center space-x-2">
               <div className="relative">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
                 <input
@@ -365,71 +325,71 @@ export default function ProjectsPage() {
                   placeholder="Search projects..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2.5 rounded-lg bg-input border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors"
+                  className="pl-10 pr-4 py-2 w-56 rounded-lg bg-card/50 backdrop-blur-sm border border-border/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all text-sm"
                 />
               </div>
 
-              {/* Status Filter */}
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as Project['status'] | 'all')}
-                className="px-3 py-2.5 rounded-lg bg-input border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors"
-              >
-                <option value="all">All Statuses</option>
-                <option value="planning">Planning</option>
-                <option value="active">Active</option>
-                <option value="on-hold">On Hold</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="flex items-center space-x-2 text-sm">
+                    <span>View</span>
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-4">
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-medium text-sm mb-2">Status</h4>
+                      <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value as Project['status'] | 'all')}
+                        className="w-full px-3 py-2 rounded-lg bg-input border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                      >
+                        <option value="all">All Statuses</option>
+                        <option value="planning">Planning</option>
+                        <option value="active">Active</option>
+                        <option value="on-hold">On Hold</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                    </div>
 
-              {/* Sort Controls */}
-              <div className="flex items-center space-x-2">
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as 'name' | 'progress' | 'updated' | 'order')}
-                  className="px-3 py-2.5 rounded-lg bg-input border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors"
-                >
-                  <option value="order">Custom Order</option>
-                  <option value="name">Name</option>
-                  <option value="progress">Progress</option>
-                  <option value="updated">Last Updated</option>
-                </select>
-                <button
-                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                  className="p-2 border rounded-lg hover:bg-accent transition-colors"
-                  title={`Sort ${sortOrder === 'asc' ? 'Descending' : 'Ascending'}`}
-                >
-                  {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
-                </button>
-              </div>
+                    <div>
+                      <h4 className="font-medium text-sm mb-2">Sort by</h4>
+                      <div className="flex items-center space-x-1">
+                        <select
+                          value={sortBy}
+                          onChange={(e) => setSortBy(e.target.value as 'name' | 'progress' | 'updated' | 'order')}
+                          className="w-full px-3 py-2 rounded-lg bg-input border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                        >
+                          <option value="order">Custom Order</option>
+                          <option value="name">Name</option>
+                          <option value="progress">Progress</option>
+                          <option value="updated">Last Updated</option>
+                        </select>
+                        <button
+                          onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                          className="p-2 border rounded-lg hover:bg-accent transition-colors"
+                        >
+                          {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
 
-              {/* View Mode Toggle */}
-              <div className="flex items-center space-x-1 border rounded-lg p-1">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded transition-colors ${
-                    viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'
-                  }`}
-                  title="Grid View"
-                >
-                  <Grid3X3 className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 rounded transition-colors ${
-                    viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'
-                  }`}
-                  title="List View"
-                >
-                  <List className="w-4 h-4" />
-                </button>
-              </div>
+                    <div>
+                      <h4 className="font-medium text-sm mb-2">Display</h4>
+                      <div className="flex items-center space-x-1 border rounded-lg p-1 bg-muted/50">
+                        <button onClick={() => setViewMode('grid')} className={`flex-1 p-2 rounded-md transition-colors text-sm ${viewMode === 'grid' ? 'bg-primary text-primary-foreground' : ''}`}>Grid</button>
+                        <button onClick={() => setViewMode('list')} className={`flex-1 p-2 rounded-md transition-colors text-sm ${viewMode === 'list' ? 'bg-primary text-primary-foreground' : ''}`}>List</button>
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
 
-              {/* New Project Button */}
               <button
                 onClick={handleCreateProject}
-                className="btn-primary px-4 py-2 rounded-lg flex items-center space-x-2 font-medium"
+                className="btn-primary px-4 py-2 rounded-lg flex items-center space-x-2 font-medium shadow-sm hover:shadow-md transition-all"
               >
                 <Plus className="w-4 h-4" />
                 <span>New Project</span>
@@ -466,7 +426,7 @@ export default function ProjectsPage() {
                 >
                   <div className={
                     viewMode === 'grid' 
-                      ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                      ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
                       : "space-y-4"
                   }>
                     {activeProjects.map((project) => (
@@ -512,7 +472,7 @@ export default function ProjectsPage() {
             ) : (
               <div className={
                 viewMode === 'grid' 
-                  ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                  ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
                   : "space-y-4"
               }>
                 {archivedProjects.map((project) => (
