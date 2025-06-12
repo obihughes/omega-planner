@@ -201,9 +201,17 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
         const newBlockEl = blockElementsRef.current.get(newBlock.id)?.querySelector('[contenteditable]');
         if (newBlockEl && newBlockEl instanceof HTMLElement) {
             newBlockEl.focus();
-            // No need to select all text if the block is empty
+            // Move cursor to end of content (which should be empty for new blocks)
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.selectNodeContents(newBlockEl);
+            range.collapse(false);
+            if (sel) {
+              sel.removeAllRanges();
+              sel.addRange(range);
+            }
         }
-    }, 100);
+    }, 50);
   };
 
   const handleBlockChange = (blockId: string, newContent: string) => {

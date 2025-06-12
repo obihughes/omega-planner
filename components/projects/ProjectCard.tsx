@@ -285,22 +285,25 @@ function ProjectCardComponent({
       <div className="space-y-3">
         {renderProgressCircles()}
 
-        <div className="flex items-center space-x-2">
-          <span className="flex items-center space-x-1.5 bg-primary/10 text-primary px-2 py-1 rounded-md text-xs font-semibold">
-            <span>{project.progress}%</span>
-            <span className="opacity-80">complete</span>
-          </span>
-          {timeRemaining && (
-            <span className={cn(
-              "flex items-center space-x-1.5 px-2 py-1 rounded-md text-xs font-medium",
-              timeRemaining.isOverdue 
-                ? "bg-red-500/10 text-red-500" 
-                : "text-muted-foreground"
-            )}>
-              <Clock className="w-3 h-3" />
-              <span>{timeRemaining.text}</span>
+        <div className="flex items-center justify-between">
+          <div className="flex-1"></div>
+          <div className="flex items-center space-x-2 ml-auto">
+            <span className="flex items-center space-x-1.5 bg-muted/30 text-muted-foreground px-2 py-1 rounded-md text-xs font-medium">
+              <span>{project.progress}%</span>
+              <span className="opacity-80">complete</span>
             </span>
-          )}
+            {timeRemaining && (
+              <span className={cn(
+                "flex items-center space-x-1.5 px-2 py-1 rounded-md text-xs font-medium",
+                timeRemaining.isOverdue 
+                  ? "bg-red-500/10 text-red-500" 
+                  : "bg-muted/30 text-muted-foreground"
+              )}>
+                <Clock className="w-3 h-3" />
+                <span>{timeRemaining.text}</span>
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -143,8 +143,19 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
                       </div>
                     </div>
                     
-                    {/* Action buttons - compact on hover */}
-                    <div className="flex items-start gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity pt-0.5">
+                    {/* Action buttons - stacked vertically on the right */}
+                    <div className="flex flex-col items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        type="button"
+                        className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onUnpinTask(pinnedTask.pinnedId);
+                        }}
+                        title="Unpin task"
+                      >
+                        <PinOff className="w-2.5 h-2.5" />
+                      </button>
                       <button
                         type="button"
                         className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
@@ -166,14 +177,6 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
                         title="View Notes"
                       >
                         <EyeIcon className="w-2.5 h-2.5" />
-                      </button>
-                      <button
-                        type="button"
-                        className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                        onClick={() => onUnpinTask(pinnedTask.pinnedId)}
-                        title="Unpin task"
-                      >
-                        <PinOff className="w-2.5 h-2.5" />
                       </button>
                     </div>
                   </div>

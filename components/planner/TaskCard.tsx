@@ -56,8 +56,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           p-1.5
           rounded-md
           ${color}
-          border border-gray-300 dark:border-gray-700
-          hover:ring-1 hover:ring-gray-400 dark:hover:ring-gray-300
+          border border-border/40 dark:border-gray-700
+          hover:ring-1 hover:ring-border/60 dark:hover:ring-gray-300
           transition-all duration-200
           ${isCompressed ? 'min-h-[24px]' : ''}
           h-full max-h-full relative overflow-hidden
@@ -69,7 +69,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             <div className="flex-grow flex flex-col min-w-0 justify-between">
               <div>
                 <div className={`
-                  dark:text-white break-words
+                  text-foreground break-words
                   ${isCompressed ? 'text-[8px] writing-mode-vertical-lr transform h-full flex items-center justify-center overflow-hidden leading-tight' : 'text-xs line-clamp-2'}
                   font-bold
                 `}
@@ -84,10 +84,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               </div>
               {!isCompressed && (
                 <div className="mt-1">
-                  <div className="text-[9px] text-neutral-600 dark:text-neutral-300 font-medium">
+                  <div className="text-[9px] text-muted-foreground font-medium">
                     {formatTime(task.startHour)} - {formatTime(endTime)}
                   </div>
-                  <div className="text-[8px] text-neutral-700 dark:text-neutral-200 font-semibold mt-px mb-0.5">
+                  <div className="text-[8px] text-muted-foreground font-semibold mt-px mb-0.5">
                     {formatDuration(task.duration)}
                   </div>
                 </div>
@@ -99,7 +99,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
                 <button
                   type="button"
-                  className="h-3.5 w-3.5 p-0 text-gray-600 dark:text-gray-300 hover:bg-gray-100/30 dark:hover:bg-gray-600/30 rounded-sm flex items-center justify-center"
+                  className="h-3.5 w-3.5 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors"
                   onClick={handleEditClick}
                   title="Edit task"
                 >
@@ -108,7 +108,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 
                 <button
                   type="button"
-                  className="h-3.5 w-3.5 p-0 text-gray-600 dark:text-gray-300 hover:bg-gray-100/30 dark:hover:bg-gray-600/30 rounded-sm flex items-center justify-center"
+                  className="h-3.5 w-3.5 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors"
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); onCopy(task); }}
                   title="Copy task"
                 >
@@ -117,7 +117,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
                 <button
                   type="button"
-                  className="h-3.5 w-3.5 p-0 text-gray-600 dark:text-gray-300 hover:bg-gray-100/30 dark:hover:bg-gray-600/30 rounded-sm flex items-center justify-center"
+                  className="h-3.5 w-3.5 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors"
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); onViewNotes(task); }}
                   title="View task details"
                 >
@@ -133,7 +133,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   <div className="flex justify-center"> {/* Centering for the top button */}
                     <button
                       type="button"
-                      className="h-2.5 w-2.5 p-0 text-gray-600 dark:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-gray-700/50 rounded-sm flex items-center justify-center"
+                      className="h-2.5 w-2.5 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors"
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); onViewNotes(task); }}
                       title="View task"
                     >
@@ -143,7 +143,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   <div className="flex items-center space-x-px mt-px"> {/* Bottom row with Copy and Edit, added small top margin */}
                     <button
                       type="button"
-                      className="h-2.5 w-2.5 p-0 text-gray-600 dark:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-gray-700/50 rounded-sm flex items-center justify-center"
+                      className="h-2.5 w-2.5 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors"
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); onCopy(task); }}
                       title="Copy task"
                     >
@@ -151,7 +151,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                     </button>
                     <button
                       type="button"
-                      className="h-2.5 w-2.5 p-0 text-gray-600 dark:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-gray-700/50 rounded-sm flex items-center justify-center"
+                      className="h-2.5 w-2.5 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors"
                       onClick={handleEditClick}
                       title="Edit task"
                     >
@@ -164,7 +164,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 <div className="absolute bottom-0.5 right-0.5 flex items-center space-x-0.5 p-0.5 z-10" onClick={(e) => e.stopPropagation()}>
                   <button
                     type="button"
-                    className="h-3 w-3 p-0 text-gray-600 dark:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-gray-700/50 rounded-sm flex items-center justify-center"
+                    className="h-3 w-3 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors"
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); onCopy(task); }}
                     title="Copy task"
                   >
@@ -172,7 +172,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   </button>
                   <button
                     type="button"
-                    className="h-3 w-3 p-0 text-gray-600 dark:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-gray-700/50 rounded-sm flex items-center justify-center"
+                    className="h-3 w-3 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors"
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); onViewNotes(task); }}
                     title="View/Edit task"
                   >
@@ -180,7 +180,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   </button>
                   <button
                     type="button"
-                    className="h-3 w-3 p-0 text-gray-600 dark:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-gray-700/50 rounded-sm flex items-center justify-center"
+                    className="h-3 w-3 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors"
                     onClick={handleEditClick}
                     title="Edit task"
                   >
