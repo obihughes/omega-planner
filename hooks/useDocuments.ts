@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Document, DocumentsStorageData } from '@/types';
 
-const STORAGE_KEY = 'sunsama-documents';
+const STORAGE_KEY = 'omega-planner-documents';
 
 const defaultSettings = {
   defaultFontSize: 16,

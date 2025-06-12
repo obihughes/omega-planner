@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Project, ProjectTask, ProjectsStorageData } from '@/types';
 
-const STORAGE_KEY = 'sunsama-projects';
+const STORAGE_KEY = 'omega-planner-projects';
 const STORAGE_VERSION = '1.0.0';
 
 // Helper to save to localStorage

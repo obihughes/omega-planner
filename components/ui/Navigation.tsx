@@ -53,7 +53,7 @@ export function Navigation() {
                 <Calendar className="w-5 h-5 text-primary-foreground" />
               </div>
               <h1 className="text-lg font-semibold text-foreground hidden sm:block">
-                Productivity Hub
+                Omega Planner
               </h1>
             </div>
           </div>
