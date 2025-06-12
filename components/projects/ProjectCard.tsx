@@ -194,9 +194,12 @@ function ProjectCardComponent({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "bg-card border rounded-lg p-4 hover:shadow-md hover:border-primary/50 transition-all duration-200 cursor-pointer group relative",
-        isDragging && "rotate-3 scale-105",
-        isArchived && "opacity-75 bg-muted/30"
+        "card-enhanced p-5 cursor-pointer group relative overflow-hidden",
+        "bg-card/50 backdrop-blur-sm",
+        "hover:bg-card/80 hover:border-primary/30",
+        "transition-all duration-300 ease-out",
+        isDragging && "rotate-2 scale-105 shadow-xl",
+        isArchived && "opacity-60 bg-muted/20"
       )}
       onClick={handleCardClick}
       title="Click to open project and manage tasks"

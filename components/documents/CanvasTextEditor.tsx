@@ -42,9 +42,12 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
   const [isDragMode, setIsDragMode] = useState(false);
   const [isDragging, setIsDragging] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [recentlyDeleted, setRecentlyDeleted] = useState<TextBlock | null>(null);
+  const [showUndoPrompt, setShowUndoPrompt] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
   const blockElementsRef = useRef<Map<string, HTMLDivElement | null>>(new Map());
   const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const undoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // This ref tracks the last content that was sent to the parent component.
   // It's used to prevent the component from re-initializing itself with old
@@ -108,85 +111,89 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
   };
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isDragging || isDragMode) return;
+    if (isDragMode) return;
+    const target = e.target as HTMLElement;
+    if (target.closest('.group')) {
+      return;
+    }
 
-    // Check if the click was outside any block.
-    const clickX = e.clientX;
-    const clickY = e.clientY;
-    const wasClickInsideAnyBlock = Array.from(blockElementsRef.current.values()).some(el => {
-      if (!el) return false;
-      const blockRect = el.getBoundingClientRect();
-      return (
-        clickX >= blockRect.left &&
-        clickX <= blockRect.right &&
-        clickY >= blockRect.top &&
-        clickY <= blockRect.bottom
-      );
-    });
+    if (activeBlockId) {
+      const activeEl = blockElementsRef.current.get(activeBlockId)?.querySelector('[contenteditable]') as HTMLElement;
+      let newBlocks = [...textBlocks];
+      
+      if (activeEl) {
+        const newContent = activeEl.innerHTML.trim();
+        const block = newBlocks.find(b => b.id === activeBlockId);
 
-    if (!wasClickInsideAnyBlock) {
-      // If clicked on the empty canvas, save or delete the currently active block.
-      if (activeBlockId) {
-        const activeEl = blockElementsRef.current.get(activeBlockId)?.querySelector('[contenteditable]') as HTMLElement;
-        if (activeEl) {
-          const newContent = activeEl.innerHTML;
-          // If content is empty or only whitespace, delete the block.
-          if (activeEl.textContent?.trim() === '') {
-            const updatedBlocks = textBlocks.filter(b => b.id !== activeBlockId);
-            setTextBlocks(updatedBlocks);
-            handleContentChange(updatedBlocks);
-          } else {
-            // Otherwise, save the content.
-            const updatedBlocks = textBlocks.map(b => 
-              b.id === activeBlockId ? { ...b, content: newContent, isActive: false } : b
-            );
-            setTextBlocks(updatedBlocks);
-            handleContentChange(updatedBlocks);
-          }
+        if (block && (newContent === '' || newContent === '<br>')) {
+          // If content is empty, remove the block
+          newBlocks = newBlocks.filter(b => b.id !== activeBlockId);
+        } else if (block && block.content !== newContent) {
+          // If content changed, update the block
+          newBlocks = newBlocks.map(b =>
+            b.id === activeBlockId ? { ...b, content: newContent, isActive: false } : b
+          );
+        } else {
+          // Just deactivate
+          newBlocks = newBlocks.map(b =>
+            b.id === activeBlockId ? { ...b, isActive: false } : b
+          );
         }
+      } else {
+         // Just deactivate if element not found for some reason
+         newBlocks = newBlocks.map(b =>
+            b.id === activeBlockId ? { ...b, isActive: false } : b
+          );
       }
-      setActiveBlockId(null); // Deactivate.
+      
+      setTextBlocks(newBlocks);
+      handleContentChange(newBlocks);
+      setActiveBlockId(null);
     }
   };
 
   const handleCanvasDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isDragging || isDragMode) return;
-    
-    // Save any pending changes from the previously active block.
+    e.preventDefault();
+    if (isDragMode) return;
+
+    let currentBlocks = [...textBlocks];
     if (activeBlockId) {
-        const activeEl = blockElementsRef.current.get(activeBlockId)?.querySelector('[contenteditable]') as HTMLElement;
-        if (activeEl) {
-          const newContent = activeEl.innerHTML;
-          const currentBlock = textBlocks.find(b => b.id === activeBlockId);
-          if (currentBlock && currentBlock.content !== newContent) {
-            const blockToUpdate = textBlocks.find(b => b.id === activeBlockId);
-            if(blockToUpdate) blockToUpdate.content = newContent;
-          }
+      const activeEl = blockElementsRef.current.get(activeBlockId)?.querySelector('[contenteditable]') as HTMLElement;
+      if (activeEl) {
+        const newContent = activeEl.innerHTML.trim();
+        const block = currentBlocks.find(b => b.id === activeBlockId);
+
+        if (block && (newContent === '' || newContent === '<br>')) {
+           currentBlocks = currentBlocks.filter(b => b.id !== activeBlockId);
+        } else if (block && block.content !== newContent) {
+           currentBlocks = currentBlocks.map(b =>
+            b.id === activeBlockId ? { ...b, content: newContent, isActive: false } : b
+          );
+        } else {
+           currentBlocks = currentBlocks.map(b =>
+            b.id === activeBlockId ? { ...b, isActive: false } : b
+          );
         }
+      } else {
+         currentBlocks = currentBlocks.map(b =>
+            b.id === activeBlockId ? { ...b, isActive: false } : b
+        );
       }
+      setActiveBlockId(null);
+    }
 
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-
-    const x = e.clientX - rect.left - 24; // Subtract padding
-    const y = e.clientY - rect.top - 32; // Subtract padding
-
-    // Create new block at double-click position (snapped to grid)
-    const snapped = snapToGrid(Math.max(0, x), Math.max(0, y));
+    const canvasRect = canvasRef.current!.getBoundingClientRect();
     const newBlock: TextBlock = {
       id: `block-${Date.now()}`,
-      x: snapped.x,
-      y: snapped.y,
-      content: '',
-      isActive: true
+      x: e.clientX - canvasRect.left,
+      y: e.clientY - canvasRect.top,
+      content: '', // Start with empty content
+      isActive: true,
     };
-    
-    const newBlocks = [
-      ...textBlocks.map(block => ({ ...block, isActive: false })),
-      newBlock
-    ];
-    setTextBlocks(newBlocks);
-    handleContentChange(newBlocks);
+
+    const updatedBlocks = [...currentBlocks, newBlock];
+    setTextBlocks(updatedBlocks);
+    // Don't save to parent immediately - wait until user types something
     setActiveBlockId(newBlock.id);
 
     // After creating a new block, focus it so the user can type immediately.
@@ -194,8 +201,9 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
         const newBlockEl = blockElementsRef.current.get(newBlock.id)?.querySelector('[contenteditable]');
         if (newBlockEl && newBlockEl instanceof HTMLElement) {
             newBlockEl.focus();
+            // No need to select all text if the block is empty
         }
-    }, 50); // Reduced delay for faster focus
+    }, 100);
   };
 
   const handleBlockChange = (blockId: string, newContent: string) => {
@@ -206,28 +214,18 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
     );
     setTextBlocks(updatedBlocks);
 
-    // If the block is empty after an update, remove it.
-    const editableEl = blockElementsRef.current.get(blockId)?.querySelector('[contenteditable]');
-    if (editableEl && editableEl instanceof HTMLElement && editableEl.textContent?.trim() === '') {
-        // Use a timeout to allow the user to continue typing if they just cleared the text
-        setTimeout(() => {
-            const currentBlock = textBlocks.find(b => b.id === blockId);
-            if (currentBlock && currentBlock.content.trim() === '') {
-                 const filteredBlocks = textBlocks.filter(b => b.id !== blockId);
-                 setTextBlocks(filteredBlocks);
-                 handleContentChange(filteredBlocks);
-                 setActiveBlockId(null);
-            }
-        }, 1500); // Wait 1.5s before deleting empty block
-    }
-
     // Debounce the final state propagation to the parent component.
     if (updateTimeoutRef.current) {
       clearTimeout(updateTimeoutRef.current);
     }
     updateTimeoutRef.current = setTimeout(() => {
-      handleContentChange(updatedBlocks);
-    }, 500); // Increased debounce time for smoother saving.
+      // Filter out empty blocks before saving
+      const nonEmptyBlocks = updatedBlocks.filter(block => {
+        const content = block.content.trim();
+        return content !== '' && content !== '<br>';
+      });
+      handleContentChange(nonEmptyBlocks);
+    }, 300); // Reduced debounce time so first keystroke saves quicker
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -236,6 +234,21 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
     const activeBlock = textBlocks.find(block => block.id === activeBlockId);
 
     if (e.key === 'Escape') {
+      // Check if current block is empty and remove it
+      if (activeBlockId) {
+        const activeEl = blockElementsRef.current.get(activeBlockId)?.querySelector('[contenteditable]') as HTMLElement;
+        if (activeEl) {
+          const content = activeEl.innerHTML.trim();
+          if (content === '' || content === '<br>') {
+            const filteredBlocks = textBlocks.filter(b => b.id !== activeBlockId);
+            setTextBlocks(filteredBlocks);
+            handleContentChange(filteredBlocks);
+            setActiveBlockId(null);
+            return;
+          }
+        }
+      }
+      
       setActiveBlockId(null);
       setTextBlocks(blocks => 
         blocks.map(block => ({ ...block, isActive: false }))
@@ -337,6 +350,29 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
     }
   };
 
+  const handleUndo = () => {
+    if (recentlyDeleted) {
+      const newBlocks = [...textBlocks, recentlyDeleted];
+      setTextBlocks(newBlocks);
+      handleContentChange(newBlocks);
+      setActiveBlockId(recentlyDeleted.id);
+      setRecentlyDeleted(null);
+      setShowUndoPrompt(false);
+      if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
+      if (undoTimeoutRef.current) {
+        clearTimeout(undoTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
     <div className={className} style={style}>
       {/* Floating Formatting Toolbar */}
@@ -344,6 +380,25 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
         <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 bg-muted rounded-lg shadow-lg p-1 flex items-center gap-1">
           <button onClick={() => handleFormat('bold')} className="p-2 rounded hover:bg-background/50"><Bold size={16} /></button>
           <button onClick={() => handleFormat('italic')} className="p-2 rounded hover:bg-background/50"><Italic size={16} /></button>
+        </div>
+      )}
+
+      {/* Undo Prompt */}
+      {showUndoPrompt && (
+        <div className="absolute top-2 left-2 z-20 bg-yellow-100 border border-yellow-300 rounded-lg shadow-lg p-3 flex items-center gap-2 animate-in slide-in-from-left-5">
+          <span className="text-sm text-yellow-800">Text block deleted</span>
+          <button 
+            onClick={handleUndo}
+            className="px-2 py-1 text-xs bg-yellow-200 hover:bg-yellow-300 text-yellow-900 rounded"
+          >
+            Undo
+          </button>
+          <button 
+            onClick={() => {setShowUndoPrompt(false); setRecentlyDeleted(null);}}
+            className="text-yellow-600 hover:text-yellow-800"
+          >
+            ✕
+          </button>
         </div>
       )}
 
@@ -395,12 +450,22 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
               if (activeBlockId && activeBlockId !== block.id) {
                 const activeEl = blockElementsRef.current.get(activeBlockId)?.querySelector('[contenteditable]') as HTMLElement;
                 if (activeEl) {
-                  const newContent = activeEl.innerHTML;
-                  const currentBlock = textBlocks.find(b => b.id === activeBlockId);
-                  if (currentBlock && currentBlock.content !== newContent) {
-                    // Directly update the blocks array without triggering a full state update yet
-                    const blockToUpdate = textBlocks.find(b => b.id === activeBlockId);
-                    if(blockToUpdate) blockToUpdate.content = newContent;
+                  const newContent = activeEl.innerHTML.trim();
+                  
+                  // Check if the previous block is empty and remove it if so
+                  if (newContent === '' || newContent === '<br>') {
+                    // Remove the empty block instead of saving it
+                    const filteredBlocks = textBlocks.filter(b => b.id !== activeBlockId);
+                    setTextBlocks(filteredBlocks);
+                    handleContentChange(filteredBlocks);
+                  } else {
+                    // Only save if content is not empty
+                    const currentBlock = textBlocks.find(b => b.id === activeBlockId);
+                    if (currentBlock && currentBlock.content !== newContent) {
+                      // Directly update the blocks array without triggering a full state update yet
+                      const blockToUpdate = textBlocks.find(b => b.id === activeBlockId);
+                      if(blockToUpdate) blockToUpdate.content = newContent;
+                    }
                   }
                 }
               }

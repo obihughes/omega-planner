@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useProjects } from '@/hooks/useProjects';
 import { Project } from '@/types';
 import { ProjectCard } from '@/components/projects/ProjectCard';
+import { ProjectsCalendar } from '@/components/projects/ProjectsCalendar';
 import { Navigation } from '@/components/ui/Navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -38,7 +39,8 @@ import {
   List,
   SortAsc,
   SortDesc,
-  Archive
+  Archive,
+  Calendar
 } from 'lucide-react';
 
 // Sortable Project Card wrapper
@@ -331,22 +333,6 @@ export default function ProjectsPage() {
       <Navigation />
       
       <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Projects</h1>
-            <p className="text-muted-foreground mt-1">
-              Organize and track your work with projects
-            </p>
-          </div>
-          <button
-            onClick={handleCreateProject}
-            className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors flex items-center space-x-2"
-          >
-            <Plus className="w-4 h-4" />
-            <span>New Project</span>
-          </button>
-        </div>
-
         <Tabs value={activeView} onValueChange={(value: string) => setActiveView(value as 'active' | 'archived')}>
           <div className="flex items-center justify-between mb-6">
             <TabsList className="grid w-fit grid-cols-2">
@@ -363,6 +349,10 @@ export default function ProjectsPage() {
                   {archivedProjects.length}
                 </span>
               </TabsTrigger>
+              <TabsTrigger value="calendar" className="flex items-center space-x-2">
+                <Calendar className="w-4 h-4" />
+                <span>Calendar</span>
+              </TabsTrigger>
             </TabsList>
 
             {/* Filters and Controls */}
@@ -375,7 +365,7 @@ export default function ProjectsPage() {
                   placeholder="Search projects..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  className="pl-10 pr-4 py-2.5 rounded-lg bg-input border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors"
                 />
               </div>
 
@@ -383,7 +373,7 @@ export default function ProjectsPage() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as Project['status'] | 'all')}
-                className="px-3 py-2 border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="px-3 py-2.5 rounded-lg bg-input border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors"
               >
                 <option value="all">All Statuses</option>
                 <option value="planning">Planning</option>
@@ -398,7 +388,7 @@ export default function ProjectsPage() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as 'name' | 'progress' | 'updated' | 'order')}
-                  className="px-3 py-2 border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  className="px-3 py-2.5 rounded-lg bg-input border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors"
                 >
                   <option value="order">Custom Order</option>
                   <option value="name">Name</option>
@@ -435,6 +425,15 @@ export default function ProjectsPage() {
                   <List className="w-4 h-4" />
                 </button>
               </div>
+
+              {/* New Project Button */}
+              <button
+                onClick={handleCreateProject}
+                className="btn-primary px-4 py-2 rounded-lg flex items-center space-x-2 font-medium"
+              >
+                <Plus className="w-4 h-4" />
+                <span>New Project</span>
+              </button>
             </div>
           </div>
 
@@ -447,7 +446,7 @@ export default function ProjectsPage() {
                 {!searchTerm && statusFilter === 'all' && (
                   <button
                     onClick={handleCreateProject}
-                    className="bg-primary text-primary-foreground px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors inline-flex items-center space-x-2"
+                    className="btn-primary px-6 py-3 rounded-lg inline-flex items-center space-x-2 font-medium"
                   >
                     <Plus className="w-5 h-5" />
                     <span>Create Your First Project</span>
@@ -530,6 +529,10 @@ export default function ProjectsPage() {
                 ))}
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="calendar">
+            <ProjectsCalendar projects={projects} />
           </TabsContent>
         </Tabs>
       </div>
