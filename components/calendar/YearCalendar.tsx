@@ -8,7 +8,8 @@ import {
   getEventsByMonth, 
   getMonthName, 
   getWeekDays,
-  getPeriodSegmentsForMonth
+  getPeriodSegmentsForMonth,
+  isSameDay
 } from '@/utils/calendar';
 import { ChevronLeft, ChevronRight, Plus, Edit2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -323,55 +324,37 @@ export function YearCalendar({
     }
   };
 
-  const renderPeriodHighlight = (periodPositions: any[]) => {
-    return periodPositions.map((pos, index) => {
-      const { period, isStart, isEnd, isMiddle, row } = pos;
-      
-      let lineClass = 'absolute h-1.5 z-10 opacity-75 flex items-center justify-between group';
-      let positionStyle: React.CSSProperties = {
-        backgroundColor: period.color,
-        bottom: `${1 + (row * 8)}px`
-      };
-      
-      if (isStart) lineClass += ' left-1'; else lineClass += ' -left-px';
-      if (isEnd) lineClass += ' right-1'; else lineClass += ' -right-px';
+  const renderPeriodHighlightsForMonth = (periods: CalendarPeriod[], monthDates: Date[]) => {
+    return periods.map(period => {
+      const startIndex = monthDates.findIndex(d => isSameDay(d, new Date(period.startDate)));
+      const endIndex = monthDates.findIndex(d => isSameDay(d, new Date(period.endDate)));
 
-      return (
-        <div
-          key={`${period.id}-${index}`}
-          className={lineClass}
-          style={positionStyle}
-          onClick={(e) => handlePeriodClick(period, e)}
-          onMouseDown={(e) => handleDragStart(e, period, 'move')}
-          title={period.title}
-        >
-            <div 
-                className="absolute left-0 top-0 bottom-0 w-1/4 cursor-ew-resize"
-                onMouseDown={(e) => handleDragStart(e, period, 'resize-start')}
-            />
-            <div 
-                className="absolute left-1/4 top-0 bottom-0 w-1/2 cursor-grab group-active:cursor-grabbing"
-                onMouseDown={(e) => handleDragStart(e, period, 'move')}
-            />
-            <div 
-                className="absolute right-0 top-0 bottom-0 w-1/4 cursor-ew-resize"
-                onMouseDown={(e) => handleDragStart(e, period, 'resize-end')}
-            />
-        </div>
-      );
+      if (startIndex === -1 && endIndex === -1) return null;
+
+      const startDay = Math.max(0, startIndex);
+      const endDay = endIndex === -1 ? 41 : Math.min(41, endIndex);
+
+      const startRow = Math.floor(startDay / 7);
+      const endRow = Math.floor(endDay / 7);
+      
+      const segments = [];
+      for (let row = startRow; row <= endRow; row++) {
+        const segStart = (row === startRow) ? startDay % 7 : 0;
+        const segEnd = (row === endRow) ? endDay % 7 : 6;
+
+        const style: React.CSSProperties = {
+          position: 'absolute',
+          left: `${(segStart / 7) * 100}%`,
+          width: `${((segEnd - segStart + 1) / 7) * 100}%`,
+          top: `${row * 2}rem`, // 2rem = h-8
+          height: '4px',
+          backgroundColor: period.color,
+          opacity: 0.7,
+        };
+        segments.push(<div key={`${period.id}-${row}`} style={style} title={period.title} />);
+      }
+      return segments;
     });
-  };
-
-  const getEventBorderStyle = (events: CalendarEvent[]) => {
-    if (events.length === 0) return {};
-    
-    // Use the first event's color for the border
-    const primaryEvent = events[0];
-    return {
-      borderColor: primaryEvent.color,
-      borderWidth: '2px',
-      borderStyle: 'solid'
-    };
   };
 
   const renderSmallEventIndicators = (events: CalendarEvent[]) => {
@@ -402,7 +385,7 @@ export function YearCalendar({
     const monthPeriods = getPeriodSegmentsForMonth(data.periods, currentYear, month);
     
     return (
-      <div key={month} className="min-h-[320px] bg-card/30 rounded-lg p-4 border border-border/20">
+      <div key={month}>
         {/* Month Header */}
         <div className="mb-3">
           <h3 className="text-lg font-semibold text-center text-foreground">
@@ -411,43 +394,40 @@ export function YearCalendar({
         </div>
 
         {/* Week Days Header */}
-        <div className="grid grid-cols-7 gap-1 mb-3">
+        <div className="grid grid-cols-7 gap-1 mb-2">
           {weekDays.map(day => (
-            <div key={day} className="text-sm font-semibold text-muted-foreground text-center py-2 uppercase tracking-wide">
+            <div key={day} className="text-xs font-medium text-muted-foreground text-center py-1">
               {day}
             </div>
           ))}
         </div>
 
         {/* Calendar Grid */}
-        <div className="grid grid-cols-7 gap-1 mb-4">
+        <div className="grid grid-cols-7 gap-y-1 relative">
           {monthDates.map((date, index) => {
             const dayInfo = getDayInfo(date, month, data.events, data.periods, monthDates);
-            const eventBorderStyle = getEventBorderStyle(dayInfo.events);
-
+            
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             const isPast = date < today && !dayInfo.isToday;
 
             if (!dayInfo.isCurrentMonth) {
-              return <div key={date.toISOString()} className="min-h-[32px]" />;
+              return <div key={date.toISOString()} className="h-8" />;
             }
-            
+
             return (
               <div
                 key={date.toISOString()}
                 data-date={date.toISOString()}
                 className={`
-                  relative min-h-[40px] border border-border/30 rounded-md transition-all duration-200
-                  flex items-center justify-center font-semibold text-base
+                  relative h-8 flex items-center justify-center text-sm rounded transition-colors
                   ${isPast 
-                    ? 'text-muted-foreground/50 cursor-default bg-muted/20' 
-                    : 'text-foreground hover:bg-accent/30 hover:border-border/60 cursor-pointer hover:shadow-sm'
+                    ? 'text-muted-foreground/50 cursor-default' 
+                    : 'text-foreground hover:bg-accent/50 cursor-pointer'
                   }
-                  ${dayInfo.isToday ? 'bg-primary text-primary-foreground font-bold shadow-md border-primary' : ''}
-                  ${selectedDate && date.toDateString() === selectedDate.toDateString() ? 'ring-2 ring-primary/50 bg-primary/5' : ''}
+                  ${dayInfo.isToday ? 'bg-primary text-primary-foreground font-semibold rounded-full' : ''}
+                  ${selectedDate && date.toDateString() === selectedDate.toDateString() ? 'bg-accent' : ''}
                 `}
-                style={eventBorderStyle}
                 onClick={() => !isPast && handleDateClick(date)}
                 onDoubleClick={() => !isPast && handleDateDoubleClick(date)}
                 onMouseDown={() => !isPast && handleDateMouseDown(date)}
@@ -455,31 +435,18 @@ export function YearCalendar({
                 onMouseLeave={handleDateMouseUp}
                 onMouseMove={dragMode && !isPast ? (e) => handleDragMove(e, date) : undefined}
               >
-                {/* Day Number */}
-                <span className="relative z-20 font-bold">
+                <span className="relative z-20">
                   {date.getDate()}
                 </span>
-
-                {/* Period Highlights */}
-                {renderPeriodHighlight(dayInfo.periodPositions)}
-
-                {/* Small Event Indicators for multiple events */}
                 {renderSmallEventIndicators(dayInfo.events)}
-
-                {/* Event Click Area - invisible overlay for clicking events */}
-                {dayInfo.events.length > 0 && (
-                  <div 
-                    className="absolute inset-0 z-30 cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEventClick(dayInfo.events[0], e);
-                    }}
-                    title={dayInfo.events.map(e => e.title).join(', ')}
-                  />
-                )}
               </div>
             );
           })}
+          
+          {/* Period Highlights Container */}
+          <div className="absolute inset-0 top-8 z-10">
+            {renderPeriodHighlightsForMonth(monthPeriods, monthDates)}
+          </div>
         </div>
 
         {/* Events and Periods List */}
@@ -551,18 +518,16 @@ export function YearCalendar({
       </Button>
 
       {/* Year Navigation & Controls */}
-      <div className="flex items-center justify-between gap-4 relative">
-        <div className="flex items-center gap-2">
-            {headerLeftControls}
-        </div>
+      <div className="flex items-center justify-center gap-4 relative mb-4">
+        <div className="flex-1"> {headerLeftControls}</div>
         
-        <div className="flex items-center gap-2 absolute left-1/2 -translate-x-1/2">
+        <div className="flex-shrink-0">
             <h2 className="text-2xl font-bold text-foreground min-w-[100px] text-center">
               {currentYear}
             </h2>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex-1 flex items-center justify-end gap-2">
             <Button
               onClick={handleAddEvent}
               size="sm"
@@ -581,16 +546,17 @@ export function YearCalendar({
               <Plus className="w-4 h-4" />
               Add Period
             </Button>
+            {headerRightControls}
         </div>
       </div>
 
       {/* 12-Month Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-10">
         {Array.from({ length: 12 }, (_, month) => renderMonth(month))}
       </div>
 
       {/* Selected Date Info */}
-      {selectedDate && (
+      {selectedDate && !dayDetailsOpen && (
         <div className="text-center py-4">
           <p className="text-sm text-muted-foreground">
             Selected: <span className="font-medium text-foreground">

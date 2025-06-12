@@ -164,5 +164,5 @@ export function getMonthName(month: number): string {
  * Get week days
  */
 export function getWeekDays(): string[] {
-  return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  return ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 } 
