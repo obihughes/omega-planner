@@ -19,4 +19,14 @@ export type {
   DocumentsStorageData,
   DocumentEditorProps,
   DocumentListProps
-} from './documents'; 
+} from './documents';
+
+export type {
+  CalendarEvent,
+  CalendarPeriod,
+  CalendarData,
+  MonthlyEvents,
+  DayInfo,
+  PeriodPosition,
+  CalendarProps
+} from './calendar'; 

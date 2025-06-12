@@ -1,89 +1,158 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Navigation } from '@/components/ui/Navigation';
-import { Calendar, Plus, Clock, Users } from 'lucide-react';
+import { YearCalendar } from '@/components/calendar/YearCalendar';
+import { useCalendarData } from '@/hooks/useCalendarData';
+import { CalendarEvent, CalendarPeriod } from '@/types/calendar';
+import { Calendar, Settings, Download, Upload, RefreshCw, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function CalendarPage() {
+  const {
+    data,
+    isLoading,
+    addEvent,
+    addPeriod,
+    updateEvent,
+    updatePeriod,
+    deleteEvent,
+    deletePeriod,
+    clearAllData,
+    resetToDefault,
+    exportData
+  } = useCalendarData();
+
+  const [showSettings, setShowSettings] = useState(false);
+
+  const handleEventAdd = (eventData: Omit<CalendarEvent, 'id'>) => {
+    addEvent(eventData);
+  };
+
+  const handlePeriodAdd = (periodData: Omit<CalendarPeriod, 'id'>) => {
+    addPeriod(periodData);
+  };
+
+  const handleEventEdit = (event: CalendarEvent) => {
+    updateEvent(event.id, event);
+  };
+
+  const handlePeriodEdit = (period: CalendarPeriod) => {
+    updatePeriod(period.id, period);
+  };
+
+  const handleExport = () => {
+    const dataStr = exportData();
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `omega-calendar-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+              <p className="text-muted-foreground">Loading calendar...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
       
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Calendar</h1>
-          <p className="text-muted-foreground">
-            Your personal calendar and scheduling hub
-          </p>
-        </div>
-
-        {/* Coming Soon Content */}
-        <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-          <div className="bg-primary/10 rounded-full p-6 mb-6">
-            <Calendar className="w-16 h-16 text-primary" />
-          </div>
-          
-          <h2 className="text-2xl font-semibold text-foreground mb-4">
-            New Calendar Experience Coming Soon
-          </h2>
-          
-          <p className="text-muted-foreground mb-8 max-w-2xl">
-            We're building a powerful calendar experience that will help you manage your schedule, 
-            appointments, and time more effectively. This space is now available for your new 
-            calendar-focused features.
-          </p>
-
-          {/* Feature Preview Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl w-full">
-            <div className="bg-card border rounded-lg p-6 text-center">
-              <div className="bg-blue-100 rounded-full p-3 w-fit mx-auto mb-4">
-                <Clock className="w-6 h-6 text-blue-600" />
-              </div>
-              <h3 className="font-semibold mb-2">Time Management</h3>
-              <p className="text-sm text-muted-foreground">
-                Advanced scheduling and time blocking features
-              </p>
-            </div>
-
-            <div className="bg-card border rounded-lg p-6 text-center">
-              <div className="bg-green-100 rounded-full p-3 w-fit mx-auto mb-4">
-                <Users className="w-6 h-6 text-green-600" />
-              </div>
-              <h3 className="font-semibold mb-2">Team Coordination</h3>
-              <p className="text-sm text-muted-foreground">
-                Collaborate and coordinate schedules with your team
-              </p>
-            </div>
-
-            <div className="bg-card border rounded-lg p-6 text-center">
-              <div className="bg-purple-100 rounded-full p-3 w-fit mx-auto mb-4">
-                <Plus className="w-6 h-6 text-purple-600" />
-              </div>
-              <h3 className="font-semibold mb-2">Smart Integration</h3>
-              <p className="text-sm text-muted-foreground">
-                Seamlessly integrate with your existing tools and workflows
-              </p>
-            </div>
-          </div>
-
-          {/* Call to Action */}
-          <div className="mt-12 p-6 bg-muted rounded-lg max-w-2xl w-full">
-            <h3 className="font-semibold mb-2">Projects Calendar Available</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              The projects calendar has been moved to the Projects page for better organization. 
-              You can now find project timelines, due dates, and task completions in the Calendar tab 
-              under Projects.
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-3">
+              <Calendar className="w-8 h-8 text-primary" />
+              Calendar
+            </h1>
+            <p className="text-muted-foreground">
+              Your personal calendar with period highlighting and event management
             </p>
-            <a 
-              href="/projects"
-              className="inline-flex items-center space-x-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowSettings(!showSettings)}
+              className="flex items-center gap-2"
             >
-              <Calendar className="w-4 h-4" />
-              <span>View Projects Calendar</span>
-            </a>
+              <Settings className="w-4 h-4" />
+              Settings
+            </Button>
           </div>
         </div>
+
+        {/* Settings Panel */}
+        {showSettings && (
+          <div className="mb-6 bg-card border rounded-lg p-4">
+            <h3 className="font-semibold mb-4 text-foreground">Calendar Settings</h3>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExport}
+                className="flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Export Data
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={resetToDefault}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Reset to Default
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearAllData}
+                className="flex items-center gap-2 text-destructive hover:text-destructive"
+              >
+                <Trash2 className="w-4 h-4" />
+                Clear All Data
+              </Button>
+            </div>
+          </div>
+        )}
+
+
+
+        {/* Calendar Component */}
+        <YearCalendar
+          data={data}
+          onEventAdd={handleEventAdd}
+          onPeriodAdd={handlePeriodAdd}
+          onEventEdit={handleEventEdit}
+          onPeriodEdit={handlePeriodEdit}
+          onEventDelete={deleteEvent}
+          onPeriodDelete={deletePeriod}
+          className="bg-background"
+        />
+
+
       </div>
     </div>
   );
