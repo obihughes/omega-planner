@@ -5,7 +5,7 @@ import { Navigation } from '@/components/ui/Navigation';
 import { YearCalendar } from '@/components/calendar/YearCalendar';
 import { useCalendarData } from '@/hooks/useCalendarData';
 import { CalendarEvent, CalendarPeriod } from '@/types/calendar';
-import { Settings, Download, RefreshCw, Trash2, Plus } from 'lucide-react';
+import { Settings, Download, RefreshCw, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function CalendarPage() {
@@ -41,29 +41,6 @@ export default function CalendarPage() {
     updatePeriod(period.id, period);
   };
 
-  const headerRightControls = (
-    <div className="flex items-center gap-2">
-      <Button
-        onClick={() => addEvent({ title: 'New Event', date: new Date(), color: '#3b82f6', type: 'event' })}
-        size="sm"
-        className="flex items-center gap-2"
-      >
-        <Plus className="w-4 h-4" />
-        Add Event
-      </Button>
-      
-      <Button
-        variant="outline"
-        onClick={() => addPeriod({ title: 'New Period', startDate: new Date(), endDate: new Date(), color: '#10b981', type: 'period' })}
-        size="sm"
-        className="flex items-center gap-2"
-      >
-        <Plus className="w-4 h-4" />
-        Add Period
-      </Button>
-    </div>
-  );
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -95,7 +72,6 @@ export default function CalendarPage() {
           onEventDelete={deleteEvent}
           onPeriodDelete={deletePeriod}
           className="bg-background"
-          headerRightControls={headerRightControls}
         />
 
         {/* Settings Section */}

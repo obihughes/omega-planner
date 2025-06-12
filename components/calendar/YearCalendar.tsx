@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { CalendarEvent, CalendarPeriod, CalendarData, CalendarProps } from '@/types/calendar';
 import { 
   getMonthDates, 
@@ -42,6 +42,11 @@ export function YearCalendar({
   const [editingPeriod, setEditingPeriod] = useState<CalendarPeriod | null>(null);
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   
+  // Drag state for periods
+  const [dragMode, setDragMode] = useState<'move' | 'resize-start' | 'resize-end' | null>(null);
+  const [draggedPeriod, setDraggedPeriod] = useState<CalendarPeriod | null>(null);
+  const [dragStartDay, setDragStartDay] = useState<Date | null>(null);
+
   const weekDays = getWeekDays();
   const eventsByMonth = useMemo(() => 
     getEventsByMonth(data.events, currentYear), 
@@ -90,6 +95,69 @@ export function YearCalendar({
     setPeriodModalOpen(true);
   };
 
+  // Drag handlers for periods
+  const handleDragStart = (e: React.MouseEvent, period: CalendarPeriod, mode: 'move' | 'resize-start' | 'resize-end') => {
+    e.stopPropagation();
+    setDragMode(mode);
+    setDraggedPeriod(period);
+    
+    const dayElement = (e.target as HTMLElement).closest('[data-date]');
+    if (dayElement) {
+        const dateStr = dayElement.getAttribute('data-date');
+        if (dateStr) setDragStartDay(new Date(dateStr));
+    }
+  };
+
+  const handleDragMove = (e: React.MouseEvent, date: Date) => {
+    if (!dragMode || !draggedPeriod || !dragStartDay || !onPeriodEdit) return;
+
+    const diffTime = date.getTime() - dragStartDay.getTime();
+    const diffDays = Math.round(diffTime / (24 * 60 * 60 * 1000));
+
+    if (dragMode === 'move') {
+        const newStartDate = new Date(draggedPeriod.startDate);
+        newStartDate.setDate(newStartDate.getDate() + diffDays);
+        const newEndDate = new Date(draggedPeriod.endDate);
+        newEndDate.setDate(newEndDate.getDate() + diffDays);
+        
+        onPeriodEdit({ ...draggedPeriod, startDate: newStartDate, endDate: newEndDate });
+    } else if (dragMode === 'resize-start') {
+        const newStartDate = new Date(draggedPeriod.startDate);
+        newStartDate.setDate(newStartDate.getDate() + diffDays);
+        if (newStartDate <= draggedPeriod.endDate) {
+            onPeriodEdit({ ...draggedPeriod, startDate: newStartDate });
+        }
+    } else if (dragMode === 'resize-end') {
+        const newEndDate = new Date(draggedPeriod.endDate);
+        newEndDate.setDate(newEndDate.getDate() + diffDays);
+        if (newEndDate >= draggedPeriod.startDate) {
+            onPeriodEdit({ ...draggedPeriod, endDate: newEndDate });
+        }
+    }
+  };
+
+  const handleDragEnd = () => {
+    setDragMode(null);
+    setDraggedPeriod(null);
+    setDragStartDay(null);
+  };
+
+  useEffect(() => {
+    if (dragMode) {
+      document.body.style.cursor = 'grabbing';
+      document.body.style.userSelect = 'none';
+      
+      const handleMouseUp = () => handleDragEnd();
+      document.addEventListener('mouseup', handleMouseUp);
+      
+      return () => {
+        document.body.style.cursor = 'default';
+        document.body.style.userSelect = 'auto';
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [dragMode]);
+
   const handleAddEvent = () => {
     setEditingEvent(null);
     setEventModalOpen(true);
@@ -120,26 +188,14 @@ export function YearCalendar({
     return periodPositions.map((pos, index) => {
       const { period, isStart, isEnd, isMiddle, row } = pos;
       
-      let lineClass = 'absolute h-1 z-10 opacity-70 cursor-pointer';
+      let lineClass = 'absolute h-1.5 z-10 opacity-75 flex items-center justify-between group';
       let positionStyle: React.CSSProperties = {
         backgroundColor: period.color,
-        bottom: `${4 + (row * 6)}px`
+        bottom: `${1 + (row * 8)}px`
       };
       
-      if (isStart && isEnd) {
-        // Single day period
-        lineClass += ' w-6 h-6 rounded-full border-2 opacity-40';
-        positionStyle.bottom = '2px';
-      } else if (isStart) {
-        // Start of period
-        lineClass += ' left-1/2 right-0 rounded-r-full';
-      } else if (isEnd) {
-        // End of period  
-        lineClass += ' left-0 right-1/2 rounded-l-full';
-      } else if (isMiddle) {
-        // Middle of period
-        lineClass += ' left-0 right-0';
-      }
+      if (isStart) lineClass += ' left-1'; else lineClass += ' -left-px';
+      if (isEnd) lineClass += ' right-1'; else lineClass += ' -right-px';
 
       return (
         <div
@@ -147,8 +203,22 @@ export function YearCalendar({
           className={lineClass}
           style={positionStyle}
           onClick={(e) => handlePeriodClick(period, e)}
+          onMouseDown={(e) => handleDragStart(e, period, 'move')}
           title={period.title}
-        />
+        >
+            <div 
+                className="absolute left-0 top-0 bottom-0 w-1/4 cursor-ew-resize"
+                onMouseDown={(e) => handleDragStart(e, period, 'resize-start')}
+            />
+            <div 
+                className="absolute left-1/4 top-0 bottom-0 w-1/2 cursor-grab group-active:cursor-grabbing"
+                onMouseDown={(e) => handleDragStart(e, period, 'move')}
+            />
+            <div 
+                className="absolute right-0 top-0 bottom-0 w-1/4 cursor-ew-resize"
+                onMouseDown={(e) => handleDragStart(e, period, 'resize-end')}
+            />
+        </div>
       );
     });
   };
@@ -163,6 +233,28 @@ export function YearCalendar({
       borderWidth: '2px',
       borderStyle: 'solid'
     };
+  };
+
+  const renderSmallEventIndicators = (events: CalendarEvent[]) => {
+    if (events.length <= 1) return null; // Only show for 2 or more events
+
+    return (
+      <div className="absolute bottom-1 left-1 right-1 flex justify-center gap-0.5 z-20">
+        {events.slice(0, 3).map((event, index) => (
+          <div
+            key={event.id}
+            className="w-1.5 h-1.5 rounded-full"
+            style={{ backgroundColor: event.color }}
+            title={event.title}
+          />
+        ))}
+        {events.length > 3 && (
+          <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground flex items-center justify-center text-[8px] text-muted-foreground font-bold">
+            +
+          </div>
+        )}
+      </div>
+    );
   };
 
   const renderMonth = (month: number) => {
@@ -198,6 +290,7 @@ export function YearCalendar({
             return (
               <div
                 key={date.toISOString()}
+                data-date={date.toISOString()}
                 className={`
                   relative min-h-[32px] p-1 text-sm cursor-pointer rounded transition-colors
                   ${dayInfo.isCurrentMonth ? 'text-foreground hover:bg-accent/50' : 'text-muted-foreground opacity-40'}
@@ -210,6 +303,7 @@ export function YearCalendar({
                 onMouseDown={() => handleDateMouseDown(date)}
                 onMouseUp={handleDateMouseUp}
                 onMouseLeave={handleDateMouseUp}
+                onMouseMove={dragMode ? (e) => handleDragMove(e, date) : undefined}
               >
                 {/* Day Number */}
                 <span className="relative z-20">
@@ -218,6 +312,9 @@ export function YearCalendar({
 
                 {/* Period Highlights */}
                 {renderPeriodHighlight(dayInfo.periodPositions)}
+
+                {/* Small Event Indicators for multiple events */}
+                {renderSmallEventIndicators(dayInfo.events)}
 
                 {/* Event Click Area - invisible overlay for clicking events */}
                 {dayInfo.events.length > 0 && (
@@ -280,7 +377,29 @@ export function YearCalendar({
   };
 
   return (
-    <div className={`space-y-6 ${className}`}>
+    <div className={`space-y-6 ${className} relative`}>
+      {/* Fixed Year Navigation */}
+      <Button
+          variant="outline"
+          onClick={() => navigateYear('prev')}
+          className="fixed left-0 top-1/2 -translate-y-1/2 z-30 h-auto px-2 py-8 rounded-l-none shadow-lg"
+          title={`Go to ${currentYear - 1}`}
+      >
+        <span className="[writing-mode:vertical-rl] font-semibold tracking-widest text-sm">
+            {currentYear - 1}
+        </span>
+      </Button>
+      <Button
+          variant="outline"
+          onClick={() => navigateYear('next')}
+          className="fixed right-0 top-1/2 -translate-y-1/2 z-30 h-auto px-2 py-8 rounded-r-none shadow-lg"
+          title={`Go to ${currentYear + 1}`}
+      >
+        <span className="[writing-mode:vertical-rl] font-semibold tracking-widest text-sm">
+            {currentYear + 1}
+        </span>
+      </Button>
+
       {/* Year Navigation & Controls */}
       <div className="flex items-center justify-between gap-4 relative">
         <div className="flex items-center gap-2">
@@ -288,54 +407,31 @@ export function YearCalendar({
         </div>
         
         <div className="flex items-center gap-2 absolute left-1/2 -translate-x-1/2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigateYear('prev')}
-              className="p-2"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            
             <h2 className="text-2xl font-bold text-foreground min-w-[100px] text-center">
               {currentYear}
             </h2>
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigateYear('next')}
-              className="p-2"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
         </div>
 
         <div className="flex items-center gap-2">
-            {headerRightControls}
+            <Button
+              onClick={handleAddEvent}
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add Event
+            </Button>
+            
+            <Button
+              variant="outline"
+              onClick={handleAddPeriod}
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add Period
+            </Button>
         </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="flex justify-center gap-3">
-        <Button
-          onClick={handleAddEvent}
-          size="sm"
-          className="flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Add Event
-        </Button>
-        
-        <Button
-          variant="outline"
-          onClick={handleAddPeriod}
-          size="sm"
-          className="flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Add Period
-        </Button>
       </div>
 
       {/* 12-Month Grid */}
