@@ -128,7 +128,7 @@ export function useCalendarData() {
       ...prev,
       events: prev.events.map(event => 
         event.id === eventId 
-          ? { ...event, ...eventData, date: eventData.date ? new Date(eventData.date) : event.date }
+          ? { ...event, ...eventData }
           : event
       )
     }));
@@ -163,12 +163,7 @@ export function useCalendarData() {
       ...prev,
       periods: prev.periods.map(period => 
         period.id === periodId 
-          ? { 
-              ...period, 
-              ...periodData,
-              startDate: periodData.startDate ? new Date(periodData.startDate) : period.startDate,
-              endDate: periodData.endDate ? new Date(periodData.endDate) : period.endDate
-            }
+          ? { ...period, ...periodData }
           : period
       )
     }));

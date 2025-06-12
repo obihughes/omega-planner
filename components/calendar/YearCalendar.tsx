@@ -17,6 +17,8 @@ import { PeriodModal } from './PeriodModal';
 
 interface YearCalendarProps extends CalendarProps {
   className?: string;
+  headerLeftControls?: React.ReactNode;
+  headerRightControls?: React.ReactNode;
 }
 
 export function YearCalendar({ 
@@ -28,7 +30,9 @@ export function YearCalendar({
   onEventEdit,
   onPeriodEdit,
   onEventDelete,
-  onPeriodDelete
+  onPeriodDelete,
+  headerLeftControls,
+  headerRightControls,
 }: YearCalendarProps) {
   const [currentYear, setCurrentYear] = useState(year);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -36,6 +40,7 @@ export function YearCalendar({
   const [periodModalOpen, setPeriodModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [editingPeriod, setEditingPeriod] = useState<CalendarPeriod | null>(null);
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   
   const weekDays = getWeekDays();
   const eventsByMonth = useMemo(() => 
@@ -49,6 +54,28 @@ export function YearCalendar({
 
   const handleDateClick = (date: Date) => {
     setSelectedDate(date);
+  };
+
+  const handleDateDoubleClick = (date: Date) => {
+    setSelectedDate(date);
+    handleAddEvent();
+  };
+
+  const handleDateMouseDown = (date: Date) => {
+    const timer = setTimeout(() => {
+      // Long press detected
+      setSelectedDate(date);
+      handleAddPeriod();
+      setLongPressTimer(null);
+    }, 500);
+    setLongPressTimer(timer);
+  };
+
+  const handleDateMouseUp = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
   };
 
   const handleEventClick = (event: CalendarEvent, e: React.MouseEvent) => {
@@ -93,13 +120,16 @@ export function YearCalendar({
     return periodPositions.map((pos, index) => {
       const { period, isStart, isEnd, isMiddle, row } = pos;
       
-      let lineClass = 'absolute h-1 z-10 opacity-70';
-      let topOffset = `${4 + (row * 6)}px`;
+      let lineClass = 'absolute h-1 z-10 opacity-70 cursor-pointer';
+      let positionStyle: React.CSSProperties = {
+        backgroundColor: period.color,
+        bottom: `${4 + (row * 6)}px`
+      };
       
       if (isStart && isEnd) {
         // Single day period
         lineClass += ' w-6 h-6 rounded-full border-2 opacity-40';
-        topOffset = '2px';
+        positionStyle.bottom = '2px';
       } else if (isStart) {
         // Start of period
         lineClass += ' left-1/2 right-0 rounded-r-full';
@@ -115,10 +145,7 @@ export function YearCalendar({
         <div
           key={`${period.id}-${index}`}
           className={lineClass}
-          style={{
-            backgroundColor: period.color,
-            top: topOffset,
-          }}
+          style={positionStyle}
           onClick={(e) => handlePeriodClick(period, e)}
           title={period.title}
         />
@@ -179,6 +206,10 @@ export function YearCalendar({
                 `}
                 style={eventBorderStyle}
                 onClick={() => handleDateClick(date)}
+                onDoubleClick={() => handleDateDoubleClick(date)}
+                onMouseDown={() => handleDateMouseDown(date)}
+                onMouseUp={handleDateMouseUp}
+                onMouseLeave={handleDateMouseUp}
               >
                 {/* Day Number */}
                 <span className="relative z-20">
@@ -206,12 +237,12 @@ export function YearCalendar({
 
         {/* Events and Periods List */}
         {(monthEvents.length > 0 || monthPeriods.length > 0) && (
-          <div className="space-y-2">
+          <div className="flex flex-wrap gap-x-3 gap-y-1">
             {/* Events */}
             {monthEvents.map(event => (
               <div 
                 key={event.id} 
-                className="flex items-center gap-2 text-xs py-1 px-2 rounded hover:bg-accent/50 cursor-pointer transition-colors"
+                className="group flex items-center gap-1.5 text-xs px-1.5 py-0.5 rounded hover:bg-accent/50 cursor-pointer transition-colors"
                 onClick={(e) => handleEventClick(event, e)}
               >
                 <div 
@@ -229,7 +260,7 @@ export function YearCalendar({
             {monthPeriods.map(period => (
               <div 
                 key={period.id} 
-                className="flex items-center gap-2 text-xs py-1 px-2 rounded hover:bg-accent/50 cursor-pointer transition-colors"
+                className="group flex items-center gap-1.5 text-xs px-1.5 py-0.5 rounded hover:bg-accent/50 cursor-pointer transition-colors"
                 onClick={(e) => handlePeriodClick(period, e)}
               >
                 <div 
@@ -250,29 +281,39 @@ export function YearCalendar({
 
   return (
     <div className={`space-y-6 ${className}`}>
-      {/* Year Navigation */}
-      <div className="flex items-center justify-center gap-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigateYear('prev')}
-          className="p-2"
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </Button>
+      {/* Year Navigation & Controls */}
+      <div className="flex items-center justify-between gap-4 relative">
+        <div className="flex items-center gap-2">
+            {headerLeftControls}
+        </div>
         
-        <h2 className="text-2xl font-bold text-foreground min-w-[100px] text-center">
-          {currentYear}
-        </h2>
-        
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigateYear('next')}
-          className="p-2"
-        >
-          <ChevronRight className="w-4 h-4" />
-        </Button>
+        <div className="flex items-center gap-2 absolute left-1/2 -translate-x-1/2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigateYear('prev')}
+              className="p-2"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            
+            <h2 className="text-2xl font-bold text-foreground min-w-[100px] text-center">
+              {currentYear}
+            </h2>
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigateYear('next')}
+              className="p-2"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+        </div>
+
+        <div className="flex items-center gap-2">
+            {headerRightControls}
+        </div>
       </div>
 
       {/* Quick Actions */}

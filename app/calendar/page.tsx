@@ -5,7 +5,7 @@ import { Navigation } from '@/components/ui/Navigation';
 import { YearCalendar } from '@/components/calendar/YearCalendar';
 import { useCalendarData } from '@/hooks/useCalendarData';
 import { CalendarEvent, CalendarPeriod } from '@/types/calendar';
-import { Calendar, Settings, Download, Upload, RefreshCw, Trash2 } from 'lucide-react';
+import { Settings, Download, RefreshCw, Trash2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function CalendarPage() {
@@ -41,18 +41,28 @@ export default function CalendarPage() {
     updatePeriod(period.id, period);
   };
 
-  const handleExport = () => {
-    const dataStr = exportData();
-    const blob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `omega-calendar-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
+  const headerRightControls = (
+    <div className="flex items-center gap-2">
+      <Button
+        onClick={() => addEvent({ title: 'New Event', date: new Date(), color: '#3b82f6', type: 'event' })}
+        size="sm"
+        className="flex items-center gap-2"
+      >
+        <Plus className="w-4 h-4" />
+        Add Event
+      </Button>
+      
+      <Button
+        variant="outline"
+        onClick={() => addPeriod({ title: 'New Period', startDate: new Date(), endDate: new Date(), color: '#10b981', type: 'period' })}
+        size="sm"
+        className="flex items-center gap-2"
+      >
+        <Plus className="w-4 h-4" />
+        Add Period
+      </Button>
+    </div>
+  );
 
   if (isLoading) {
     return (
@@ -75,71 +85,6 @@ export default function CalendarPage() {
       <Navigation />
       
       <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* Page Header */}
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-3">
-              <Calendar className="w-8 h-8 text-primary" />
-              Calendar
-            </h1>
-            <p className="text-muted-foreground">
-              Your personal calendar with period highlighting and event management
-            </p>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowSettings(!showSettings)}
-              className="flex items-center gap-2"
-            >
-              <Settings className="w-4 h-4" />
-              Settings
-            </Button>
-          </div>
-        </div>
-
-        {/* Settings Panel */}
-        {showSettings && (
-          <div className="mb-6 bg-card border rounded-lg p-4">
-            <h3 className="font-semibold mb-4 text-foreground">Calendar Settings</h3>
-            <div className="flex flex-wrap gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExport}
-                className="flex items-center gap-2"
-              >
-                <Download className="w-4 h-4" />
-                Export Data
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={resetToDefault}
-                className="flex items-center gap-2"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Reset to Default
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={clearAllData}
-                className="flex items-center gap-2 text-destructive hover:text-destructive"
-              >
-                <Trash2 className="w-4 h-4" />
-                Clear All Data
-              </Button>
-            </div>
-          </div>
-        )}
-
-
-
         {/* Calendar Component */}
         <YearCalendar
           data={data}
@@ -150,9 +95,60 @@ export default function CalendarPage() {
           onEventDelete={deleteEvent}
           onPeriodDelete={deletePeriod}
           className="bg-background"
+          headerRightControls={headerRightControls}
         />
 
+        {/* Settings Section */}
+        <div className="mt-12 pt-8 border-t">
+            <div className="flex justify-center">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowSettings(!showSettings)}
+                    className="flex items-center gap-2"
+                >
+                    <Settings className="w-4 h-4" />
+                    {showSettings ? 'Hide' : 'Show'} Settings
+                </Button>
+            </div>
 
+            {showSettings && (
+              <div className="mt-6 bg-card border rounded-lg p-4 max-w-2xl mx-auto">
+                <h3 className="font-semibold mb-4 text-foreground text-center">Calendar Settings</h3>
+                <div className="flex flex-wrap gap-3 justify-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={exportData}
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="w-4 h-4" />
+                    Export Data
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={resetToDefault}
+                    className="flex items-center gap-2"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Reset to Default
+                  </Button>
+                  
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={clearAllData}
+                    className="flex items-center gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Clear All Data
+                  </Button>
+                </div>
+              </div>
+            )}
+        </div>
       </div>
     </div>
   );
