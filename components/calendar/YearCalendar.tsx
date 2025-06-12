@@ -284,26 +284,36 @@ export function YearCalendar({
         <div className="grid grid-cols-7 gap-1 mb-4">
           {monthDates.map((date, index) => {
             const dayInfo = getDayInfo(date, month, data.events, data.periods, monthDates);
-            
             const eventBorderStyle = getEventBorderStyle(dayInfo.events);
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const isPast = date < today && !dayInfo.isToday;
+
+            if (!dayInfo.isCurrentMonth) {
+              return <div key={date.toISOString()} className="min-h-[32px]" />;
+            }
             
             return (
               <div
                 key={date.toISOString()}
                 data-date={date.toISOString()}
                 className={`
-                  relative min-h-[32px] p-1 text-sm cursor-pointer rounded transition-colors
-                  ${dayInfo.isCurrentMonth ? 'text-foreground hover:bg-accent/50' : 'text-muted-foreground opacity-40'}
+                  relative min-h-[32px] p-1 text-sm rounded transition-colors
+                  ${isPast 
+                    ? 'text-muted-foreground opacity-40 cursor-default' 
+                    : 'text-foreground hover:bg-accent/50 cursor-pointer'
+                  }
                   ${dayInfo.isToday ? 'bg-primary text-primary-foreground font-semibold' : ''}
                   ${selectedDate && date.toDateString() === selectedDate.toDateString() ? 'ring-2 ring-primary' : ''}
                 `}
                 style={eventBorderStyle}
-                onClick={() => handleDateClick(date)}
-                onDoubleClick={() => handleDateDoubleClick(date)}
-                onMouseDown={() => handleDateMouseDown(date)}
+                onClick={() => !isPast && handleDateClick(date)}
+                onDoubleClick={() => !isPast && handleDateDoubleClick(date)}
+                onMouseDown={() => !isPast && handleDateMouseDown(date)}
                 onMouseUp={handleDateMouseUp}
                 onMouseLeave={handleDateMouseUp}
-                onMouseMove={dragMode ? (e) => handleDragMove(e, date) : undefined}
+                onMouseMove={dragMode && !isPast ? (e) => handleDragMove(e, date) : undefined}
               >
                 {/* Day Number */}
                 <span className="relative z-20">
