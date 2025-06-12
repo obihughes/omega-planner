@@ -48,6 +48,23 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
     return `${dateStr} at ${timeStr}`;
   };
 
+  const formatCompactTimeRemaining = (timeRemaining: string): string => {
+    // Convert verbose time remaining to compact format
+    if (timeRemaining.includes('min')) {
+      const mins = timeRemaining.match(/(\d+)/)?.[1];
+      return `${mins}m`;
+    }
+    if (timeRemaining.includes('hr')) {
+      const hrs = timeRemaining.match(/(\d+)/)?.[1];
+      return `${hrs}h`;
+    }
+    if (timeRemaining.includes('day')) {
+      const days = timeRemaining.match(/(\d+)/)?.[1];
+      return `${days}d`;
+    }
+    return timeRemaining;
+  };
+
   const hasOverdueTasks = pinnedTasks.some(task => new Date(task.dueDate).getTime() < new Date().getTime());
 
   return (
@@ -90,69 +107,73 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
               return (
                 <div 
                   key={pinnedTask.pinnedId} 
-                  className="relative p-3 rounded-lg bg-card border border-border/50 hover:shadow-md transition-all duration-150 group"
+                  className="relative p-2.5 rounded-lg bg-card border border-border/50 hover:shadow-md transition-all duration-150 group"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <div className="flex items-start gap-2 flex-1 min-w-0">
                       {/* Color status dot */}
                       <div 
-                        className={`w-2 h-2 rounded-full flex-shrink-0 mt-1.5 ${
+                        className={`w-2 h-2 rounded-full flex-shrink-0 mt-1 ${
                           isOverdue ? 'bg-red-500' : 'bg-blue-500'
                         }`}
                       />
                       
                       <div className="flex-1 min-w-0">
                         {/* Task name */}
-                        <p className="font-semibold text-sm text-foreground truncate">
+                        <p className="font-medium text-sm text-foreground truncate leading-tight">
                           {pinnedTask.name}
                         </p>
                         
-                        {/* Due date and time remaining */}
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                          <CalendarDays className="w-3 h-3" />
-                          <span>{formatDateTimeForPinnedTask(dueDateObj)}</span>
-                          <span 
-                            className={`font-medium ${
-                              isOverdue ? 'text-red-500' : 'text-blue-500'
-                            }`}
-                          >
-                            ({timeRemainingText})
-                          </span>
+                        {/* Due date - stacked vertically */}
+                        <div className="mt-1 space-y-0.5">
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <CalendarDays className="w-2.5 h-2.5" />
+                            <span className="text-[10px]">{formatDateTimeForPinnedTask(dueDateObj)}</span>
+                          </div>
+                          <div className="text-xs">
+                            <span 
+                              className={`font-medium text-[11px] ${
+                                isOverdue ? 'text-red-500' : 'text-blue-500'
+                              }`}
+                            >
+                              {formatCompactTimeRemaining(timeRemainingText)}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
                     
                     {/* Action buttons - compact on hover */}
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-start gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity pt-0.5">
                       <button
                         type="button"
-                        className="h-6 w-6 rounded-md bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                        className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                         onClick={(e) => {
                           e.stopPropagation();
                           openEditModal(pinnedTask as Task, { isPinned: true });
                         }}
                         title="Edit Task"
                       >
-                        <Edit3 className="w-3 h-3" />
+                        <Edit3 className="w-2.5 h-2.5" />
                       </button>
                       <button
                         type="button"
-                        className="h-6 w-6 rounded-md bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                        className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                         onClick={(e) => {
                           e.stopPropagation();
                           setViewingPinnedTaskNotes(pinnedTask);
                         }}
                         title="View Notes"
                       >
-                        <EyeIcon className="w-3 h-3" />
+                        <EyeIcon className="w-2.5 h-2.5" />
                       </button>
                       <button
                         type="button"
-                        className="h-6 w-6 rounded-md bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                        className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                         onClick={() => onUnpinTask(pinnedTask.pinnedId)}
                         title="Unpin task"
                       >
-                        <PinOff className="w-3 h-3" />
+                        <PinOff className="w-2.5 h-2.5" />
                       </button>
                     </div>
                   </div>

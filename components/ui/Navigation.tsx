@@ -50,11 +50,11 @@ export function Navigation() {
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-primary rounded-xl flex items-center justify-center shadow-sm">
-                <Calendar className="w-5 h-5 text-primary-foreground" />
+                <span className="text-xl font-bold text-primary-foreground">Ω</span>
               </div>
-              <h1 className="text-lg font-semibold text-foreground hidden sm:block">
-                Omega Planner
-              </h1>
+              <span className="text-xs font-medium text-muted-foreground hidden sm:block">
+                v1.0
+              </span>
             </div>
           </div>
 
@@ -67,14 +67,14 @@ export function Navigation() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "px-4 py-2.5 rounded-xl flex items-center space-x-2 text-sm font-medium transition-all duration-200 relative",
+                    "px-4 py-2.5 rounded-xl flex items-center space-x-2 text-sm font-medium transition-all duration-200 relative min-w-0",
                     item.active
                       ? "text-primary-foreground bg-primary shadow-sm"
                       : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
                   )}
                 >
-                  <Icon className="w-4 h-4" />
-                  <span className="hidden sm:inline">{item.label}</span>
+                  <Icon className="w-4 h-4 flex-shrink-0" />
+                  <span className="hidden sm:inline whitespace-nowrap">{item.label}</span>
                 </Link>
               );
             })}

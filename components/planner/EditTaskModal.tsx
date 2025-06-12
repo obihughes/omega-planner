@@ -102,7 +102,24 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   // New useEffect for Modal Close on Escape and Click Outside
   useEffect(() => {
     const handleClickOutsideModal = (event: MouseEvent) => {
-      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      
+      // Check if the click is inside the modal
+      if (modalRef.current && !modalRef.current.contains(target)) {
+        // Check if the click is inside a popover (date picker)
+        const popoverElement = document.querySelector('[data-radix-popper-content-wrapper]');
+        if (popoverElement && popoverElement.contains(target)) {
+          return; // Don't close modal if clicking on popover
+        }
+        
+        // Check for any other popover elements that might be portaled
+        const allPopovers = document.querySelectorAll('[role="dialog"], [data-state="open"]');
+        for (let i = 0; i < allPopovers.length; i++) {
+          if (allPopovers[i].contains(target)) {
+            return; // Don't close modal if clicking on any popover
+          }
+        }
+        
         onClose();
       }
     };
