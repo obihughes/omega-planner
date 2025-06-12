@@ -120,32 +120,32 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Month Navigation */}
       <div className="flex items-center justify-center">
         <button
           onClick={() => navigateMonth('prev')}
-          className="p-2 rounded-lg hover:bg-accent transition-colors"
+          className="p-3 rounded-xl hover:bg-accent transition-colors border border-border/50"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
         
-        <h3 className="text-lg font-semibold text-foreground min-w-[200px] text-center mx-4">
+        <h3 className="text-xl font-semibold text-foreground min-w-[220px] text-center mx-6">
           {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
         </h3>
         
         <button
           onClick={() => navigateMonth('next')}
-          className="p-2 rounded-lg hover:bg-accent transition-colors"
+          className="p-3 rounded-xl hover:bg-accent transition-colors border border-border/50"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
       </div>
 
       {/* Calendar Grid */}
-      <div className="bg-card/80 backdrop-blur-sm border border-border rounded-xl overflow-hidden shadow-sm">
+      <div className="card-enhanced rounded-xl overflow-hidden shadow-lg border border-border/50">
         {/* Day Headers */}
-        <div className="grid grid-cols-7 border-b border-border text-center font-medium text-muted-foreground bg-muted/50">
+        <div className="grid grid-cols-7 border-b border-border/50 text-center font-semibold text-muted-foreground bg-card/80">
           <div className="p-4 text-sm">Sun</div>
           <div className="p-4 text-sm">Mon</div>
           <div className="p-4 text-sm">Tue</div>

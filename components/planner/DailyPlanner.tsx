@@ -724,8 +724,8 @@ export default function DailyPlanner() {
             {Array.from({ length: endHour - startHour + 1 }, (_, i) => (
               <div 
                 key={`grid-${i}-${dayOffset}-${period}`} 
-                className={`border-l-2 border-gray-200 dark:border-gray-700 z-10 ${GRID_LINE_STYLE}`}
-                style={{ left: `${i * APP_PIXELS_PER_HOUR}px`, height: '100%', top: 0, borderLeftStyle: 'dashed', position: 'absolute'}} 
+                className={`border-l border-border/20 z-10 ${GRID_LINE_STYLE}`}
+                style={{ left: `${i * APP_PIXELS_PER_HOUR}px`, height: '100%', top: 0, position: 'absolute'}} 
               />
             ))}
             {tasksToRender.map((task) => {
