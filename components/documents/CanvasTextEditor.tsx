@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Move, Edit, Bold, Italic } from 'lucide-react';
+import { Move, Edit, Bold, Italic, Eraser } from 'lucide-react';
 
 // Type guard for caret positioning methods
 const hasCaretPositionFromPoint = (doc: Document): doc is Document & { caretPositionFromPoint: (x: number, y: number) => any } => {
@@ -361,13 +361,25 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
 
   const handleUndo = () => {
     if (recentlyDeleted) {
-      const newBlocks = [...textBlocks, recentlyDeleted];
-      setTextBlocks(newBlocks);
-      handleContentChange(newBlocks);
-      setActiveBlockId(recentlyDeleted.id);
+      const restoredBlocks = [...textBlocks, recentlyDeleted];
+      setTextBlocks(restoredBlocks);
+      handleContentChange(restoredBlocks);
       setRecentlyDeleted(null);
       setShowUndoPrompt(false);
-      if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+      
+      if (undoTimeoutRef.current) {
+        clearTimeout(undoTimeoutRef.current);
+      }
+    }
+  };
+
+  const handleEraseAll = () => {
+    if (textBlocks.length > 0) {
+      if (window.confirm('Are you sure you want to erase all content? This cannot be undone.')) {
+        setTextBlocks([]);
+        handleContentChange([]);
+        setActiveBlockId(null);
+      }
     }
   };
 
@@ -552,6 +564,7 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
               }}
               contentEditable={block.isActive}
               suppressContentEditableWarning={true}
+              spellCheck={false}
               onInput={(e) => {
                  // This is the most reliable way to handle content changes
                  const newContent = e.currentTarget.innerHTML;
@@ -598,7 +611,18 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
         ))}
 
         {/* Mode Toggle Button - Moved to bottom right */}
-        <div className="absolute bottom-4 right-4 z-10">
+        <div className="absolute bottom-4 right-4 z-10 flex gap-2">
+            {/* Eraser Button */}
+            <button
+              onClick={handleEraseAll}
+              className="flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all shadow-lg bg-red-500 hover:bg-red-600 text-white"
+              title="Erase all content"
+            >
+              <Eraser size={16} />
+              <span>Clear All</span>
+            </button>
+            
+            {/* Mode Toggle Button */}
             <button
               onClick={() => setIsDragMode(!isDragMode)}
               className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all shadow-lg ${

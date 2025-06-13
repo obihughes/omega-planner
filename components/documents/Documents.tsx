@@ -4,17 +4,20 @@ import React, { useState, useEffect } from 'react';
 import { Document } from '@/types';
 import DocumentEditor from './DocumentEditor';
 import { useDocuments } from '@/hooks/useDocuments';
-import { Plus, X, Star, Search, FileText, Save, Move } from 'lucide-react';
+import { Plus, X, Star, Search, FileText, Save, Move, Archive } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 export default function Documents() {
   const {
     documents,
+    archivedDocuments,
     selectedDocument,
     createDocument,
     updateDocument,
     deleteDocument,
+    archiveDocument,
+    restoreDocument,
     selectDocument,
     starDocument,
     clearSelection
@@ -26,6 +29,7 @@ export default function Documents() {
   const [showSearch, setShowSearch] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [showArchive, setShowArchive] = useState(false);
 
   const filteredDocuments = documents.filter(doc =>
     doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -225,6 +229,19 @@ export default function Documents() {
                 <Button
                   variant="ghost"
                   size="sm"
+                  onClick={() => {
+                    if (window.confirm('Archive this document? You can restore it later from the archive.')) {
+                      archiveDocument(selectedDocument.id);
+                    }
+                  }}
+                  className="h-7 w-7 p-0"
+                  title="Archive document"
+                >
+                  <Archive className="w-3.5 h-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
                   className="h-7 w-7 p-0"
                   title="Move document"
                 >
@@ -249,13 +266,75 @@ export default function Documents() {
             >
               <Plus className="w-3.5 h-3.5" />
             </Button>
+            <Button
+              variant={showArchive ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setShowArchive(!showArchive)}
+              className="h-7 px-2 text-xs"
+              title={showArchive ? "Show active documents" : "Show archived documents"}
+            >
+              <Archive className="w-3.5 h-3.5 mr-1" />
+              {showArchive ? "Active" : "Archive"} ({showArchive ? documents.length : archivedDocuments.length})
+            </Button>
           </div>
         </div>
       </div>
 
       {/* Editor Area */}
       <div className="flex-1 overflow-hidden">
-        {selectedDocument ? (
+        {showArchive ? (
+          <div className="flex-1 p-6">
+            <div className="max-w-4xl mx-auto">
+              <h2 className="text-xl font-semibold mb-4">Archived Documents</h2>
+              {archivedDocuments.length === 0 ? (
+                <div className="text-center text-muted-foreground py-12">
+                  <Archive className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No archived documents</p>
+                </div>
+              ) : (
+                <div className="grid gap-3">
+                  {archivedDocuments.map((document) => (
+                    <div
+                      key={document.id}
+                      className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-medium">{document.title}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            Archived {new Date(document.updatedAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => restoreDocument(document.id)}
+                            className="h-7 px-2 text-xs"
+                          >
+                            Restore
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              if (window.confirm('Permanently delete this document? This cannot be undone.')) {
+                                deleteDocument(document.id);
+                              }
+                            }}
+                            className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : selectedDocument ? (
           <DocumentEditor
             document={selectedDocument}
             onSave={(doc) => {

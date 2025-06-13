@@ -67,12 +67,15 @@ Components in the `/components/documents` directory:
     - View a list of all documents.
     - Create a new document.
     - Select a document to view and edit.
-    - Delete a document.
+    - Delete a document permanently.
+    - Archive/restore documents (archive acts as a recycle bin).
     - Star/unstar a document.
     - Search for documents by title or content.
     - Edit a document's title by double-clicking on it in the tab list.
-    - Manual save button in the document editor header for immediate saving.
+    - Manual save button in the document controls for immediate saving.
     - Auto-save functionality that saves changes after 2 seconds of inactivity.
+    - Archive view to manage archived documents with restore/permanent delete options.
+    - Navigation glitch prevention with debounced document selection.
 - **Props:** This component does not accept any props.
 - **Usage:**
   ```typescript
@@ -82,6 +85,22 @@ Components in the `/components/documents` directory:
   <Documents />
   // ...
   ```
+
+#### `CanvasTextEditor.tsx`
+- **Purpose:** A canvas-based text editor that allows users to create independent text blocks positioned anywhere on the canvas.
+- **Functionality:**
+    - Double-click to create new text blocks anywhere on the canvas.
+    - Drag mode for repositioning text blocks.
+    - Edit mode for text input and editing.
+    - Eraser function to clear all content with confirmation.
+    - Spell check disabled for cleaner writing experience.
+    - Delete individual text blocks in drag mode.
+    - Undo functionality for recently deleted blocks.
+- **Props:**
+  - `content: string` - The editor content (JSON format)
+  - `onChange: (content: string) => void` - Callback when content changes
+  - `className?: string` - Additional CSS classes
+  - `style?: React.CSSProperties` - Inline styles
 
 ## Adding New Components
 
