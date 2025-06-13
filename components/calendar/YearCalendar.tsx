@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { CalendarEvent, CalendarPeriod, CalendarData, CalendarProps } from '@/types/calendar';
 import { 
   getMonthDates, 
@@ -149,6 +149,7 @@ export function YearCalendar({
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [editingPeriod, setEditingPeriod] = useState<CalendarPeriod | null>(null);
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+  const longPressTriggered = useRef(false);
   
   // Drag state for periods
   const [dragMode, setDragMode] = useState<'move' | 'resize-start' | 'resize-end' | null>(null);
@@ -166,6 +167,9 @@ export function YearCalendar({
   };
 
   const handleDateClick = (date: Date) => {
+    if (longPressTriggered.current) {
+      return;
+    }
     const dayInfo = getDayInfo(date, date.getMonth(), data.events, data.periods, []);
     
     if (dayInfo.events.length > 0 || dayInfo.periods.length > 0) {
@@ -184,7 +188,9 @@ export function YearCalendar({
   };
 
   const handleDateMouseDown = (date: Date) => {
+    longPressTriggered.current = false;
     const timer = setTimeout(() => {
+      longPressTriggered.current = true;
       // Long press detected - create unnamed period directly
       if (onPeriodAdd) {
         const endDate = new Date(date);
@@ -346,10 +352,11 @@ export function YearCalendar({
           position: 'absolute',
           left: `${(segStart / 7) * 100}%`,
           width: `${((segEnd - segStart + 1) / 7) * 100}%`,
-          top: `${row * 2}rem`, // 2rem = h-8
-          height: '4px',
+          top: `${row * 2 + 1.4}rem`, // Position under the number
+          height: '3px',
           backgroundColor: period.color,
           opacity: 0.7,
+          borderRadius: '2px',
         };
         segments.push(<div key={`${period.id}-${row}`} style={style} title={period.title} />);
       }
@@ -435,7 +442,7 @@ export function YearCalendar({
                 onMouseLeave={handleDateMouseUp}
                 onMouseMove={dragMode && !isPast ? (e) => handleDragMove(e, date) : undefined}
               >
-                <span className="relative z-20">
+                <span className="relative z-20 font-bold select-none">
                   {date.getDate()}
                 </span>
                 {renderSmallEventIndicators(dayInfo.events)}
