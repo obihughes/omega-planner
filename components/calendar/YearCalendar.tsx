@@ -129,6 +129,43 @@ function DayDetailsModal({
   );
 }
 
+// New Action Popup Component
+function ActionPopup({
+  position,
+  onClose,
+  onAddEvent,
+  onAddPeriod,
+}: {
+  position: { x: number; y: number };
+  onClose: () => void;
+  onAddEvent: () => void;
+  onAddPeriod: () => void;
+}) {
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Basic check to see if click is outside
+      onClose();
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed bg-background border rounded-lg shadow-xl z-50 p-2 space-y-1"
+      style={{ top: position.y, left: position.x }}
+      onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
+    >
+      <Button variant="ghost" size="sm" className="w-full justify-start" onClick={onAddEvent}>
+        <Plus className="w-4 h-4 mr-2" /> New Event
+      </Button>
+      <Button variant="ghost" size="sm" className="w-full justify-start" onClick={onAddPeriod}>
+        <Plus className="w-4 h-4 mr-2" /> New Period
+      </Button>
+    </div>
+  );
+}
+
 export function YearCalendar({ 
   year = new Date().getFullYear(),
   data = { events: [], periods: [] },
@@ -147,6 +184,7 @@ export function YearCalendar({
   const [eventModalOpen, setEventModalOpen] = useState(false);
   const [periodModalOpen, setPeriodModalOpen] = useState(false);
   const [dayDetailsOpen, setDayDetailsOpen] = useState(false);
+  const [actionPopup, setActionPopup] = useState<{ x: number; y: number; date: Date } | null>(null);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [editingPeriod, setEditingPeriod] = useState<CalendarPeriod | null>(null);
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
@@ -188,24 +226,11 @@ export function YearCalendar({
     handleAddEvent();
   };
 
-  const handleDateMouseDown = (date: Date) => {
+  const handleDateMouseDown = (e: React.MouseEvent, date: Date) => {
     longPressTriggered.current = false;
     const timer = setTimeout(() => {
       longPressTriggered.current = true;
-      // Long press detected - create unnamed period directly
-      if (onPeriodAdd) {
-        const endDate = new Date(date);
-        endDate.setDate(date.getDate() + 6); // Default 1 week period
-        
-        onPeriodAdd({
-          title: 'New Period',
-          description: '',
-          startDate: date,
-          endDate: endDate,
-          color: '#f59e0b', // Default amber color
-          type: 'period'
-        });
-      }
+      setActionPopup({ x: e.clientX, y: e.clientY, date });
       setLongPressTimer(null);
     }, 500);
     setLongPressTimer(timer);
@@ -311,8 +336,21 @@ export function YearCalendar({
   };
 
   const handleAddPeriod = () => {
-    setEditingPeriod(null);
-    setPeriodModalOpen(true);
+    if (actionPopup) {
+       if (onPeriodAdd) {
+        const endDate = new Date(actionPopup.date);
+        endDate.setDate(actionPopup.date.getDate() + 1); // Default 2 day period
+        
+        onPeriodAdd({
+          title: 'New Period',
+          description: '',
+          startDate: actionPopup.date,
+          endDate: endDate,
+          color: '#f59e0b', // Default amber color
+          type: 'period'
+        });
+      }
+    }
   };
 
   const handleEventSave = (eventData: Omit<CalendarEvent, 'id'>) => {
@@ -354,8 +392,28 @@ export function YearCalendar({
             bottom: `${(row * 6) + 3}px`, // Stacked from the bottom
             zIndex: 1,
           }}
+          onClick={(e) => handlePeriodClick(period, e)}
+          onMouseDown={(e) => {
+            e.stopPropagation(); // Prevent date-level mouse down
+            handleDragStart(e, period, 'move');
+          }}
           title={period.title}
-        />
+        >
+          <div 
+            className="absolute left-0 top-0 bottom-0 w-1/4 cursor-ew-resize"
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              handleDragStart(e, period, 'resize-start');
+            }}
+          />
+          <div 
+            className="absolute right-0 top-0 bottom-0 w-1/4 cursor-ew-resize"
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              handleDragStart(e, period, 'resize-end');
+            }}
+          />
+        </div>
       );
     });
   };
@@ -427,18 +485,18 @@ export function YearCalendar({
                 key={date.toISOString()}
                 data-date={date.toISOString()}
                 className={`
-                  relative h-8 flex items-center justify-center text-xs rounded transition-colors
+                  relative h-8 flex items-center justify-center text-xs rounded-md border border-transparent transition-colors
                   ${isPast 
                     ? 'text-muted-foreground/50 cursor-default' 
                     : 'text-foreground hover:bg-accent/50 cursor-pointer'
                   }
-                  ${dayInfo.isToday ? 'bg-primary text-primary-foreground font-semibold rounded-full' : ''}
+                  ${dayInfo.isToday ? 'bg-primary text-primary-foreground font-semibold' : ''}
                   ${selectedDate && date.toDateString() === selectedDate.toDateString() ? 'bg-accent' : ''}
                 `}
                 style={eventBorderStyle}
                 onClick={() => !isPast && handleDateClick(date)}
                 onDoubleClick={() => !isPast && handleDateDoubleClick(date)}
-                onMouseDown={() => !isPast && handleDateMouseDown(date)}
+                onMouseDown={(e) => !isPast && handleDateMouseDown(e, date)}
                 onMouseUp={handleDateMouseUp}
                 onMouseLeave={handleDateMouseUp}
                 onMouseMove={dragMode && !isPast ? (e) => handleDragMove(e, date) : undefined}
@@ -480,6 +538,10 @@ export function YearCalendar({
                 key={period.id} 
                 className="group flex items-center gap-1.5 text-xs px-1.5 py-0.5 rounded hover:bg-accent/50 cursor-pointer transition-colors"
                 onClick={(e) => handlePeriodClick(period, e)}
+                onMouseDown={(e) => {
+                  e.stopPropagation(); // Prevent date-level mouse down
+                  handleDragStart(e, period, 'move');
+                }}
               >
                 <div 
                   className="w-4 h-1 rounded-full flex-shrink-0"
@@ -498,7 +560,7 @@ export function YearCalendar({
   };
 
   return (
-    <div className={`space-y-6 ${className} relative`}>
+    <div className={`space-y-4 ${className} relative`}>
       {/* Fixed Year Navigation */}
       <Button
           variant="outline"
@@ -526,7 +588,7 @@ export function YearCalendar({
         <div className="flex-1"> {headerLeftControls}</div>
         
         <div className="flex-shrink-0">
-            <h2 className="text-2xl font-bold text-foreground min-w-[100px] text-center">
+            <h2 className="text-xl font-bold text-foreground min-w-[100px] text-center">
               {currentYear}
             </h2>
         </div>
@@ -581,6 +643,7 @@ export function YearCalendar({
         onClose={() => {
           setEventModalOpen(false);
           setEditingEvent(null);
+          setSelectedDate(null);
         }}
         onSave={handleEventSave}
         onDelete={onEventDelete}
@@ -593,6 +656,7 @@ export function YearCalendar({
         onClose={() => {
           setPeriodModalOpen(false);
           setEditingPeriod(null);
+          setSelectedDate(null);
         }}
         onSave={handlePeriodSave}
         onDelete={onPeriodDelete}
@@ -602,13 +666,32 @@ export function YearCalendar({
 
       <DayDetailsModal
         isOpen={dayDetailsOpen}
-        onClose={() => setDayDetailsOpen(false)}
+        onClose={() => {
+          setDayDetailsOpen(false);
+          setSelectedDate(null);
+        }}
         date={selectedDate}
         events={selectedDate ? data.events.filter(e => e.date.toDateString() === selectedDate.toDateString()) : []}
         periods={selectedDate ? data.periods.filter(p => p.startDate <= selectedDate && p.endDate >= selectedDate) : []}
         onEventEdit={handleDayDetailsEventEdit}
         onPeriodEdit={handleDayDetailsPeriodEdit}
       />
+
+      {actionPopup && (
+        <ActionPopup
+          position={{ x: actionPopup.x, y: actionPopup.y }}
+          onClose={() => setActionPopup(null)}
+          onAddEvent={() => {
+            setSelectedDate(actionPopup.date);
+            handleAddEvent();
+            setActionPopup(null);
+          }}
+          onAddPeriod={() => {
+            handleAddPeriod();
+            setActionPopup(null);
+          }}
+        />
+      )}
     </div>
   );
 } 
