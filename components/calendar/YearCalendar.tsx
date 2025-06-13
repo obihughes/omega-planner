@@ -196,6 +196,7 @@ export function YearCalendar({
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const longPressTriggered = useRef(false);
   const [eraserMode, setEraserMode] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Drag state for periods
   const [dragMode, setDragMode] = useState<'move' | 'resize-start' | 'resize-end' | null>(null);
@@ -209,7 +210,11 @@ export function YearCalendar({
   );
 
   const navigateYear = (direction: 'prev' | 'next') => {
-    setCurrentYear(prev => direction === 'prev' ? prev - 1 : prev + 1);
+    setIsLoading(true);
+    setTimeout(() => {
+      setCurrentYear(prevYear => prevYear + (direction === 'next' ? 1 : -1));
+      setIsLoading(false);
+    }, 0);
   };
 
   const handleDateClick = (date: Date) => {
@@ -647,7 +652,11 @@ export function YearCalendar({
       </div>
 
       {/* 12-Month Grid */}
-      <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-10 ${eraserMode ? 'cursor-crosshair' : ''}`}>
+      <div className={cn(
+        "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-10 transition-opacity",
+        eraserMode ? 'cursor-crosshair' : '',
+        isLoading ? 'opacity-50 pointer-events-none' : 'opacity-100'
+      )}>
         {Array.from({ length: 12 }, (_, month) => renderMonth(month))}
       </div>
 
