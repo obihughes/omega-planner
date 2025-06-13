@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { Inter } from 'next/font/google';
 import { CalendarEvent, CalendarPeriod, CalendarData, CalendarProps, PeriodPosition } from '@/types/calendar';
 import { 
   getMonthDates, 
@@ -16,6 +17,8 @@ import { Button } from '@/components/ui/button';
 import { EventModal } from './EventModal';
 import { PeriodModal } from './PeriodModal';
 import { cn } from '@/lib/utils';
+
+const inter = Inter({ subsets: ['latin'] });
 
 interface YearCalendarProps extends CalendarProps {
   className?: string;
@@ -141,10 +144,13 @@ function ActionPopup({
   onAddEvent: () => void;
   onAddPeriod: () => void;
 }) {
+  const popupRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // Basic check to see if click is outside
-      onClose();
+      if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
+        onClose();
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -152,9 +158,9 @@ function ActionPopup({
 
   return (
     <div
+      ref={popupRef}
       className="fixed bg-background border rounded-lg shadow-xl z-50 p-2 space-y-1"
       style={{ top: position.y, left: position.x }}
-      onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
     >
       <Button variant="ghost" size="sm" className="w-full justify-start" onClick={onAddEvent}>
         <Plus className="w-4 h-4 mr-2" /> New Event
@@ -457,7 +463,7 @@ export function YearCalendar({
         {/* Week Days Header */}
         <div className="grid grid-cols-7 gap-1 mb-2">
           {weekDays.map(day => (
-            <div key={day} className="text-xs font-medium text-muted-foreground text-center py-1">
+            <div key={day} className={cn("text-xs font-medium text-muted-foreground text-center py-1", inter.className)}>
               {day}
             </div>
           ))}
@@ -502,7 +508,7 @@ export function YearCalendar({
                 onMouseMove={dragMode && !isPast ? (e) => handleDragMove(e, date) : undefined}
               >
                 {renderPeriodHighlight(dayInfo.periodPositions)}
-                <span className="relative z-20 font-bold select-none">
+                <span className={cn("relative z-20 font-bold select-none", inter.className)}>
                   {date.getDate()}
                 </span>
                 {renderSmallEventIndicators(dayInfo.events)}
