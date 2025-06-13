@@ -58,6 +58,31 @@ Components in the `/components/ui` directory:
 Components in the `/components/planner` directory:
 (To be documented as components are created/modified)
 
+### Documents Components
+Components in the `/components/documents` directory:
+
+#### `Documents.tsx`
+- **Purpose:** This component is the main interface for managing documents. It displays a list of documents, allows the user to create new documents, and provides an editor to modify the content of the selected document.
+- **Functionality:**
+    - View a list of all documents.
+    - Create a new document.
+    - Select a document to view and edit.
+    - Delete a document.
+    - Star/unstar a document.
+    - Search for documents by title or content.
+    - Edit a document's title by double-clicking on it in the tab list.
+    - Manual save button in the document editor header for immediate saving.
+    - Auto-save functionality that saves changes after 2 seconds of inactivity.
+- **Props:** This component does not accept any props.
+- **Usage:**
+  ```typescript
+  import Documents from '@/components/documents/Documents';
+
+  // ...
+  <Documents />
+  // ...
+  ```
+
 ## Adding New Components
 
 When adding new components:

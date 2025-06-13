@@ -9,6 +9,7 @@ import CanvasTextEditor from './CanvasTextEditor';
 
 interface ExtendedDocumentEditorProps extends DocumentEditorProps {
   onStar?: () => void;
+  onChange?: () => void;
 }
 
 export default function DocumentEditor({
@@ -16,7 +17,8 @@ export default function DocumentEditor({
   onSave,
   onClose,
   onDelete,
-  onStar
+  onStar,
+  onChange
 }: ExtendedDocumentEditorProps) {
   const [content, setContent] = useState(document?.content || '');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -96,6 +98,7 @@ export default function DocumentEditor({
           onChange={(newContent: string) => {
             setContent(newContent);
             setHasUnsavedChanges(true);
+            onChange?.();
           }}
           className="h-full px-6 py-8 text-foreground"
           style={{
