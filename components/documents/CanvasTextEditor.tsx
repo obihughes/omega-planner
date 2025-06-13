@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Move, Edit, Bold, Italic, Eraser } from 'lucide-react';
+import { Move, Edit, Bold, Italic } from 'lucide-react';
 
 // Type guard for caret positioning methods
 const hasCaretPositionFromPoint = (doc: Document): doc is Document & { caretPositionFromPoint: (x: number, y: number) => any } => {
@@ -373,16 +373,6 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
     }
   };
 
-  const handleEraseAll = () => {
-    if (textBlocks.length > 0) {
-      if (window.confirm('Are you sure you want to erase all content? This cannot be undone.')) {
-        setTextBlocks([]);
-        handleContentChange([]);
-        setActiveBlockId(null);
-      }
-    }
-  };
-
   useEffect(() => {
     return () => {
       if (updateTimeoutRef.current) {
@@ -610,40 +600,13 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
           </div>
         ))}
 
-        {/* Mode Toggle Button - Moved to bottom right */}
-        <div className="absolute bottom-4 right-4 z-10 flex gap-2">
-            {/* Eraser Button */}
-            <button
-              onClick={handleEraseAll}
-              className="flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all shadow-lg bg-red-500 hover:bg-red-600 text-white"
-              title="Erase all content"
-            >
-              <Eraser size={16} />
-              <span>Clear All</span>
-            </button>
-            
-            {/* Mode Toggle Button */}
-            <button
-              onClick={() => setIsDragMode(!isDragMode)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all shadow-lg ${
-                isDragMode 
-                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              }`}
-              title={isDragMode ? 'Switch to Edit Mode' : 'Switch to Drag Mode'}
-            >
-              {isDragMode ? <Edit size={16} /> : <Move size={16} />}
-              <span>{isDragMode ? 'Editing' : 'Dragging'}</span>
-            </button>
-        </div>
-
         {/* Instruction text when no blocks exist */}
         {textBlocks.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
             <div className="text-center">
               <p className="text-lg mb-2">Double-click anywhere to start typing</p>
               <p className="text-sm">Each double-click creates an independent text block</p>
-              <p className="text-xs mt-2">• Toggle drag mode to reposition and delete • Enter for new lines • Backspace on empty blocks to delete</p>
+              <p className="text-xs mt-2">• Enter for new lines • Backspace on empty blocks to delete</p>
             </div>
           </div>
         )}

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Document, DocumentEditorProps } from '@/types';
-import { Save, X, Trash2, Star, StarOff, Bold, Italic, List, ListOrdered, ChevronDown, ChevronUp, Type } from 'lucide-react';
+import { Save, X, Trash2, Star, StarOff, Bold, Italic, List, ListOrdered, ChevronDown, ChevronUp, Type, Eraser } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import CanvasTextEditor from './CanvasTextEditor';
@@ -87,6 +87,16 @@ export default function DocumentEditor({
     formatText('formatBlock', `h${level}`);
   };
 
+  const handleClearAll = () => {
+    if (content && content.trim()) {
+      if (window.confirm('Clear all content? This cannot be undone.')) {
+        setContent('');
+        setHasUnsavedChanges(true);
+        onChange?.();
+      }
+    }
+  };
+
   if (!document) return null;
 
   return (
@@ -115,21 +125,15 @@ export default function DocumentEditor({
               <>Last saved {new Date(document.updatedAt).toLocaleString()}</>
             )}
           </div>
-          {onDelete && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                if (window.confirm('Delete this document? This cannot be undone.')) {
-                  onDelete(document.id);
-                }
-              }}
-              className="text-muted-foreground hover:text-destructive h-6 px-2 text-xs"
-            >
-              <Trash2 className="w-3 h-3 mr-1" />
-              Delete
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleClearAll}
+            className="text-muted-foreground hover:text-destructive h-6 px-2 text-xs"
+          >
+            <Eraser className="w-3 h-3 mr-1" />
+            Clear All
+          </Button>
         </div>
       </div>
     </div>
