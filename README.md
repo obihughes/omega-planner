@@ -1,6 +1,6 @@
 # Daily Planner App
 
-A modern task planning application built with Next.js and TailwindCSS.
+A modern task planning application built with Next.js and TailwindCSS, featuring comprehensive error handling and performance optimizations.
 
 ## Setup Instructions
 
@@ -29,6 +29,7 @@ npm run dev:clean
 
 ## Features
 
+### Core Functionality
 - Task management with drag-and-drop
 - Dark mode support
 - Copy/paste tasks
@@ -37,12 +38,32 @@ npm run dev:clean
 - Task pool for unscheduled tasks
 - Pinned tasks for quick access
 
+### Calendar Features
+- Year-view calendar with event and period management
+- Modern, minimalist design with Lexend/Inter font combination
+- Eraser mode for easy deletion of events and periods
+- Click-to-view details with separate edit functionality
+- Long-press to create new periods
+
+### Text Editor Features
+- Canvas-based text editor with performance optimizations
+- Manual save functionality with visual feedback
+- Optimized rendering - only active text blocks re-render
+- Autosave with configurable delay
+
+### Stability & Error Handling
+- **Global Error Boundary**: Catches and handles JavaScript errors gracefully
+- **Fallback UI**: User-friendly error recovery with refresh option
+- **Error Logging**: Comprehensive error tracking for debugging
+- **Graceful Degradation**: Individual component failures don't crash the entire app
+
 ## Project Structure
 
 - `/app` - Next.js application routes and pages
 - `/components` - React components organized by functionality
   - `/components/planner` - Main planner-specific components
   - `/components/ui` - Reusable UI components
+  - `/components/ErrorBoundary.tsx` - Global error boundary for stability
 - `/hooks` - Custom React hooks for state management and logic
 - `/lib` - Core utilities and constants
 - `/types` - TypeScript type definitions
@@ -51,6 +72,16 @@ npm run dev:clean
 ## Architecture
 
 For a more detailed overview of the application architecture, see [ARCHITECTURE.md](./ARCHITECTURE.md).
+
+## Performance
+
+The application includes several performance optimizations:
+- Memoized components to prevent unnecessary re-renders
+- Optimized text editor with selective re-rendering
+- Bundle size optimization with tree shaking
+- Error boundaries for stability
+
+For detailed performance information, see [PERFORMANCE.md](./PERFORMANCE.md).
 
 ## Testing
 
@@ -62,7 +93,23 @@ npm test
 
 ## Recent Changes
 
-- **Project Editing**: Added ability to edit projects directly from the project detail page.
+### Stability Improvements
+- **Error Boundary Implementation**: Added global ErrorBoundary component to catch and handle JavaScript errors
+- **Graceful Error Recovery**: Users can continue using the app even when individual components fail
+- **Enhanced Error Logging**: Comprehensive error tracking for better debugging
+
+### Performance Optimizations
+- **Text Editor Performance**: Implemented memoized TextBlockComponent to prevent unnecessary re-renders
+- **Component Optimization**: Enhanced React.memo usage across critical components
+- **Bundle Size Reduction**: Optimized imports and enabled tree shaking
+
+### UI/UX Enhancements
+- **Calendar Improvements**: Modern design with better font clarity and eraser functionality
+- **Modal Layering Fixes**: Resolved z-index conflicts with date pickers and modals
+- **Compact UI**: Reduced modal sizes for better user experience
+
+### Previous Updates
+- **Project Editing**: Added ability to edit projects directly from the project detail page
 - **Component Extraction**: Extracted `TaskCard` from `DailyPlanner` for better code organization
 - **Modal Management**: Added dedicated `useModalManager` hook to centralize modal state and functions
 - **Documentation**: Added JSDoc comments and README files across the codebase
@@ -72,18 +119,26 @@ npm test
 
 If you encounter any issues:
 
-1. Clear the cache:
+1. **Application Errors**: The ErrorBoundary will catch most errors and provide a recovery option
+2. Clear the cache:
 ```bash
 npm run clean
 ```
 
-2. Delete node_modules and reinstall:
+3. Delete node_modules and reinstall:
 ```bash
 rm -rf node_modules
 npm install
 ```
 
-3. Start fresh:
+4. Start fresh:
 ```bash
 npm run dev:clean
-``` 
+```
+
+## Development Guidelines
+
+- **Error Handling**: All new components should consider error scenarios
+- **Performance**: Use React.memo and useMemo for expensive operations
+- **Type Safety**: Maintain strict TypeScript usage
+- **Documentation**: Update relevant documentation files when making changes 

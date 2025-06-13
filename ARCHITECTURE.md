@@ -7,10 +7,11 @@ This document provides an overview of the Daily Planner application's architectu
 1.  [Project Structure](#project-structure)
 2.  [State Management](#state-management)
 3.  [Key Components](#key-components)
-4.  [UI Layering (Z-Index)](#ui-layering-z-index)
-5.  [Styling](#styling)
-6.  [Utility Functions](#utility-functions)
-7.  [Data Storage](#data-storage)
+4.  [Error Handling & Stability](#error-handling--stability)
+5.  [UI Layering (Z-Index)](#ui-layering-z-index)
+6.  [Styling](#styling)
+7.  [Utility Functions](#utility-functions)
+8.  [Data Storage](#data-storage)
 
 ## 1. Project Structure
 
@@ -20,6 +21,7 @@ The application follows a modular structure with clear separation of concerns:
 - `/components` - React components organized by functionality
   - `/components/planner` - Main planner-specific components
   - `/components/ui` - Reusable UI components
+  - `/components/ErrorBoundary.tsx` - Global error boundary for stability
 - `/hooks` - Custom React hooks for state management and logic
 - `/lib` - Core utilities and constants
 - `/types` - TypeScript type definitions
@@ -65,7 +67,46 @@ The application is built with these main components:
 - **PinnedTasksSidebar** (`components/planner/PinnedTasksSidebar.tsx`):
   Sidebar component for displaying and managing pinned tasks.
 
-## 4. UI Layering (Z-Index)
+- **YearCalendar** (`components/calendar/YearCalendar.tsx`):
+  Calendar component with event and period management functionality.
+
+- **CanvasTextEditor** (`components/canvas/CanvasTextEditor.tsx`):
+  Text editing component with performance optimizations for large documents.
+
+## 4. Error Handling & Stability
+
+The application implements a comprehensive error handling strategy to ensure stability:
+
+### **Global Error Boundary**
+- **ErrorBoundary** (`components/ErrorBoundary.tsx`): 
+  A class-based React component that catches JavaScript errors anywhere in the component tree
+  * Wraps the entire application at the root layout level
+  * Provides a user-friendly fallback UI when errors occur
+  * Logs errors to the console for debugging
+  * Includes a "Refresh Page" button for recovery
+
+### **Error Boundary Implementation**
+```typescript
+// Integrated in app/layout.tsx
+<ErrorBoundary>
+  <div className="min-h-screen bg-background text-foreground">
+    {children}
+  </div>
+</ErrorBoundary>
+```
+
+### **Stability Features**
+- **Graceful Error Recovery**: Users can continue using the application even if individual components fail
+- **Error Logging**: All uncaught errors are logged for debugging purposes
+- **User-Friendly Messaging**: Clear error messages with actionable recovery options
+- **Fallback UI**: Maintains application branding and provides recovery options
+
+### **Future Stability Enhancements**
+- Granular error boundaries for individual features (Calendar, Text Editor)
+- Integration with error monitoring services (Sentry, LogRocket)
+- Enhanced type safety with validation libraries (Zod)
+
+## 5. UI Layering (Z-Index)
 
 The application uses `z-index` extensively to manage the stacking of UI elements, especially modals, popups, and interactive timeline components.
 
@@ -95,15 +136,18 @@ The application uses `z-index` extensively to manage the stacking of UI elements
 *   **Portals:** The `TaskCard Inline Edit Menu` uses `ReactDOM.createPortal`.
 *   **Sticky Positioning:** The main sidebar container (`DailyPlanner.tsx`) uses `position: sticky`.
 
-## 5. Styling
+## 6. Styling
 
 The application uses Tailwind CSS for styling:
 - Consistent color palette defined in tailwind.config.js
 - Responsive design for different screen sizes
 - Dark mode support with `dark:` variants
 - Custom utility classes for specialized UI elements
+- **Font Strategy**: 
+  * Primary font: Lexend for modern, readable interface
+  * Calendar-specific font: Inter for better number clarity in date displays
 
-## 6. Utility Functions
+## 7. Utility Functions
 
 The application includes various utility functions:
 
@@ -112,7 +156,7 @@ The application includes various utility functions:
 *   `lib/constants.ts`: Contains application-wide constants like colors, timeline settings, etc.
 *   `lib/utils.ts`: General utility functions used throughout the application.
 
-## 7. Data Storage
+## 8. Data Storage
 
 *   **Primary Storage:** Browser `localStorage`.
 *   **Keys Used:**
