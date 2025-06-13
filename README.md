@@ -62,6 +62,7 @@ npm test
 
 ## Recent Changes
 
+- **Project Editing**: Added ability to edit projects directly from the project detail page.
 - **Component Extraction**: Extracted `TaskCard` from `DailyPlanner` for better code organization
 - **Modal Management**: Added dedicated `useModalManager` hook to centralize modal state and functions
 - **Documentation**: Added JSDoc comments and README files across the codebase

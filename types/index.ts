@@ -12,4 +12,21 @@ export type {
   Project,
   ProjectTask,
   ProjectsStorageData
-} from './projects'; 
+} from './projects';
+
+export type {
+  Document,
+  DocumentsStorageData,
+  DocumentEditorProps,
+  DocumentListProps
+} from './documents';
+
+export type {
+  CalendarEvent,
+  CalendarPeriod,
+  CalendarData,
+  MonthlyEvents,
+  DayInfo,
+  PeriodPosition,
+  CalendarProps
+} from './calendar'; 

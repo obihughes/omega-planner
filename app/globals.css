@@ -2,58 +2,67 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
 @layer base {
   :root {
-    /* Light mode */
-    --background: 210 25% 98%;
-    --foreground: 220 25% 10%;
-    --card: 0 0% 100%;
-    --card-foreground: 220 25% 10%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 25% 10%;
-    --primary: 214 88% 56%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 20% 94%;
-    --secondary-foreground: 220 25% 15%;
-    --muted: 210 20% 94%;
-    --muted-foreground: 220 15% 40%;
-    --accent: 210 25% 92%;
-    --accent-foreground: 220 25% 15%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 220 15% 88%;
-    --input: 220 15% 88%;
-    --ring: 214 88% 56%;
-    --radius: 0.5rem;
+    /* Enhanced Light mode inspired by the reference design */
+    --background: 0 0% 98%;                    /* Subtle off-white instead of pure white */
+    --foreground: 0 0% 3.9%;                  /* Keep good contrast */
+    --card: 0 0% 100%;                        /* Pure white cards for contrast */
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;                     /* White popovers */
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 252 83% 57%;                   /* Refined purple to match reference */
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 94%;                    /* Slightly darker secondary */
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 94%;                        /* Adjusted muted colors */
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 252 83% 57%;                    /* Use primary color for accents */
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 88%;                       /* Slightly more visible borders */
+    --input: 0 0% 96%;                        /* Input background */
+    --ring: 252 83% 57%;                      /* Focus ring matches primary */
+    --radius: 0.75rem;
   }
 
   .dark {
-    /* Dark mode */
-    --background: 220 35% 8%;
-    --foreground: 210 40% 98%;
-    --card: 220 35% 10%;
-    --card-foreground: 210 40% 98%;
-    --popover: 220 35% 10%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 214 88% 65%;
-    --primary-foreground: 220 35% 8%;
-    --secondary: 220 25% 15%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 220 25% 15%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 220 25% 18%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 220 25% 18%;
-    --input: 220 25% 18%;
-    --ring: 214 88% 65%;
+    /* Enhanced Dark mode with Omega Planner-like colors */
+    --background: 0 0% 5%;
+    --foreground: 0 0% 95%;
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 265 90% 65%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 85%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 95%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 20%;
+    --input: 0 0% 15%;
+    --ring: 265 90% 65%;
   }
 }
 
 @layer base {
+  * {
+    @apply border-border;
+  }
+  
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    font-feature-settings: 'cv11', 'ss01';
+    font-variation-settings: 'opsz' 32;
   }
 }
 
@@ -72,82 +81,207 @@ html.resize-active .resize-handle {
   pointer-events: auto !important;
 }
 
-/* Custom scrollbars */
+/* Custom scrollbars - darker theme */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-muted;
+  @apply bg-transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-muted-foreground/30 rounded-md;
+  @apply bg-muted-foreground/20 rounded-md;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-muted-foreground/50;
+  @apply bg-muted-foreground/40;
 }
 
 /* Smooth transitions for theme changes */
 * {
-  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* Project status colors */
+/* Enhanced project status colors with better contrast */
 .status-planning {
-  @apply bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200;
+  @apply bg-blue-500/20 text-blue-600 border border-blue-500/30 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/30;
 }
 
 .status-active {
-  @apply bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200;
+  @apply bg-green-500/20 text-green-600 border border-green-500/30 dark:bg-green-500/20 dark:text-green-300 dark:border-green-500/30;
 }
 
 .status-on-hold {
-  @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200;
+  @apply bg-yellow-500/20 text-yellow-600 border border-yellow-500/30 dark:bg-yellow-500/20 dark:text-yellow-300 dark:border-yellow-500/30;
 }
 
 .status-completed {
-  @apply bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200;
+  @apply bg-gray-500/20 text-gray-600 border border-gray-500/30 dark:bg-gray-500/20 dark:text-gray-300 dark:border-gray-500/30;
 }
 
 .status-cancelled {
-  @apply bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200;
+  @apply bg-red-500/20 text-red-600 border border-red-500/30 dark:bg-red-500/20 dark:text-red-300 dark:border-red-500/30;
 }
 
-/* Task priority colors */
+/* Enhanced task priority colors */
 .priority-low {
-  @apply bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300;
+  @apply bg-gray-500/15 text-gray-600 border border-gray-500/25 dark:bg-gray-500/15 dark:text-gray-400 dark:border-gray-500/25;
 }
 
 .priority-medium {
-  @apply bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-300;
+  @apply bg-blue-500/15 text-blue-600 border border-blue-500/25 dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/25;
 }
 
 .priority-high {
-  @apply bg-orange-100 text-orange-700 dark:bg-orange-800 dark:text-orange-300;
+  @apply bg-orange-500/15 text-orange-600 border border-orange-500/25 dark:bg-orange-500/15 dark:text-orange-400 dark:border-orange-500/25;
 }
 
 .priority-urgent {
-  @apply bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-300;
+  @apply bg-red-500/15 text-red-600 border border-red-500/25 dark:bg-red-500/15 dark:text-red-400 dark:border-red-500/25;
 }
 
-/* Task status colors */
+/* Enhanced task status colors */
 .task-status-todo {
-  @apply bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300;
+  @apply bg-gray-500/15 text-gray-600 border border-gray-500/25 dark:bg-gray-500/15 dark:text-gray-400 dark:border-gray-500/25;
 }
 
 .task-status-in-progress {
-  @apply bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-300;
+  @apply bg-purple-500/15 text-purple-600 border border-purple-500/25 dark:bg-purple-500/15 dark:text-purple-400 dark:border-purple-500/25;
 }
 
 .task-status-completed {
-  @apply bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-300;
+  @apply bg-green-500/15 text-green-600 border border-green-500/25 dark:bg-green-500/15 dark:text-green-400 dark:border-green-500/25;
 }
 
 .task-status-blocked {
-  @apply bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-300;
+  @apply bg-red-500/15 text-red-600 border border-red-500/25 dark:bg-red-500/15 dark:text-red-400 dark:border-red-500/25;
+}
+
+/* Enhanced button and interactive elements */
+.btn-primary {
+  @apply bg-primary text-primary-foreground hover:bg-primary/90;
+  @apply shadow-sm hover:shadow-md transition-all duration-200;
+  @apply border-0 rounded-xl px-6 py-2.5 font-medium;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  transform: translateY(-1px);
+}
+
+.dark .btn-primary {
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.85));
+}
+
+.btn-secondary {
+  @apply bg-card text-foreground hover:bg-secondary/80 border border-border/50;
+  @apply rounded-xl px-6 py-2.5 font-medium transition-all duration-200;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+/* Calendar event colors for both light and dark modes */
+.calendar-event-blue {
+  @apply bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/30;
+}
+
+.calendar-event-green {
+  @apply bg-green-100 text-green-700 border border-green-200 dark:bg-green-500/20 dark:text-green-300 dark:border-green-500/30;
+}
+
+.calendar-event-purple {
+  @apply bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/30;
+}
+
+.calendar-event-orange {
+  @apply bg-orange-100 text-orange-700 border border-orange-200 dark:bg-orange-500/20 dark:text-orange-300 dark:border-orange-500/30;
+}
+
+.calendar-event-red {
+  @apply bg-red-100 text-red-700 border border-red-200 dark:bg-red-500/20 dark:text-red-300 dark:border-red-500/30;
+}
+
+.calendar-event-pink {
+  @apply bg-pink-100 text-pink-700 border border-pink-200 dark:bg-pink-500/20 dark:text-pink-300 dark:border-pink-500/30;
+}
+
+.calendar-event-yellow {
+  @apply bg-yellow-100 text-yellow-700 border border-yellow-200 dark:bg-yellow-500/20 dark:text-yellow-300 dark:border-yellow-500/30;
+}
+
+.calendar-event-indigo {
+  @apply bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500/30;
+}
+
+/* Enhanced input styling */
+input, textarea, select {
+  @apply bg-input border-border/50 focus:border-primary focus:ring-2 focus:ring-primary/20;
+  @apply rounded-xl transition-all duration-200;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05) inset;
+}
+
+input:focus, textarea:focus, select:focus {
+  box-shadow: 
+    0 1px 2px 0 rgb(0 0 0 / 0.05) inset,
+    0 0 0 3px hsl(var(--primary) / 0.1);
+}
+
+/* Card enhancements - matching reference design */
+.card-enhanced {
+  @apply bg-card backdrop-blur-sm border border-border/30 rounded-2xl;
+  box-shadow: 
+    0 1px 2px 0 rgb(0 0 0 / 0.05),
+    0 1px 3px 1px rgb(0 0 0 / 0.03);
+  @apply hover:border-primary/20 transition-all duration-300;
+}
+
+.card-enhanced:hover {
+  box-shadow: 
+    0 4px 6px -1px rgb(0 0 0 / 0.08),
+    0 2px 4px -2px rgb(0 0 0 / 0.03);
+  transform: translateY(-1px);
+}
+
+/* Typography enhancements */
+h1, h2, h3, h4, h5, h6 {
+  @apply font-semibold;
+  letter-spacing: -0.025em;
+}
+
+.text-large {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+}
+
+/* Navigation sidebar styling */
+.nav-item {
+  @apply px-4 py-2.5 rounded-xl flex items-center space-x-2 text-sm font-medium transition-all duration-200;
+  @apply hover:bg-secondary/60;
+}
+
+.nav-item.active {
+  @apply text-primary-foreground bg-primary shadow-sm;
+  box-shadow: 0 2px 4px 0 rgb(0 0 0 / 0.1);
+}
+
+/* Enhanced content containers */
+.content-container {
+  @apply bg-card rounded-2xl p-6 border border-border/30;
+  box-shadow: 
+    0 1px 2px 0 rgb(0 0 0 / 0.05),
+    0 1px 3px 1px rgb(0 0 0 / 0.03);
+}
+
+/* Progress bar enhancements */
+.progress-bar {
+  @apply bg-secondary rounded-full overflow-hidden;
+}
+
+.progress-fill {
+  @apply bg-primary rounded-full h-full transition-all duration-500 ease-out;
+  background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.8));
 }
 
  

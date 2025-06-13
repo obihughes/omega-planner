@@ -102,7 +102,24 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   // New useEffect for Modal Close on Escape and Click Outside
   useEffect(() => {
     const handleClickOutsideModal = (event: MouseEvent) => {
-      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      
+      // Check if the click is inside the modal
+      if (modalRef.current && !modalRef.current.contains(target)) {
+        // Check if the click is inside a popover (date picker)
+        const popoverElement = document.querySelector('[data-radix-popper-content-wrapper]');
+        if (popoverElement && popoverElement.contains(target)) {
+          return; // Don't close modal if clicking on popover
+        }
+        
+        // Check for any other popover elements that might be portaled
+        const allPopovers = document.querySelectorAll('[role="dialog"], [data-state="open"]');
+        for (let i = 0; i < allPopovers.length; i++) {
+          if (allPopovers[i].contains(target)) {
+            return; // Don't close modal if clicking on any popover
+          }
+        }
+        
         onClose();
       }
     };
@@ -144,21 +161,21 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   const isTaskPinned = pinnedTasks.some(pt => pt.id === taskToEdit.id || (pt as any).originalId === taskToEdit.id);
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[1000] p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-[1000] p-4">
       <div 
         ref={modalRef}
-        className="bg-neutral-800 rounded-xl shadow-2xl p-5 w-full max-w-md border border-neutral-700 text-neutral-100 flex flex-col gap-4 relative"
+        className="bg-card rounded-xl shadow-2xl p-5 w-full max-w-md border border-border text-foreground flex flex-col gap-4 relative"
       >
         <button 
           type="button"
           onClick={onClose}
-          className="absolute top-3 right-3 text-neutral-400 hover:text-neutral-200 transition-colors z-10 p-1 rounded-full hover:bg-neutral-700"
+          className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors z-10 p-1 rounded-full hover:bg-accent"
           aria-label="Close modal"
         >
           <X className="w-5 h-5" />
         </button>
         
-        <h2 className="text-xl font-semibold text-white pr-8">
+        <h2 className="text-xl font-semibold text-foreground pr-8">
           {taskToEdit.isNew ? 'Create New Task' : 'Edit Task'}
         </h2>
 
@@ -170,7 +187,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full p-2.5 bg-neutral-700 border border-neutral-600 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none text-white placeholder-neutral-400 text-sm"
+              className="w-full p-2.5 bg-input border border-border rounded-md focus:ring-1 focus:ring-ring focus:border-ring outline-none text-foreground placeholder-muted-foreground text-sm"
               placeholder="Enter task name..."
               required
             />
@@ -179,21 +196,21 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
           {/* Date, Time, Duration, Color Section */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-4">
             <div>
-              <label htmlFor="taskDate" className="block text-xs font-medium text-neutral-400 mb-1">Date</label>
+              <label htmlFor="taskDate" className="block text-xs font-medium text-muted-foreground mb-1">Date</label>
               <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant={"outline"}
                     className={cn(
-                      "w-full justify-start text-left font-normal p-2.5 h-auto bg-neutral-700 border-neutral-600 hover:bg-neutral-600 text-white hover:text-white",
-                      !selectedDate && "text-neutral-500"
+                      "w-full justify-start text-left font-normal p-2.5 h-auto",
+                      !selectedDate && "text-muted-foreground"
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4 opacity-80" />
                     {selectedDate ? selectedDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : <span>Pick a date</span>}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 bg-neutral-800 border-neutral-700 shadow-xl" align="start">
+                <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
                     selected={selectedDate}
@@ -204,14 +221,13 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                       }
                     }}
                     initialFocus
-                    className="text-white [&_button]:text-white [&_button:hover]:bg-neutral-700 [&_button[aria-selected]]:bg-blue-600 [&_button[aria-selected]:hover]:bg-blue-500 [&_button[aria-selected]:focus]:bg-blue-600"
                   />
                 </PopoverContent>
               </Popover>
             </div>
             
             <div>
-              <label htmlFor="taskStartTime" className="block text-xs font-medium text-neutral-400 mb-1">Start Time</label>
+              <label htmlFor="taskStartTime" className="block text-xs font-medium text-muted-foreground mb-1">Start Time</label>
               <CustomTimePicker
                 value={startHour}
                 onChange={setStartHour}
@@ -219,11 +235,11 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
             </div>
 
             <div>
-                <label htmlFor="taskDuration" className="block text-xs font-medium text-neutral-400 mb-1">Duration</label>
+                <label htmlFor="taskDuration" className="block text-xs font-medium text-muted-foreground mb-1">Duration</label>
                 <div ref={durationControlRef} className="relative">
                     <button
                         type="button"
-                        className="w-full p-2.5 bg-neutral-700 border border-neutral-600 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none text-white placeholder-neutral-400 text-sm flex justify-between items-center h-auto"
+                        className="w-full p-2.5 bg-input border border-border rounded-md focus:ring-1 focus:ring-ring focus:border-ring outline-none text-foreground text-sm flex justify-between items-center h-auto"
                         onClick={() => setIsDurationDropdownOpen(!isDurationDropdownOpen)}
                     >
                         <span>{DURATION_OPTIONS.find(opt => opt.value === duration)?.label || formatDuration(duration)}</span>
@@ -232,13 +248,13 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                     {isDurationDropdownOpen && (
                         <div
                             ref={durationDropdownRef}
-                            className="absolute left-0 right-0 top-full mt-1 bg-neutral-700 border border-neutral-600 rounded-md shadow-lg z-50 max-h-48 overflow-y-auto styled-scrollbar"
+                            className="absolute left-0 right-0 top-full mt-1 bg-popover border border-border rounded-md shadow-lg z-50 max-h-48 overflow-y-auto styled-scrollbar"
                         >
                             {DURATION_OPTIONS.map((option) => (
                                 <button
                                     type="button"
                                     key={option.value}
-                                    className={`block w-full text-left px-3 py-1.5 text-sm hover:bg-neutral-600 ${duration === option.value ? 'bg-blue-600 text-white' : 'text-neutral-200'}`}
+                                    className={`block w-full text-left px-3 py-1.5 text-sm hover:bg-accent ${duration === option.value ? 'bg-primary text-primary-foreground' : 'text-popover-foreground'}`}
                                     onClick={() => { setDuration(option.value); setIsDurationDropdownOpen(false); }}
                                 >
                                     {option.label}
@@ -257,7 +273,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                         <button
                         type="button"
                         key={c}
-                        className={`w-full aspect-square rounded ${c} ${color === c ? 'ring-2 ring-offset-2 ring-offset-neutral-800 ring-white' : 'hover:opacity-80'}`}
+                        className={`w-full aspect-square rounded ${c} ${color === c ? 'ring-2 ring-offset-2 ring-offset-card ring-foreground' : 'hover:opacity-80'}`}
                         onClick={() => setColor(c)}
                         />
                     ))}
@@ -272,13 +288,13 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
-              className="w-full p-2.5 bg-neutral-700 border border-neutral-600 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none text-white placeholder-neutral-400 text-sm styled-scrollbar"
+              className="w-full p-2.5 bg-input border border-border rounded-md focus:ring-1 focus:ring-ring focus:border-ring outline-none text-foreground placeholder-muted-foreground text-sm styled-scrollbar"
               placeholder="Add notes..."
             />
           </div>
 
           {/* Modal Footer with Action Buttons - Revised Layout */}
-          <div className="flex flex-col gap-3 pt-4 border-t border-neutral-700 mt-4">
+          <div className="flex flex-col gap-3 pt-4 border-t border-border mt-4">
             {/* Action buttons row */}
             <div className="flex items-center gap-2 flex-wrap">
               {!taskToEdit.isNew && onDelete && (
@@ -308,7 +324,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                       completed: taskDataForCopy.completed,
                     });
                   }}
-                  className="px-3 py-1.5 text-xs text-neutral-300 border-neutral-600 hover:bg-neutral-700 hover:text-neutral-100"
+                  className="px-3 py-1.5 text-xs"
                 >
                   <Copy className="w-3 h-3 mr-1" /> Copy
                 </Button>
@@ -326,7 +342,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                     onPinTask(taskToPin);
                   }}
                   disabled={isTaskPinned}
-                  className={`px-3 py-1.5 text-xs border-neutral-600 hover:bg-neutral-700 ${isTaskPinned ? 'text-blue-400 hover:text-blue-300' : 'text-neutral-300 hover:text-neutral-100'}`}
+                  className={`px-3 py-1.5 text-xs ${isTaskPinned ? 'text-primary' : ''}`}
                 >
                   <Pin className="w-3 h-3 mr-1" /> {isTaskPinned ? 'Pinned' : 'Pin'}
                 </Button>
@@ -336,7 +352,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                   type="button"
                   variant="outline"
                   onClick={() => { if (onMoveToPool) { onMoveToPool(taskToEdit.id); onClose();} }}
-                  className="px-3 py-1.5 text-xs text-neutral-300 border-neutral-600 hover:bg-neutral-700 hover:text-neutral-100"
+                  className="px-3 py-1.5 text-xs"
                 >
                   To Pool
                 </Button>
@@ -346,7 +362,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
             {/* Save button row - full width */}
             <Button 
               type="submit" 
-              className="w-full bg-green-600 hover:bg-green-700 text-white py-2 text-sm font-medium"
+              className="w-full py-2 text-sm font-medium"
             >
               <Check className="w-4 h-4 mr-2" /> Save Changes
             </Button>

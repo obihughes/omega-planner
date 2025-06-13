@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Project, ProjectTask, ProjectsStorageData } from '@/types';
 
-const STORAGE_KEY = 'sunsama-projects';
+const STORAGE_KEY = 'omega-planner-projects';
 const STORAGE_VERSION = '1.0.0';
 
 // Helper to save to localStorage
@@ -29,8 +29,9 @@ export function useProjects() {
       if (stored) {
         const data: ProjectsStorageData = JSON.parse(stored);
         if (data.version === STORAGE_VERSION) {
-          const migratedProjects = data.projects.map(project => ({
+          const migratedProjects = data.projects.map((project, index) => ({
             ...project,
+            order: project.order ?? index, // Ensure order exists
             tasks: project.tasks.map((task, index) => ({
               ...task,
               order: task.order ?? index,
@@ -55,12 +56,13 @@ export function useProjects() {
     });
   };
 
-  const createProject = useCallback((projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'tasks' | 'progress'>) => {
+  const createProject = useCallback((projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'tasks' | 'progress' | 'order'>) => {
     const newProject: Project = {
       ...projectData,
       id: `project-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       tasks: [],
       progress: 0,
+      order: Date.now(), // Use timestamp for initial ordering
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -84,6 +86,45 @@ export function useProjects() {
         p.id === projectId ? { ...p, isDeleted: true, updatedAt: new Date().toISOString() } : p
       )
     );
+  }, []);
+
+  // Restore a deleted project
+  const restoreProject = useCallback((projectId: string) => {
+    updateProjectsState(prevProjects =>
+      prevProjects.map(p =>
+        p.id === projectId ? { ...p, isDeleted: false, updatedAt: new Date().toISOString() } : p
+      )
+    );
+  }, []);
+
+  // Permanently delete a project
+  const permanentlyDeleteProject = useCallback((projectId: string) => {
+    updateProjectsState(prevProjects =>
+      prevProjects.filter(p => p.id !== projectId)
+    );
+  }, []);
+
+  // Reorder projects
+  const reorderProjects = useCallback((activeId: string, overId: string) => {
+    if (activeId === overId) return;
+    
+    updateProjectsState(prevProjects => {
+      const activeIndex = prevProjects.findIndex(p => p.id === activeId);
+      const overIndex = prevProjects.findIndex(p => p.id === overId);
+      
+      if (activeIndex === -1 || overIndex === -1) return prevProjects;
+
+      const reorderedProjects = Array.from(prevProjects);
+      const [movedProject] = reorderedProjects.splice(activeIndex, 1);
+      reorderedProjects.splice(overIndex, 0, movedProject);
+      
+      // Update order values based on new positions
+      return reorderedProjects.map((project, index) => ({
+        ...project,
+        order: index,
+        updatedAt: new Date().toISOString()
+      }));
+    });
   }, []);
 
   const addTaskToProject = useCallback((projectId: string, taskData: Omit<ProjectTask, 'id' | 'createdAt' | 'updatedAt' | 'order'>) => {
@@ -178,6 +219,9 @@ export function useProjects() {
     createProject,
     updateProject,
     deleteProject,
+    restoreProject,
+    permanentlyDeleteProject,
+    reorderProjects,
     addTaskToProject,
     updateTaskInProject,
     deleteTaskFromProject,

@@ -724,8 +724,8 @@ export default function DailyPlanner() {
             {Array.from({ length: endHour - startHour + 1 }, (_, i) => (
               <div 
                 key={`grid-${i}-${dayOffset}-${period}`} 
-                className={`border-l-2 border-gray-200 dark:border-gray-700 z-10 ${GRID_LINE_STYLE}`}
-                style={{ left: `${i * APP_PIXELS_PER_HOUR}px`, height: '100%', top: 0, borderLeftStyle: 'dashed', position: 'absolute'}} 
+                className={`border-l border-border/20 z-10 ${GRID_LINE_STYLE}`}
+                style={{ left: `${i * APP_PIXELS_PER_HOUR}px`, height: '100%', top: 0, position: 'absolute'}} 
               />
             ))}
             {tasksToRender.map((task) => {
@@ -805,7 +805,7 @@ export default function DailyPlanner() {
               if (renderWidth <= 0 && !isBeingDragged) return null;
               
               const zIndex = (isBeingDragged || isBeingResized ? 100 : 40);
-              const taskCardBaseClassName = `absolute select-none transition-transform duration-100 ease-out hover:shadow-md group ${isBeingDragged || isBeingResized ? 'opacity-95 shadow-lg scale-[1.01] ring-1 ring-white' : 'shadow-sm'} ${isBeingCopied ? 'ring-2 ring-offset-1 ring-blue-500' : ''} ${isPastTask ? 'filter saturate-50 brightness-75' : ''}`;
+              const taskCardBaseClassName = `absolute select-none transition-transform duration-100 ease-out hover:shadow-md group ${isBeingDragged || isBeingResized ? 'opacity-95 shadow-lg scale-[1.01] ring-1 ring-white' : 'shadow-sm'} ${isBeingCopied ? 'ring-2 ring-offset-1 ring-blue-500' : ''} ${isPastTask ? 'opacity-70 brightness-95 contrast-90 dark:opacity-60 dark:saturate-50 dark:brightness-75' : ''}`;
 
               const taskStyleObj: React.CSSProperties = {
                 left: `${renderLeft}px`, width: `${renderWidth}px`,
@@ -1047,15 +1047,15 @@ export default function DailyPlanner() {
                 {/* Date Navigation Controls for topDayOffset */}
                 <div className="flex items-center justify-start">
                   <div className="flex items-center space-x-2">
-                    <button type="button" className="p-2 rounded-md bg-secondary hover:bg-secondary/80 text-secondary-foreground transition-colors" onClick={() => setTopDayOffset(topDayOffset - 7)} title="Previous week">◀◀</button>
-                    <button type="button" className="p-2 rounded-md bg-secondary hover:bg-secondary/80 text-secondary-foreground transition-colors" onClick={() => setTopDayOffset(topDayOffset - 1)} title="Previous day">◀</button>
+                    <button type="button" className="p-2 rounded-md bg-secondary hover:bg-secondary/80 text-secondary-foreground/70 hover:text-secondary-foreground transition-colors" onClick={() => setTopDayOffset(topDayOffset - 7)} title="Previous week">◀◀</button>
+                    <button type="button" className="p-2 rounded-md bg-secondary hover:bg-secondary/80 text-secondary-foreground/70 hover:text-secondary-foreground transition-colors" onClick={() => setTopDayOffset(topDayOffset - 1)} title="Previous day">◀</button>
                   </div>
                   <span className="text-foreground font-medium text-center px-3 mx-2 w-52 flex-shrink-0">
                     {isClient ? getDateLabel(topDayOffset) : "Loading date..."}
                   </span>
                   <div className="flex items-center space-x-2">
-                    <button type="button" className="p-2 rounded-md bg-secondary hover:bg-secondary/80 text-secondary-foreground transition-colors" onClick={() => setTopDayOffset(topDayOffset + 1)} title="Next day">▶</button>
-                    <button type="button" className="p-2 rounded-md bg-secondary hover:bg-secondary/80 text-secondary-foreground transition-colors" onClick={() => setTopDayOffset(topDayOffset + 7)} title="Next week">▶▶</button>
+                    <button type="button" className="p-2 rounded-md bg-secondary hover:bg-secondary/80 text-secondary-foreground/70 hover:text-secondary-foreground transition-colors" onClick={() => setTopDayOffset(topDayOffset + 1)} title="Next day">▶</button>
+                    <button type="button" className="p-2 rounded-md bg-secondary hover:bg-secondary/80 text-secondary-foreground/70 hover:text-secondary-foreground transition-colors" onClick={() => setTopDayOffset(topDayOffset + 7)} title="Next week">▶▶</button>
                     {isClient && getRelativeDayLabel(topDayOffset) && (
                       <span className="text-xs text-muted-foreground ml-2 px-1.5 py-0.5 bg-muted rounded-sm font-normal flex-shrink-0">
                         {getRelativeDayLabel(topDayOffset)}
@@ -1105,15 +1105,15 @@ export default function DailyPlanner() {
                 {/* Date Navigation Controls for bottomDayOffset */}
                 <div className="flex items-center justify-start">
                   <div className="flex items-center space-x-2">
-                    <button type="button" className="p-2 rounded-md bg-secondary hover:bg-secondary/80 text-secondary-foreground transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset - 7)} title="Previous week">◀◀</button>
-                    <button type="button" className="p-2 rounded-md bg-secondary hover:bg-secondary/80 text-secondary-foreground transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset - 1)} title="Previous day">◀</button>
+                    <button type="button" className="p-2 rounded-md bg-secondary hover:bg-secondary/80 text-secondary-foreground/70 hover:text-secondary-foreground transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset - 7)} title="Previous week">◀◀</button>
+                    <button type="button" className="p-2 rounded-md bg-secondary hover:bg-secondary/80 text-secondary-foreground/70 hover:text-secondary-foreground transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset - 1)} title="Previous day">◀</button>
                   </div>
                   <span className="text-foreground font-medium text-center px-3 mx-2 w-52 flex-shrink-0">
                     {isClient ? getDateLabel(bottomDayOffset) : "Loading date..."}
                   </span>
                   <div className="flex items-center space-x-2">
-                    <button type="button" className="p-2 rounded-md bg-secondary hover:bg-secondary/80 text-secondary-foreground transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset + 1)} title="Next day">▶</button>
-                    <button type="button" className="p-2 rounded-md bg-secondary hover:bg-secondary/80 text-secondary-foreground transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset + 7)} title="Next week">▶▶</button>
+                    <button type="button" className="p-2 rounded-md bg-secondary hover:bg-secondary/80 text-secondary-foreground/70 hover:text-secondary-foreground transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset + 1)} title="Next day">▶</button>
+                    <button type="button" className="p-2 rounded-md bg-secondary hover:bg-secondary/80 text-secondary-foreground/70 hover:text-secondary-foreground transition-colors" onClick={() => setBottomDayOffset(bottomDayOffset + 7)} title="Next week">▶▶</button>
                     {isClient && getRelativeDayLabel(bottomDayOffset) && (
                       <span className="text-xs text-muted-foreground ml-2 px-1.5 py-0.5 bg-muted rounded-sm font-normal flex-shrink-0">
                         {getRelativeDayLabel(bottomDayOffset)}

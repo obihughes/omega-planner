@@ -2,7 +2,6 @@
 const nextConfig = {
   // Enable bundle analyzer in development
   experimental: {
-    bundlePagesRouterDependencies: true,
     optimizeServerReact: true
   },
   

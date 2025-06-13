@@ -65,7 +65,7 @@ export const TASK_BASE_BOTTOM_PADDING = 33;
 export const TIMELINE_SPLIT_HOUR_1 = 11; // Morning/Afternoon split
 export const TIMELINE_SPLIT_HOUR_2 = 18; // Afternoon/Evening split
 export const TIMELINE_HEADER_HEIGHT_PX = 28;
-export const GRID_LINE_STYLE = "border-l-2 border-gray-200 dark:border-gray-700 z-10"; // Light/dark theme adaptable
+export const GRID_LINE_STYLE = "border-l border-border/20 z-10"; // Subtle solid lines instead of dashed
 
 /** Duration options for task editing modals */
 export const DURATION_OPTIONS = [

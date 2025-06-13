@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProjects } from '@/hooks/useProjects';
 import { Project, ProjectTask } from '@/types';
@@ -29,11 +29,16 @@ import {
   Circle,
   Clock,
   Calendar,
+  Edit,
 } from 'lucide-react';
 
 interface ProjectDetailPageProps {
   params: { id: string };
 }
+
+// Lazy load the modals to reduce initial bundle size
+const ProjectTaskFormModal = lazy(() => import('@/components/modals/ProjectTaskFormModal').then(module => ({ default: module.ProjectTaskFormModal })));
+const ProjectFormModal = lazy(() => import('@/components/modals/ProjectFormModal').then(module => ({ default: module.ProjectFormModal })));
 
 export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   const router = useRouter();
@@ -43,11 +48,19 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
     addTaskToProject, 
     updateTaskInProject, 
     deleteTaskFromProject,
-    reorderTasksInProject 
+    reorderTasksInProject,
+    updateProject
   } = useProjects();
   
   const [statusFilter, setStatusFilter] = useState<ProjectTask['status'] | 'all'>('all');
   const [newTaskTitle, setNewTaskTitle] = useState('');
+  
+  // Task form modal state
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<ProjectTask | null>(null);
+  
+  // Project form modal state
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
 
   const project = projects.find(p => p.id === params.id);
   
@@ -99,7 +112,8 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   }, [project, updateTaskInProject]);
 
   const handleEditTask = useCallback((task: ProjectTask) => {
-    console.log('Edit task:', task.id);
+    setEditingTask(task);
+    setIsTaskModalOpen(true);
   }, []);
 
   const handleDeleteTask = useCallback((taskId: string) => {
@@ -128,6 +142,36 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
     
     setNewTaskTitle('');
   }, [project, newTaskTitle, addTaskToProject]);
+
+  const handleSaveTask = useCallback((taskData: Partial<ProjectTask>, isNew: boolean) => {
+    if (!project) return;
+    
+    if (isNew) {
+      addTaskToProject(project.id, taskData as Omit<ProjectTask, 'id' | 'createdAt' | 'updatedAt' | 'order'>);
+    } else if (editingTask) {
+      updateTaskInProject(project.id, editingTask.id, taskData);
+    }
+  }, [project, editingTask, addTaskToProject, updateTaskInProject]);
+
+  const handleCloseTaskModal = useCallback(() => {
+    setIsTaskModalOpen(false);
+    setEditingTask(null);
+  }, []);
+
+  // Project editing handlers
+  const handleEditProject = useCallback(() => {
+    setIsProjectModalOpen(true);
+  }, []);
+
+  const handleSaveProject = useCallback((projectData: Partial<Project>, isNew: boolean) => {
+    if (!project || isNew) return; // We're only editing existing projects here
+    
+    updateProject(project.id, projectData);
+  }, [project, updateProject]);
+
+  const handleCloseProjectModal = useCallback(() => {
+    setIsProjectModalOpen(false);
+  }, []);
 
   // Early returns after all hooks are defined
   if (loading) {
@@ -204,7 +248,17 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
           </div>
           
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-foreground">{project.name}</h1>
+            <div className="flex items-start justify-between">
+              <h1 className="text-2xl font-bold text-foreground">{project.name}</h1>
+              <button
+                onClick={handleEditProject}
+                className="p-2 rounded-lg hover:bg-accent transition-colors flex items-center space-x-2 text-muted-foreground hover:text-foreground"
+                title="Edit project"
+              >
+                <Edit className="w-4 h-4" />
+                <span className="hidden sm:inline text-sm">Edit</span>
+              </button>
+            </div>
             <div className="flex items-center space-x-4 mt-1">
               <div className="flex items-center space-x-2">
                 {getStatusIcon(project.status)}
@@ -247,6 +301,17 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
               }}
             />
           </div>
+          <button
+            onClick={() => {
+              setEditingTask(null);
+              setIsTaskModalOpen(true);
+            }}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors flex items-center space-x-2"
+            title="Create detailed task"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">New Task</span>
+          </button>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as ProjectTask['status'] | 'all')}
@@ -295,6 +360,31 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
           </div>
         )}
       </div>
+
+      {/* Task Form Modal */}
+      <Suspense fallback={null}>
+        {isTaskModalOpen && (
+          <ProjectTaskFormModal
+            isOpen={isTaskModalOpen}
+            onClose={handleCloseTaskModal}
+            onSave={handleSaveTask}
+            onDelete={handleDeleteTask}
+            taskToEdit={editingTask}
+          />
+        )}
+      </Suspense>
+
+      {/* Project Form Modal */}
+      <Suspense fallback={null}>
+        {isProjectModalOpen && (
+          <ProjectFormModal
+            isOpen={isProjectModalOpen}
+            onClose={handleCloseProjectModal}
+            onSave={handleSaveProject}
+            project={project}
+          />
+        )}
+      </Suspense>
     </div>
   );
 } 

@@ -83,6 +83,9 @@ export interface Project {
   /** Project progress (0-100) */
   progress: number;
 
+  /** Display order for the project */
+  order: number;
+
   /** Soft delete flag */
   isDeleted?: boolean;
 }
