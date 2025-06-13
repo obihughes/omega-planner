@@ -485,13 +485,13 @@ export function YearCalendar({
                 key={date.toISOString()}
                 data-date={date.toISOString()}
                 className={`
-                  relative h-8 flex items-center justify-center text-xs rounded-md border border-transparent transition-colors
+                  relative h-8 flex items-center justify-center text-xs rounded-md border transition-all duration-200
                   ${isPast 
-                    ? 'text-muted-foreground/50 cursor-default' 
-                    : 'text-foreground hover:bg-accent/50 cursor-pointer'
+                    ? 'text-muted-foreground/50 cursor-default border-border/30 bg-background/50' 
+                    : 'text-foreground hover:bg-accent/50 cursor-pointer border-border/50 bg-background shadow-sm hover:shadow-md hover:border-border'
                   }
-                  ${dayInfo.isToday ? 'bg-primary text-primary-foreground font-semibold' : ''}
-                  ${selectedDate && date.toDateString() === selectedDate.toDateString() ? 'bg-accent' : ''}
+                  ${dayInfo.isToday ? 'bg-primary text-primary-foreground font-semibold border-primary shadow-md' : ''}
+                  ${selectedDate && date.toDateString() === selectedDate.toDateString() ? 'bg-accent border-accent-foreground/20' : ''}
                 `}
                 style={eventBorderStyle}
                 onClick={() => !isPast && handleDateClick(date)}
@@ -525,7 +525,7 @@ export function YearCalendar({
                   className="w-2 h-2 rounded-full flex-shrink-0"
                   style={{ backgroundColor: event.color }}
                 />
-                <span className="text-foreground truncate flex-1" title={event.title}>
+                <span className="text-foreground truncate flex-1 font-bold" title={event.title}>
                   {event.title}
                 </span>
                 <Edit2 className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100" />
@@ -547,7 +547,7 @@ export function YearCalendar({
                   className="w-4 h-1 rounded-full flex-shrink-0"
                   style={{ backgroundColor: period.color }}
                 />
-                <span className="text-foreground truncate flex-1" title={period.title}>
+                <span className="text-foreground truncate flex-1 font-bold" title={period.title}>
                   {period.title}
                 </span>
                 <Edit2 className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100" />

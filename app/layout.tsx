@@ -1,10 +1,10 @@
 "use client";
 
 import "@/app/globals.css";
-import { Inter } from "next/font/google";
+import { Lexend } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 
-const inter = Inter({ subsets: ["latin"] });
+const lexend = Lexend({ subsets: ["latin"] });
 
 export default function RootLayout({
   children,
@@ -16,7 +16,7 @@ export default function RootLayout({
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
-      <body className={inter.className}>
+      <body className={lexend.className}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
