@@ -95,7 +95,7 @@ function EventPeriodDetailsModal({
           {item!.notes && (
             <div>
               <p className="text-sm text-muted-foreground mb-1">Notes</p>
-              <div className="text-sm p-3 bg-accent/50 rounded-md whitespace-pre-wrap border border-border max-h-32 overflow-y-auto">{item!.notes}</div>
+              <div className="text-sm p-3 bg-muted/50 rounded-md whitespace-pre-wrap border border-border max-h-32 overflow-y-auto">{item!.notes}</div>
             </div>
           )}
         </div>
@@ -179,7 +179,7 @@ function DayDetailsModal({
                             <div className="text-sm text-muted-foreground">{event.description}</div>
                           )}
                           {event.notes && (
-                            <div className="text-sm text-foreground mt-1 p-2 bg-accent/50 rounded-md whitespace-pre-wrap border border-border max-h-24 overflow-y-auto">{event.notes}</div>
+                            <div className="text-sm text-foreground mt-1 p-2 bg-muted/50 rounded-md whitespace-pre-wrap border border-border max-h-24 overflow-y-auto">{event.notes}</div>
                           )}
                         </div>
                         <Edit2 className="w-4 h-4 text-muted-foreground" />
@@ -212,7 +212,7 @@ function DayDetailsModal({
                             <div className="text-sm text-muted-foreground">{period.description}</div>
                           )}
                           {period.notes && (
-                            <div className="text-sm text-foreground mt-1 p-2 bg-accent/50 rounded-md whitespace-pre-wrap border border-border max-h-24 overflow-y-auto">{period.notes}</div>
+                            <div className="text-sm text-foreground mt-1 p-2 bg-muted/50 rounded-md whitespace-pre-wrap border border-border max-h-24 overflow-y-auto">{period.notes}</div>
                           )}
                         </div>
                         <Edit2 className="w-4 h-4 text-muted-foreground" />
