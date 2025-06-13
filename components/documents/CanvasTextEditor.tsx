@@ -29,13 +29,17 @@ interface CanvasTextEditorProps {
   onChange: (content: string) => void;
   className?: string;
   style?: React.CSSProperties;
+  dragMode?: boolean;
+  onDragModeChange?: (dragMode: boolean) => void;
 }
 
 const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
   content,
   onChange,
   className,
-  style
+  style,
+  dragMode,
+  onDragModeChange
 }) => {
   const [textBlocks, setTextBlocks] = useState<TextBlock[]>([]);
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
@@ -53,6 +57,9 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
   // It's used to prevent the component from re-initializing itself with old
   // data if the parent component re-renders.
   const lastPropagatedContent = useRef<string | null>(null);
+
+  // Use external dragMode if provided, otherwise use internal state
+  const effectiveDragMode = dragMode !== undefined ? dragMode : isDragMode;
 
   // This effect is now responsible for synchronizing the internal state with
   // the external `content` prop. It will only re-initialize the blocks if
@@ -111,7 +118,7 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
   };
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isDragMode) return;
+    if (effectiveDragMode) return;
     const target = e.target as HTMLElement;
     if (target.closest('.group')) {
       return;
@@ -155,7 +162,7 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
   const handleCanvasDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    if (isDragMode) return;
+    if (effectiveDragMode) return;
 
     let currentBlocks = [...textBlocks];
     if (activeBlockId) {
@@ -295,7 +302,7 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
 
   // Mouse handlers for dragging (only in drag mode)
   const handleMouseDown = (e: React.MouseEvent, blockId: string) => {
-    if (e.button !== 0 || !isDragMode) return; // Only left click and in drag mode
+    if (e.button !== 0 || !effectiveDragMode) return; // Only left click and in drag mode
     
     e.preventDefault();
     e.stopPropagation();
@@ -387,7 +394,7 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
   return (
     <div className={className} style={style}>
       {/* Floating Formatting Toolbar */}
-      {activeBlockId && !isDragMode && (
+      {activeBlockId && !effectiveDragMode && (
         <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 bg-muted rounded-lg shadow-lg p-1 flex items-center gap-1">
           <button onClick={() => handleFormat('bold')} className="p-2 rounded hover:bg-background/50"><Bold size={16} /></button>
           <button onClick={() => handleFormat('italic')} className="p-2 rounded hover:bg-background/50"><Italic size={16} /></button>
@@ -438,7 +445,7 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
             className={`absolute select-none group p-1 ${
               block.isActive 
                 ? 'ring-2 ring-blue-500' 
-                : isDragMode 
+                : effectiveDragMode 
                   ? 'cursor-grab hover:ring-1 hover:ring-gray-300 rounded' 
                   : 'cursor-text hover:ring-1 hover:ring-gray-200 rounded'
             }`}
@@ -455,7 +462,7 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
             onMouseDown={(e) => handleMouseDown(e, block.id)}
             onClick={(e) => {
               e.stopPropagation();
-              if (isDragging || isDragMode) return;
+              if (isDragging || effectiveDragMode) return;
 
               // If there's a previously active block, save its content first.
               if (activeBlockId && activeBlockId !== block.id) {
@@ -572,7 +579,7 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
             </div>
             
             {/* Drag handle - only visible in drag mode */}
-            {isDragMode && (
+            {effectiveDragMode && (
               <div className="absolute -left-1 -top-1 w-2 h-2 bg-blue-500 rounded-full opacity-60 group-hover:opacity-100 transition-opacity cursor-grab" />
             )}
             
@@ -582,7 +589,7 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
             )}
             
             {/* Delete button - only visible in drag mode */}
-            {isDragMode && (
+            {effectiveDragMode && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();

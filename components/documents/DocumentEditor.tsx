@@ -10,6 +10,8 @@ import CanvasTextEditor from './CanvasTextEditor';
 interface ExtendedDocumentEditorProps extends DocumentEditorProps {
   onStar?: () => void;
   onChange?: () => void;
+  dragMode?: boolean;
+  onDragModeChange?: (dragMode: boolean) => void;
 }
 
 export default function DocumentEditor({
@@ -18,7 +20,9 @@ export default function DocumentEditor({
   onClose,
   onDelete,
   onStar,
-  onChange
+  onChange,
+  dragMode,
+  onDragModeChange
 }: ExtendedDocumentEditorProps) {
   const [content, setContent] = useState(document?.content || '');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -114,6 +118,8 @@ export default function DocumentEditor({
           style={{
             direction: 'ltr',
           }}
+          dragMode={dragMode}
+          onDragModeChange={onDragModeChange}
         />
       </div>
 

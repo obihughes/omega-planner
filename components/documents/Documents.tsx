@@ -30,6 +30,7 @@ export default function Documents() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [showTrash, setShowTrash] = useState(false);
+  const [dragMode, setDragMode] = useState(false);
 
   const filteredDocuments = documents.filter(doc =>
     doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -116,6 +117,10 @@ export default function Documents() {
     if (e.key === 'Enter') {
       handleTitleBlur();
     }
+  };
+
+  const handleToggleDragMode = () => {
+    setDragMode(!dragMode);
   };
 
   return (
@@ -242,10 +247,15 @@ export default function Documents() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 w-7 p-0"
-                  title="Move document"
+                  onClick={handleToggleDragMode}
+                  className={cn(
+                    "h-7 px-2 text-xs",
+                    dragMode ? "bg-blue-100 text-blue-700" : ""
+                  )}
+                  title={dragMode ? "Exit drag mode" : "Enter drag mode"}
                 >
-                  <Move className="w-3.5 h-3.5" />
+                  <Move className="w-3.5 h-3.5 mr-1" />
+                  {dragMode ? "Exit Drag" : "Click to Drag"}
                 </Button>
               </>
             )}
@@ -345,6 +355,8 @@ export default function Documents() {
             onDelete={handleDeleteDocument}
             onStar={() => starDocument(selectedDocument.id)}
             onChange={() => setHasUnsavedChanges(true)}
+            dragMode={dragMode}
+            onDragModeChange={setDragMode}
           />
         ) : (
           <div className="flex-1 flex items-center justify-center text-muted-foreground">
