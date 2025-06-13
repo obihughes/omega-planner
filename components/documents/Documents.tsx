@@ -4,19 +4,19 @@ import React, { useState, useEffect } from 'react';
 import { Document } from '@/types';
 import DocumentEditor from './DocumentEditor';
 import { useDocuments } from '@/hooks/useDocuments';
-import { Plus, X, Star, Search, FileText, Save, Move, Archive } from 'lucide-react';
+import { Plus, X, Star, Search, FileText, Save, Move, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 export default function Documents() {
   const {
     documents,
-    archivedDocuments,
+    trashedDocuments,
     selectedDocument,
     createDocument,
     updateDocument,
     deleteDocument,
-    archiveDocument,
+    trashDocument,
     restoreDocument,
     selectDocument,
     starDocument,
@@ -29,7 +29,7 @@ export default function Documents() {
   const [showSearch, setShowSearch] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
-  const [showArchive, setShowArchive] = useState(false);
+  const [showTrash, setShowTrash] = useState(false);
 
   const filteredDocuments = documents.filter(doc =>
     doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -230,14 +230,14 @@ export default function Documents() {
                   variant="ghost"
                   size="sm"
                   onClick={() => {
-                    if (window.confirm('Archive this document? You can restore it later from the archive.')) {
-                      archiveDocument(selectedDocument.id);
+                    if (window.confirm('Move this document to trash? You can restore it later.')) {
+                      trashDocument(selectedDocument.id);
                     }
                   }}
                   className="h-7 w-7 p-0"
-                  title="Archive document"
+                  title="Move to trash"
                 >
-                  <Archive className="w-3.5 h-3.5" />
+                  <Trash2 className="w-3.5 h-3.5" />
                 </Button>
                 <Button
                   variant="ghost"
@@ -267,14 +267,14 @@ export default function Documents() {
               <Plus className="w-3.5 h-3.5" />
             </Button>
             <Button
-              variant={showArchive ? "default" : "ghost"}
+              variant={showTrash ? "default" : "ghost"}
               size="sm"
-              onClick={() => setShowArchive(!showArchive)}
+              onClick={() => setShowTrash(!showTrash)}
               className="h-7 px-2 text-xs"
-              title={showArchive ? "Show active documents" : "Show archived documents"}
+              title={showTrash ? "Show active documents" : "Show trash"}
             >
-              <Archive className="w-3.5 h-3.5 mr-1" />
-              {showArchive ? "Active" : "Archive"} ({showArchive ? documents.length : archivedDocuments.length})
+              <Trash2 className="w-3.5 h-3.5 mr-1" />
+              {showTrash ? "Active" : "Trash"} ({showTrash ? documents.length : trashedDocuments.length})
             </Button>
           </div>
         </div>
@@ -282,18 +282,18 @@ export default function Documents() {
 
       {/* Editor Area */}
       <div className="flex-1 overflow-hidden">
-        {showArchive ? (
+        {showTrash ? (
           <div className="flex-1 p-6">
             <div className="max-w-4xl mx-auto">
-              <h2 className="text-xl font-semibold mb-4">Archived Documents</h2>
-              {archivedDocuments.length === 0 ? (
+              <h2 className="text-xl font-semibold mb-4">Trash</h2>
+              {trashedDocuments.length === 0 ? (
                 <div className="text-center text-muted-foreground py-12">
-                  <Archive className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No archived documents</p>
+                  <Trash2 className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>Trash is empty</p>
                 </div>
               ) : (
                 <div className="grid gap-3">
-                  {archivedDocuments.map((document) => (
+                  {trashedDocuments.map((document) => (
                     <div
                       key={document.id}
                       className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
@@ -302,7 +302,7 @@ export default function Documents() {
                         <div className="flex-1">
                           <h3 className="font-medium">{document.title}</h3>
                           <p className="text-sm text-muted-foreground">
-                            Archived {new Date(document.updatedAt).toLocaleDateString()}
+                            Moved to trash {new Date(document.updatedAt).toLocaleDateString()}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">

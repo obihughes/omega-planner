@@ -68,13 +68,13 @@ Components in the `/components/documents` directory:
     - Create a new document.
     - Select a document to view and edit.
     - Delete a document permanently.
-    - Archive/restore documents (archive acts as a recycle bin).
+    - Move documents to trash/restore documents (trash acts as a recycle bin).
     - Star/unstar a document.
     - Search for documents by title or content.
     - Edit a document's title by double-clicking on it in the tab list.
     - Manual save button in the document controls for immediate saving.
     - Auto-save functionality that saves changes after 2 seconds of inactivity.
-    - Archive view to manage archived documents with restore/permanent delete options.
+    - Trash view to manage trashed documents with restore/permanent delete options.
     - Navigation glitch prevention with debounced document selection.
 - **Props:** This component does not accept any props.
 - **Usage:**

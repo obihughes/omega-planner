@@ -31,10 +31,10 @@ export function useDocuments() {
         setDocuments(data.documents || []);
         setSettings({ ...defaultSettings, ...data.settings });
         
-        // Auto-select last opened document (only if not archived)
+        // Auto-select last opened document (only if not trashed)
         if (data.settings.lastOpenDocument) {
           const lastDoc = data.documents.find(doc => 
-            doc.id === data.settings.lastOpenDocument && !doc.isArchived
+            doc.id === data.settings.lastOpenDocument && !doc.isTrashed
           );
           if (lastDoc) {
             setSelectedDocument(lastDoc);
@@ -68,7 +68,7 @@ export function useDocuments() {
       updatedAt: new Date().toISOString(),
       tags: [],
       isStarred: false,
-      isArchived: false
+      isTrashed: false
     };
 
     const updatedDocuments = [newDocument, ...documents];
@@ -89,8 +89,8 @@ export function useDocuments() {
     
     setDocuments(updatedDocuments);
     
-    // Only update selectedDocument if it's the same document and not archived
-    if (selectedDocument?.id === updatedDocument.id && !updatedDocument.isArchived) {
+    // Only update selectedDocument if it's the same document and not trashed
+    if (selectedDocument?.id === updatedDocument.id && !updatedDocument.isTrashed) {
       setSelectedDocument(updatedDocument);
     }
     
@@ -113,16 +113,16 @@ export function useDocuments() {
     saveToStorage(updatedDocuments, newSettings);
   };
 
-  const archiveDocument = (documentId: string) => {
+  const trashDocument = (documentId: string) => {
     const updatedDocuments = documents.map(doc =>
       doc.id === documentId
-        ? { ...doc, isArchived: true, updatedAt: new Date().toISOString() }
+        ? { ...doc, isTrashed: true, updatedAt: new Date().toISOString() }
         : doc
     );
     
     setDocuments(updatedDocuments);
     
-    // If the archived document was selected, clear selection
+    // If the trashed document was selected, clear selection
     if (selectedDocument?.id === documentId) {
       setSelectedDocument(null);
       const newSettings = { ...settings, lastOpenDocument: undefined };
@@ -136,7 +136,7 @@ export function useDocuments() {
   const restoreDocument = (documentId: string) => {
     const updatedDocuments = documents.map(doc =>
       doc.id === documentId
-        ? { ...doc, isArchived: false, updatedAt: new Date().toISOString() }
+        ? { ...doc, isTrashed: false, updatedAt: new Date().toISOString() }
         : doc
     );
     
@@ -150,7 +150,7 @@ export function useDocuments() {
     
     setIsNavigating(true);
     
-    const document = documents.find(doc => doc.id === documentId && !doc.isArchived);
+    const document = documents.find(doc => doc.id === documentId && !doc.isTrashed);
     if (document) {
       setSelectedDocument(document);
       const newSettings = { ...settings, lastOpenDocument: documentId };
@@ -183,19 +183,19 @@ export function useDocuments() {
     saveToStorage(documents, newSettings);
   };
 
-  // Filter out archived documents for the main view
-  const activeDocuments = documents.filter(doc => !doc.isArchived);
-  const archivedDocuments = documents.filter(doc => doc.isArchived);
+  // Filter out trashed documents for the main view
+  const activeDocuments = documents.filter(doc => !doc.isTrashed);
+  const trashedDocuments = documents.filter(doc => doc.isTrashed);
 
   return {
     documents: activeDocuments,
-    archivedDocuments,
+    trashedDocuments,
     selectedDocument,
     settings,
     createDocument,
     updateDocument,
     deleteDocument,
-    archiveDocument,
+    trashDocument,
     restoreDocument,
     selectDocument,
     starDocument,
