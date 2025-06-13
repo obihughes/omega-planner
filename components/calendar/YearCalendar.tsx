@@ -486,7 +486,7 @@ export function YearCalendar({
               return <div key={date.toISOString()} className="h-8" />;
             }
 
-            const eventBorderStyle = dayInfo.events.length > 0 && dayInfo.periods.length === 0 ? {
+            const eventBorderStyle = dayInfo.events.length > 0 ? {
               boxShadow: `0 0 0 2px ${dayInfo.events[0].color} inset`,
             } : {};
             
@@ -722,12 +722,16 @@ export function YearCalendar({
           onClose={() => setActionPopup(null)}
           onAddEvent={() => {
             setSelectedDate(actionPopup.date);
-            handleAddEvent();
+            setTimeout(() => {
+              handleAddEvent();
+            }, 0);
             setActionPopup(null);
           }}
           onAddPeriod={() => {
             setSelectedDate(actionPopup.date);
-            handleAddPeriod();
+            setTimeout(() => {
+              handleAddPeriod();
+            }, 0);
             setActionPopup(null);
           }}
         />

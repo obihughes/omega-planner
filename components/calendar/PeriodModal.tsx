@@ -141,7 +141,7 @@ export function PeriodModal({
                     {startDate ? startDate.toLocaleDateString() : "Start"}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 z-50" align="start">
+                <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
                     selected={startDate}
@@ -158,6 +158,7 @@ export function PeriodModal({
                       }
                     }}
                     initialFocus
+                    className="[&_button]:cursor-pointer [&_button]:hover:bg-accent [&_button]:select-none"
                   />
                 </PopoverContent>
               </Popover>
@@ -181,7 +182,7 @@ export function PeriodModal({
                     {endDate ? endDate.toLocaleDateString() : "End"}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 z-50" align="start">
+                <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
                     selected={endDate}
@@ -193,6 +194,7 @@ export function PeriodModal({
                     }}
                     disabled={(date) => date < startDate}
                     initialFocus
+                    className="[&_button]:cursor-pointer [&_button]:hover:bg-accent [&_button]:select-none"
                   />
                 </PopoverContent>
               </Popover>

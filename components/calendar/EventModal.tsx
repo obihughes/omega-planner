@@ -136,17 +136,17 @@ export function EventModal({
                   }) : "Select a date"}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 z-50" align="start">
+              <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
                   selected={date}
                   onSelect={(selectedDate) => {
                     if (selectedDate) {
                       setDate(selectedDate);
-                      setIsDatePickerOpen(false);
                     }
                   }}
                   initialFocus
+                  className="[&_button]:cursor-pointer [&_button]:hover:bg-accent [&_button]:select-none"
                 />
               </PopoverContent>
             </Popover>
