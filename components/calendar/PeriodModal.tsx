@@ -50,6 +50,7 @@ export function PeriodModal({
 }: PeriodModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [notes, setNotes] = useState('');
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [color, setColor] = useState(PERIOD_COLORS[0]);
@@ -60,12 +61,14 @@ export function PeriodModal({
     if (period) {
       setTitle(period.title);
       setDescription(period.description || '');
+      setNotes(period.notes || '');
       setStartDate(new Date(period.startDate));
       setEndDate(new Date(period.endDate));
       setColor(period.color);
     } else {
       setTitle('');
       setDescription('');
+      setNotes('');
       const start = initialDate || new Date();
       const end = new Date(start);
       end.setDate(start.getDate() + 6); // Default to 1 week period
@@ -82,6 +85,7 @@ export function PeriodModal({
     onSave({
       title: title.trim(),
       description: description.trim(),
+      notes: notes.trim(),
       startDate,
       endDate,
       color,
@@ -100,9 +104,9 @@ export function PeriodModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="text-base">
             {period ? 'Edit Period' : 'Add Period'}
           </DialogTitle>
         </DialogHeader>
@@ -110,14 +114,14 @@ export function PeriodModal({
         <div className="space-y-4">
           {/* Title */}
           <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">
+            <label className="text-xs font-medium text-foreground mb-2 block">
               Title
             </label>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Period title"
-              className="w-full"
+              className="w-full text-sm h-9"
             />
           </div>
 
@@ -125,7 +129,7 @@ export function PeriodModal({
           <div className="grid grid-cols-2 gap-3">
             {/* Start Date */}
             <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">
+              <label className="text-xs font-medium text-foreground mb-2 block">
                 Start Date
               </label>
               <Popover open={isStartDatePickerOpen} onOpenChange={setIsStartDatePickerOpen}>
@@ -133,12 +137,12 @@ export function PeriodModal({
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal text-xs",
+                      "w-full justify-start text-left font-normal text-xs h-9",
                       !startDate && "text-muted-foreground"
                     )}
                   >
-                    <CalendarIcon className="mr-2 h-3 w-3" />
-                    {startDate ? startDate.toLocaleDateString() : "Start"}
+                    <CalendarIcon className="mr-1 h-3 w-3" />
+                    {startDate ? startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : "Start"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -158,7 +162,6 @@ export function PeriodModal({
                       }
                     }}
                     initialFocus
-                    className="[&_button]:cursor-pointer [&_button]:hover:bg-accent [&_button]:select-none"
                   />
                 </PopoverContent>
               </Popover>
@@ -166,7 +169,7 @@ export function PeriodModal({
 
             {/* End Date */}
             <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">
+              <label className="text-xs font-medium text-foreground mb-2 block">
                 End Date
               </label>
               <Popover open={isEndDatePickerOpen} onOpenChange={setIsEndDatePickerOpen}>
@@ -174,12 +177,12 @@ export function PeriodModal({
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal text-xs",
+                      "w-full justify-start text-left font-normal text-xs h-9",
                       !endDate && "text-muted-foreground"
                     )}
                   >
-                    <CalendarIcon className="mr-2 h-3 w-3" />
-                    {endDate ? endDate.toLocaleDateString() : "End"}
+                    <CalendarIcon className="mr-1 h-3 w-3" />
+                    {endDate ? endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : "End"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -194,7 +197,6 @@ export function PeriodModal({
                     }}
                     disabled={(date) => date < startDate}
                     initialFocus
-                    className="[&_button]:cursor-pointer [&_button]:hover:bg-accent [&_button]:select-none"
                   />
                 </PopoverContent>
               </Popover>
@@ -203,7 +205,7 @@ export function PeriodModal({
 
           {/* Color */}
           <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">
+            <label className="text-xs font-medium text-foreground mb-2 block">
               Color
             </label>
             <div className="grid grid-cols-9 gap-2">
@@ -212,7 +214,7 @@ export function PeriodModal({
                   key={periodColor}
                   type="button"
                   className={cn(
-                    "w-8 h-8 rounded-full border-2 transition-all",
+                    "w-6 h-6 rounded-full border-2 transition-all",
                     color === periodColor 
                       ? "border-foreground scale-110" 
                       : "border-transparent hover:scale-105"
@@ -226,24 +228,38 @@ export function PeriodModal({
 
           {/* Description */}
           <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">
+            <label className="text-xs font-medium text-foreground mb-2 block">
               Description (optional)
             </label>
             <Textarea
               value={description}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
               placeholder="Period description"
-              className="w-full"
+              className="w-full text-sm"
+              rows={2}
+            />
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label className="text-xs font-medium text-foreground mb-2 block">
+              Notes
+            </label>
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Add detailed notes..."
+              className="w-full text-sm resize-none"
               rows={3}
             />
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-2 pt-2">
             <Button
               onClick={handleSave}
               disabled={!title.trim() || endDate < startDate}
-              className="flex-1"
+              className="flex-1 h-9 text-sm"
             >
               {period ? 'Update' : 'Add'} Period
             </Button>
@@ -252,9 +268,9 @@ export function PeriodModal({
               <Button
                 variant="outline"
                 onClick={handleDelete}
-                className="text-destructive hover:text-destructive"
+                className="text-destructive hover:text-destructive h-9 px-4"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-3 h-3" />
               </Button>
             )}
           </div>

@@ -1,19 +1,21 @@
 export interface CalendarEvent {
   id: string;
   title: string;
+  description?: string;
+  notes?: string;
   date: Date;
   color: string;
-  description?: string;
   type: 'event';
 }
 
 export interface CalendarPeriod {
   id: string;
   title: string;
+  description?: string;
+  notes?: string;
   startDate: Date;
   endDate: Date;
   color: string;
-  description?: string;
   type: 'period';
 }
 

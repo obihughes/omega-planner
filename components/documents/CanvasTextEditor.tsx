@@ -154,6 +154,7 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
 
   const handleCanvasDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
+    e.stopPropagation();
     if (isDragMode) return;
 
     let currentBlocks = [...textBlocks];

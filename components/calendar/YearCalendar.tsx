@@ -26,6 +26,93 @@ interface YearCalendarProps extends CalendarProps {
   headerRightControls?: React.ReactNode;
 }
 
+// Event/Period Details Modal Component
+function EventPeriodDetailsModal({ 
+  isOpen, 
+  onClose, 
+  event,
+  period,
+  onEdit,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  event?: CalendarEvent | null;
+  period?: CalendarPeriod | null;
+  onEdit?: () => void;
+}) {
+  if (!isOpen || (!event && !period)) return null;
+
+  const item = event || period;
+  const isEvent = !!event;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-background border rounded-lg shadow-lg max-w-sm w-full mx-4">
+        <div className="flex items-center justify-between p-4 border-b">
+          <h3 className="text-lg font-semibold">
+            {isEvent ? 'Event Details' : 'Period Details'}
+          </h3>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+        
+        <div className="p-4 space-y-4">
+          {/* Color indicator and title */}
+          <div className="flex items-center gap-3">
+            <div 
+              className={`${isEvent ? 'w-3 h-3 rounded-full' : 'w-6 h-2 rounded-full'} flex-shrink-0`}
+              style={{ backgroundColor: item!.color }}
+            />
+            <h4 className="font-semibold text-lg">{item!.title}</h4>
+          </div>
+
+          {/* Date information */}
+          <div>
+            <p className="text-sm text-muted-foreground mb-1">Date</p>
+            <p className="text-sm">
+              {isEvent 
+                ? (event as CalendarEvent).date.toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })
+                : `${(period as CalendarPeriod).startDate.toLocaleDateString()} - ${(period as CalendarPeriod).endDate.toLocaleDateString()}`
+              }
+            </p>
+          </div>
+
+          {/* Description */}
+          {item!.description && (
+            <div>
+              <p className="text-sm text-muted-foreground mb-1">Description</p>
+              <p className="text-sm">{item!.description}</p>
+            </div>
+          )}
+
+          {/* Notes */}
+          {item!.notes && (
+            <div>
+              <p className="text-sm text-muted-foreground mb-1">Notes</p>
+              <div className="text-sm p-3 bg-accent/50 rounded-md whitespace-pre-wrap border border-border max-h-32 overflow-y-auto">{item!.notes}</div>
+            </div>
+          )}
+        </div>
+        
+        <div className="flex justify-end gap-2 p-4 border-t">
+          <Button variant="outline" size="sm" onClick={onClose}>
+            Close
+          </Button>
+          <Button size="sm" onClick={onEdit}>
+            <Edit2 className="w-4 h-4 mr-2" /> Edit
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Day Details Modal Component
 function DayDetailsModal({ 
   isOpen, 
@@ -33,16 +120,20 @@ function DayDetailsModal({
   date, 
   events, 
   periods,
-  onEventEdit,
-  onPeriodEdit 
+  onEventClick,
+  onPeriodClick,
+  onAddEventRequest,
+  onAddPeriodRequest,
 }: {
   isOpen: boolean;
   onClose: () => void;
   date: Date | null;
   events: CalendarEvent[];
   periods: CalendarPeriod[];
-  onEventEdit?: (event: CalendarEvent) => void;
-  onPeriodEdit?: (period: CalendarPeriod) => void;
+  onEventClick?: (event: CalendarEvent) => void;
+  onPeriodClick?: (period: CalendarPeriod) => void;
+  onAddEventRequest?: () => void;
+  onAddPeriodRequest?: () => void;
 }) {
   if (!isOpen || !date) return null;
 
@@ -76,7 +167,7 @@ function DayDetailsModal({
                       <div 
                         key={event.id}
                         className="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer transition-colors"
-                        onClick={() => onEventEdit?.(event)}
+                        onClick={() => onEventClick?.(event)}
                       >
                         <div 
                           className="w-3 h-3 rounded-full flex-shrink-0"
@@ -86,6 +177,9 @@ function DayDetailsModal({
                           <div className="font-medium">{event.title}</div>
                           {event.description && (
                             <div className="text-sm text-muted-foreground">{event.description}</div>
+                          )}
+                          {event.notes && (
+                            <div className="text-sm text-foreground mt-1 p-2 bg-accent/50 rounded-md whitespace-pre-wrap border border-border max-h-24 overflow-y-auto">{event.notes}</div>
                           )}
                         </div>
                         <Edit2 className="w-4 h-4 text-muted-foreground" />
@@ -103,7 +197,7 @@ function DayDetailsModal({
                       <div 
                         key={period.id}
                         className="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer transition-colors"
-                        onClick={() => onPeriodEdit?.(period)}
+                        onClick={() => onPeriodClick?.(period)}
                       >
                         <div 
                           className="w-6 h-2 rounded-full flex-shrink-0"
@@ -117,6 +211,9 @@ function DayDetailsModal({
                           {period.description && (
                             <div className="text-sm text-muted-foreground">{period.description}</div>
                           )}
+                          {period.notes && (
+                            <div className="text-sm text-foreground mt-1 p-2 bg-accent/50 rounded-md whitespace-pre-wrap border border-border max-h-24 overflow-y-auto">{period.notes}</div>
+                          )}
                         </div>
                         <Edit2 className="w-4 h-4 text-muted-foreground" />
                       </div>
@@ -126,6 +223,14 @@ function DayDetailsModal({
               )}
             </>
           )}
+        </div>
+        <div className="flex justify-end gap-2 p-4 border-t">
+            <Button variant="outline" size="sm" onClick={onAddPeriodRequest}>
+                <Plus className="w-4 h-4 mr-2" /> New Period
+            </Button>
+            <Button size="sm" onClick={onAddEventRequest}>
+                <Plus className="w-4 h-4 mr-2" /> New Event
+            </Button>
         </div>
       </div>
     </div>
@@ -190,12 +295,15 @@ export function YearCalendar({
   const [eventModalOpen, setEventModalOpen] = useState(false);
   const [periodModalOpen, setPeriodModalOpen] = useState(false);
   const [dayDetailsOpen, setDayDetailsOpen] = useState(false);
-  const [actionPopup, setActionPopup] = useState<{ x: number; y: number; date: Date } | null>(null);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [editingPeriod, setEditingPeriod] = useState<CalendarPeriod | null>(null);
+  const [viewingEvent, setViewingEvent] = useState<CalendarEvent | null>(null);
+  const [viewingPeriod, setViewingPeriod] = useState<CalendarPeriod | null>(null);
+  const [eraserMode, setEraserMode] = useState(false);
+  const [actionPopup, setActionPopup] = useState<{ x: number; y: number; date: Date } | null>(null);
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const longPressTriggered = useRef(false);
-  const [eraserMode, setEraserMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
   // Drag state for periods
@@ -242,9 +350,8 @@ export function YearCalendar({
     longPressTriggered.current = false;
     const timer = setTimeout(() => {
       longPressTriggered.current = true;
-      setActionPopup({ x: e.clientX, y: e.clientY, date });
-      setLongPressTimer(null);
-    }, 500);
+      handleAddPeriod(date);
+    }, 500); // 500ms for long press
     setLongPressTimer(timer);
   };
 
@@ -261,8 +368,9 @@ export function YearCalendar({
       onEventDelete?.(event.id);
       return;
     }
-    setEditingEvent(event);
-    setEventModalOpen(true);
+    // Show details instead of directly editing
+    setViewingEvent(event);
+    setDetailsModalOpen(true);
   };
 
   const handlePeriodClick = (period: CalendarPeriod, e: React.MouseEvent) => {
@@ -271,20 +379,9 @@ export function YearCalendar({
       onPeriodDelete?.(period.id);
       return;
     }
-    setEditingPeriod(period);
-    setPeriodModalOpen(true);
-  };
-
-  const handleDayDetailsEventEdit = (event: CalendarEvent) => {
-    setDayDetailsOpen(false);
-    setEditingEvent(event);
-    setEventModalOpen(true);
-  };
-
-  const handleDayDetailsPeriodEdit = (period: CalendarPeriod) => {
-    setDayDetailsOpen(false);
-    setEditingPeriod(period);
-    setPeriodModalOpen(true);
+    // Show details instead of directly editing
+    setViewingPeriod(period);
+    setDetailsModalOpen(true);
   };
 
   // Drag handlers for periods
@@ -355,10 +452,9 @@ export function YearCalendar({
     setEventModalOpen(true);
   };
 
-  const handleAddPeriod = () => {
-    if (!selectedDate) {
-      setSelectedDate(new Date());
-    }
+  const handleAddPeriod = (date?: Date) => {
+    const initialDate = date || selectedDate || new Date();
+    setSelectedDate(initialDate);
     setEditingPeriod(null);
     setPeriodModalOpen(true);
   };
@@ -376,6 +472,19 @@ export function YearCalendar({
       onPeriodEdit({ ...editingPeriod, ...periodData });
     } else if (onPeriodAdd) {
       onPeriodAdd(periodData);
+    }
+  };
+
+  const handleDetailsEdit = () => {
+    setDetailsModalOpen(false);
+    if (viewingEvent) {
+      setEditingEvent(viewingEvent);
+      setEventModalOpen(true);
+      setViewingEvent(null);
+    } else if (viewingPeriod) {
+      setEditingPeriod(viewingPeriod);
+      setPeriodModalOpen(true);
+      setViewingPeriod(null);
     }
   };
 
@@ -429,10 +538,10 @@ export function YearCalendar({
   };
 
   const renderSmallEventIndicators = (events: CalendarEvent[]) => {
-    if (events.length <= 1) return null; // Only show for 2 or more events
+    if (events.length <= 1) return null; 
 
     return (
-      <div className="absolute bottom-1 left-1 right-1 flex justify-center gap-0.5 z-20">
+      <div className="absolute top-1 left-1 right-1 flex justify-center gap-0.5 z-20">
         {events.slice(0, 3).map((event, index) => (
           <div
             key={event.id}
@@ -498,7 +607,7 @@ export function YearCalendar({
                   relative h-8 flex items-center justify-center text-xs rounded-md border transition-all duration-200
                   ${isPast 
                     ? 'text-muted-foreground/50 cursor-default border-border/30 bg-background/50' 
-                    : 'text-foreground hover:bg-accent/50 cursor-pointer border-border/50 bg-background shadow-sm hover:shadow-md hover:border-border'
+                    : 'text-foreground cursor-pointer border-border/50 bg-background shadow-sm'
                   }
                   ${dayInfo.isToday ? 'bg-primary text-primary-foreground font-semibold border-primary shadow-md' : ''}
                   ${selectedDate && date.toDateString() === selectedDate.toDateString() ? 'bg-accent border-accent-foreground/20' : ''}
@@ -629,7 +738,7 @@ export function YearCalendar({
             
             <Button
               variant="outline"
-              onClick={handleAddPeriod}
+              onClick={() => handleAddPeriod()}
               size="sm"
               className="flex items-center gap-2"
               disabled={eraserMode}
@@ -703,6 +812,18 @@ export function YearCalendar({
         initialDate={selectedDate || undefined}
       />
 
+      <EventPeriodDetailsModal
+        isOpen={detailsModalOpen}
+        onClose={() => {
+          setDetailsModalOpen(false);
+          setViewingEvent(null);
+          setViewingPeriod(null);
+        }}
+        event={viewingEvent}
+        period={viewingPeriod}
+        onEdit={handleDetailsEdit}
+      />
+
       <DayDetailsModal
         isOpen={dayDetailsOpen}
         onClose={() => {
@@ -712,8 +833,24 @@ export function YearCalendar({
         date={selectedDate}
         events={selectedDate ? data.events.filter(e => e.date.toDateString() === selectedDate.toDateString()) : []}
         periods={selectedDate ? data.periods.filter(p => p.startDate <= selectedDate && p.endDate >= selectedDate) : []}
-        onEventEdit={handleDayDetailsEventEdit}
-        onPeriodEdit={handleDayDetailsPeriodEdit}
+        onEventClick={(event) => {
+          setDayDetailsOpen(false);
+          setViewingEvent(event);
+          setDetailsModalOpen(true);
+        }}
+        onPeriodClick={(period) => {
+          setDayDetailsOpen(false);
+          setViewingPeriod(period);
+          setDetailsModalOpen(true);
+        }}
+        onAddEventRequest={() => {
+          setDayDetailsOpen(false);
+          handleAddEvent();
+        }}
+        onAddPeriodRequest={() => {
+          setDayDetailsOpen(false);
+          handleAddPeriod();
+        }}
       />
 
       {actionPopup && (
@@ -730,7 +867,7 @@ export function YearCalendar({
           onAddPeriod={() => {
             setSelectedDate(actionPopup.date);
             setTimeout(() => {
-              handleAddPeriod();
+              handleAddPeriod(actionPopup.date);
             }, 0);
             setActionPopup(null);
           }}
