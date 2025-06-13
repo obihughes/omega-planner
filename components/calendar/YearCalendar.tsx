@@ -12,7 +12,7 @@ import {
   getPeriodSegmentsForMonth,
   isSameDay
 } from '@/utils/calendar';
-import { ChevronLeft, ChevronRight, Plus, Edit2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Edit2, X, Eraser } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EventModal } from './EventModal';
 import { PeriodModal } from './PeriodModal';
@@ -195,6 +195,7 @@ export function YearCalendar({
   const [editingPeriod, setEditingPeriod] = useState<CalendarPeriod | null>(null);
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const longPressTriggered = useRef(false);
+  const [eraserMode, setEraserMode] = useState(false);
   
   // Drag state for periods
   const [dragMode, setDragMode] = useState<'move' | 'resize-start' | 'resize-end' | null>(null);
@@ -251,12 +252,20 @@ export function YearCalendar({
 
   const handleEventClick = (event: CalendarEvent, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (eraserMode) {
+      onEventDelete?.(event.id);
+      return;
+    }
     setEditingEvent(event);
     setEventModalOpen(true);
   };
 
   const handlePeriodClick = (period: CalendarPeriod, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (eraserMode) {
+      onPeriodDelete?.(period.id);
+      return;
+    }
     setEditingPeriod(period);
     setPeriodModalOpen(true);
   };
@@ -342,21 +351,11 @@ export function YearCalendar({
   };
 
   const handleAddPeriod = () => {
-    if (actionPopup) {
-       if (onPeriodAdd) {
-        const endDate = new Date(actionPopup.date);
-        endDate.setDate(actionPopup.date.getDate() + 1); // Default 2 day period
-        
-        onPeriodAdd({
-          title: 'New Period',
-          description: '',
-          startDate: actionPopup.date,
-          endDate: endDate,
-          color: '#f59e0b', // Default amber color
-          type: 'period'
-        });
-      }
+    if (!selectedDate) {
+      setSelectedDate(new Date());
     }
+    setEditingPeriod(null);
+    setPeriodModalOpen(true);
   };
 
   const handleEventSave = (eventData: Omit<CalendarEvent, 'id'>) => {
@@ -524,7 +523,9 @@ export function YearCalendar({
             {monthEvents.map(event => (
               <div 
                 key={event.id} 
-                className="group flex items-center gap-1.5 text-xs px-1.5 py-0.5 rounded hover:bg-accent/50 cursor-pointer transition-colors"
+                className={`group flex items-center gap-1.5 text-xs px-1.5 py-0.5 rounded hover:bg-accent/50 cursor-pointer transition-colors ${
+                  eraserMode ? 'hover:bg-red-100 hover:text-red-800 dark:hover:bg-red-900 dark:hover:text-red-200' : ''
+                }`}
                 onClick={(e) => handleEventClick(event, e)}
               >
                 <div 
@@ -534,7 +535,11 @@ export function YearCalendar({
                 <span className="text-foreground truncate flex-1 font-bold" title={event.title}>
                   {event.title}
                 </span>
-                <Edit2 className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100" />
+                {eraserMode ? (
+                  <X className="w-3 h-3 text-red-500" />
+                ) : (
+                  <Edit2 className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100" />
+                )}
               </div>
             ))}
 
@@ -542,9 +547,12 @@ export function YearCalendar({
             {monthPeriods.map(period => (
               <div 
                 key={period.id} 
-                className="group flex items-center gap-1.5 text-xs px-1.5 py-0.5 rounded hover:bg-accent/50 cursor-pointer transition-colors"
+                className={`group flex items-center gap-1.5 text-xs px-1.5 py-0.5 rounded hover:bg-accent/50 cursor-pointer transition-colors ${
+                  eraserMode ? 'hover:bg-red-100 hover:text-red-800 dark:hover:bg-red-900 dark:hover:text-red-200' : ''
+                }`}
                 onClick={(e) => handlePeriodClick(period, e)}
                 onMouseDown={(e) => {
+                  if (eraserMode) return; // Disable drag in eraser mode
                   e.stopPropagation(); // Prevent date-level mouse down
                   handleDragStart(e, period, 'move');
                 }}
@@ -556,7 +564,11 @@ export function YearCalendar({
                 <span className="text-foreground truncate flex-1 font-bold" title={period.title}>
                   {period.title}
                 </span>
-                <Edit2 className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100" />
+                {eraserMode ? (
+                  <X className="w-3 h-3 text-red-500" />
+                ) : (
+                  <Edit2 className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100" />
+                )}
               </div>
             ))}
           </div>
@@ -604,6 +616,7 @@ export function YearCalendar({
               onClick={handleAddEvent}
               size="sm"
               className="flex items-center gap-2"
+              disabled={eraserMode}
             >
               <Plus className="w-4 h-4" />
               Add Event
@@ -614,16 +627,27 @@ export function YearCalendar({
               onClick={handleAddPeriod}
               size="sm"
               className="flex items-center gap-2"
+              disabled={eraserMode}
             >
               <Plus className="w-4 h-4" />
               Add Period
+            </Button>
+
+            <Button
+              variant={eraserMode ? "default" : "outline"}
+              onClick={() => setEraserMode(!eraserMode)}
+              size="sm"
+              className={`flex items-center gap-2 ${eraserMode ? 'bg-red-600 hover:bg-red-700 text-white' : ''}`}
+            >
+              <Eraser className="w-4 h-4" />
+              {eraserMode ? 'Exit Eraser' : 'Eraser'}
             </Button>
             {headerRightControls}
         </div>
       </div>
 
       {/* 12-Month Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-10">
+      <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-10 ${eraserMode ? 'cursor-crosshair' : ''}`}>
         {Array.from({ length: 12 }, (_, month) => renderMonth(month))}
       </div>
 
@@ -693,6 +717,7 @@ export function YearCalendar({
             setActionPopup(null);
           }}
           onAddPeriod={() => {
+            setSelectedDate(actionPopup.date);
             handleAddPeriod();
             setActionPopup(null);
           }}
