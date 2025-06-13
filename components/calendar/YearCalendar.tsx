@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { CalendarEvent, CalendarPeriod, CalendarData, CalendarProps } from '@/types/calendar';
+import { CalendarEvent, CalendarPeriod, CalendarData, CalendarProps, PeriodPosition } from '@/types/calendar';
 import { 
   getMonthDates, 
   getDayInfo, 
@@ -15,6 +15,7 @@ import { ChevronLeft, ChevronRight, Plus, Edit2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EventModal } from './EventModal';
 import { PeriodModal } from './PeriodModal';
+import { cn } from '@/lib/utils';
 
 interface YearCalendarProps extends CalendarProps {
   className?: string;
@@ -330,37 +331,32 @@ export function YearCalendar({
     }
   };
 
-  const renderPeriodHighlightsForMonth = (periods: CalendarPeriod[], monthDates: Date[]) => {
-    return periods.map(period => {
-      const startIndex = monthDates.findIndex(d => isSameDay(d, new Date(period.startDate)));
-      const endIndex = monthDates.findIndex(d => isSameDay(d, new Date(period.endDate)));
-
-      if (startIndex === -1 && endIndex === -1) return null;
-
-      const startDay = Math.max(0, startIndex);
-      const endDay = endIndex === -1 ? 41 : Math.min(41, endIndex);
-
-      const startRow = Math.floor(startDay / 7);
-      const endRow = Math.floor(endDay / 7);
+  const renderPeriodHighlight = (periodPositions: PeriodPosition[]) => {
+    return periodPositions.map((pos) => {
+      const { period, isStart, isEnd, row } = pos;
       
-      const segments = [];
-      for (let row = startRow; row <= endRow; row++) {
-        const segStart = (row === startRow) ? startDay % 7 : 0;
-        const segEnd = (row === endRow) ? endDay % 7 : 6;
+      const highlightClasses = cn(
+        'absolute h-1.5 w-full',
+        {
+          'rounded-md': isStart && isEnd, // Single day
+          'rounded-l-md': isStart && !isEnd,
+          'rounded-r-md': !isStart && isEnd,
+        }
+      );
 
-        const style: React.CSSProperties = {
-          position: 'absolute',
-          left: `${(segStart / 7) * 100}%`,
-          width: `${((segEnd - segStart + 1) / 7) * 100}%`,
-          top: `${row * 2 + 1.4}rem`, // Position under the number
-          height: '3px',
-          backgroundColor: period.color,
-          opacity: 0.7,
-          borderRadius: '2px',
-        };
-        segments.push(<div key={`${period.id}-${row}`} style={style} title={period.title} />);
-      }
-      return segments;
+      return (
+        <div
+          key={period.id}
+          className={highlightClasses}
+          style={{ 
+            backgroundColor: period.color, 
+            opacity: 0.8, 
+            bottom: `${(row * 6) + 3}px`, // Stacked from the bottom
+            zIndex: 1,
+          }}
+          title={period.title}
+        />
+      );
     });
   };
 
@@ -422,12 +418,16 @@ export function YearCalendar({
               return <div key={date.toISOString()} className="h-8" />;
             }
 
+            const eventBorderStyle = dayInfo.events.length > 0 && dayInfo.periods.length === 0 ? {
+              boxShadow: `0 0 0 2px ${dayInfo.events[0].color} inset`,
+            } : {};
+            
             return (
               <div
                 key={date.toISOString()}
                 data-date={date.toISOString()}
                 className={`
-                  relative h-8 flex items-center justify-center text-sm rounded transition-colors
+                  relative h-8 flex items-center justify-center text-xs rounded transition-colors
                   ${isPast 
                     ? 'text-muted-foreground/50 cursor-default' 
                     : 'text-foreground hover:bg-accent/50 cursor-pointer'
@@ -435,6 +435,7 @@ export function YearCalendar({
                   ${dayInfo.isToday ? 'bg-primary text-primary-foreground font-semibold rounded-full' : ''}
                   ${selectedDate && date.toDateString() === selectedDate.toDateString() ? 'bg-accent' : ''}
                 `}
+                style={eventBorderStyle}
                 onClick={() => !isPast && handleDateClick(date)}
                 onDoubleClick={() => !isPast && handleDateDoubleClick(date)}
                 onMouseDown={() => !isPast && handleDateMouseDown(date)}
@@ -442,6 +443,7 @@ export function YearCalendar({
                 onMouseLeave={handleDateMouseUp}
                 onMouseMove={dragMode && !isPast ? (e) => handleDragMove(e, date) : undefined}
               >
+                {renderPeriodHighlight(dayInfo.periodPositions)}
                 <span className="relative z-20 font-bold select-none">
                   {date.getDate()}
                 </span>
@@ -449,11 +451,6 @@ export function YearCalendar({
               </div>
             );
           })}
-          
-          {/* Period Highlights Container */}
-          <div className="absolute inset-0 top-8 z-10">
-            {renderPeriodHighlightsForMonth(monthPeriods, monthDates)}
-          </div>
         </div>
 
         {/* Events and Periods List */}
