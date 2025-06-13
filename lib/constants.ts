@@ -1,31 +1,34 @@
 /**
- * Available color options for tasks in the daily planner
- * Using deeper, richer colors (600-level) for better visual impact
+ * Available color options for tasks in the daily planner.
+ * Each color string now includes classes for both light and dark modes
+ * to ensure high contrast and readability in either theme.
+ * Light mode: Rich, dark background with light text.
+ * Dark mode: Softer, light background with dark text.
  */
 export const TASK_COLORS = [
   // Row 1: Warm colors
-  'bg-red-600',      // Deep Red
-  'bg-orange-600',   // Deep Orange  
-  'bg-amber-600',    // Deep Amber
-  'bg-yellow-600',   // Deep Yellow
-  'bg-lime-600',     // Deep Lime
-  'bg-green-600',    // Deep Green
+  'bg-red-600 text-white dark:bg-red-200 dark:text-red-900',      // Deep Red
+  'bg-orange-600 text-white dark:bg-orange-200 dark:text-orange-900',   // Deep Orange  
+  'bg-amber-600 text-white dark:bg-amber-200 dark:text-amber-900',    // Deep Amber
+  'bg-yellow-600 text-white dark:bg-yellow-200 dark:text-yellow-900',   // Deep Yellow
+  'bg-lime-600 text-white dark:bg-lime-200 dark:text-lime-900',     // Deep Lime
+  'bg-green-600 text-white dark:bg-green-200 dark:text-green-900',    // Deep Green
 
   // Row 2: Cool colors
-  'bg-emerald-600',  // Deep Emerald
-  'bg-teal-600',     // Deep Teal
-  'bg-cyan-600',     // Deep Cyan
-  'bg-sky-600',      // Deep Sky Blue
-  'bg-blue-600',     // Deep Blue
-  'bg-indigo-600',   // Deep Indigo
+  'bg-emerald-600 text-white dark:bg-emerald-200 dark:text-emerald-900',  // Deep Emerald
+  'bg-teal-600 text-white dark:bg-teal-200 dark:text-teal-900',     // Deep Teal
+  'bg-cyan-600 text-white dark:bg-cyan-200 dark:text-cyan-900',     // Deep Cyan
+  'bg-sky-600 text-white dark:bg-sky-200 dark:text-sky-900',      // Deep Sky Blue
+  'bg-blue-600 text-white dark:bg-blue-200 dark:text-blue-900',     // Deep Blue
+  'bg-indigo-600 text-white dark:bg-indigo-200 dark:text-indigo-900',   // Deep Indigo
 
   // Row 3: Purples and neutrals
-  'bg-violet-600',   // Deep Violet
-  'bg-purple-600',   // Deep Purple
-  'bg-fuchsia-600',  // Deep Fuchsia
-  'bg-pink-600',     // Deep Pink
-  'bg-slate-600',    // Deep Slate
-  'bg-gray-600',     // Deep Gray
+  'bg-violet-600 text-white dark:bg-violet-200 dark:text-violet-900',   // Deep Violet
+  'bg-purple-600 text-white dark:bg-purple-200 dark:text-purple-900',   // Deep Purple
+  'bg-fuchsia-600 text-white dark:bg-fuchsia-200 dark:text-fuchsia-900',  // Deep Fuchsia
+  'bg-pink-600 text-white dark:bg-pink-200 dark:text-pink-900',     // Deep Pink
+  'bg-slate-600 text-white dark:bg-slate-300 dark:text-slate-900',    // Deep Slate
+  'bg-gray-600 text-white dark:bg-gray-300 dark:text-gray-900',     // Deep Gray
 ];
 
 /** The earliest hour shown on the timeline (4 AM) */
