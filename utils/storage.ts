@@ -57,21 +57,21 @@ const TaskStorage = {
       // Ensure every task has a normalized baseDate (midnight of the day)
       const normalizedTasks = tasks.map(task => {
         if (!task.baseDate) {
-          // If task doesn't have baseDate, set to midnight today
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
+          // If task doesn't have baseDate, set to midnight today in UTC
+          const now = new Date();
+          const utcDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
           return {
             ...task,
-            baseDate: today.toISOString()
+            baseDate: utcDate.toISOString()
           };
         }
         
-        // If it has a baseDate, make sure it's normalized to midnight
-        const baseDate = new Date(task.baseDate);
-        baseDate.setHours(0, 0, 0, 0);
+        // If it has a baseDate, make sure it's normalized to midnight UTC
+        const originalDate = new Date(task.baseDate);
+        const utcDate = new Date(Date.UTC(originalDate.getUTCFullYear(), originalDate.getUTCMonth(), originalDate.getUTCDate(), 0, 0, 0, 0));
         return {
           ...task,
-          baseDate: baseDate.toISOString()
+          baseDate: utcDate.toISOString()
         };
       });
       
@@ -109,21 +109,21 @@ const TaskStorage = {
       return data.tasks.map((task: any) => {
         // If task doesn't have baseDate, create one
         if (!task.baseDate) {
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
+          const now = new Date();
+          const utcDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
           return {
             ...task,
-            baseDate: today.toISOString()
+            baseDate: utcDate.toISOString()
           };
         }
         
-        // Normalize the existing baseDate to midnight
-        const baseDate = new Date(task.baseDate);
-        baseDate.setHours(0, 0, 0, 0);
+        // Normalize the existing baseDate to midnight UTC
+        const originalDate = new Date(task.baseDate);
+        const utcDate = new Date(Date.UTC(originalDate.getUTCFullYear(), originalDate.getUTCMonth(), originalDate.getUTCDate(), 0, 0, 0, 0));
         
         return {
           ...task,
-          baseDate: baseDate.toISOString()
+          baseDate: utcDate.toISOString()
         };
       });
     } catch (err) {

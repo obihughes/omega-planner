@@ -142,7 +142,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     const normalizedBaseDate = new Date(selectedDate);
-    normalizedBaseDate.setHours(0,0,0,0); 
+    normalizedBaseDate.setUTCHours(0,0,0,0); 
     
     const finalTask: Task = {
       ...taskToEdit,
@@ -151,8 +151,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
       duration,
       color,
       notes,
-      baseDate: normalizedBaseDate.toISOString(),
-      dayOffset: 0 
+      baseDate: normalizedBaseDate.toISOString() 
     };
     onSave(finalTask, { isNew: taskToEdit.isNew, isFromPool: taskToEdit.isFromPool });
     onClose();
@@ -320,7 +319,6 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                       color,
                       notes,
                       baseDate: selectedDate.toISOString(),
-                      dayOffset: 0,
                       completed: taskDataForCopy.completed,
                     });
                   }}
@@ -337,7 +335,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                     const taskToPin = { 
                       ...taskToEdit, 
                       name, startHour, duration, color, notes, 
-                      baseDate: selectedDate.toISOString(), dayOffset: 0 
+                      baseDate: selectedDate.toISOString() 
                     };
                     onPinTask(taskToPin);
                   }}

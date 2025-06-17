@@ -112,13 +112,13 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
               return (
                 <div 
                   key={pinnedTask.pinnedId} 
-                  className="relative p-2.5 rounded-lg bg-card border border-border/50 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-64"
+                  className="relative p-3 rounded-lg bg-card border border-border/50 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-72 h-20"
                 >
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start justify-between gap-2 h-full">
                     <div className="flex items-start gap-2 flex-1 min-w-0">
                       {/* Color status dot */}
                       <div 
-                        className={`w-2 h-2 rounded-full flex-shrink-0 mt-1 ${
+                        className={`w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1 ${
                           isOverdue ? 'bg-red-500' : 'bg-blue-500'
                         }`}
                       />
@@ -129,27 +129,25 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
                           {pinnedTask.name}
                         </p>
                         
-                        {/* Due date - stacked vertically */}
-                        <div className="mt-1 space-y-0.5">
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <CalendarDays className="w-2.5 h-2.5" />
-                            <span className="text-[10px]">{formatDateTimeForPinnedTask(dueDateObj)}</span>
-                          </div>
-                          <div className="text-xs">
-                            <span 
-                              className={`font-medium text-[11px] ${
-                                isOverdue ? 'text-red-500' : 'text-blue-500'
-                              }`}
-                            >
-                              {formatCompactTimeRemaining(timeRemainingText)}
-                            </span>
-                          </div>
+                        {/* Due date and time remaining - compact */}
+                        <div className="mt-1 flex items-center gap-1">
+                          <CalendarDays className="w-3 h-3" />
+                          <span className="text-xs text-muted-foreground">{formatDateTimeForPinnedTask(dueDateObj)}</span>
+                        </div>
+                        <div className="text-xs">
+                          <span 
+                            className={`font-medium text-xs ${
+                              isOverdue ? 'text-red-500' : 'text-blue-500'
+                            }`}
+                          >
+                            {formatCompactTimeRemaining(timeRemainingText)}
+                          </span>
                         </div>
                       </div>
                     </div>
                     
-                    {/* Action buttons - now horizontal */}
-                    <div className="absolute top-1 right-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* Action buttons - slightly larger */}
+                    <div className="absolute top-1.5 right-1.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         type="button"
                         className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"

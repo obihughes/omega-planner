@@ -14,20 +14,20 @@ export interface Task {
   /** Duration in decimal hours (e.g., 1.5 for 1 hour 30 minutes) */
   duration: number;
   
-  /** Day offset relative to base date (0 = today, 1 = tomorrow, -1 = yesterday) */
-  dayOffset: number;
-  
   /** CSS background color class for the task (Tailwind class name) */
-  color?: string;
+  color: string;
   
   /** ISO string of the date when the task was created (reference date for dayOffset) */
   baseDate: string;
   
   /** Notes associated with the task */
-  notes?: string;
+  notes: string;
   
   /** Indicates whether the task is completed */
-  completed?: boolean;
+  completed: boolean;
+  
+  /** Indicates whether the task is new */
+  isNew?: boolean;
 }
 
 /**

@@ -13,6 +13,7 @@ export interface TaskCardProps {
   onCopy: (task: Task) => void;
   onViewNotes: (task: Task) => void;
   onResizeStart: (edge: 'start' | 'end', e: React.MouseEvent<HTMLDivElement>) => void;
+  onDragStart?: (task: Task, e: React.MouseEvent<HTMLDivElement>) => void;
 }
 
 export const TaskCard: React.FC<TaskCardProps> = ({
@@ -22,6 +23,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   onCopy,
   onViewNotes,
   onResizeStart,
+  onDragStart,
 }) => {
   const [isViewing, setIsViewing] = useState(false);
   const viewRef = useRef<HTMLDivElement>(null);
@@ -64,13 +66,44 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           ${isCompressed ? 'min-h-[24px]' : ''}
           h-full max-h-full relative overflow-hidden
         `}
-        onClick={(e) => e.stopPropagation()}
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
+        style={{ userSelect: 'none' }}
       >
         <div 
           className="resize-handle absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize group-hover:bg-blue-500/20 active:bg-blue-500/30 z-30 transition-colors"
           onMouseDown={(e) => { e.stopPropagation(); onResizeStart('start', e); }}
         />
-        <div className="flex flex-col min-w-0 flex-grow">
+        
+        {/* Drag handle area - middle section that doesn't stop propagation */}
+        <div 
+          className="absolute left-1.5 right-1.5 top-0 bottom-0 cursor-grab active:cursor-grabbing z-20"
+          draggable={false}
+          onDragStart={(e) => e.preventDefault()}
+          onMouseDown={(e) => {
+            e.preventDefault(); // Prevent browser default drag behavior
+            console.log('TASKCARD: onMouseDown triggered in drag handle');
+            console.log('TASKCARD: event target:', e.target);
+            console.log('TASKCARD: event currentTarget:', e.currentTarget);
+            console.log('TASKCARD: clientX:', e.clientX, 'clientY:', e.clientY);
+            
+            // Don't stop propagation for drag - let it bubble up
+            if (onDragStart) {
+              console.log('TASKCARD: calling onDragStart with task:', task.name);
+              onDragStart(task, e);
+            } else {
+              console.log('TASKCARD: onDragStart prop is not provided');
+            }
+          }}
+          onMouseEnter={() => {
+            console.log('TASKCARD: Mouse entered drag handle for task:', task.name);
+          }}
+          onMouseLeave={() => {
+            console.log('TASKCARD: Mouse left drag handle for task:', task.name);
+          }}
+        />
+        
+        <div className="flex flex-col min-w-0 flex-grow relative z-10 pointer-events-none">
           <div className="flex flex-row justify-between items-start min-w-0 draggable-area h-full gap-1 relative">
             <div className="flex-grow flex flex-col min-w-0 justify-between">
               <div>
@@ -79,11 +112,15 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   ${isCompressed ? 'text-[8px] writing-mode-vertical-lr transform h-full flex items-center justify-center overflow-hidden leading-tight' : 'text-xs line-clamp-2'}
                   font-bold
                 `}
+                draggable={false}
+                onDragStart={(e) => e.preventDefault()}
                 onClick={(e) => { 
+                    e.stopPropagation();
                     if (e.detail === 2) {
                         onStartEdit(task, {isNew: false}); 
                     }
                 }}
+                style={{ pointerEvents: 'auto' }}
                 >
                   {task.name}
                 </div>
@@ -102,11 +139,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
             {/* Buttons for non-compressed view */}
             {!isCompressed && (
-              <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+              <div className="flex flex-col items-end gap-0.5 flex-shrink-0" style={{ pointerEvents: 'auto' }}>
                 <button
                   type="button"
                   className="h-3.5 w-3.5 p-0 hover:bg-black/10 dark:hover:bg-white/10 rounded-sm flex items-center justify-center transition-colors"
                   onClick={handleEditClick}
+                  onMouseDown={(e) => e.stopPropagation()}
                   title="Edit task"
                 >
                   <Edit3 className="w-2.5 h-2.5" />
@@ -116,6 +154,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   type="button"
                   className="h-3.5 w-3.5 p-0 hover:bg-black/10 dark:hover:bg-white/10 rounded-sm flex items-center justify-center transition-colors"
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); onCopy(task); }}
+                  onMouseDown={(e) => e.stopPropagation()}
                   title="Copy task"
                 >
                   <Copy className="w-2.5 h-2.5" />
@@ -125,6 +164,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   type="button"
                   className="h-3.5 w-3.5 p-0 hover:bg-black/10 dark:hover:bg-white/10 rounded-sm flex items-center justify-center transition-colors"
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); onViewNotes(task); }}
+                  onMouseDown={(e) => e.stopPropagation()}
                   title="View task details"
                 >
                   <Eye className="w-2.5 h-2.5" />
@@ -135,12 +175,13 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             {isCompressed && (
               task.duration <= 0.25 ? (
                 // Tighter styles for 15-min tasks - Triangular formation
-                <div className="absolute bottom-px right-0 flex flex-col items-center z-10" onClick={(e) => e.stopPropagation()}>
+                <div className="absolute bottom-px right-0 flex flex-col items-center z-10" onClick={(e) => e.stopPropagation()} style={{ pointerEvents: 'auto' }}>
                   <div className="flex justify-center"> {/* Centering for the top button */}
                     <button
                       type="button"
                       className="h-2.5 w-2.5 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors"
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); onViewNotes(task); }}
+                      onMouseDown={(e) => e.stopPropagation()}
                       title="View task"
                     >
                       <Eye className="w-1.5 h-1.5" /> {/* Adjusted icon size */}
@@ -151,6 +192,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                       type="button"
                       className="h-2.5 w-2.5 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors"
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); onCopy(task); }}
+                      onMouseDown={(e) => e.stopPropagation()}
                       title="Copy task"
                     >
                       <Copy className="w-1.5 h-1.5" /> {/* Adjusted icon size */}
@@ -159,6 +201,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                       type="button"
                       className="h-2.5 w-2.5 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors"
                       onClick={handleEditClick}
+                      onMouseDown={(e) => e.stopPropagation()}
                       title="Edit task"
                     >
                       <Edit3 className="w-1.5 h-1.5" /> {/* Adjusted icon size */}
@@ -166,28 +209,31 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   </div>
                 </div>
               ) : (
-                // Slightly larger styles for 30-min tasks - Reverting to horizontal row
-                <div className="absolute bottom-0.5 right-0.5 flex items-center space-x-0.5 p-0.5 z-10" onClick={(e) => e.stopPropagation()}>
+                // Linear (vertical) for 30-min tasks
+                <div className="absolute bottom-px right-0 flex flex-col items-end space-y-px z-10" onClick={(e) => e.stopPropagation()} style={{ pointerEvents: 'auto' }}>
                   <button
                     type="button"
-                    className="h-3 w-3 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors"
+                    className="h-2.5 w-2.5 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors"
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); onCopy(task); }}
+                    onMouseDown={(e) => e.stopPropagation()}
                     title="Copy task"
                   >
                     <Copy className="w-1.5 h-1.5" />
                   </button>
                   <button
                     type="button"
-                    className="h-3 w-3 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors"
+                    className="h-2.5 w-2.5 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors"
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); onViewNotes(task); }}
+                    onMouseDown={(e) => e.stopPropagation()}
                     title="View/Edit task"
                   >
                     <Eye className="w-1.5 h-1.5" />
                   </button>
                   <button
                     type="button"
-                    className="h-3 w-3 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors"
+                    className="h-2.5 w-2.5 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors"
                     onClick={handleEditClick}
+                    onMouseDown={(e) => e.stopPropagation()}
                     title="Edit task"
                   >
                     <Edit3 className="w-1.5 h-1.5" />

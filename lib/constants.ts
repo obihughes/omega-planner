@@ -41,7 +41,7 @@ export const TIMELINE_END_HOUR = 24;
 export const MIN_TASK_DURATION = 0.25; 
 
 /** Horizontal pixels per hour on the timeline */
-export const PIXELS_PER_HOUR = 140; 
+export const PIXELS_PER_HOUR = 210; 
 
 /** Horizontal pixels per minute on the timeline */
 export const PIXELS_PER_MINUTE = PIXELS_PER_HOUR / 60;
@@ -59,7 +59,7 @@ export const DEFAULT_BOTTOM_DAY_OFFSET = 1;
 export const DEFAULT_TASK_COLOR_INDEX = 10;
 
 // Constants from DailyPlanner.tsx
-export const TIMELINE_COLUMN_HEIGHT = 100;
+export const TIMELINE_COLUMN_HEIGHT = 110;
 export const TASK_BASE_TOP = 0;
 export const TASK_BASE_BOTTOM_PADDING = 33;
 // TASK_HEIGHT is derived: TIMELINE_COLUMN_HEIGHT - TASK_BASE_TOP - TASK_BASE_BOTTOM_PADDING;
@@ -85,3 +85,5 @@ export const DURATION_OPTIONS = [
     { value: 6, label: '6 hours' },
     { value: 8, label: '8 hours' }
 ]; 
+
+export const TASK_POOL_ITEM_HEIGHT = 90;

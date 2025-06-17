@@ -124,17 +124,17 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
               key={task.id}
               draggable
               onDragStart={(e) => handleDragStartPoolItem(e, task)}
-              className={`p-2 rounded-lg shadow-sm cursor-grab active:cursor-grabbing group border transition-all duration-150 flex flex-col justify-between text-left flex-shrink-0 w-52`}
+              className={`p-3 rounded-lg shadow-sm cursor-grab active:cursor-grabbing group border transition-all duration-150 flex flex-col justify-between text-left flex-shrink-0 w-60 h-20`}
               style={{ backgroundColor: task.color || '#333', borderColor: task.color ? 'transparent' : '#444' }}
               onClick={() => openEditModal(task, true)}
             >
               <div className="flex-grow">
-                <p className="font-medium text-xs leading-snug break-words text-white">
+                <p className="font-medium text-sm leading-tight break-words text-white truncate">
                   {task.name || "Untitled Task"}
                 </p>
               </div>
               <div className="mt-1.5 flex items-center text-neutral-400">
-                <span className="text-[11px]"> 
+                <span className="text-xs"> 
                   {formatDuration(task.duration)}
                 </span>
                 <div className="flex items-center gap-1.5 ml-auto">

@@ -106,6 +106,7 @@ export default function DailyPlanner() {
   };
 
   const handleMouseMoveResize = useCallback((e: MouseEvent) => {
+    console.log('EVENT: handleMouseMoveResize');
     if (!resizingTask) return;
     e.preventDefault();
 
@@ -175,7 +176,8 @@ export default function DailyPlanner() {
   }, [resizingTask, tasksByDate, setResizingTask]);
 
   const handleMouseMoveDrag = useCallback((e: MouseEvent) => {
-    if (!draggingTask || !draggingTask.taskElement || !draggingTask.task) return;
+    console.log('EVENT: handleMouseMoveDrag');
+    if (!draggingTask || !draggingTask.task) return;
     e.preventDefault();
 
     const { task: draggedTaskItem, offsetX } = draggingTask;
@@ -186,17 +188,27 @@ export default function DailyPlanner() {
     let relativeXInTimelineSegment = 0;
     let baseHourForCalc = APP_TIMELINE_START_HOUR;
 
-    const dropZone = (e.target as HTMLElement).closest('[data-testid^="timeline-area-"]') as HTMLElement;
+    // Use elementFromPoint to find the element underneath the mouse cursor
+    const elementUnderMouse = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement;
+    const dropZone = elementUnderMouse?.closest('[data-testid^="timeline-area-"]') as HTMLElement;
+
+    console.log('DRAG DEBUG: elementUnderMouse:', elementUnderMouse?.tagName, elementUnderMouse?.className);
+    console.log('DRAG DEBUG: dropZone:', dropZone?.getAttribute('data-testid'));
 
     if (dropZone) {
       const dayOffsetAttr = dropZone.getAttribute('data-day-offset');
       const periodAttr = dropZone.getAttribute('data-section-period') as TimelinePeriod | null;
+      
+      console.log('DRAG DEBUG: dayOffsetAttr:', dayOffsetAttr, 'periodAttr:', periodAttr);
       
       if (dayOffsetAttr && periodAttr) {
         targetDayOffset = parseInt(dayOffsetAttr, 10);
         targetPeriod = periodAttr;
         const rect = dropZone.getBoundingClientRect();
         relativeXInTimelineSegment = (e.clientX - rect.left) - currentOffsetX;
+
+        console.log('DRAG DEBUG: rect.left:', rect.left, 'clientX:', e.clientX, 'offsetX:', currentOffsetX);
+        console.log('DRAG DEBUG: relativeXInTimelineSegment:', relativeXInTimelineSegment);
 
         switch (targetPeriod) {
           case 'night': baseHourForCalc = APP_TIMELINE_START_HOUR; break;
@@ -216,44 +228,116 @@ export default function DailyPlanner() {
       
       let snappedNewStartHour = Math.round(newStartHour * 4) / 4;
 
+      console.log('DRAG DEBUG: hourInBlock:', hourInBlock, 'newStartHour:', newStartHour, 'snappedNewStartHour:', snappedNewStartHour);
+
       const targetColumnDate = getCalendarDateForColumn(targetDayOffset);
+
+      // Use the same date key format as in useDailyPlannerState.ts
+      const targetDateKey = targetColumnDate.toISOString().split('T')[0];
+      const tasksForTargetDate = tasksByDate.get(targetDateKey) || [];
+      
       const collisionResult = resolveCollisionsForDrag(
         { id: draggedTaskItem.id, duration: taskDuration, baseDate: draggedTaskItem.baseDate },
         snappedNewStartHour,
         targetColumnDate,
-        tasksByDate.get(targetColumnDate.toISOString().split('T')[0]) || [],
+        tasksForTargetDate,
         APP_TIMELINE_START_HOUR,
         APP_TIMELINE_END_HOUR
       );
 
+      console.log('DRAG DEBUG: collisionResult:', collisionResult);
+
       if (collisionResult.canMove) {
         setDraggingTask(prev => {
           if (!prev || !prev.task) return null;
-          const newBaseDateIso = getCalendarDateForColumn(targetDayOffset as number).toISOString();
+          const newBaseDateIso = targetColumnDate.toISOString();
           if (prev.task.startHour === collisionResult.snappedNewStartHour && prev.task.baseDate === newBaseDateIso) {
             return prev;
           }
-          return { ...prev, task: { ...prev.task, startHour: collisionResult.snappedNewStartHour, baseDate: newBaseDateIso, dayOffset: 0 } };
+          console.log('DRAG DEBUG: Updating task position to:', collisionResult.snappedNewStartHour, newBaseDateIso);
+          return { ...prev, task: { ...prev.task, startHour: collisionResult.snappedNewStartHour, baseDate: newBaseDateIso } };
         });
+      } else {
+        console.log('DRAG DEBUG: Cannot move - collision detected');
       }
+    } else {
+      console.log('DRAG DEBUG: No valid drop zone found');
     }
   }, [draggingTask, setDraggingTask, tasksByDate]);
 
+  const handleMouseUp = useCallback(() => {
+    console.log('==== MOUSE UP INITIATED ====');
+    console.log('MOUSE UP: Current draggingTask state:', draggingTask ? {
+      taskId: draggingTask.task.id,
+      taskName: draggingTask.task.name,
+      currentStartHour: draggingTask.task.startHour,
+      currentBaseDate: draggingTask.task.baseDate
+    } : null);
+    console.log('MOUSE UP: Current resizingTask state:', !!resizingTask);
+    
+    if (draggingTask && draggingTask.task) {
+      console.log('MOUSE UP: Processing drag end - saving task:', draggingTask.task);
+      saveTaskFromModal(draggingTask.task, { isNew: false }); 
+      setDraggingTask(null);
+      console.log('MOUSE UP: Drag task saved and state cleared');
+    }
+    
+    if (resizingTask && resizingTask.task) {
+        console.log('MOUSE UP: Processing resize end - saving task:', resizingTask.task);
+        saveTaskFromModal(resizingTask.task, { isNew: false });
+        setResizingTask(null);
+        console.log('MOUSE UP: Resize task saved and state cleared');
+    }
+    
+    document.body.style.cursor = '';
+    console.log('MOUSE UP: Reset cursor and completed');
+  }, [draggingTask, resizingTask, saveTaskFromModal, setDraggingTask, setResizingTask]);
+
   useEffect(() => {
+    console.log('==== MOUSE LISTENERS EFFECT ====');
+    console.log('EFFECT: draggingTask state:', draggingTask ? {
+      taskId: draggingTask.task.id,
+      taskName: draggingTask.task.name,
+      initialStartHour: draggingTask.initialStartHour,
+      currentStartHour: draggingTask.task.startHour,
+      baseDate: draggingTask.task.baseDate
+    } : null);
+    console.log('EFFECT: resizingTask state:', !!resizingTask);
+    
     const onMouseMove = (event: MouseEvent) => {
-      if (resizingTask) handleMouseMoveResize(event);
-      if (draggingTask) handleMouseMoveDrag(event); 
+      console.log('EVENT: Global mouse move detected');
+      if (resizingTask) {
+        console.log('EVENT: Calling handleMouseMoveResize');
+        handleMouseMoveResize(event);
+      }
+      if (draggingTask) {
+        console.log('EVENT: Calling handleMouseMoveDrag');
+        handleMouseMoveDrag(event); 
+      }
     };
+
+    const onMouseUp = () => {
+        console.log('EVENT: Global mouse up detected');
+        handleMouseUp();
+    };
+
     if (draggingTask || resizingTask) {
+      console.log('EFFECT: ADDING global mouse listeners');
       window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
       document.body.style.cursor = draggingTask ? 'grabbing' : 'col-resize';
+      console.log('EFFECT: Set cursor to:', draggingTask ? 'grabbing' : 'col-resize');
     } else {
+      console.log('EFFECT: No active drag/resize state, not adding listeners');
       document.body.style.cursor = '';
     }
+
     return () => {
+      console.log('EFFECT: CLEANUP - removing global mouse listeners');
       window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
     };
-  }, [draggingTask, resizingTask, handleMouseMoveResize, handleMouseMoveDrag]);
+  }, [draggingTask, resizingTask, handleMouseMoveResize, handleMouseMoveDrag, handleMouseUp]);
 
   const renderTimeline = useCallback((period: TimelinePeriod) => {
     let startHour, endHour;
@@ -296,7 +380,6 @@ export default function DailyPlanner() {
           startHour: snappedNewStartHour,
           duration: 1,
           baseDate: targetDate.toISOString(),
-          dayOffset: 0, 
           color: TASK_COLORS[DEFAULT_TASK_COLOR_INDEX],
           notes: "",
           completed: false,
@@ -321,24 +404,97 @@ export default function DailyPlanner() {
       handleDropCopy(targetDate, snappedNewStartHour);
   };
 
+  const handleDragStart = useCallback((taskToDrag: Task, e: React.MouseEvent) => {
+    console.log('==== DRAG START INITIATED ====');
+    console.log('DRAG START: Task details:', {
+      id: taskToDrag.id,
+      name: taskToDrag.name,
+      startHour: taskToDrag.startHour,
+      baseDate: taskToDrag.baseDate
+    });
+    console.log('DRAG START: Mouse event details:', {
+      clientX: e.clientX,
+      clientY: e.clientY,
+      target: e.target,
+      currentTarget: e.currentTarget
+    });
+    
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Check if the click is on a resize handle
+    if ((e.target as HTMLElement).closest('.resize-handle')) {
+        console.log('DRAG START: Click was on resize handle, aborting drag');
+        return;
+    }
+
+    console.log('DRAG START: Calling helper functions...');
+    cancelCopy();
+    setResizingTask(null);
+    
+    if (taskToDrag) {
+      const draggingState = { 
+        initialMouseY: e.clientY,
+        initialStartHour: taskToDrag.startHour,
+        taskElement: null, // We don't need this for the new approach
+        task: { ...taskToDrag },
+        offsetX: 0, // Start with 0 offset for simpler calculation
+      };
+      
+      console.log('DRAG START: Setting dragging state:', draggingState);
+      setDraggingTask(draggingState);
+      console.log('DRAG START: Drag initialization complete');
+    } else {
+      console.log('DRAG START: ERROR - taskToDrag is null/undefined');
+    }
+  }, [cancelCopy, setResizingTask, setDraggingTask]);
+
   const renderColumn = useCallback((dayOffset: number, period: TimelinePeriod) => {
     let startHour, endHour;
     switch (period) {
-        case 'night': startHour = APP_TIMELINE_START_HOUR; endHour = APP_TIMELINE_SPLIT_HOUR_1; break;
-        case 'morning': startHour = APP_TIMELINE_SPLIT_HOUR_1; endHour = APP_TIMELINE_SPLIT_HOUR_2; break;
-        case 'afternoon': startHour = APP_TIMELINE_SPLIT_HOUR_2; endHour = APP_TIMELINE_SPLIT_HOUR_3; break;
-        case 'evening': startHour = APP_TIMELINE_SPLIT_HOUR_3; endHour = APP_TIMELINE_END_HOUR; break;
+        case 'night': 
+            startHour = APP_TIMELINE_START_HOUR; 
+            endHour = APP_TIMELINE_SPLIT_HOUR_1; 
+            break;
+        case 'morning': 
+            startHour = APP_TIMELINE_SPLIT_HOUR_1; 
+            endHour = APP_TIMELINE_SPLIT_HOUR_2; 
+            break;
+        case 'afternoon': 
+            startHour = APP_TIMELINE_SPLIT_HOUR_2; 
+            endHour = APP_TIMELINE_SPLIT_HOUR_3; 
+            break;
+        case 'evening': 
+            startHour = APP_TIMELINE_SPLIT_HOUR_3; 
+            endHour = APP_TIMELINE_END_HOUR; 
+            break;
     }
 
     const columnCalendarDate = getCalendarDateForColumn(dayOffset);
-    const tasksForThisColumnDate = tasksByDate.get(columnCalendarDate.toISOString().split('T')[0]) || [];
+    const dateKey = columnCalendarDate.toISOString().split('T')[0];
+    const tasksForThisColumnDate = tasksByDate.get(dateKey) || [];
+    
+    // Filter out the original task if it's being dragged
+    let tasksToDisplay = tasksForThisColumnDate.filter(task => {
+        return !(draggingTask && draggingTask.task.id === task.id);
+    });
 
-    const tasksToRender = tasksForThisColumnDate.filter(t => {
-        const taskToConsider = (draggingTask && draggingTask.task.id === t.id) ? draggingTask.task : t;
-        const taskStart = taskToConsider.startHour;
-        const taskEnd = taskStart + taskToConsider.duration;
+    // If a task is being dragged, check if it belongs in this column
+    if (draggingTask) {
+        const draggedTaskDateKey = new Date(draggingTask.task.baseDate).toISOString().split('T')[0];
+        if (draggedTaskDateKey === dateKey) {
+            tasksToDisplay.push(draggingTask.task);
+        }
+    }
+    
+    const tasksToRender = tasksToDisplay.filter(t => {
+        const taskStart = t.startHour;
+        const taskEnd = taskStart + t.duration;
         return taskEnd > startHour && taskStart < endHour;
     });
+
+    console.log(`RENDER: Column ${dayOffset}-${period} rendering ${tasksToRender.length} tasks:`, 
+      tasksToRender.map(t => ({ id: t.id, name: t.name, startHour: t.startHour })));
 
     const isTargetCopyDay = copyingTaskData && targetCopyDayOffset === dayOffset;
 
@@ -357,14 +513,14 @@ export default function DailyPlanner() {
     }
 
     return (
-      <div className={`relative border border-border rounded-md ${isTargetCopyDay ? 'ring-2 ring-inset ring-blue-500' : ''}`}
-        style={{ width: `${APP_PIXELS_PER_HOUR * (endHour - startHour)}px`, height: `${TIMELINE_COLUMN_HEIGHT}px` }}
-        data-section-period={period} 
-        data-day-offset={dayOffset}
+      <div className={`relative w-full border border-border rounded-md ${isTargetCopyDay ? 'ring-2 ring-inset ring-blue-500' : ''}`}
+        style={{ minWidth: `${APP_PIXELS_PER_HOUR * (endHour - startHour)}px`, height: `${TIMELINE_COLUMN_HEIGHT}px` }}
       >
         {renderTimeline(period)}
         <div className={`relative h-full bg-background ${isTargetCopyDay ? 'cursor-copy' : ''}`}
           data-testid={`timeline-area-${dayOffset}-${period}`}
+          data-day-offset={dayOffset}
+          data-section-period={period}
           onClick={(e) => handleTimelineClick(e, dayOffset, period)}
           onDoubleClick={(e) => handleTimelineDoubleClick(e, dayOffset, period)}
           onMouseEnter={() => {
@@ -383,9 +539,8 @@ export default function DailyPlanner() {
             <div key={`grid-${i}`} className="border-l border-border/20 absolute h-full" style={{ left: `${i * APP_PIXELS_PER_HOUR}px`, top: '0', bottom: '0' }} />
           ))}
           {tasksToRender.map((task) => {
-              let displayTask = task;
-              if (draggingTask && draggingTask.task.id === task.id) displayTask = draggingTask.task;
-              if (resizingTask && resizingTask.task.id === task.id) displayTask = resizingTask.task;
+              // The task object from tasksToRender is now always the correct one to display
+              const displayTask = resizingTask?.task.id === task.id ? resizingTask.task : task;
 
               const isBeingDragged = draggingTask?.task.id === displayTask.id;
               const isBeingResized = resizingTask?.task.id === displayTask.id;
@@ -405,13 +560,13 @@ export default function DailyPlanner() {
                 height: `${TIMELINE_COLUMN_HEIGHT - TASK_BASE_TOP - TASK_BASE_BOTTOM_PADDING}px`,
                 zIndex: isBeingDragged || isBeingResized ? 50 : 40,
                 cursor: isBeingDragged ? 'grabbing' : (isBeingResized ? 'col-resize' : 'grab'),
+                pointerEvents: isBeingDragged ? 'none' : 'auto',
               };
 
               return (
-                <div key={displayTask.id} 
+                <div key={displayTask.id}
                   className={`absolute ${isBeingDragged || isBeingResized ? 'opacity-90' : ''} ${isBeingCopied ? 'ring-2 ring-blue-500' : ''}`} 
                   style={taskStyle}
-                  onMouseDown={(e) => handleDragStart(displayTask, e)}
                 >
                     <MemoizedTaskCard
                         task={displayTask}
@@ -420,6 +575,10 @@ export default function DailyPlanner() {
                         onCopy={startCopy} 
                         onViewNotes={openViewNotesModal}
                         onResizeStart={(edge, e) => handleResizeStart(displayTask, edge, e)}
+                        onDragStart={(task, e) => {
+                          console.log('RENDER: onDragStart prop called for task:', task.name);
+                          handleDragStart(task, e);
+                        }}
                     />
                 </div>
               );
@@ -427,33 +586,8 @@ export default function DailyPlanner() {
         </div>
       </div>
     );
-  }, [tasksByDate, draggingTask, resizingTask, copyingTaskData, currentTimeForMarker, handleDropCopy, openEditModal, startCopy, openViewNotesModal, renderTimeline, targetCopyDayOffset]);
+  }, [tasksByDate, draggingTask, resizingTask, copyingTaskData, currentTimeForMarker, handleDropCopy, openEditModal, startCopy, openViewNotesModal, renderTimeline, targetCopyDayOffset, handleDragStart]);
   
-  const handleDragStart = useCallback((taskToDrag: Task, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    // Check if the click is on a resize handle
-    if ((e.target as HTMLElement).closest('.resize-handle')) {
-        return;
-    }
-
-    cancelCopy();
-    setResizingTask(null);
-    if (taskToDrag) {
-      const taskElement = e.currentTarget as HTMLDivElement;
-      const rect = taskElement.getBoundingClientRect();
-      setDraggingTask({ 
-        initialMouseY: e.clientY,
-        initialStartHour: taskToDrag.startHour,
-        initialDayOffset: taskToDrag.dayOffset,
-        taskElement: taskElement, 
-        task: { ...taskToDrag },
-        offsetX: e.clientX - rect.left,
-      });
-    }
-  }, [cancelCopy, setResizingTask, setDraggingTask]);
-
   const deleteTaskHandlerForModal = (taskId: string, isFromPool?: boolean) => {
     if (isFromPool) {
       if (handleDeletePoolTask) handleDeletePoolTask(taskId);
@@ -482,54 +616,60 @@ export default function DailyPlanner() {
           <ViewTaskNotesModal task={viewingTaskNotes} onClose={closeViewNotesModal} onEdit={openEditModal} />
         )}
         
-        <Tabs defaultValue="pinned" className="mb-4">
-          <div className="flex justify-between items-center mb-2">
-            <TabsList>
-              <TabsTrigger value="pool">
-                <CopyPlus className="mr-2 h-4 w-4" /> Task Pool
-              </TabsTrigger>
-              <TabsTrigger value="pinned">
-                <Pin className="mr-2 h-4 w-4" /> Pinned
-              </TabsTrigger>
-            </TabsList>
-            {activeSidebarTab === 'pinned' && pinnedTasks.some(task => new Date(task.dueDate).getTime() < new Date().getTime()) && (
-               <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-muted-foreground"
-                  onClick={clearOverduePinnedTasks}
-                  title="Clear all overdue pinned tasks"
-                >
-                  <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Clear Overdue
-              </Button>
-            )}
-          </div>
-          <TabsContent value="pool" className="bg-card border border-border rounded-lg shadow-sm overflow-hidden p-2">
-              <TaskPoolSidebar
-                  poolTasks={poolTasks}
-                  TASK_COLORS={TASK_COLORS}
-                  activeTab="pool"
-                  topDayOffset={topDayOffset}
-                  isOpen={true}
-                  setIsOpen={() => {}}
-                  onActualAddPoolTask={handleActualAddPoolTask}
-                  onAddTaskToTimeline={(task, dayOffset) => { startCopy(task); const targetDate = getCalendarDateForColumn(dayOffset); handleDropCopy(targetDate, task.startHour || 9); }}
-                  onDeletePoolTask={handleDeletePoolTask}
-                  onClearPool={clearPool}
-                  openEditModal={(task, isFromPool) => openEditModal(task, { isFromPool: isFromPool })}
-              />
-          </TabsContent>
-          <TabsContent value="pinned" className="bg-card border border-border rounded-lg shadow-sm overflow-hidden p-2">
-              <PinnedTasksSidebar
-                  pinnedTasks={pinnedTasks}
-                  onUnpinTask={handleUnpinTask}
-                  formatTimeRemaining={formatTimeRemaining}
-                  openEditModal={openEditModal}
-                  onClearOverduePinnedTasks={clearOverduePinnedTasks}
-                  onSyncPinnedTasks={syncPinnedTasksWithTimeline}
-              />
-          </TabsContent>
-        </Tabs>
+        <div className="mb-4 bg-card border border-border rounded-lg shadow-sm overflow-hidden">
+          <Tabs defaultValue="pinned" className="flex h-28">
+            <div className="flex flex-col w-32 border-r border-border bg-muted/20">
+              <TabsList className="flex-col h-auto bg-transparent p-1">
+                <TabsTrigger value="pool" className="w-full justify-start text-xs">
+                  <CopyPlus className="mr-1 h-3 w-3" /> Pool
+                </TabsTrigger>
+                <TabsTrigger value="pinned" className="w-full justify-start text-xs">
+                  <Pin className="mr-1 h-3 w-3" /> Pinned
+                </TabsTrigger>
+              </TabsList>
+              <div className="flex-1 p-1">
+                {pinnedTasks.some(task => new Date(task.dueDate).getTime() < new Date().getTime()) && (
+                   <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-muted-foreground text-xs h-6 w-full"
+                      onClick={clearOverduePinnedTasks}
+                      title="Clear all overdue pinned tasks"
+                    >
+                      <Trash2 className="w-3 h-3 mr-1" /> Clear
+                  </Button>
+                )}
+              </div>
+            </div>
+            <div className="flex-1">
+              <TabsContent value="pool" className="h-full m-0 p-0">
+                  <TaskPoolSidebar
+                      poolTasks={poolTasks}
+                      TASK_COLORS={TASK_COLORS}
+                      activeTab="pool"
+                      topDayOffset={topDayOffset}
+                      isOpen={true}
+                      setIsOpen={() => {}}
+                      onActualAddPoolTask={handleActualAddPoolTask}
+                      onAddTaskToTimeline={(task, dayOffset) => { startCopy(task); const targetDate = getCalendarDateForColumn(dayOffset); handleDropCopy(targetDate, task.startHour || 9); }}
+                      onDeletePoolTask={handleDeletePoolTask}
+                      onClearPool={clearPool}
+                      openEditModal={(task, isFromPool) => openEditModal(task, { isFromPool: isFromPool })}
+                  />
+              </TabsContent>
+              <TabsContent value="pinned" className="h-full m-0 p-0">
+                  <PinnedTasksSidebar
+                      pinnedTasks={pinnedTasks}
+                      onUnpinTask={handleUnpinTask}
+                      formatTimeRemaining={formatTimeRemaining}
+                      openEditModal={openEditModal}
+                      onClearOverduePinnedTasks={clearOverduePinnedTasks}
+                      onSyncPinnedTasks={syncPinnedTasksWithTimeline}
+                  />
+              </TabsContent>
+            </div>
+          </Tabs>
+        </div>
 
         <div className="space-y-2" ref={timelineScrollRef}>
             <div className="bg-card p-3 rounded-lg shadow-sm border border-border overflow-auto">
@@ -548,15 +688,17 @@ export default function DailyPlanner() {
                     </span>
                   )}
                 </div>
-                <Button onClick={() => openEditModal({ id: `temp-new-task-${Date.now()}`, name: "New Task", startHour: 9, duration: 1, baseDate: getCalendarDateForColumn(topDayOffset).toISOString(), dayOffset: 0, color: TASK_COLORS[DEFAULT_TASK_COLOR_INDEX], notes: "", completed: false }, { isNew: true })}>
+                <Button onClick={() => openEditModal({ id: `temp-new-task-${Date.now()}`, name: "New Task", startHour: 9, duration: 1, baseDate: getCalendarDateForColumn(topDayOffset).toISOString(), color: TASK_COLORS[DEFAULT_TASK_COLOR_INDEX], notes: "", completed: false }, { isNew: true })}>
                     Add Task
                 </Button>
               </div>
-              <div className="flex flex-col gap-px">
-                  {renderColumn(topDayOffset, 'night')}
-                  {renderColumn(topDayOffset, 'morning')}
-                  {renderColumn(topDayOffset, 'afternoon')}
-                  {renderColumn(topDayOffset, 'evening')}
+              <div className="overflow-x-auto">
+                <div className="flex flex-col gap-1">
+                    {renderColumn(topDayOffset, 'night')}
+                    {renderColumn(topDayOffset, 'morning')}
+                    {renderColumn(topDayOffset, 'afternoon')}
+                    {renderColumn(topDayOffset, 'evening')}
+                </div>
               </div>
             </div>
 
@@ -580,11 +722,13 @@ export default function DailyPlanner() {
                     Clone to {bottomDayOffset < topDayOffset ? 'Top' : 'Bottom'}
                 </Button>
               </div>
-              <div className="flex flex-col gap-px">
-                  {renderColumn(bottomDayOffset, 'night')}
-                  {renderColumn(bottomDayOffset, 'morning')}
-                  {renderColumn(bottomDayOffset, 'afternoon')}
-                  {renderColumn(bottomDayOffset, 'evening')}
+              <div className="overflow-x-auto">
+                <div className="flex flex-col gap-1">
+                    {renderColumn(bottomDayOffset, 'night')}
+                    {renderColumn(bottomDayOffset, 'morning')}
+                    {renderColumn(bottomDayOffset, 'afternoon')}
+                    {renderColumn(bottomDayOffset, 'evening')}
+                </div>
               </div>
             </div>
         </div>
