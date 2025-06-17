@@ -248,8 +248,8 @@ export default function DailyPlanner() {
 
   const handleMouseUp = useCallback(() => {
     if (draggingTask && draggingTask.task) {
-      saveTaskFromModal(draggingTask.task, { isNew: false }); 
-      setDraggingTask(null);
+        saveTaskFromModal(draggingTask.task, { isNew: false }); 
+        setDraggingTask(null);
     }
     
     if (resizingTask && resizingTask.task) {
@@ -298,13 +298,13 @@ export default function DailyPlanner() {
     }
     const timelineHours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
     return (
-      <div className="flex h-8 border-b border-border sticky top-0 bg-card z-20">
+      <div className="flex h-8 sticky top-0 bg-card z-20">
         {timelineHours.map((hour) => (
-          <div key={`timeline-hour-${hour}-${period}`} className="flex-none text-xs text-muted-foreground pt-1 pl-0.5 border-l border-border" style={{ width: `${APP_PIXELS_PER_HOUR}px` }}>
+          <div key={`timeline-hour-${hour}-${period}`} className="flex-none text-xs text-muted-foreground/60 pt-1 pl-0.5 border-l border-border/20" style={{ width: `${APP_PIXELS_PER_HOUR}px` }}>
             {formatTime(hour)}
           </div>
         ))}
-        <div key={`timeline-end-marker-${period}`} className="flex-none border-l border-border" style={{ width: `2px` }}></div>
+        <div key={`timeline-end-marker-${period}`} className="flex-none border-l border-border/20" style={{ width: `2px` }}></div>
       </div>
     );
   }, []); 
@@ -419,8 +419,6 @@ export default function DailyPlanner() {
         return taskEnd > startHour && taskStart < endHour;
     });
 
-
-
     const isTargetCopyDay = copyingTaskData && targetCopyDayOffset === dayOffset;
 
     let currentTimeMarker = null;
@@ -438,7 +436,7 @@ export default function DailyPlanner() {
     }
 
     return (
-      <div className={`relative w-full border border-border rounded-md ${isTargetCopyDay ? 'ring-2 ring-inset ring-blue-500' : ''}`}
+      <div className={`relative w-full ${isTargetCopyDay ? 'ring-2 ring-inset ring-blue-500' : ''}`}
         style={{ minWidth: `${APP_PIXELS_PER_HOUR * (endHour - startHour)}px`, height: `${TIMELINE_COLUMN_HEIGHT}px` }}
       >
         {renderTimeline(period)}
@@ -461,7 +459,7 @@ export default function DailyPlanner() {
         >
           {currentTimeMarker}
           {Array.from({ length: endHour - startHour }, (_, i) => (
-            <div key={`grid-${i}`} className="border-l border-border/20 absolute h-full" style={{ left: `${i * APP_PIXELS_PER_HOUR}px`, top: '0', bottom: '0' }} />
+            <div key={`grid-${i}`} className="border-l border-border/10 absolute h-full" style={{ left: `${i * APP_PIXELS_PER_HOUR}px`, top: '0', bottom: '0' }} />
           ))}
           {tasksToRender.map((task) => {
               // The task object from tasksToRender is now always the correct one to display
@@ -593,9 +591,9 @@ export default function DailyPlanner() {
           </Tabs>
         </div>
 
-        <div className="space-y-2" ref={timelineScrollRef}>
-            <div className="bg-card p-3 rounded-lg shadow-sm border border-border overflow-auto">
-              <div className="flex items-center justify-between mb-4 pb-3 border-b border-border">
+        <div className="space-y-6" ref={timelineScrollRef}>
+            <div className="bg-card p-4 rounded-lg shadow-sm border border-border">
+              <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
                   <Button variant="ghost" size="icon" onClick={() => setTopDayOffset(topDayOffset - 7)} title="Previous week">«</Button>
                   <Button variant="ghost" size="icon" onClick={() => setTopDayOffset(topDayOffset - 1)} title="Previous day">‹</Button>
@@ -614,8 +612,8 @@ export default function DailyPlanner() {
                     Add Task
                 </Button>
               </div>
-              <div className="">
-                <div className="flex flex-col gap-1">
+              <div className="border border-border/30 rounded-md overflow-hidden">
+                <div className="flex flex-col">
                     {renderColumn(topDayOffset, 'night')}
                     {renderColumn(topDayOffset, 'morning')}
                     {renderColumn(topDayOffset, 'afternoon')}
@@ -624,7 +622,7 @@ export default function DailyPlanner() {
               </div>
             </div>
 
-            <div className="bg-card p-3 rounded-lg shadow-sm border border-border overflow-auto">
+            <div className="bg-card p-4 rounded-lg shadow-sm border border-border">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
                     <Button variant="ghost" size="icon" onClick={() => setBottomDayOffset(bottomDayOffset - 7)} title="Previous week">«</Button>
@@ -644,8 +642,8 @@ export default function DailyPlanner() {
                     Clone to {bottomDayOffset < topDayOffset ? 'Top' : 'Bottom'}
                 </Button>
               </div>
-              <div className="">
-                <div className="flex flex-col gap-1">
+              <div className="border border-border/30 rounded-md overflow-hidden">
+                <div className="flex flex-col">
                     {renderColumn(bottomDayOffset, 'night')}
                     {renderColumn(bottomDayOffset, 'morning')}
                     {renderColumn(bottomDayOffset, 'afternoon')}
