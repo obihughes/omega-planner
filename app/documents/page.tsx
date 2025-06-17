@@ -1,16 +1,15 @@
 'use client';
 
 import React, { lazy, Suspense } from 'react';
-import { Navigation } from '@/components/ui/Navigation';
+import { AppLayout } from '@/components/ui/AppLayout';
 
 // Lazy load the Documents component
 const Documents = lazy(() => import('@/components/documents/Documents'));
 
 export default function DocumentsPage() {
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      <main className="p-4">
+    <AppLayout>
+      <div className="p-6">
         <div className="max-w-7xl mx-auto">
           <Suspense fallback={
             <div className="flex items-center justify-center h-96">
@@ -20,7 +19,7 @@ export default function DocumentsPage() {
             <Documents />
           </Suspense>
         </div>
-      </main>
-    </div>
+      </div>
+    </AppLayout>
   );
 } 

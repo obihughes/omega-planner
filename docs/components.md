@@ -110,3 +110,209 @@ When adding new components:
 3. Add necessary tests
 4. Update this documentation
 5. Follow the project's naming conventions 
+
+## Layout Components
+
+### AppLayout (`components/ui/AppLayout.tsx`)
+
+The main layout wrapper component that provides the application structure.
+
+**Features:**
+- Fixed left sidebar navigation (256px width)
+- Main content area with automatic left margin offset
+- Consistent layout across all pages
+
+**Usage:**
+```tsx
+import { AppLayout } from '@/components/ui/AppLayout';
+
+export default function SomePage() {
+  return (
+    <AppLayout>
+      <div className="p-6">
+        {/* Page content */}
+      </div>
+    </AppLayout>
+  );
+}
+```
+
+### Navigation (`components/ui/Navigation.tsx`)
+
+Left sidebar navigation component that provides app-wide navigation.
+
+**Features:**
+- Fixed positioning (w-64, full height)
+- Branded header with Omega logo
+- Navigation links with active state indicators
+- Theme toggle functionality
+- Modern styling with gradients and hover effects
+
+**Navigation Items:**
+- Daily Planner (`/`)
+- Projects (`/projects`)
+- Calendar (`/calendar`)
+- Text Canvas (`/documents`)
+
+**Styling Features:**
+- Gradient backgrounds for active states
+- Hover animations with scale effects
+- Smooth transitions
+- Shadow effects for depth
+- Ring indicators for active items
+
+## Planner Components
+
+### DailyPlanner (`components/planner/DailyPlanner.tsx`)
+
+The main planner interface component.
+
+**Features:**
+- Timeline view with hourly grid
+- Task management (create, edit, delete, move)
+- Drag and drop functionality
+- Task pool sidebar
+- Pinned tasks sidebar
+- Time-based scheduling
+
+### TaskCard (`components/planner/TaskCard.tsx`)
+
+Individual task card component used in the timeline.
+
+**Features:**
+- Resizable and draggable
+- Context menus
+- Inline editing
+- Status indicators
+- Priority colors
+
+### TaskPoolSidebar (`components/planner/TaskPoolSidebar.tsx`)
+
+Sidebar for managing task templates and quick access tasks.
+
+**Features:**
+- Task template management
+- Drag to timeline functionality
+- Bulk operations
+
+### PinnedTasksSidebar (`components/planner/PinnedTasksSidebar.tsx`)
+
+Sidebar for displaying and managing pinned tasks.
+
+**Features:**
+- Quick access to important tasks
+- Pin/unpin functionality
+- Task status management
+
+## Calendar Components
+
+### YearCalendar (`components/calendar/YearCalendar.tsx`)
+
+Full year calendar view with event management.
+
+**Features:**
+- Year overview with month grid
+- Event creation and editing
+- Period management
+- Event highlighting
+
+## Document Components
+
+### CanvasTextEditor (`components/documents/CanvasTextEditor.tsx`)
+
+Advanced text editor with canvas-like functionality.
+
+**Features:**
+- Rich text editing
+- Performance optimizations
+- Large document support
+- Text block management
+
+### Documents (`components/documents/Documents.tsx`)
+
+Main documents interface component.
+
+**Features:**
+- Document list management
+- Editor integration
+- File operations
+
+## Project Components
+
+### ProjectCard (`components/projects/ProjectCard.tsx`)
+
+Individual project card component.
+
+**Features:**
+- Project information display
+- Progress indicators
+- Quick actions
+- Drag and drop support
+
+### ProjectsCalendar (`components/projects/ProjectsCalendar.tsx`)
+
+Calendar view for project timelines.
+
+**Features:**
+- Project timeline visualization
+- Milestone tracking
+- Date-based project view
+
+## UI Components
+
+### Primitive Components
+
+The application uses various primitive UI components from `components/ui/`:
+
+- **Button** - Styled button component with variants
+- **Card** - Container component for content cards
+- **Dialog** - Modal dialog component
+- **Input** - Styled input component
+- **Label** - Form label component
+- **Select** - Dropdown select component
+- **Calendar** - Date picker calendar
+- **Popover** - Floating content container
+- **Textarea** - Multi-line text input
+
+### Custom Components
+
+- **CustomTimePicker** - Time selection component
+- **ErrorBoundary** - Error handling wrapper
+
+## Modal Components
+
+### ProjectFormModal (`components/modals/ProjectFormModal.tsx`)
+
+Modal for creating and editing projects.
+
+### ProjectTaskFormModal (`components/modals/ProjectTaskFormModal.tsx`)
+
+Modal for creating and editing project tasks.
+
+### TaskFormModal (`components/modals/TaskFormModal.tsx`)
+
+Modal for creating and editing planner tasks.
+
+## Component Guidelines
+
+### Styling
+- Use Tailwind CSS classes for styling
+- Follow the established color palette
+- Implement responsive design
+- Support dark mode with `dark:` variants
+
+### State Management
+- Use custom hooks for complex state
+- Leverage local storage for persistence
+- Implement optimistic updates
+
+### Performance
+- Use React.lazy for code splitting
+- Implement proper memoization
+- Optimize re-renders with useCallback and useMemo
+
+### Accessibility
+- Include proper ARIA labels
+- Support keyboard navigation
+- Ensure color contrast compliance
+- Implement focus management 

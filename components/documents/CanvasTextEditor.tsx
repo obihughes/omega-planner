@@ -67,13 +67,20 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
   // last sent out, which prevents the editor from wiping out the user's
   // current typing.
   useEffect(() => {
-    // Don't re-initialize if we have an active block being edited
-    // This prevents content loss during auto-save
-    if (activeBlockId && content === lastPropagatedContent.current) {
-      return;
-    }
-    
+    // This effect is now responsible for synchronizing the internal state with
+    // the external `content` prop. It will only re-initialize the blocks if
+    // the `content` prop changes to something different than what this component
+    // last sent out, which prevents the editor from wiping out the user's
+    // current typing.
+
+    // If the new content is different from what we last sent, update the editor.
+    // This is the primary mechanism for loading a new document's content.
     if (content !== lastPropagatedContent.current) {
+      // Always deactivate any active block when document content changes externally.
+      // This prevents a block from one document from remaining "active" when
+      // switching to another.
+      setActiveBlockId(null);
+      
       let loadedBlocks: TextBlock[] = [];
       if (content) {
         try {
@@ -98,12 +105,10 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
       }));
       setTextBlocks(snappedBlocks);
       
-      // Clear active block during re-initialization to prevent conflicts
-      if (!activeBlockId) {
-        setActiveBlockId(null);
-      }
+      // Update our reference to match the newly loaded content.
+      lastPropagatedContent.current = content;
     }
-  }, [content, activeBlockId]);
+  }, [content]);
 
   const snapToGrid = (x: number, y: number) => ({
     x: Math.round(x / GRID_SIZE) * GRID_SIZE,

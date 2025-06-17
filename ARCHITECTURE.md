@@ -52,6 +52,16 @@ Data is loaded from and saved to `localStorage` via utility functions in `utils/
 
 The application is built with these main components:
 
+- **AppLayout** (`components/ui/AppLayout.tsx`):
+  Main layout wrapper that provides the application structure with a fixed left sidebar navigation and main content area.
+
+- **Navigation** (`components/ui/Navigation.tsx`): 
+  Left sidebar navigation component that provides app-wide navigation between different modes (Daily Planner, Projects, Calendar, Text Canvas). Features:
+  * Fixed left sidebar with 256px width
+  * Vertical navigation with branded header
+  * Theme toggle functionality
+  * Active state indicators
+
 - **DailyPlanner** (`components/planner/DailyPlanner.tsx`): 
   The main component orchestrating the entire planner interface, including the timeline view.
 
@@ -119,6 +129,7 @@ The application uses `z-index` extensively to manage the stacking of UI elements
     *   `Task Card Inline Edit Menu` (Portal): `z-[1000]`
 
 *   **Main UI Structures:**
+    *   `Navigation Sidebar` (Fixed left navigation): `z-50`
     *   `Sidebar Container` (Sticky element holding Task Pool & Pinned Tasks): `z-[120]`
     *   `Current Time Marker` (Red line on today's timeline): `z-[120]`
 
