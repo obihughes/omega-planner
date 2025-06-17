@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui";
-import { Pin, CopyPlus } from 'lucide-react';
+import { Pin, CopyPlus, Trash2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { formatTime } from '@/utils/formatters';
 import { Task } from '../../types/planner';
@@ -481,45 +482,54 @@ export default function DailyPlanner() {
           <ViewTaskNotesModal task={viewingTaskNotes} onClose={closeViewNotesModal} onEdit={openEditModal} />
         )}
         
-        <div className="mb-4 flex gap-2">
-            <div className="flex flex-col gap-1 w-40">
-                <Button variant={activeSidebarTab === 'pool' ? 'secondary' : 'ghost'} className="justify-start" onClick={() => setActiveSidebarTab('pool')}>
-                    <CopyPlus className="mr-2 h-4 w-4" /> Task Pool
-                </Button>
-                <Button variant={activeSidebarTab === 'pinned' ? 'secondary' : 'ghost'} className="justify-start" onClick={() => setActiveSidebarTab('pinned')}>
-                    <Pin className="mr-2 h-4 w-4" /> Pinned
-                </Button>
-            </div>
-            <div className="flex-grow bg-card border border-border rounded-lg shadow-sm overflow-hidden">
-                <div className="h-48 overflow-y-auto">
-                    {activeSidebarTab === 'pool' && (
-                        <TaskPoolSidebar
-                            poolTasks={poolTasks}
-                            TASK_COLORS={TASK_COLORS}
-                            activeTab="pool"
-                            topDayOffset={topDayOffset}
-                            isOpen={isTaskPoolOpen}
-                            setIsOpen={setIsTaskPoolOpen}
-                            onActualAddPoolTask={handleActualAddPoolTask}
-                            onAddTaskToTimeline={(task, dayOffset) => { startCopy(task); const targetDate = getCalendarDateForColumn(dayOffset); handleDropCopy(targetDate, task.startHour || 9); }}
-                            onDeletePoolTask={handleDeletePoolTask}
-                            onClearPool={clearPool}
-                            openEditModal={(task, isFromPool) => openEditModal(task, { isFromPool: isFromPool })}
-                        />
-                    )}
-                    {activeSidebarTab === 'pinned' && (
-                        <PinnedTasksSidebar
-                            pinnedTasks={pinnedTasks}
-                            onUnpinTask={handleUnpinTask}
-                            formatTimeRemaining={formatTimeRemaining}
-                            openEditModal={openEditModal}
-                            onClearOverduePinnedTasks={clearOverduePinnedTasks}
-                            onSyncPinnedTasks={syncPinnedTasksWithTimeline}
-                        />
-                    )}
-                </div>
-            </div>
-        </div>
+        <Tabs defaultValue="pinned" className="mb-4">
+          <div className="flex justify-between items-center mb-2">
+            <TabsList>
+              <TabsTrigger value="pool">
+                <CopyPlus className="mr-2 h-4 w-4" /> Task Pool
+              </TabsTrigger>
+              <TabsTrigger value="pinned">
+                <Pin className="mr-2 h-4 w-4" /> Pinned
+              </TabsTrigger>
+            </TabsList>
+            {activeSidebarTab === 'pinned' && pinnedTasks.some(task => new Date(task.dueDate).getTime() < new Date().getTime()) && (
+               <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-muted-foreground"
+                  onClick={clearOverduePinnedTasks}
+                  title="Clear all overdue pinned tasks"
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Clear Overdue
+              </Button>
+            )}
+          </div>
+          <TabsContent value="pool" className="bg-card border border-border rounded-lg shadow-sm overflow-hidden p-2">
+              <TaskPoolSidebar
+                  poolTasks={poolTasks}
+                  TASK_COLORS={TASK_COLORS}
+                  activeTab="pool"
+                  topDayOffset={topDayOffset}
+                  isOpen={true}
+                  setIsOpen={() => {}}
+                  onActualAddPoolTask={handleActualAddPoolTask}
+                  onAddTaskToTimeline={(task, dayOffset) => { startCopy(task); const targetDate = getCalendarDateForColumn(dayOffset); handleDropCopy(targetDate, task.startHour || 9); }}
+                  onDeletePoolTask={handleDeletePoolTask}
+                  onClearPool={clearPool}
+                  openEditModal={(task, isFromPool) => openEditModal(task, { isFromPool: isFromPool })}
+              />
+          </TabsContent>
+          <TabsContent value="pinned" className="bg-card border border-border rounded-lg shadow-sm overflow-hidden p-2">
+              <PinnedTasksSidebar
+                  pinnedTasks={pinnedTasks}
+                  onUnpinTask={handleUnpinTask}
+                  formatTimeRemaining={formatTimeRemaining}
+                  openEditModal={openEditModal}
+                  onClearOverduePinnedTasks={clearOverduePinnedTasks}
+                  onSyncPinnedTasks={syncPinnedTasksWithTimeline}
+              />
+          </TabsContent>
+        </Tabs>
 
         <div className="space-y-2" ref={timelineScrollRef}>
             <div className="bg-card p-3 rounded-lg shadow-sm border border-border overflow-auto">

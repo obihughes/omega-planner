@@ -101,33 +101,6 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
   return (
     <>
       <div className="flex flex-col flex-grow overflow-hidden">
-        <div className="p-2 border-b border-border flex justify-between items-center">
-            <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-base">Pinned Tasks</h3>
-                {onSyncPinnedTasks && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-muted-foreground hover:text-foreground w-7 h-7"
-                    onClick={onSyncPinnedTasks}
-                    title="Sync Pinned Tasks with Timeline"
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                  </Button>
-                )}
-            </div>
-            {onClearOverduePinnedTasks && hasOverdueTasks && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-muted-foreground"
-                onClick={onClearOverduePinnedTasks}
-                title="Clear all overdue pinned tasks"
-              >
-                <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Clear Overdue
-              </Button>
-            )}
-        </div>
         <div className="p-2 flex space-x-2 overflow-x-auto flex-grow">
           {pinnedTasks.length === 0 ? (
             <p className="text-muted-foreground text-sm text-center pt-4 w-full">No tasks pinned yet.</p> 

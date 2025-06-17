@@ -113,26 +113,6 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-card text-foreground p-0">
-      <div className="flex justify-between items-center p-2 border-b border-border">
-        <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-base">Task Pool</h3>
-            <Button variant="ghost" size="icon" onClick={() => setShowPoolTaskForm(!showPoolTaskForm)} className="text-muted-foreground hover:text-foreground w-7 h-7">
-                <CopyPlus className="w-4 h-4" />
-            </Button>
-        </div>
-        {poolTasks.length > 0 && onClearPool && (
-            <Button
-                variant="outline"
-                size="sm"
-                className="text-muted-foreground"
-                onClick={onClearPool}
-                title="Clear all tasks from the pool"
-            >
-                <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Clear All
-            </Button>
-        )}
-      </div>
-
       <div className="flex-grow flex space-x-2 p-2 overflow-x-auto">
         {poolTasks.length === 0 ? (
           <div className="text-muted-foreground text-sm p-2 text-center w-full">
