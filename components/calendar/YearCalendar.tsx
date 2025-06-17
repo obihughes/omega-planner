@@ -583,8 +583,8 @@ export function YearCalendar({
 
         {/* Week Days Header */}
         <div className="grid grid-cols-7 gap-1 mb-2">
-          {weekDays.map(day => (
-            <div key={day} className={cn("text-xs font-medium text-muted-foreground text-center py-1", inter.className)}>
+          {weekDays.map((day, index) => (
+            <div key={`${day}-${index}`} className={cn("text-xs font-medium text-muted-foreground text-center py-1", inter.className)}>
               {day}
             </div>
           ))}

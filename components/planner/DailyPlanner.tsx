@@ -106,7 +106,6 @@ export default function DailyPlanner() {
   };
 
   const handleMouseMoveResize = useCallback((e: MouseEvent) => {
-    console.log('EVENT: handleMouseMoveResize');
     if (!resizingTask) return;
     e.preventDefault();
 
@@ -176,7 +175,6 @@ export default function DailyPlanner() {
   }, [resizingTask, tasksByDate, setResizingTask]);
 
   const handleMouseMoveDrag = useCallback((e: MouseEvent) => {
-    console.log('EVENT: handleMouseMoveDrag');
     if (!draggingTask || !draggingTask.task) return;
     e.preventDefault();
 
@@ -192,23 +190,15 @@ export default function DailyPlanner() {
     const elementUnderMouse = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement;
     const dropZone = elementUnderMouse?.closest('[data-testid^="timeline-area-"]') as HTMLElement;
 
-    console.log('DRAG DEBUG: elementUnderMouse:', elementUnderMouse?.tagName, elementUnderMouse?.className);
-    console.log('DRAG DEBUG: dropZone:', dropZone?.getAttribute('data-testid'));
-
     if (dropZone) {
       const dayOffsetAttr = dropZone.getAttribute('data-day-offset');
       const periodAttr = dropZone.getAttribute('data-section-period') as TimelinePeriod | null;
-      
-      console.log('DRAG DEBUG: dayOffsetAttr:', dayOffsetAttr, 'periodAttr:', periodAttr);
       
       if (dayOffsetAttr && periodAttr) {
         targetDayOffset = parseInt(dayOffsetAttr, 10);
         targetPeriod = periodAttr;
         const rect = dropZone.getBoundingClientRect();
         relativeXInTimelineSegment = (e.clientX - rect.left) - currentOffsetX;
-
-        console.log('DRAG DEBUG: rect.left:', rect.left, 'clientX:', e.clientX, 'offsetX:', currentOffsetX);
-        console.log('DRAG DEBUG: relativeXInTimelineSegment:', relativeXInTimelineSegment);
 
         switch (targetPeriod) {
           case 'night': baseHourForCalc = APP_TIMELINE_START_HOUR; break;
@@ -228,8 +218,6 @@ export default function DailyPlanner() {
       
       let snappedNewStartHour = Math.round(newStartHour * 4) / 4;
 
-      console.log('DRAG DEBUG: hourInBlock:', hourInBlock, 'newStartHour:', newStartHour, 'snappedNewStartHour:', snappedNewStartHour);
-
       const targetColumnDate = getCalendarDateForColumn(targetDayOffset);
 
       // Use the same date key format as in useDailyPlannerState.ts
@@ -245,8 +233,6 @@ export default function DailyPlanner() {
         APP_TIMELINE_END_HOUR
       );
 
-      console.log('DRAG DEBUG: collisionResult:', collisionResult);
-
       if (collisionResult.canMove) {
         setDraggingTask(prev => {
           if (!prev || !prev.task) return null;
@@ -254,86 +240,49 @@ export default function DailyPlanner() {
           if (prev.task.startHour === collisionResult.snappedNewStartHour && prev.task.baseDate === newBaseDateIso) {
             return prev;
           }
-          console.log('DRAG DEBUG: Updating task position to:', collisionResult.snappedNewStartHour, newBaseDateIso);
           return { ...prev, task: { ...prev.task, startHour: collisionResult.snappedNewStartHour, baseDate: newBaseDateIso } };
         });
-      } else {
-        console.log('DRAG DEBUG: Cannot move - collision detected');
       }
-    } else {
-      console.log('DRAG DEBUG: No valid drop zone found');
     }
   }, [draggingTask, setDraggingTask, tasksByDate]);
 
   const handleMouseUp = useCallback(() => {
-    console.log('==== MOUSE UP INITIATED ====');
-    console.log('MOUSE UP: Current draggingTask state:', draggingTask ? {
-      taskId: draggingTask.task.id,
-      taskName: draggingTask.task.name,
-      currentStartHour: draggingTask.task.startHour,
-      currentBaseDate: draggingTask.task.baseDate
-    } : null);
-    console.log('MOUSE UP: Current resizingTask state:', !!resizingTask);
-    
     if (draggingTask && draggingTask.task) {
-      console.log('MOUSE UP: Processing drag end - saving task:', draggingTask.task);
       saveTaskFromModal(draggingTask.task, { isNew: false }); 
       setDraggingTask(null);
-      console.log('MOUSE UP: Drag task saved and state cleared');
     }
     
     if (resizingTask && resizingTask.task) {
-        console.log('MOUSE UP: Processing resize end - saving task:', resizingTask.task);
         saveTaskFromModal(resizingTask.task, { isNew: false });
         setResizingTask(null);
-        console.log('MOUSE UP: Resize task saved and state cleared');
     }
     
     document.body.style.cursor = '';
-    console.log('MOUSE UP: Reset cursor and completed');
   }, [draggingTask, resizingTask, saveTaskFromModal, setDraggingTask, setResizingTask]);
 
   useEffect(() => {
-    console.log('==== MOUSE LISTENERS EFFECT ====');
-    console.log('EFFECT: draggingTask state:', draggingTask ? {
-      taskId: draggingTask.task.id,
-      taskName: draggingTask.task.name,
-      initialStartHour: draggingTask.initialStartHour,
-      currentStartHour: draggingTask.task.startHour,
-      baseDate: draggingTask.task.baseDate
-    } : null);
-    console.log('EFFECT: resizingTask state:', !!resizingTask);
-    
     const onMouseMove = (event: MouseEvent) => {
-      console.log('EVENT: Global mouse move detected');
       if (resizingTask) {
-        console.log('EVENT: Calling handleMouseMoveResize');
         handleMouseMoveResize(event);
       }
       if (draggingTask) {
-        console.log('EVENT: Calling handleMouseMoveDrag');
         handleMouseMoveDrag(event); 
       }
     };
 
     const onMouseUp = () => {
-        console.log('EVENT: Global mouse up detected');
         handleMouseUp();
     };
 
     if (draggingTask || resizingTask) {
-      console.log('EFFECT: ADDING global mouse listeners');
       window.addEventListener('mousemove', onMouseMove);
       window.addEventListener('mouseup', onMouseUp);
       document.body.style.cursor = draggingTask ? 'grabbing' : 'col-resize';
-      console.log('EFFECT: Set cursor to:', draggingTask ? 'grabbing' : 'col-resize');
     } else {
-      console.log('EFFECT: No active drag/resize state, not adding listeners');
       document.body.style.cursor = '';
     }
 
     return () => {
-      console.log('EFFECT: CLEANUP - removing global mouse listeners');
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
     };
@@ -404,50 +353,27 @@ export default function DailyPlanner() {
       handleDropCopy(targetDate, snappedNewStartHour);
   };
 
-  const handleDragStart = useCallback((taskToDrag: Task, e: React.MouseEvent) => {
-    console.log('==== DRAG START INITIATED ====');
-    console.log('DRAG START: Task details:', {
-      id: taskToDrag.id,
-      name: taskToDrag.name,
-      startHour: taskToDrag.startHour,
-      baseDate: taskToDrag.baseDate
-    });
-    console.log('DRAG START: Mouse event details:', {
-      clientX: e.clientX,
-      clientY: e.clientY,
-      target: e.target,
-      currentTarget: e.currentTarget
-    });
-    
-    e.preventDefault();
+  const handleDragStart = (task: Task, e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     
-    // Check if the click is on a resize handle
-    if ((e.target as HTMLElement).closest('.resize-handle')) {
-        console.log('DRAG START: Click was on resize handle, aborting drag');
-        return;
-    }
+    const taskElement = e.currentTarget as HTMLElement;
+    const rect = taskElement.getBoundingClientRect();
+    const offsetX = e.clientX - rect.left;
 
-    console.log('DRAG START: Calling helper functions...');
-    cancelCopy();
-    setResizingTask(null);
-    
-    if (taskToDrag) {
-      const draggingState = { 
-        initialMouseY: e.clientY,
-        initialStartHour: taskToDrag.startHour,
-        taskElement: null, // We don't need this for the new approach
-        task: { ...taskToDrag },
-        offsetX: 0, // Start with 0 offset for simpler calculation
-      };
-      
-      console.log('DRAG START: Setting dragging state:', draggingState);
-      setDraggingTask(draggingState);
-      console.log('DRAG START: Drag initialization complete');
-    } else {
-      console.log('DRAG START: ERROR - taskToDrag is null/undefined');
-    }
-  }, [cancelCopy, setResizingTask, setDraggingTask]);
+    setDraggingTask({
+      initialMouseY: e.clientY,
+      initialStartHour: task.startHour,
+      task: { ...task },
+      offsetX: offsetX,
+      taskElement: null, 
+    });
+  };
+
+  const handleClearDay = (dayOffset: number) => {
+    const dateToClear = getCalendarDateForColumn(dayOffset);
+    // ... existing code ...
+  };
 
   const renderColumn = useCallback((dayOffset: number, period: TimelinePeriod) => {
     let startHour, endHour;
@@ -493,8 +419,7 @@ export default function DailyPlanner() {
         return taskEnd > startHour && taskStart < endHour;
     });
 
-    console.log(`RENDER: Column ${dayOffset}-${period} rendering ${tasksToRender.length} tasks:`, 
-      tasksToRender.map(t => ({ id: t.id, name: t.name, startHour: t.startHour })));
+
 
     const isTargetCopyDay = copyingTaskData && targetCopyDayOffset === dayOffset;
 
@@ -575,10 +500,7 @@ export default function DailyPlanner() {
                         onCopy={startCopy} 
                         onViewNotes={openViewNotesModal}
                         onResizeStart={(edge, e) => handleResizeStart(displayTask, edge, e)}
-                        onDragStart={(task, e) => {
-                          console.log('RENDER: onDragStart prop called for task:', task.name);
-                          handleDragStart(task, e);
-                        }}
+                        onDragStart={handleDragStart}
                     />
                 </div>
               );
@@ -692,7 +614,7 @@ export default function DailyPlanner() {
                     Add Task
                 </Button>
               </div>
-              <div className="overflow-x-auto">
+              <div className="">
                 <div className="flex flex-col gap-1">
                     {renderColumn(topDayOffset, 'night')}
                     {renderColumn(topDayOffset, 'morning')}
@@ -722,7 +644,7 @@ export default function DailyPlanner() {
                     Clone to {bottomDayOffset < topDayOffset ? 'Top' : 'Bottom'}
                 </Button>
               </div>
-              <div className="overflow-x-auto">
+              <div className="">
                 <div className="flex flex-col gap-1">
                     {renderColumn(bottomDayOffset, 'night')}
                     {renderColumn(bottomDayOffset, 'morning')}

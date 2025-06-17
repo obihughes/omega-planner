@@ -82,24 +82,14 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           onDragStart={(e) => e.preventDefault()}
           onMouseDown={(e) => {
             e.preventDefault(); // Prevent browser default drag behavior
-            console.log('TASKCARD: onMouseDown triggered in drag handle');
-            console.log('TASKCARD: event target:', e.target);
-            console.log('TASKCARD: event currentTarget:', e.currentTarget);
-            console.log('TASKCARD: clientX:', e.clientX, 'clientY:', e.clientY);
-            
             // Don't stop propagation for drag - let it bubble up
             if (onDragStart) {
-              console.log('TASKCARD: calling onDragStart with task:', task.name);
               onDragStart(task, e);
-            } else {
-              console.log('TASKCARD: onDragStart prop is not provided');
             }
           }}
           onMouseEnter={() => {
-            console.log('TASKCARD: Mouse entered drag handle for task:', task.name);
           }}
           onMouseLeave={() => {
-            console.log('TASKCARD: Mouse left drag handle for task:', task.name);
           }}
         />
         
