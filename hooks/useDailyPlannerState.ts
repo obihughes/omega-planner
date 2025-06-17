@@ -78,7 +78,7 @@ export function useDailyPlanner() {
   const [cloneConflictStrategy, setCloneConflictStrategy] = useState<'skip' | 'replace' | 'adjust'>('skip');
 
   const [isClient, setIsClient] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false); // New state for sidebar collapse
+  // Removed isSidebarCollapsed state since we moved to top horizontal layout
   const [viewingTaskNotes, setViewingTaskNotes] = useState<Task | null>(null); // State for View Notes Modal
 
   useEffect(() => {
@@ -797,27 +797,7 @@ export function useDailyPlanner() {
 
     // Check for mobile view and persisted sidebar state
     if (typeof window !== 'undefined') {
-      const mobileMediaQuery = window.matchMedia("(max-width: 768px)");
-      const persistedCollapseState = TaskStorage.loadSidebarCollapsed();
-
-      if (mobileMediaQuery.matches) {
-        setIsSidebarCollapsed(true);
-      } else if (persistedCollapseState !== null) {
-        setIsSidebarCollapsed(persistedCollapseState);
-      }
-      // Listener for future changes (e.g. resizing window across breakpoint)
-      const handleResize = () => {
-        if (mobileMediaQuery.matches) {
-          setIsSidebarCollapsed(true);
-        } else {
-          // If not mobile, and there was a persisted state, use it. Otherwise, default to false (expanded).
-          const nonMobilePersistedState = TaskStorage.loadSidebarCollapsed();
-          setIsSidebarCollapsed(nonMobilePersistedState !== null ? nonMobilePersistedState : false);
-        }
-      };
-      mobileMediaQuery.addEventListener('change', handleResize);
-      // Cleanup listener on unmount
-      return () => mobileMediaQuery.removeEventListener('change', handleResize);
+      // Removed sidebar collapse logic since we moved to top horizontal layout
     }
 
   }, []); // Empty dependency array means this runs once on mount
@@ -843,16 +823,7 @@ export function useDailyPlanner() {
     }
   }, [pinnedTasks]);
 
-  // Save sidebar collapsed state
-  useEffect(() => {
-    if (initialLoadComplete.current && typeof window !== 'undefined') {
-      // Only save if not on mobile, as mobile defaults to collapsed
-      const mobileMediaQuery = window.matchMedia("(max-width: 768px)");
-      if (!mobileMediaQuery.matches) {
-        TaskStorage.saveSidebarCollapsed(isSidebarCollapsed);
-      }
-    }
-  }, [isSidebarCollapsed]);
+  // Removed sidebar collapsed state saving since we moved to top horizontal layout
 
   // Save day view settings whenever they change
   useEffect(() => {
@@ -923,7 +894,6 @@ export function useDailyPlanner() {
     initialDayOffsetForModal,
     initialStartHourForModal,
     showClearPoolModal,
-    isSidebarCollapsed,
     isTaskPoolOpen,
     isClient,
     topDayOffset,
@@ -951,7 +921,6 @@ export function useDailyPlanner() {
     setTopDayOffset,
     setBottomDayOffset,
     setIsTaskPoolOpen,
-    setIsSidebarCollapsed,
     setCloneConflictStrategy,
     
     // State Setters (from modalManager, aliased)

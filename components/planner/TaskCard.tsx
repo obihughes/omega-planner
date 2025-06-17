@@ -12,6 +12,7 @@ export interface TaskCardProps {
   onStartEdit: (task: Task, options?: { isNew?: boolean, isFromPool?: boolean }) => void;
   onCopy: (task: Task) => void;
   onViewNotes: (task: Task) => void;
+  onResizeStart: (edge: 'start' | 'end', e: React.MouseEvent<HTMLDivElement>) => void;
 }
 
 export const TaskCard: React.FC<TaskCardProps> = ({
@@ -20,6 +21,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   onStartEdit,
   onCopy,
   onViewNotes,
+  onResizeStart,
 }) => {
   const [isViewing, setIsViewing] = useState(false);
   const viewRef = useRef<HTMLDivElement>(null);
@@ -64,6 +66,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         `}
         onClick={(e) => e.stopPropagation()}
       >
+        <div 
+          className="resize-handle absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize group-hover:bg-blue-500/20 active:bg-blue-500/30 z-30 transition-colors"
+          onMouseDown={(e) => { e.stopPropagation(); onResizeStart('start', e); }}
+        />
         <div className="flex flex-col min-w-0 flex-grow">
           <div className="flex flex-row justify-between items-start min-w-0 draggable-area h-full gap-1 relative">
             <div className="flex-grow flex flex-col min-w-0 justify-between">
@@ -191,6 +197,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             )}
           </div>
         </div>
+        <div 
+          className="resize-handle absolute right-0 top-0 bottom-0 w-1.5 cursor-ew-resize group-hover:bg-blue-500/20 active:bg-blue-500/30 z-30 transition-colors"
+          onMouseDown={(e) => { e.stopPropagation(); onResizeStart('end', e); }}
+        />
       </div>
     </>
   );

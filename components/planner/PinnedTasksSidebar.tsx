@@ -101,35 +101,36 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
   return (
     <>
       <div className="flex flex-col flex-grow overflow-hidden">
-        {( (onClearOverduePinnedTasks && hasOverdueTasks) || onSyncPinnedTasks ) && pinnedTasks.length > 0 && (
-          <div className="p-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
+        <div className="p-2 border-b border-border flex justify-between items-center">
+            <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-base">Pinned Tasks</h3>
+                {onSyncPinnedTasks && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-foreground w-7 h-7"
+                    onClick={onSyncPinnedTasks}
+                    title="Sync Pinned Tasks with Timeline"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                  </Button>
+                )}
+            </div>
             {onClearOverduePinnedTasks && hasOverdueTasks && (
               <Button
                 variant="outline"
                 size="sm"
-                className="flex-auto text-muted-foreground border-gray-200 dark:border-gray-700 hover:bg-accent hover:text-foreground"
+                className="text-muted-foreground"
                 onClick={onClearOverduePinnedTasks}
                 title="Clear all overdue pinned tasks"
               >
                 <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Clear Overdue
               </Button>
             )}
-            {onSyncPinnedTasks && (
-              <Button
-                variant="outline"
-                size="icon"
-                className="text-muted-foreground border-gray-200 dark:border-gray-700 hover:bg-accent hover:text-foreground flex-none"
-                onClick={onSyncPinnedTasks}
-                title="Sync Pinned Tasks with Timeline"
-              >
-                <RefreshCw className="w-4 h-4" />
-              </Button>
-            )}
-          </div>
-        )}
-        <div className="p-2 space-y-1 overflow-y-auto flex-grow">
+        </div>
+        <div className="p-2 flex space-x-2 overflow-x-auto flex-grow">
           {pinnedTasks.length === 0 ? (
-            <p className="text-muted-foreground text-sm text-center pt-4">No tasks pinned yet.</p> 
+            <p className="text-muted-foreground text-sm text-center pt-4 w-full">No tasks pinned yet.</p> 
           ) : (
             pinnedTasks.map(pinnedTask => {
               const { text: timeRemainingText, isOverdue } = formatTimeRemaining(new Date(pinnedTask.dueDate));
@@ -138,7 +139,7 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
               return (
                 <div 
                   key={pinnedTask.pinnedId} 
-                  className="relative p-2.5 rounded-lg bg-card border border-border/50 hover:shadow-md transition-all duration-150 group"
+                  className="relative p-2.5 rounded-lg bg-card border border-border/50 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-64"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-start gap-2 flex-1 min-w-0">
@@ -174,8 +175,8 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
                       </div>
                     </div>
                     
-                    {/* Action buttons - stacked vertically on the right */}
-                    <div className="flex flex-col items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* Action buttons - now horizontal */}
+                    <div className="absolute top-1 right-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         type="button"
                         className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
