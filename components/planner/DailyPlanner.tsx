@@ -20,6 +20,7 @@ import {
     TASK_BASE_BOTTOM_PADDING,
     TIMELINE_SPLIT_HOUR_1 as APP_TIMELINE_SPLIT_HOUR_1,
     TIMELINE_SPLIT_HOUR_2 as APP_TIMELINE_SPLIT_HOUR_2,
+    TIMELINE_SPLIT_HOUR_3 as APP_TIMELINE_SPLIT_HOUR_3,
     DEFAULT_TASK_COLOR_INDEX
 } from '../../lib/constants';
 import { MemoizedTaskCard } from './TaskCard';
@@ -27,6 +28,8 @@ import { EditTaskModal } from './EditTaskModal';
 import { ViewTaskNotesModal } from './ViewTaskNotesModal';
 import { getCalendarDateForColumn } from '../../utils/dateUtils';
 import { resolveCollisionsForResize, resolveCollisionsForDrag } from '../../utils/taskUtils';
+
+type TimelinePeriod = 'night' | 'morning' | 'afternoon' | 'evening';
 
 export default function DailyPlanner() {
   const {
@@ -178,7 +181,7 @@ export default function DailyPlanner() {
     const currentOffsetX = offsetX || 0;
 
     let targetDayOffset: number | null = null;
-    let targetPeriod: 'morning' | 'afternoon' | 'evening' | null = null;
+    let targetPeriod: TimelinePeriod | null = null;
     let relativeXInTimelineSegment = 0;
     let baseHourForCalc = APP_TIMELINE_START_HOUR;
 
@@ -186,7 +189,7 @@ export default function DailyPlanner() {
 
     if (dropZone) {
       const dayOffsetAttr = dropZone.getAttribute('data-day-offset');
-      const periodAttr = dropZone.getAttribute('data-section-period') as 'morning' | 'afternoon' | 'evening' | null;
+      const periodAttr = dropZone.getAttribute('data-section-period') as TimelinePeriod | null;
       
       if (dayOffsetAttr && periodAttr) {
         targetDayOffset = parseInt(dayOffsetAttr, 10);
@@ -195,9 +198,10 @@ export default function DailyPlanner() {
         relativeXInTimelineSegment = (e.clientX - rect.left) - currentOffsetX;
 
         switch (targetPeriod) {
-          case 'morning': baseHourForCalc = APP_TIMELINE_START_HOUR; break;
-          case 'afternoon': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_1; break;
-          case 'evening': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_2; break;
+          case 'night': baseHourForCalc = APP_TIMELINE_START_HOUR; break;
+          case 'morning': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_1; break;
+          case 'afternoon': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_2; break;
+          case 'evening': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_3; break;
         }
       }
     }
@@ -250,12 +254,13 @@ export default function DailyPlanner() {
     };
   }, [draggingTask, resizingTask, handleMouseMoveResize, handleMouseMoveDrag]);
 
-  const renderTimeline = useCallback((period: 'morning' | 'afternoon' | 'evening') => {
+  const renderTimeline = useCallback((period: TimelinePeriod) => {
     let startHour, endHour;
     switch (period) {
-      case 'morning': startHour = APP_TIMELINE_START_HOUR; endHour = APP_TIMELINE_SPLIT_HOUR_1; break;
-      case 'afternoon': startHour = APP_TIMELINE_SPLIT_HOUR_1; endHour = APP_TIMELINE_SPLIT_HOUR_2; break;
-      case 'evening': startHour = APP_TIMELINE_SPLIT_HOUR_2; endHour = APP_TIMELINE_END_HOUR; break; 
+      case 'night': startHour = APP_TIMELINE_START_HOUR; endHour = APP_TIMELINE_SPLIT_HOUR_1; break;
+      case 'morning': startHour = APP_TIMELINE_SPLIT_HOUR_1; endHour = APP_TIMELINE_SPLIT_HOUR_2; break;
+      case 'afternoon': startHour = APP_TIMELINE_SPLIT_HOUR_2; endHour = APP_TIMELINE_SPLIT_HOUR_3; break;
+      case 'evening': startHour = APP_TIMELINE_SPLIT_HOUR_3; endHour = APP_TIMELINE_END_HOUR; break; 
     }
     const timelineHours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
     return (
@@ -270,15 +275,16 @@ export default function DailyPlanner() {
     );
   }, []); 
 
-  const handleTimelineDoubleClick = (e: React.MouseEvent<HTMLDivElement>, dayOffset: number, period: 'morning' | 'afternoon' | 'evening') => {
+  const handleTimelineDoubleClick = (e: React.MouseEvent<HTMLDivElement>, dayOffset: number, period: TimelinePeriod) => {
       if (copyingTaskData) return;
       const rect = e.currentTarget.getBoundingClientRect();
       const clickXrelative = e.clientX - rect.left;
       let baseHourForCalc: number;
       switch (period) {
-          case 'morning': baseHourForCalc = APP_TIMELINE_START_HOUR; break;
-          case 'afternoon': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_1; break;
-          case 'evening': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_2; break;
+          case 'night': baseHourForCalc = APP_TIMELINE_START_HOUR; break;
+          case 'morning': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_1; break;
+          case 'afternoon': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_2; break;
+          case 'evening': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_3; break;
       }
       const hourInBlock = (clickXrelative / APP_PIXELS_PER_HOUR);
       const snappedNewStartHour = Math.round((baseHourForCalc + hourInBlock) * 4) / 4;
@@ -297,15 +303,16 @@ export default function DailyPlanner() {
       openEditModal(newTaskDefaults, { isNew: true });
   };
   
-  const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>, dayOffset: number, period: 'morning' | 'afternoon' | 'evening') => {
+  const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>, dayOffset: number, period: TimelinePeriod) => {
       if (!copyingTaskData) return;
       const rect = e.currentTarget.getBoundingClientRect();
       const clickXrelative = e.clientX - rect.left;
       let baseHourForCalc: number;
       switch (period) {
-          case 'morning': baseHourForCalc = APP_TIMELINE_START_HOUR; break;
-          case 'afternoon': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_1; break;
-          case 'evening': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_2; break;
+          case 'night': baseHourForCalc = APP_TIMELINE_START_HOUR; break;
+          case 'morning': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_1; break;
+          case 'afternoon': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_2; break;
+          case 'evening': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_3; break;
       }
       const hourInBlock = clickXrelative / APP_PIXELS_PER_HOUR;
       const snappedNewStartHour = Math.round((baseHourForCalc + hourInBlock) * 4) / 4;
@@ -313,12 +320,13 @@ export default function DailyPlanner() {
       handleDropCopy(targetDate, snappedNewStartHour);
   };
 
-  const renderColumn = useCallback((dayOffset: number, period: 'morning' | 'afternoon' | 'evening') => {
+  const renderColumn = useCallback((dayOffset: number, period: TimelinePeriod) => {
     let startHour, endHour;
     switch (period) {
-        case 'morning': startHour = APP_TIMELINE_START_HOUR; endHour = APP_TIMELINE_SPLIT_HOUR_1; break;
-        case 'afternoon': startHour = APP_TIMELINE_SPLIT_HOUR_1; endHour = APP_TIMELINE_SPLIT_HOUR_2; break;
-        case 'evening': startHour = APP_TIMELINE_SPLIT_HOUR_2; endHour = APP_TIMELINE_END_HOUR; break;
+        case 'night': startHour = APP_TIMELINE_START_HOUR; endHour = APP_TIMELINE_SPLIT_HOUR_1; break;
+        case 'morning': startHour = APP_TIMELINE_SPLIT_HOUR_1; endHour = APP_TIMELINE_SPLIT_HOUR_2; break;
+        case 'afternoon': startHour = APP_TIMELINE_SPLIT_HOUR_2; endHour = APP_TIMELINE_SPLIT_HOUR_3; break;
+        case 'evening': startHour = APP_TIMELINE_SPLIT_HOUR_3; endHour = APP_TIMELINE_END_HOUR; break;
     }
 
     const columnCalendarDate = getCalendarDateForColumn(dayOffset);
@@ -535,6 +543,7 @@ export default function DailyPlanner() {
                 </Button>
               </div>
               <div className="flex flex-col gap-px">
+                  {renderColumn(topDayOffset, 'night')}
                   {renderColumn(topDayOffset, 'morning')}
                   {renderColumn(topDayOffset, 'afternoon')}
                   {renderColumn(topDayOffset, 'evening')}
@@ -562,6 +571,7 @@ export default function DailyPlanner() {
                 </Button>
               </div>
               <div className="flex flex-col gap-px">
+                  {renderColumn(bottomDayOffset, 'night')}
                   {renderColumn(bottomDayOffset, 'morning')}
                   {renderColumn(bottomDayOffset, 'afternoon')}
                   {renderColumn(bottomDayOffset, 'evening')}

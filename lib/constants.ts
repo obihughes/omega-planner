@@ -31,11 +31,11 @@ export const TASK_COLORS = [
   'bg-gray-600 text-white dark:bg-gray-300 dark:text-gray-900',     // Deep Gray
 ];
 
-/** The earliest hour shown on the timeline (4 AM) */
-export const TIMELINE_START_HOUR = 4;
+/** The earliest hour shown on the timeline (12 AM) */
+export const TIMELINE_START_HOUR = 0;
 
-/** The latest hour shown on the timeline (1 AM next day) */
-export const TIMELINE_END_HOUR = 25; // Extends to 1 AM next day for overnight tasks
+/** The latest hour shown on the timeline (12 AM next day) */
+export const TIMELINE_END_HOUR = 24; 
 
 /** Minimum duration of a task in hours (15 minutes) */
 export const MIN_TASK_DURATION = 0.25; 
@@ -65,8 +65,10 @@ export const TASK_BASE_BOTTOM_PADDING = 33;
 // TASK_HEIGHT is derived: TIMELINE_COLUMN_HEIGHT - TASK_BASE_TOP - TASK_BASE_BOTTOM_PADDING;
 // It can be calculated where needed or defined here if preferred, like:
 // export const TASK_HEIGHT = TIMELINE_COLUMN_HEIGHT - TASK_BASE_TOP - TASK_BASE_BOTTOM_PADDING;
-export const TIMELINE_SPLIT_HOUR_1 = 11; // Morning/Afternoon split
-export const TIMELINE_SPLIT_HOUR_2 = 18; // Afternoon/Evening split
+export const TIMELINE_SPLIT_HOUR_1 = 6;  // 12am-6am
+export const TIMELINE_SPLIT_HOUR_2 = 12; // 6am-12pm
+export const TIMELINE_SPLIT_HOUR_3 = 18; // 12pm-6pm
+// The last segment is from 18 to 24 (6pm-12am)
 export const TIMELINE_HEADER_HEIGHT_PX = 28;
 export const GRID_LINE_STYLE = "border-l border-border/20 z-10"; // Subtle solid lines instead of dashed
 
