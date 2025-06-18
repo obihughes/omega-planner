@@ -197,68 +197,68 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             {isCompressed && (
               task.duration <= 0.25 ? (
                 // Tighter styles for 15-min tasks - Triangular formation
-                <div className="absolute bottom-px right-0 flex flex-col items-center z-50" onClick={(e) => e.stopPropagation()} style={{ pointerEvents: 'auto' }}>
+                <div className="absolute bottom-1 right-1 flex flex-col items-center z-50" onClick={(e) => e.stopPropagation()} style={{ pointerEvents: 'auto' }}>
                   <div className="flex justify-center"> {/* Centering for the top button */}
                     <button
                       type="button"
-                      className="h-2.5 w-2.5 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
+                      className="h-3 w-3 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); onViewNotes(task); }}
                       onMouseDown={(e) => e.stopPropagation()}
                       title="View task"
                     >
-                      <Eye className="w-1.5 h-1.5" /> {/* Adjusted icon size */}
+                      <Eye className="w-2 h-2" />
                     </button>
                   </div>
-                  <div className="flex items-center space-x-px mt-px"> {/* Bottom row with Copy and Edit, added small top margin */}
+                  <div className="flex items-center space-x-0.5 mt-0.5"> {/* Bottom row with Copy and Edit */}
                     <button
                       type="button"
-                      className="h-2.5 w-2.5 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
+                      className="h-3 w-3 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); onCopy(task); }}
                       onMouseDown={(e) => e.stopPropagation()}
                       title="Copy task"
                     >
-                      <Copy className="w-1.5 h-1.5" /> {/* Adjusted icon size */}
+                      <Copy className="w-2 h-2" />
                     </button>
                     <button
                       type="button"
-                      className="h-2.5 w-2.5 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
+                      className="h-3 w-3 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
                       onClick={handleEditClick}
                       onMouseDown={(e) => e.stopPropagation()}
                       title="Edit task"
                     >
-                      <Edit3 className="w-1.5 h-1.5" /> {/* Adjusted icon size */}
+                      <Edit3 className="w-2 h-2" />
                     </button>
                   </div>
                 </div>
               ) : (
                 // Linear (vertical) for 30-min tasks
-                <div className="absolute bottom-px right-0 flex flex-col items-end space-y-px z-50" onClick={(e) => e.stopPropagation()} style={{ pointerEvents: 'auto' }}>
+                <div className="absolute bottom-1 right-1 flex flex-col items-end space-y-0.5 z-50" onClick={(e) => e.stopPropagation()} style={{ pointerEvents: 'auto' }}>
                   <button
                     type="button"
-                    className="h-2.5 w-2.5 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
+                    className="h-3 w-3 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); onCopy(task); }}
                     onMouseDown={(e) => e.stopPropagation()}
                     title="Copy task"
                   >
-                    <Copy className="w-1.5 h-1.5" />
+                    <Copy className="w-2 h-2" />
                   </button>
                   <button
                     type="button"
-                    className="h-2.5 w-2.5 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
+                    className="h-3 w-3 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); onViewNotes(task); }}
                     onMouseDown={(e) => e.stopPropagation()}
                     title="View/Edit task"
                   >
-                    <Eye className="w-1.5 h-1.5" />
+                    <Eye className="w-2 h-2" />
                   </button>
                   <button
                     type="button"
-                    className="h-2.5 w-2.5 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
+                    className="h-3 w-3 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
                     onClick={handleEditClick}
                     onMouseDown={(e) => e.stopPropagation()}
                     title="Edit task"
                   >
-                    <Edit3 className="w-1.5 h-1.5" />
+                    <Edit3 className="w-2 h-2" />
                   </button>
                 </div>
               )
