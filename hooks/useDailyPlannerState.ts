@@ -312,7 +312,7 @@ export function useDailyPlanner() {
           )
         );
       } else {
-        console.log(`[Drag End] Success. Committing task ${finalDraggedTaskData.id} to new position: ${finalDraggedTaskData.baseDate.split('T')[0]} at ${finalDraggedTaskData.startHour}h.`);
+    
         // Commit the new position
         setTasks(currentTasks =>
           currentTasks.map(task =>
@@ -781,7 +781,7 @@ export function useDailyPlanner() {
     // --- MODIFIED DAY VIEW SETTINGS LOGIC ---
     _setTopDayOffset(DEFAULT_TOP_DAY_OFFSET);
     _setBottomDayOffset(DEFAULT_BOTTOM_DAY_OFFSET);
-    console.log('📅 Forcing application default day view settings and saving to storage.');
+
     TaskStorage.saveDayViewSettings({ topDayOffset: DEFAULT_TOP_DAY_OFFSET, bottomDayOffset: DEFAULT_BOTTOM_DAY_OFFSET });
     // --- END MODIFIED LOGIC ---
 

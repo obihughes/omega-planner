@@ -58,14 +58,25 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
     const columnCalendarDateKey = getCalendarDateForColumn(dayOffset);
     const tasksForThisColumnDate = tasksByDate.get(columnCalendarDateKey) || [];
 
-    const tasksToRender = tasksForThisColumnDate.filter(t => {
+    // Filter out the original instance of the task if it's being dragged from this column
+    const tasksWithoutDraggingOne = tasksForThisColumnDate.filter(t => {
         if (draggingTask && draggingTask.task.id === t.id) {
-            // Compare using the same YYYY-MM-DD format for consistency
-            return draggingTask.task.baseDate === columnCalendarDateKey;
+            return false; // Exclude it, we'll render the preview from draggingTask state
         }
         return true;
-    }).filter(t => {
-        const taskToConsider = (draggingTask && draggingTask.task.id === t.id) ? draggingTask.task : t;
+    });
+
+    // Create a mutable list of tasks to render
+    const tasksToRenderInColumn = [...tasksWithoutDraggingOne];
+
+    // If the task being dragged is over THIS column, add its preview to the render list
+    if (draggingTask && draggingTask.task.baseDate === columnCalendarDateKey) {
+        tasksToRenderInColumn.push(draggingTask.task);
+    }
+    
+    // Now, filter this combined list for the correct time period (morning, afternoon, etc.)
+    const finalTasksToRender = tasksToRenderInColumn.filter(t => {
+        const taskToConsider = t; // The task to check against the period's time boundaries
         return (
             (taskToConsider.startHour >= startHour && taskToConsider.startHour < endHour) ||
             (taskToConsider.startHour < startHour && taskToConsider.startHour + taskToConsider.duration > startHour)
@@ -170,8 +181,8 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
                     {Array.from({ length: endHour - startHour + 1 }).map((_, i) => (
                         <div key={`grid-${i}-${dayOffset}-${period}`} className={`border-l ${GRID_LINE_STYLE}`} style={{ left: `${i * PIXELS_PER_HOUR}px`, height: '100%', top: 0, position: 'absolute' }} />
                     ))}
-                    {tasksToRender.map((task) => {
-                        let displayTask = (draggingTask?.task.id === task.id) ? draggingTask.task : task;
+                    {finalTasksToRender.map((task) => {
+                        let displayTask = task; // Use the task from our calculated list
                         if (resizingTask?.task.id === task.id) {
                             displayTask = resizingTask.task;
                         }

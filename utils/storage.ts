@@ -50,7 +50,7 @@ const TaskStorage = {
     if (typeof window === 'undefined') return;
     
     // Log the tasks array being saved, especially looking for duplicate IDs
-    console.log('TaskStorage.save: Attempting to save tasks:', JSON.stringify(tasks));
+
     const idCounts = tasks.reduce<Record<string, number>>((acc, task) => {
       acc[task.id] = (acc[task.id] || 0) + 1;
       return acc;
@@ -69,7 +69,7 @@ const TaskStorage = {
       
       // Convert map back to array
       tasks = Array.from(uniqueTasksMap.values());
-      console.log('TaskStorage.save: Filtered out duplicates. Saving unique tasks:', tasks.length);
+
     }
     
     try {
@@ -104,7 +104,7 @@ const TaskStorage = {
         lastUpdated: new Date().toISOString()
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      console.log('Tasks saved successfully');
+
     } catch (err) {
       console.error('Failed to save tasks to localStorage', err);
     }
@@ -197,7 +197,7 @@ const TaskStorage = {
         lastUpdated: new Date().toISOString()
       };
       localStorage.setItem(POOL_STORAGE_KEY, JSON.stringify(data));
-      console.log('Pool tasks saved successfully');
+      
     } catch (err) {
       console.error('Failed to save pool tasks to localStorage', err);
     }
@@ -260,7 +260,7 @@ const TaskStorage = {
         lastUpdated: new Date().toISOString()
       };
       localStorage.setItem(PINNED_STORAGE_KEY, JSON.stringify(data));
-      console.log('Pinned tasks saved successfully');
+      
     } catch (err) {
       console.error('Failed to save pinned tasks to localStorage', err);
     }
@@ -294,7 +294,7 @@ const TaskStorage = {
     if (typeof window === 'undefined') return;
     try {
       localStorage.setItem(DAY_VIEW_SETTINGS_KEY, JSON.stringify(settings));
-      console.log('Day view settings saved successfully');
+      
     } catch (err) {
       console.error('Failed to save day view settings to localStorage', err);
     }

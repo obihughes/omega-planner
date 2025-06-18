@@ -321,8 +321,7 @@ export function useModalManager({
     const isNew = options?.isNew ?? activeEditModalTask?.isNew ?? false;
     const isFromPool = options?.isFromPool ?? activeEditModalTask?.isFromPool ?? false;
 
-    console.log("[useModalManager] saveTaskFromModal called. isNew:", isNew, "isFromPool:", isFromPool, "Task ID:", taskDataFromForm.id);
-    console.log("[useModalManager] Task data from form:", JSON.parse(JSON.stringify(taskDataFromForm)));
+
 
     if (isNew) {
       if (!taskDataFromForm.name || !taskDataFromForm.baseDate) {
@@ -356,10 +355,10 @@ export function useModalManager({
       }
       const { id, ...updatedFields } = taskDataFromForm;
       if (isFromPool) {
-        console.log("[useModalManager] Updating POOL task ID:", id, "with fields:", updatedFields);
+
         onUpdatePoolTask(id, updatedFields);
       } else {
-        console.log("[useModalManager] Updating TIMELINE task ID:", id, "with fields:", updatedFields);
+        
         onUpdateTask(id, updatedFields);
       }
     }

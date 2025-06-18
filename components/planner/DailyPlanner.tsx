@@ -27,7 +27,7 @@ import {
 import { MemoizedTaskCard } from './TaskCard';
 import { EditTaskModal } from './EditTaskModal';
 import { ViewTaskNotesModal } from './ViewTaskNotesModal';
-import { getCalendarDateForColumn, getDateKeyFromOffset } from '../../utils/dateUtils';
+import { getCalendarDateForColumn, getDateKeyFromOffset, dateFromDateKey } from '../../utils/dateUtils';
 import { resolveCollisionsForResize, resolveCollisionsForDrag } from '../../utils/taskUtils';
 
 type TimelinePeriod = 'night' | 'morning' | 'afternoon' | 'evening';
@@ -191,6 +191,14 @@ export default function DailyPlanner() {
     // Use elementFromPoint to find the element underneath the mouse cursor
     const elementUnderMouse = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement;
     const dropZone = elementUnderMouse?.closest('[data-testid^="timeline-area-"]') as HTMLElement;
+    
+    console.log("🐛 [DRAG] handleMouseMoveDrag", { 
+      taskId: draggedTaskItem.id, 
+      mouseX: e.clientX, 
+      mouseY: e.clientY,
+      foundDropZone: !!dropZone,
+      dropZoneTestId: dropZone?.getAttribute('data-testid')
+    });
 
     if (dropZone) {
       const dayOffsetAttr = dropZone.getAttribute('data-day-offset');
@@ -233,21 +241,36 @@ export default function DailyPlanner() {
       );
 
       if (collisionResult.canMove) {
+        console.log("🐛 [DRAG] Updating dragging task position", { 
+          taskId: draggedTaskItem.id,
+          newStartHour: collisionResult.snappedNewStartHour, 
+          newBaseDate: targetDateKey,
+          targetDayOffset 
+        });
         setDraggingTask(prev => {
           if (!prev || !prev.task) return null;
           if (prev.task.startHour === collisionResult.snappedNewStartHour && prev.task.baseDate === targetDateKey) {
             return prev;
           }
+          console.log("🐛 [DRAG] Actually updating dragging task state");
           return { ...prev, task: { ...prev.task, startHour: collisionResult.snappedNewStartHour, baseDate: targetDateKey } };
         });
+      } else {
+        console.log("🐛 [DRAG] Cannot move due to collision", { taskId: draggedTaskItem.id });
       }
     }
   }, [draggingTask, setDraggingTask, tasksByDate]);
 
   const handleMouseUp = useCallback(() => {
     if (draggingTask && draggingTask.task) {
+        console.log("🐛 [DRAG] handleMouseUp - Saving dragged task", { 
+          taskId: draggingTask.task.id, 
+          finalBaseDate: draggingTask.task.baseDate, 
+          finalStartHour: draggingTask.task.startHour 
+        });
         saveTaskFromModal(draggingTask.task, { isNew: false }); 
         setDraggingTask(null);
+        console.log("🐛 [DRAG] handleMouseUp - Drag operation completed");
     }
     
     if (resizingTask && resizingTask.task) {
@@ -355,19 +378,21 @@ export default function DailyPlanner() {
   };
 
   const handleDragStart = (task: Task, e: React.MouseEvent) => {
-    e.stopPropagation();
+    console.log("🐛 [DRAG] handleDragStart called", { taskId: task.id, taskName: task.name, baseDate: task.baseDate });
     e.preventDefault();
+    cancelCopy();
+    setResizingTask(null);
     
-    const taskElement = e.currentTarget as HTMLElement;
-    const rect = taskElement.getBoundingClientRect();
+    const rect = e.currentTarget.getBoundingClientRect();
     const offsetX = e.clientX - rect.left;
-
-    setDraggingTask({
+    
+    console.log("🐛 [DRAG] Setting draggingTask state", { offsetX, initialMouseY: e.clientY });
+    setDraggingTask({ 
+      task: { ...task }, 
+      offsetX,
       initialMouseY: e.clientY,
       initialStartHour: task.startHour,
-      task: { ...task },
-      offsetX: offsetX,
-      taskElement: null, 
+      taskElement: null
     });
   };
 
@@ -407,8 +432,14 @@ export default function DailyPlanner() {
 
     // If a task is being dragged, check if it belongs in this column
     if (draggingTask) {
-        const draggedTaskDateKey = getDateKeyFromOffset(draggingTask.task.baseDate);
+        console.log("🐛 [DRAG] Checking if dragged task belongs in this column", { 
+            draggedTaskBaseDate: draggingTask.task.baseDate, 
+            columnDateKey: dateKey,
+            dayOffset
+        });
+        const draggedTaskDateKey = draggingTask.task.baseDate; // baseDate is already YYYY-MM-DD
         if (draggedTaskDateKey === dateKey) {
+            console.log("🐛 [DRAG] Adding dragged task to column render list");
             tasksToDisplay.push(draggingTask.task);
         }
     }
@@ -572,7 +603,7 @@ export default function DailyPlanner() {
                       isOpen={true}
                       setIsOpen={() => {}}
                       onActualAddPoolTask={handleActualAddPoolTask}
-                      onAddTaskToTimeline={(task, dayOffset) => { startCopy(task); const targetDateKey = getCalendarDateForColumn(dayOffset); const targetDate = new Date(targetDateKey + 'T00:00:00.000'); handleDropCopy(targetDate, task.startHour || 9); }}
+                      onAddTaskToTimeline={(task, dayOffset) => { startCopy(task); const targetDateKey = getCalendarDateForColumn(dayOffset); const targetDate = dateFromDateKey(targetDateKey); handleDropCopy(targetDate, task.startHour || 9); }}
                       onDeletePoolTask={handleDeletePoolTask}
                       onClearPool={clearPool}
                       openEditModal={(task, isFromPool) => openEditModal(task, { isFromPool: isFromPool })}
@@ -639,7 +670,7 @@ export default function DailyPlanner() {
                         </span>
                     )}
                 </div>
-                <Button onClick={() => cloneDayTasks(getCalendarDateForColumn(bottomDayOffset), getCalendarDateForColumn(topDayOffset))} title="Clone tasks to the other visible day">
+                <Button onClick={() => cloneDayTasks(dateFromDateKey(getCalendarDateForColumn(bottomDayOffset)), dateFromDateKey(getCalendarDateForColumn(topDayOffset)))} title="Clone tasks to the other visible day">
                     Clone to {bottomDayOffset < topDayOffset ? 'Top' : 'Bottom'}
                 </Button>
               </div>
