@@ -703,8 +703,8 @@ export function YearCalendar({
     <div className={`${className} relative`}>
       {/* Year Navigation & Controls */}
       <div 
-        className="sticky top-16 z-40 bg-background/95 backdrop-blur-sm flex items-center justify-center gap-4 relative border-b border-border shadow-sm h-14 -mb-14 -mt-6"
-        style={{ position: 'sticky', top: '4rem', zIndex: 40 }}
+        className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm flex items-center justify-center gap-4 relative border-b border-border shadow-sm h-14 -mb-14"
+        style={{ position: 'sticky', top: '0', zIndex: 40 }}
       >
         <div className="flex-1"> {headerLeftControls}</div>
         
@@ -773,7 +773,7 @@ export function YearCalendar({
       
       {/* 12-Month Grid */}
       <div className={cn(
-        "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-10 transition-opacity pt-14 mt-6",
+        "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-10 transition-opacity pt-14 mt-2",
         {
           'cursor-crosshair': eraserMode,
           'opacity-50 pointer-events-none': isLoading

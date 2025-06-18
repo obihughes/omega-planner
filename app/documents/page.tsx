@@ -9,7 +9,7 @@ const Documents = lazy(() => import('@/components/documents/Documents'));
 export default function DocumentsPage() {
   return (
     <AppLayout>
-      <div className="p-6">
+      <div className="px-6 pb-6">
         <div className="max-w-7xl mx-auto">
           <Suspense fallback={
             <div className="flex items-center justify-center h-96">
