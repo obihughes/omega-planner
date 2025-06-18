@@ -227,18 +227,18 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
                       </div>
                     </div>
                     
-                    {/* Action buttons */}
-                    <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* Action buttons - stacked vertically */}
+                    <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         type="button"
                         className="h-6 w-6 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                         onClick={(e) => {
                           e.stopPropagation();
-                          onUnpinTask(pinnedTask.pinnedId);
+                          setViewingPinnedTaskNotes(pinnedTask);
                         }}
-                        title="Unpin task"
+                        title="View Notes"
                       >
-                        <PinOff className="w-3 h-3" />
+                        <EyeIcon className="w-3 h-3" />
                       </button>
                       <button
                         type="button"
@@ -256,11 +256,11 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
                         className="h-6 w-6 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setViewingPinnedTaskNotes(pinnedTask);
+                          onUnpinTask(pinnedTask.pinnedId);
                         }}
-                        title="View Notes"
+                        title="Unpin task"
                       >
-                        <EyeIcon className="w-3 h-3" />
+                        <PinOff className="w-3 h-3" />
                       </button>
                     </div>
                   </div>
@@ -292,16 +292,20 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
             className="relative bg-card rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 p-6 w-full max-w-lg space-y-4"
             onDoubleClick={() => setViewingPinnedTaskNotes(null)}
           >
+            {/* Close button in top-right corner */}
             <button 
               type="button"
               onClick={() => setViewingPinnedTaskNotes(null)}
               className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors z-10 p-1 rounded-full hover:bg-accent"
               aria-label="Close notes view"
             >
-              <PinOff className="w-5 h-5" />
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
 
-            <h3 className="text-xl font-semibold pr-8 line-clamp-3 text-foreground">
+            {/* Task title */}
+            <h3 className="text-xl font-semibold line-clamp-3 text-foreground">
               {viewingPinnedTaskNotes.name}
             </h3>
 
@@ -314,7 +318,18 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
                 No notes for this task.
               </p>
             )}
-            <div className="flex justify-end items-center pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
+            <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
+                <button 
+                  type="button"
+                  onClick={() => {
+                    onUnpinTask(viewingPinnedTaskNotes.pinnedId);
+                    setViewingPinnedTaskNotes(null);
+                  }}
+                  className="px-4 py-2 text-sm bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 rounded-lg transition-colors font-medium flex items-center gap-2"
+                >
+                  <PinOff className="w-4 h-4" />
+                  Unpin
+                </button>
                 <button 
                   className="px-4 py-2 text-sm bg-accent hover:bg-accent/80 rounded-lg transition-colors font-medium text-foreground"
                   onClick={() => setViewingPinnedTaskNotes(null)}
