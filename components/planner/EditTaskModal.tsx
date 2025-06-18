@@ -8,7 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { cn } from "../../lib/utils";
-import { getDateWithoutTime } from '@/utils/dateUtils';
+import { getDateWithoutTime, dateFromDateKey, getDateKey } from '@/utils/dateUtils';
 
 /**
  * Props for the EditTaskModal component.
@@ -60,7 +60,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   const [color, setColor] = useState(taskToEdit.color || TASK_COLORS[DEFAULT_TASK_COLOR_INDEX]);
   const [notes, setNotes] = useState(taskToEdit.notes || '');
   const [selectedDate, setSelectedDate] = useState<Date>(
-    taskToEdit.baseDate ? getDateWithoutTime(taskToEdit.baseDate) : getDateWithoutTime(new Date().toISOString())
+    taskToEdit.baseDate ? dateFromDateKey(taskToEdit.baseDate) : new Date()
   );
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [isDurationDropdownOpen, setIsDurationDropdownOpen] = useState(false); // Added this state
@@ -77,7 +77,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
     setColor(taskToEdit.color || TASK_COLORS[DEFAULT_TASK_COLOR_INDEX]);
     setNotes(taskToEdit.notes || '');
     setSelectedDate(
-      taskToEdit.baseDate ? getDateWithoutTime(taskToEdit.baseDate) : getDateWithoutTime(new Date().toISOString())
+      taskToEdit.baseDate ? dateFromDateKey(taskToEdit.baseDate) : new Date()
     );
     if (taskToEdit.isNew && nameInputRef.current) {
       nameInputRef.current.focus();
@@ -141,9 +141,6 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    const normalizedBaseDate = new Date(selectedDate);
-    normalizedBaseDate.setUTCHours(0,0,0,0); 
-    
     const finalTask: Task = {
       ...taskToEdit,
       name,
@@ -151,7 +148,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
       duration,
       color,
       notes,
-      baseDate: normalizedBaseDate.toISOString() 
+      baseDate: getDateKey(selectedDate)
     };
     onSave(finalTask, { isNew: taskToEdit.isNew, isFromPool: taskToEdit.isFromPool });
     onClose();
@@ -318,7 +315,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                       duration,
                       color,
                       notes,
-                      baseDate: selectedDate.toISOString(),
+                      baseDate: getDateKey(selectedDate),
                       completed: taskDataForCopy.completed,
                     });
                   }}
@@ -335,7 +332,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                     const taskToPin = { 
                       ...taskToEdit, 
                       name, startHour, duration, color, notes, 
-                      baseDate: selectedDate.toISOString() 
+                      baseDate: getDateKey(selectedDate) 
                     };
                     onPinTask(taskToPin);
                   }}

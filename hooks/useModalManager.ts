@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Task } from '@/types/planner';
 import { TASK_COLORS } from '@/lib/constants';
+import { dateFromDateKey } from '@/utils/dateUtils';
 
 /**
  * Interface for modal-related task data
@@ -330,8 +331,8 @@ export function useModalManager({
         alert("New task must have a name and a date.");
         return;
       }
-      // Ensure baseDate is a Date object before passing to onAddTask
-      const targetDate = new Date(taskDataFromForm.baseDate);
+      // Convert YYYY-MM-DD to Date object properly to avoid timezone issues
+      const targetDate = dateFromDateKey(taskDataFromForm.baseDate);
       // onAddTask expects dayOffset to be 0 if targetDate is the specific calendar date.
       // taskDataFromForm should have duration, color, notes, completed already set.
       onAddTask(

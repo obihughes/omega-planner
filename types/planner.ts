@@ -17,7 +17,10 @@ export interface Task {
   /** CSS background color class for the task (Tailwind class name) */
   color: string;
   
-  /** ISO string of the date when the task was created (reference date for dayOffset) */
+  /**
+   * Calendar date in YYYY-MM-DD format (e.g., "2023-10-27").
+   * Represents the day this task is scheduled for, without timezone information.
+   */
   baseDate: string;
   
   /** Notes associated with the task */

@@ -14,7 +14,7 @@ import {
     DEFAULT_TASK_COLOR_INDEX,
     TASK_COLORS
 } from '../../lib/constants';
-import { getCalendarDateForColumn, getDateWithoutTime, isSameCalendarDate, getDateKey } from '../../utils/dateUtils';
+import { getCalendarDateForColumn, getDateWithoutTime, isSameCalendarDate, dateFromDateKey } from '../../utils/dateUtils';
 import { formatTime } from '@/utils/formatters';
 
 interface TimelineColumnProps {
@@ -55,14 +55,13 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
         case 'evening': startHour = TIMELINE_SPLIT_HOUR_2; endHour = TIMELINE_END_HOUR; break;
     }
 
-    const columnCalendarDate = getCalendarDateForColumn(dayOffset);
-    const dateKey = getDateKey(columnCalendarDate);
-    const tasksForThisColumnDate = tasksByDate.get(dateKey) || [];
+    const columnCalendarDateKey = getCalendarDateForColumn(dayOffset);
+    const tasksForThisColumnDate = tasksByDate.get(columnCalendarDateKey) || [];
 
     const tasksToRender = tasksForThisColumnDate.filter(t => {
         if (draggingTask && draggingTask.task.id === t.id) {
-            const draggingTaskTargetDate = getDateWithoutTime(draggingTask.task.baseDate);
-            return isSameCalendarDate(draggingTaskTargetDate, columnCalendarDate);
+            // Compare using the same YYYY-MM-DD format for consistency
+            return draggingTask.task.baseDate === columnCalendarDateKey;
         }
         return true;
     }).filter(t => {
@@ -103,7 +102,8 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
         const hourInBlock = (clickXrelative / PIXELS_PER_HOUR);
         const calculatedNewStartHour = startHour + hourInBlock;
         const snappedNewStartHour = Math.round(calculatedNewStartHour * 4) / 4;
-        const targetDate = getCalendarDateForColumn(dayOffset);
+        const targetDateKey = getCalendarDateForColumn(dayOffset);
+        const targetDate = dateFromDateKey(targetDateKey);
         handleDropCopy(targetDate, snappedNewStartHour);
     };
 
@@ -120,13 +120,13 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
         let snappedNewStartHour = Math.round(calculatedNewStartHour * 4) / 4;
         snappedNewStartHour = Math.max(TIMELINE_START_HOUR, Math.min(snappedNewStartHour, TIMELINE_END_HOUR - 1));
         
-        const targetDate = getCalendarDateForColumn(dayOffset);
+        const targetDateKey = getCalendarDateForColumn(dayOffset);
         const newTaskDefaults: Task = {
             id: `temp-new-task-${now}`,
             name: "New Task",
             startHour: snappedNewStartHour,
             duration: 1,
-            baseDate: targetDate.toISOString(),
+            baseDate: targetDateKey,
             color: TASK_COLORS[DEFAULT_TASK_COLOR_INDEX],
             notes: "",
             completed: false,

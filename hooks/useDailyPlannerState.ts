@@ -17,7 +17,7 @@ import {
 } from '../lib/constants';
 import { useModalManager } from './useModalManager';
 import type { ActiveModalTask as ImportedActiveModalTask } from './useModalManager';
-import { getDateWithoutTime as getUtilDateWithoutTime, isSameCalendarDate as utilIsSameCalendarDate, getCalendarDateForColumn, getDateKey } from '../utils/dateUtils'; // Import the utility
+import { getDateKeyFromOffset, dateFromDateKey, getTodayDateKey, addDaysToDateKey, getDateKey } from '../utils/dateUtils'; // Import the new utility functions
 // import { checkOverlap } from '../utils/taskUtils'; // checkOverlap is available via wildcard import
 
 // Define the type for the resizingTask state
@@ -87,10 +87,8 @@ export function useDailyPlanner() {
   const tasksByDate = useMemo(() => {
     const map = new Map<string, Task[]>();
     tasks.forEach(task => {
-      // Ensure baseDate is a valid string and normalize it to local timezone
-      const dateNormalized = getUtilDateWithoutTime(task.baseDate);
-      // Generate consistent date key using utility function
-      const dateStr = getDateKey(dateNormalized);
+      // baseDate is already in YYYY-MM-DD format, use it directly
+      const dateStr = task.baseDate;
       
       if (!map.has(dateStr)) {
         map.set(dateStr, []);
@@ -209,33 +207,29 @@ export function useDailyPlanner() {
 
   /**
    * Adds a new task to the main timeline.
-   * The new task's 'baseDate' is set to midnight of the provided 'targetDate'.
-   * Its 'dayOffset' will be 0 relative to this 'baseDate'.
-   * @param {Date} targetDate - The specific calendar date for the new task.
+   * @param {Date|string} targetDate - The target date (Date object or YYYY-MM-DD string).
    * @param {number} startHour - The start hour for the new task.
    * @param {object} taskData - Object containing name, duration, and color for the new task.
-   * @param {number} [dayOffset=0] - Should generally be 0 as targetDate now defines the specific day.
-   *                                 Included for flexibility but defaults to 0.
+   * @param {number} [dayOffset=0] - Kept for backward compatibility, ignored.
    */
   const handleAddTask = useCallback((
-    targetDate: Date,
+    targetDate: Date | string,
     startHour: number,
     taskData: { name: string; duration: number; color: string; notes?: string; completed?: boolean; },
-    dayOffset: number = 0 // Default dayOffset to 0
+    dayOffset: number = 0 // Kept for backward compatibility
   ) => {
-    // Create a normalized base date from the targetDate with time set to midnight
-    const normalizedBaseDate = new Date(targetDate);
-    normalizedBaseDate.setUTCHours(0, 0, 0, 0);
+    // Convert to YYYY-MM-DD format
+    const baseDateKey = typeof targetDate === 'string' ? targetDate : getDateKey(targetDate);
     
     const newTask: Task = {
       id: getNextId(),
       name: taskData.name,
       startHour,
       duration: taskData.duration,
-      color: taskData.color || TASK_COLORS[DEFAULT_TASK_COLOR_INDEX], // Use default color index
-      baseDate: normalizedBaseDate.toISOString(), // baseDate is the normalized targetDate
-      notes: taskData.notes || "", // Add notes with default
-      completed: taskData.completed || false // Add completed status with default
+      color: taskData.color || TASK_COLORS[DEFAULT_TASK_COLOR_INDEX],
+      baseDate: baseDateKey, // Use the YYYY-MM-DD string
+      notes: taskData.notes || "",
+      completed: taskData.completed || false
     };
     
     setTasks(prevTasks => [...prevTasks, newTask]);
@@ -291,13 +285,12 @@ export function useDailyPlanner() {
     if (draggingTask) {
       const { task: finalDraggedTaskData, initialStartHour } = draggingTask;
       
-      const originalDate = getUtilDateWithoutTime(getCalendarDateForColumn(0).toISOString());
-      const finalTargetDate = getUtilDateWithoutTime(finalDraggedTaskData.baseDate);
+      const originalDate = getTodayDateKey(); // Today's date in YYYY-MM-DD format
+      const finalTargetDate = finalDraggedTaskData.baseDate; // Already in YYYY-MM-DD format
 
       const otherTasksOnFinalDate = tasks.filter(t => {
         if (t.id === finalDraggedTaskData.id) return false;
-        const otherTaskDate = getUtilDateWithoutTime(t.baseDate);
-        return utilIsSameCalendarDate(otherTaskDate, finalTargetDate);
+        return t.baseDate === finalTargetDate; // Simple string comparison
       });
 
       let conflict = false;
@@ -314,7 +307,7 @@ export function useDailyPlanner() {
         setTasks(currentTasks =>
           currentTasks.map(task =>
             task.id === finalDraggedTaskData.id
-              ? { ...task, startHour: initialStartHour, baseDate: originalDate.toISOString() }
+              ? { ...task, startHour: initialStartHour, baseDate: originalDate }
               : task
           )
         );
@@ -584,7 +577,7 @@ export function useDailyPlanner() {
 
     // Normalize the targetDate to midnight for the baseDate
     const normalizedBaseDate = new Date(targetDate);
-    normalizedBaseDate.setUTCHours(0, 0, 0, 0);
+    normalizedBaseDate.setHours(0, 0, 0, 0);
 
     const newTask: Task = {
       ...copyingTaskData, // Spread properties from the source task being copied
@@ -607,24 +600,23 @@ export function useDailyPlanner() {
    * @param {Date} destinationCalendarDate - The specific calendar date to which tasks will be cloned (normalized to midnight).
    */
   const cloneDayTasks = useCallback((sourceCalendarDate: Date, destinationCalendarDate: Date) => {
-    const sourceDateNormalized = getUtilDateWithoutTime(sourceCalendarDate.toISOString());
-    const destinationDateForComparison = getUtilDateWithoutTime(destinationCalendarDate.toISOString());
+    // Convert Date objects to YYYY-MM-DD format using our utility
+    const sourceDateKey = getDateKey(sourceCalendarDate);
+    const destinationDateKey = getDateKey(destinationCalendarDate);
 
     const tasksFromSourceDay = tasks.filter(task => {
-      const taskCalendarDate = getUtilDateWithoutTime(task.baseDate);
-      return utilIsSameCalendarDate(taskCalendarDate, sourceDateNormalized);
+      return task.baseDate === sourceDateKey; // Simple string comparison
     });
 
     const existingDestinationTasks = tasks.filter(t => {
-      const taskAbsDate = getUtilDateWithoutTime(t.baseDate);
-      return utilIsSameCalendarDate(taskAbsDate, destinationDateForComparison);
+      return t.baseDate === destinationDateKey; // Simple string comparison
     });
     
     const newClonedTasks = tasksFromSourceDay.map(sourceTask => {
       const newTask: Task = {
         ...sourceTask,
         id: getNextId(),
-        baseDate: destinationDateForComparison.toISOString()
+        baseDate: destinationDateKey // Use the YYYY-MM-DD string directly
       };
       return newTask;
     });

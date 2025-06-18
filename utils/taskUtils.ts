@@ -1,5 +1,4 @@
-import { Task } from '../types/planner'; // Assuming Task type is needed
-import { getDateWithoutTime, isSameCalendarDate } from './dateUtils'; // For date comparisons
+import { Task } from '../types/planner';
 
 /**
  * Checks if two tasks, defined by their start times and durations, overlap.
@@ -45,12 +44,10 @@ export const resolveCollisionsForResize = (
   let resolvedDuration = proposedDuration;
   let collided = false;
 
-  const taskCalendarDate = getDateWithoutTime(taskToResizeDetails.baseDate);
-
+  // Filter tasks on the same day using simple string comparison
   const otherTasksOnSameDay = allTasks.filter(t => {
     if (t.id === taskToResizeDetails.id) return false;
-    const otherTaskCalendarDate = getDateWithoutTime(t.baseDate);
-    return isSameCalendarDate(otherTaskCalendarDate, taskCalendarDate);
+    return t.baseDate === taskToResizeDetails.baseDate;
   });
 
   if (edgeBeingResized === 'start') {
@@ -98,7 +95,7 @@ export interface CollisionResolutionDragResult {
  * Resolves collisions for a task being dragged to a new position.
  * @param draggedTaskDetails - Essential details of the task being dragged.
  * @param proposedStartHour - The proposed new start hour for the dragged task.
- * @param targetColumnDate - The calendar date of the column the task is being dragged over.
+ * @param targetDateKey - The target date in YYYY-MM-DD format.
  * @param allTasks - An array of all tasks.
  * @param timelineStartHour - The earliest hour in the timeline.
  * @param timelineEndHour - The latest hour in the timeline.
@@ -107,7 +104,7 @@ export interface CollisionResolutionDragResult {
 export const resolveCollisionsForDrag = (
   draggedTaskDetails: { id: string; duration: number; baseDate: string },
   proposedStartHour: number,
-  targetColumnDate: Date,
+  targetDateKey: string,
   allTasks: Task[],
   timelineStartHour: number,
   timelineEndHour: number
@@ -116,10 +113,10 @@ export const resolveCollisionsForDrag = (
   const taskDuration = draggedTaskDetails.duration;
   let canMove = true;
 
+  // Filter tasks on the target date using simple string comparison
   const otherTasksOnTargetDate = allTasks.filter(t => {
     if (t.id === draggedTaskDetails.id) return false;
-    const taskAbsDate = getDateWithoutTime(t.baseDate);
-    return isSameCalendarDate(taskAbsDate, targetColumnDate);
+    return t.baseDate === targetDateKey;
   });
 
   for (const otherTask of otherTasksOnTargetDate) {

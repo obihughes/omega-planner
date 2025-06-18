@@ -27,7 +27,7 @@ import {
 import { MemoizedTaskCard } from './TaskCard';
 import { EditTaskModal } from './EditTaskModal';
 import { ViewTaskNotesModal } from './ViewTaskNotesModal';
-import { getCalendarDateForColumn, getDateKey, getDateKeyFromISOString } from '../../utils/dateUtils';
+import { getCalendarDateForColumn, getDateKeyFromOffset } from '../../utils/dateUtils';
 import { resolveCollisionsForResize, resolveCollisionsForDrag } from '../../utils/taskUtils';
 
 type TimelinePeriod = 'night' | 'morning' | 'afternoon' | 'evening';
@@ -128,7 +128,7 @@ export default function DailyPlanner() {
         livePreviewDuration = nearestSnapPoint - initialStartHour;
     }
 
-    const resizeDateKey = getDateKeyFromISOString(originalTaskAtResizeStart.baseDate);
+          const resizeDateKey = originalTaskAtResizeStart.baseDate; // Already in YYYY-MM-DD format
     
     const collisionResult = resolveCollisionsForResize(
       { 
@@ -220,16 +220,13 @@ export default function DailyPlanner() {
       
       let snappedNewStartHour = Math.round(newStartHour * 4) / 4;
 
-      const targetColumnDate = getCalendarDateForColumn(targetDayOffset);
-
-      // Use the same date key format as in useDailyPlannerState.ts
-      const targetDateKey = getDateKey(targetColumnDate);
+      const targetDateKey = getCalendarDateForColumn(targetDayOffset);
       const tasksForTargetDate = tasksByDate.get(targetDateKey) || [];
       
       const collisionResult = resolveCollisionsForDrag(
         { id: draggedTaskItem.id, duration: taskDuration, baseDate: draggedTaskItem.baseDate },
         snappedNewStartHour,
-        targetColumnDate,
+        targetDateKey,
         tasksForTargetDate,
         APP_TIMELINE_START_HOUR,
         APP_TIMELINE_END_HOUR
@@ -238,11 +235,10 @@ export default function DailyPlanner() {
       if (collisionResult.canMove) {
         setDraggingTask(prev => {
           if (!prev || !prev.task) return null;
-          const newBaseDateIso = targetColumnDate.toISOString();
-          if (prev.task.startHour === collisionResult.snappedNewStartHour && prev.task.baseDate === newBaseDateIso) {
+          if (prev.task.startHour === collisionResult.snappedNewStartHour && prev.task.baseDate === targetDateKey) {
             return prev;
           }
-          return { ...prev, task: { ...prev.task, startHour: collisionResult.snappedNewStartHour, baseDate: newBaseDateIso } };
+          return { ...prev, task: { ...prev.task, startHour: collisionResult.snappedNewStartHour, baseDate: targetDateKey } };
         });
       }
     }
@@ -324,13 +320,14 @@ export default function DailyPlanner() {
       }
       const hourInBlock = (clickXrelative / APP_PIXELS_PER_HOUR);
       const snappedNewStartHour = Math.round((baseHourForCalc + hourInBlock) * 4) / 4;
-      const targetDate = getCalendarDateForColumn(dayOffset);
+      const targetDateKey = getCalendarDateForColumn(dayOffset);
+
       const newTaskDefaults: Task = {
           id: `temp-new-task-${Date.now()}`,
           name: "New Task", 
           startHour: snappedNewStartHour,
           duration: 1,
-          baseDate: targetDate.toISOString(),
+          baseDate: targetDateKey, // Use YYYY-MM-DD format directly
           color: TASK_COLORS[DEFAULT_TASK_COLOR_INDEX],
           notes: "",
           completed: false,
@@ -351,7 +348,9 @@ export default function DailyPlanner() {
       }
       const hourInBlock = clickXrelative / APP_PIXELS_PER_HOUR;
       const snappedNewStartHour = Math.round((baseHourForCalc + hourInBlock) * 4) / 4;
-      const targetDate = getCalendarDateForColumn(dayOffset);
+      const targetDateKey = getCalendarDateForColumn(dayOffset);
+      // Convert string back to Date for handleDropCopy compatibility
+      const targetDate = new Date(targetDateKey + 'T00:00:00.000');
       handleDropCopy(targetDate, snappedNewStartHour);
   };
 
@@ -398,8 +397,7 @@ export default function DailyPlanner() {
             break;
     }
 
-    const columnCalendarDate = getCalendarDateForColumn(dayOffset);
-    const dateKey = getDateKey(columnCalendarDate);
+    const dateKey = getCalendarDateForColumn(dayOffset);
     const tasksForThisColumnDate = tasksByDate.get(dateKey) || [];
     
     // Filter out the original task if it's being dragged
@@ -409,7 +407,7 @@ export default function DailyPlanner() {
 
     // If a task is being dragged, check if it belongs in this column
     if (draggingTask) {
-        const draggedTaskDateKey = getDateKeyFromISOString(draggingTask.task.baseDate);
+        const draggedTaskDateKey = getDateKeyFromOffset(draggingTask.task.baseDate);
         if (draggedTaskDateKey === dateKey) {
             tasksToDisplay.push(draggingTask.task);
         }
@@ -574,7 +572,7 @@ export default function DailyPlanner() {
                       isOpen={true}
                       setIsOpen={() => {}}
                       onActualAddPoolTask={handleActualAddPoolTask}
-                      onAddTaskToTimeline={(task, dayOffset) => { startCopy(task); const targetDate = getCalendarDateForColumn(dayOffset); handleDropCopy(targetDate, task.startHour || 9); }}
+                      onAddTaskToTimeline={(task, dayOffset) => { startCopy(task); const targetDateKey = getCalendarDateForColumn(dayOffset); const targetDate = new Date(targetDateKey + 'T00:00:00.000'); handleDropCopy(targetDate, task.startHour || 9); }}
                       onDeletePoolTask={handleDeletePoolTask}
                       onClearPool={clearPool}
                       openEditModal={(task, isFromPool) => openEditModal(task, { isFromPool: isFromPool })}
@@ -611,7 +609,7 @@ export default function DailyPlanner() {
                     </span>
                   )}
                 </div>
-                <Button onClick={() => openEditModal({ id: `temp-new-task-${Date.now()}`, name: "New Task", startHour: 9, duration: 1, baseDate: getCalendarDateForColumn(topDayOffset).toISOString(), color: TASK_COLORS[DEFAULT_TASK_COLOR_INDEX], notes: "", completed: false }, { isNew: true })}>
+                <Button onClick={() => openEditModal({ id: `temp-new-task-${Date.now()}`, name: "New Task", startHour: 9, duration: 1, baseDate: getCalendarDateForColumn(topDayOffset), color: TASK_COLORS[DEFAULT_TASK_COLOR_INDEX], notes: "", completed: false }, { isNew: true })}>
                     Add Task
                 </Button>
               </div>
