@@ -201,7 +201,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   <div className="flex justify-center"> {/* Centering for the top button */}
                     <button
                       type="button"
-                      className="h-3 w-3 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
+                      className="h-3 w-3 p-0 text-muted-foreground dark:text-black hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); onViewNotes(task); }}
                       onMouseDown={(e) => e.stopPropagation()}
                       title="View task"
@@ -212,7 +212,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   <div className="flex items-center space-x-0.5 mt-0.5"> {/* Bottom row with Copy and Edit */}
                     <button
                       type="button"
-                      className="h-3 w-3 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
+                      className="h-3 w-3 p-0 text-muted-foreground dark:text-black hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); onCopy(task); }}
                       onMouseDown={(e) => e.stopPropagation()}
                       title="Copy task"
@@ -221,7 +221,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                     </button>
                     <button
                       type="button"
-                      className="h-3 w-3 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
+                      className="h-3 w-3 p-0 text-muted-foreground dark:text-black hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
                       onClick={handleEditClick}
                       onMouseDown={(e) => e.stopPropagation()}
                       title="Edit task"
@@ -235,7 +235,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 <div className="absolute bottom-1 right-1 flex flex-col items-end space-y-0.5 z-50" onClick={(e) => e.stopPropagation()} style={{ pointerEvents: 'auto' }}>
                   <button
                     type="button"
-                    className="h-3 w-3 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
+                    className="h-3 w-3 p-0 text-muted-foreground dark:text-black hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); onCopy(task); }}
                     onMouseDown={(e) => e.stopPropagation()}
                     title="Copy task"
@@ -244,7 +244,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   </button>
                   <button
                     type="button"
-                    className="h-3 w-3 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
+                    className="h-3 w-3 p-0 text-muted-foreground dark:text-black hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); onViewNotes(task); }}
                     onMouseDown={(e) => e.stopPropagation()}
                     title="View/Edit task"
@@ -253,7 +253,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   </button>
                   <button
                     type="button"
-                    className="h-3 w-3 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
+                    className="h-3 w-3 p-0 text-muted-foreground dark:text-black hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
                     onClick={handleEditClick}
                     onMouseDown={(e) => e.stopPropagation()}
                     title="Edit task"
