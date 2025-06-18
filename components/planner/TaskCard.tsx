@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import { Edit3, Copy, Eye } from 'lucide-react';
 
 import { formatDuration, formatTime } from '@/utils/formatters';
+import { dateFromDateKey } from '@/utils/dateUtils';
 import { Task } from '../../types/planner';
 import { TASK_COLORS } from '../../lib/constants';
 
@@ -50,7 +51,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
   // Check if task is in the past (only for today's tasks)
   const isPastTask = currentTime ? (() => {
-    const taskDate = new Date(task.baseDate);
+    const taskDate = dateFromDateKey(task.baseDate); // Properly convert YYYY-MM-DD to local Date
     const today = new Date();
     const isToday = taskDate.toDateString() === today.toDateString();
     
