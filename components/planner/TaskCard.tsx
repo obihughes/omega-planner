@@ -116,7 +116,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               <div>
                 <div className={`
                   break-words
-                  ${isCompressed ? 'text-xs writing-mode-vertical-lr transform h-full flex items-center justify-center overflow-hidden leading-tight' : 'text-sm line-clamp-2 leading-tight'}
+                  ${isCompressed ? 'text-sm writing-mode-vertical-lr transform h-full flex items-center justify-center overflow-hidden leading-tight' : 'text-base line-clamp-2 leading-tight'}
                   font-bold
                   cursor-grab active:cursor-grabbing
                 `}
@@ -149,10 +149,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                        }
                      }}
                      style={{ pointerEvents: 'auto' }}>
-                  <div className="text-xs font-medium opacity-90 leading-tight">
+                  <div className="text-sm font-medium opacity-90 leading-tight">
                     {formatTime(task.startHour)} - {formatTime(endTime)}
                   </div>
-                  <div className="text-[10px] font-semibold mt-1 opacity-90 leading-tight">
+                  <div className="text-xs font-semibold mt-1 opacity-90 leading-tight">
                     {formatDuration(task.duration)}
                   </div>
                 </div>
