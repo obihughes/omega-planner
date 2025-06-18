@@ -1,6 +1,6 @@
 import React from 'react';
 import { PinnedTask, Task } from '../../types/planner';
-import { PinOff, Eye as EyeIcon, CalendarDays, Edit3, Trash2, RefreshCw } from 'lucide-react';
+import { PinOff, Eye as EyeIcon, CalendarDays, Edit3, Trash2, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatTime } from '@/utils/formatters';
 import { Button } from "@/components/ui";
 
@@ -26,6 +26,8 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
   onSyncPinnedTasks,
 }) => {
   const [viewingPinnedTaskNotes, setViewingPinnedTaskNotes] = React.useState<PinnedTask | null>(null);
+  const [scrollPosition, setScrollPosition] = React.useState(0);
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
   const viewModalRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -41,6 +43,51 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [viewingPinnedTaskNotes]);
+
+  // Scroll navigation functions
+  const scrollLeft = () => {
+    if (scrollContainerRef.current) {
+      const cardWidth = 204; // w-48 (192px) + gap (12px)
+      scrollContainerRef.current.scrollBy({ left: -cardWidth, behavior: 'smooth' });
+    }
+  };
+
+  const scrollRight = () => {
+    if (scrollContainerRef.current) {
+      const cardWidth = 204; // w-48 (192px) + gap (12px)
+      scrollContainerRef.current.scrollBy({ left: cardWidth, behavior: 'smooth' });
+    }
+  };
+
+  const handleScroll = () => {
+    if (scrollContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+      setScrollPosition(scrollLeft);
+      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 5);
+    }
+  };
+
+  const [canScrollLeft, setCanScrollLeft] = React.useState(false);
+  const [canScrollRight, setCanScrollRight] = React.useState(false);
+
+  React.useEffect(() => {
+    const updateScrollButtons = () => {
+      if (scrollContainerRef.current) {
+        const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+        setCanScrollLeft(scrollLeft > 0);
+        setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 5); // 5px buffer
+      }
+    };
+    
+    updateScrollButtons();
+    const resizeObserver = new ResizeObserver(updateScrollButtons);
+    if (scrollContainerRef.current) {
+      resizeObserver.observe(scrollContainerRef.current);
+    }
+    
+    return () => resizeObserver.disconnect();
+  }, [pinnedTasks.length]);
 
   const formatDateTimeForPinnedTask = (date: Date): string => {
     const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
@@ -101,7 +148,39 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
   return (
     <>
       <div className="flex flex-col flex-grow overflow-hidden">
-        <div className="p-2 flex space-x-2 overflow-x-auto overflow-y-hidden flex-grow scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+        {/* Navigation arrows */}
+        {pinnedTasks.length > 0 && (
+          <div className="absolute top-1/2 -translate-y-1/2 left-1 right-1 flex justify-between pointer-events-none z-10">
+            <button
+              type="button"
+              className={`pointer-events-auto h-6 w-6 rounded-full bg-background/90 backdrop-blur-sm border border-border shadow-sm hover:bg-background transition-all duration-200 flex items-center justify-center ${
+                canScrollLeft ? 'opacity-100' : 'opacity-30 cursor-not-allowed'
+              }`}
+              onClick={scrollLeft}
+              disabled={!canScrollLeft}
+              title="Scroll left"
+            >
+              <ChevronLeft className="w-3 h-3" />
+            </button>
+            <button
+              type="button"
+              className={`pointer-events-auto h-6 w-6 rounded-full bg-background/90 backdrop-blur-sm border border-border shadow-sm hover:bg-background transition-all duration-200 flex items-center justify-center ${
+                canScrollRight ? 'opacity-100' : 'opacity-30 cursor-not-allowed'
+              }`}
+              onClick={scrollRight}
+              disabled={!canScrollRight}
+              title="Scroll right"
+            >
+              <ChevronRight className="w-3 h-3" />
+            </button>
+          </div>
+        )}
+
+        <div 
+          ref={scrollContainerRef}
+          className="p-2 flex space-x-3 overflow-x-auto overflow-y-hidden flex-grow scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
+          onScroll={handleScroll}
+        >
           {pinnedTasks.length === 0 ? (
             <p className="text-muted-foreground text-sm text-center pt-4 w-full">No tasks pinned yet.</p> 
           ) : (
@@ -112,31 +191,33 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
               return (
                 <div 
                   key={pinnedTask.pinnedId} 
-                  className="relative p-3 rounded-lg bg-card border border-border/50 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-72 h-20"
+                  className="relative p-3 rounded-lg bg-card border border-border/50 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-24"
                 >
-                  <div className="flex items-start justify-between gap-2 h-full">
-                    <div className="flex items-start gap-2 flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-3 h-full">
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
                       {/* Color status dot */}
                       <div 
-                        className={`w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1 ${
+                        className={`w-3 h-3 rounded-full flex-shrink-0 mt-1 ${
                           isOverdue ? 'bg-red-500' : 'bg-blue-500'
                         }`}
                       />
                       
                       <div className="flex-1 min-w-0">
                         {/* Task name */}
-                        <p className="font-medium text-sm text-foreground truncate leading-tight">
+                        <p className="font-medium text-sm text-foreground truncate leading-tight mb-2">
                           {pinnedTask.name}
                         </p>
                         
-                        {/* Due date and time remaining - compact */}
-                        <div className="mt-1 flex items-center gap-1">
-                          <CalendarDays className="w-3 h-3" />
-                          <span className="text-xs text-muted-foreground">{formatDateTimeForPinnedTask(dueDateObj)}</span>
+                        {/* Due date */}
+                        <div className="flex items-center gap-1 mb-1">
+                          <CalendarDays className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                          <span className="text-xs text-muted-foreground truncate">{formatDateTimeForPinnedTask(dueDateObj)}</span>
                         </div>
+                        
+                        {/* Time remaining */}
                         <div className="text-xs">
                           <span 
-                            className={`font-medium text-xs ${
+                            className={`font-medium ${
                               isOverdue ? 'text-red-500' : 'text-blue-500'
                             }`}
                           >
@@ -146,40 +227,40 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
                       </div>
                     </div>
                     
-                    {/* Action buttons - slightly larger */}
-                    <div className="absolute top-1.5 right-1.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* Action buttons */}
+                    <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         type="button"
-                        className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                        className="h-6 w-6 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                         onClick={(e) => {
                           e.stopPropagation();
                           onUnpinTask(pinnedTask.pinnedId);
                         }}
                         title="Unpin task"
                       >
-                        <PinOff className="w-2.5 h-2.5" />
+                        <PinOff className="w-3 h-3" />
                       </button>
                       <button
                         type="button"
-                        className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                        className="h-6 w-6 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                         onClick={(e) => {
                           e.stopPropagation();
                           openEditModal(pinnedTask as Task, { isPinned: true });
                         }}
                         title="Edit Task"
                       >
-                        <Edit3 className="w-2.5 h-2.5" />
+                        <Edit3 className="w-3 h-3" />
                       </button>
                       <button
                         type="button"
-                        className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                        className="h-6 w-6 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                         onClick={(e) => {
                           e.stopPropagation();
                           setViewingPinnedTaskNotes(pinnedTask);
                         }}
                         title="View Notes"
                       >
-                        <EyeIcon className="w-2.5 h-2.5" />
+                        <EyeIcon className="w-3 h-3" />
                       </button>
                     </div>
                   </div>
@@ -188,6 +269,20 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
             })
           )}
         </div>
+
+        {/* Scroll indicator dots */}
+        {pinnedTasks.length > 2 && (
+          <div className="flex justify-center py-1 space-x-1">
+            {Array.from({ length: Math.ceil(pinnedTasks.length / 2) }, (_, i) => (
+              <div
+                key={i}
+                className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                  Math.floor(scrollPosition / 204) === i ? 'bg-foreground' : 'bg-muted-foreground/30'
+                }`}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {viewingPinnedTaskNotes && (

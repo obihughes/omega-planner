@@ -540,20 +540,20 @@ export default function DailyPlanner() {
         <div className="mb-4 bg-card border border-border rounded-lg shadow-sm overflow-hidden">
           <Tabs defaultValue="pinned" className="flex h-28">
             <div className="flex flex-col w-32 border-r border-border bg-muted/20">
-              <TabsList className="flex-col h-auto bg-transparent p-1">
-                <TabsTrigger value="pool" className="w-full justify-start text-xs">
-                  <CopyPlus className="mr-1 h-3 w-3" /> Pool
+              <TabsList className="flex-col h-auto bg-transparent p-2">
+                <TabsTrigger value="pool" className="w-full justify-start text-sm py-3">
+                  <CopyPlus className="mr-2 h-4 w-4" /> Pool
                 </TabsTrigger>
-                <TabsTrigger value="pinned" className="w-full justify-start text-xs">
-                  <Pin className="mr-1 h-3 w-3" /> Pinned
+                <TabsTrigger value="pinned" className="w-full justify-start text-sm py-3">
+                  <Pin className="mr-2 h-4 w-4" /> Pinned
                 </TabsTrigger>
               </TabsList>
-              <div className="flex-1 p-1">
+              <div className="flex-1 p-2">
                 {pinnedTasks.some(task => new Date(task.dueDate).getTime() < new Date().getTime()) && (
                    <Button
                       variant="outline"
                       size="sm"
-                      className="text-muted-foreground text-xs h-6 w-full"
+                      className="text-muted-foreground text-xs h-8 w-full"
                       onClick={clearOverduePinnedTasks}
                       title="Clear all overdue pinned tasks"
                     >
