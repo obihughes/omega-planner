@@ -116,7 +116,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               <div>
                 <div className={`
                   break-words
-                  ${isCompressed ? 'text-[10px] writing-mode-vertical-lr transform h-full flex items-center justify-center overflow-hidden leading-tight' : 'text-sm line-clamp-2 leading-tight'}
+                  ${isCompressed ? 'text-xs writing-mode-vertical-lr transform h-full flex items-center justify-center overflow-hidden leading-tight' : 'text-sm line-clamp-2 leading-tight'}
                   font-bold
                   cursor-grab active:cursor-grabbing
                 `}
