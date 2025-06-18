@@ -499,6 +499,7 @@ export default function DailyPlanner() {
                         onViewNotes={openViewNotesModal}
                         onResizeStart={(edge, e) => handleResizeStart(displayTask, edge, e)}
                         onDragStart={handleDragStart}
+                        currentTime={currentTimeForMarker}
                     />
                 </div>
               );

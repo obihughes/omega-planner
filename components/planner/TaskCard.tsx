@@ -14,6 +14,7 @@ export interface TaskCardProps {
   onViewNotes: (task: Task) => void;
   onResizeStart: (edge: 'start' | 'end', e: React.MouseEvent<HTMLDivElement>) => void;
   onDragStart?: (task: Task, e: React.MouseEvent<HTMLDivElement>) => void;
+  currentTime?: Date; // Optional prop to check if task is in the past
 }
 
 export const TaskCard: React.FC<TaskCardProps> = ({
@@ -24,6 +25,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   onViewNotes,
   onResizeStart,
   onDragStart,
+  currentTime,
 }) => {
   const [isViewing, setIsViewing] = useState(false);
   const viewRef = useRef<HTMLDivElement>(null);
@@ -46,6 +48,18 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   const endTime = task.startHour + Number(task.duration);
   const color = task.color || TASK_COLORS[0];
 
+  // Check if task is in the past (only for today's tasks)
+  const isPastTask = currentTime ? (() => {
+    const taskDate = new Date(task.baseDate);
+    const today = new Date();
+    const isToday = taskDate.toDateString() === today.toDateString();
+    
+    if (!isToday) return false; // Only apply to today's tasks
+    
+    const currentHour = currentTime.getHours() + currentTime.getMinutes() / 60;
+    return endTime <= currentHour;
+  })() : false;
+
   const handleEditClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -65,6 +79,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           transition-all duration-200
           ${isCompressed ? 'min-h-[24px]' : ''}
           h-full max-h-full relative overflow-hidden
+          ${isPastTask ? 'opacity-50' : ''}
         `}
         draggable={false}
         onDragStart={(e) => e.preventDefault()}

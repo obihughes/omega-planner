@@ -126,7 +126,6 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
             startHour: snappedNewStartHour,
             duration: 1,
             baseDate: targetDate.toISOString(),
-            dayOffset: 0,
             color: TASK_COLORS[DEFAULT_TASK_COLOR_INDEX],
             notes: "",
             completed: false,
@@ -209,7 +208,9 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
                                     }}
                                     onCopy={() => {}}
                                     onViewNotes={() => {}}
+                                    onResizeStart={() => {}}
                                     height={100} 
+                                    currentTime={currentTimeForMarker}
                                 />
                             </div>
                         );
