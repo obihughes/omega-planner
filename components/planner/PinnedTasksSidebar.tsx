@@ -101,7 +101,7 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
   return (
     <>
       <div className="flex flex-col flex-grow overflow-hidden">
-        <div className="p-2 flex space-x-2 overflow-x-auto flex-grow">
+        <div className="p-2 flex space-x-2 overflow-x-auto overflow-y-hidden flex-grow scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
           {pinnedTasks.length === 0 ? (
             <p className="text-muted-foreground text-sm text-center pt-4 w-full">No tasks pinned yet.</p> 
           ) : (

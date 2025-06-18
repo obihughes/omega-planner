@@ -75,9 +75,11 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           onMouseDown={(e) => { e.stopPropagation(); onResizeStart('start', e); }}
         />
         
-        {/* Drag handle area - middle section that doesn't stop propagation */}
+        {/* Drag handle area - middle section that doesn't cover button areas */}
         <div 
-          className="absolute left-1.5 right-1.5 top-0 bottom-0 cursor-grab active:cursor-grabbing z-20"
+          className={`absolute left-1.5 top-0 bottom-0 cursor-grab active:cursor-grabbing z-20 ${
+            isCompressed ? 'right-8' : 'right-8'
+          }`}
           draggable={false}
           onDragStart={(e) => e.preventDefault()}
           onMouseDown={(e) => {
@@ -101,6 +103,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   break-words
                   ${isCompressed ? 'text-[8px] writing-mode-vertical-lr transform h-full flex items-center justify-center overflow-hidden leading-tight' : 'text-xs line-clamp-2'}
                   font-bold
+                  cursor-grab active:cursor-grabbing
                 `}
                 draggable={false}
                 onDragStart={(e) => e.preventDefault()}
@@ -110,13 +113,27 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                         onStartEdit(task, {isNew: false}); 
                     }
                 }}
+                onMouseDown={(e) => {
+                  // Allow dragging from the task name
+                  if (e.detail === 1 && onDragStart) {
+                    e.preventDefault();
+                    onDragStart(task, e);
+                  }
+                }}
                 style={{ pointerEvents: 'auto' }}
                 >
                   {task.name}
                 </div>
               </div>
               {!isCompressed && (
-                <div className="mt-1">
+                <div className="mt-1 cursor-grab active:cursor-grabbing" 
+                     onMouseDown={(e) => {
+                       if (onDragStart) {
+                         e.preventDefault();
+                         onDragStart(task, e);
+                       }
+                     }}
+                     style={{ pointerEvents: 'auto' }}>
                   <div className="text-[9px] font-medium opacity-80">
                     {formatTime(task.startHour)} - {formatTime(endTime)}
                   </div>
@@ -129,10 +146,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
             {/* Buttons for non-compressed view */}
             {!isCompressed && (
-              <div className="flex flex-col items-end gap-0.5 flex-shrink-0" style={{ pointerEvents: 'auto' }}>
+              <div className="flex flex-col items-end gap-0.5 flex-shrink-0 relative z-40" style={{ pointerEvents: 'auto' }}>
                 <button
                   type="button"
-                  className="h-3.5 w-3.5 p-0 hover:bg-black/10 dark:hover:bg-white/10 rounded-sm flex items-center justify-center transition-colors"
+                  className="h-3.5 w-3.5 p-0 hover:bg-black/10 dark:hover:bg-white/10 rounded-sm flex items-center justify-center transition-colors relative z-50"
                   onClick={handleEditClick}
                   onMouseDown={(e) => e.stopPropagation()}
                   title="Edit task"
@@ -142,7 +159,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 
                 <button
                   type="button"
-                  className="h-3.5 w-3.5 p-0 hover:bg-black/10 dark:hover:bg-white/10 rounded-sm flex items-center justify-center transition-colors"
+                  className="h-3.5 w-3.5 p-0 hover:bg-black/10 dark:hover:bg-white/10 rounded-sm flex items-center justify-center transition-colors relative z-50"
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); onCopy(task); }}
                   onMouseDown={(e) => e.stopPropagation()}
                   title="Copy task"
@@ -152,7 +169,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
                 <button
                   type="button"
-                  className="h-3.5 w-3.5 p-0 hover:bg-black/10 dark:hover:bg-white/10 rounded-sm flex items-center justify-center transition-colors"
+                  className="h-3.5 w-3.5 p-0 hover:bg-black/10 dark:hover:bg-white/10 rounded-sm flex items-center justify-center transition-colors relative z-50"
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); onViewNotes(task); }}
                   onMouseDown={(e) => e.stopPropagation()}
                   title="View task details"
@@ -165,11 +182,11 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             {isCompressed && (
               task.duration <= 0.25 ? (
                 // Tighter styles for 15-min tasks - Triangular formation
-                <div className="absolute bottom-px right-0 flex flex-col items-center z-10" onClick={(e) => e.stopPropagation()} style={{ pointerEvents: 'auto' }}>
+                <div className="absolute bottom-px right-0 flex flex-col items-center z-50" onClick={(e) => e.stopPropagation()} style={{ pointerEvents: 'auto' }}>
                   <div className="flex justify-center"> {/* Centering for the top button */}
                     <button
                       type="button"
-                      className="h-2.5 w-2.5 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors"
+                      className="h-2.5 w-2.5 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); onViewNotes(task); }}
                       onMouseDown={(e) => e.stopPropagation()}
                       title="View task"
@@ -180,7 +197,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   <div className="flex items-center space-x-px mt-px"> {/* Bottom row with Copy and Edit, added small top margin */}
                     <button
                       type="button"
-                      className="h-2.5 w-2.5 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors"
+                      className="h-2.5 w-2.5 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); onCopy(task); }}
                       onMouseDown={(e) => e.stopPropagation()}
                       title="Copy task"
@@ -189,7 +206,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                     </button>
                     <button
                       type="button"
-                      className="h-2.5 w-2.5 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors"
+                      className="h-2.5 w-2.5 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
                       onClick={handleEditClick}
                       onMouseDown={(e) => e.stopPropagation()}
                       title="Edit task"
@@ -200,10 +217,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 </div>
               ) : (
                 // Linear (vertical) for 30-min tasks
-                <div className="absolute bottom-px right-0 flex flex-col items-end space-y-px z-10" onClick={(e) => e.stopPropagation()} style={{ pointerEvents: 'auto' }}>
+                <div className="absolute bottom-px right-0 flex flex-col items-end space-y-px z-50" onClick={(e) => e.stopPropagation()} style={{ pointerEvents: 'auto' }}>
                   <button
                     type="button"
-                    className="h-2.5 w-2.5 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors"
+                    className="h-2.5 w-2.5 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); onCopy(task); }}
                     onMouseDown={(e) => e.stopPropagation()}
                     title="Copy task"
@@ -212,7 +229,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   </button>
                   <button
                     type="button"
-                    className="h-2.5 w-2.5 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors"
+                    className="h-2.5 w-2.5 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); onViewNotes(task); }}
                     onMouseDown={(e) => e.stopPropagation()}
                     title="View/Edit task"
@@ -221,7 +238,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   </button>
                   <button
                     type="button"
-                    className="h-2.5 w-2.5 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors"
+                    className="h-2.5 w-2.5 p-0 text-muted-foreground hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
                     onClick={handleEditClick}
                     onMouseDown={(e) => e.stopPropagation()}
                     title="Edit task"
