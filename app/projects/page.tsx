@@ -292,7 +292,7 @@ export default function ProjectsPage() {
 
   return (
     <AppLayout>
-      <div className="container mx-auto px-6 pb-6">
+      <div className="container mx-auto px-6 py-6">
         <Tabs value={activeView} onValueChange={(value: string) => setActiveView(value as 'active' | 'archived' | 'calendar')}>
           <div className="flex items-center justify-between mb-6">
             <TabsList className="grid w-fit grid-cols-3 bg-card/50 backdrop-blur-sm border border-border/50">

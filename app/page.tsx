@@ -9,7 +9,7 @@ import { AppLayout } from '@/components/ui/AppLayout';
 export default function Home() {
   return (
     <AppLayout>
-      <div className="px-6 pb-6">
+      <div className="p-6">
         <div className="max-w-7xl mx-auto">
           <Suspense fallback={
             <div className="flex items-center justify-center h-96">

@@ -773,7 +773,7 @@ export function YearCalendar({
       
       {/* 12-Month Grid */}
       <div className={cn(
-        "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-10 transition-opacity pt-14 mt-2",
+        "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-10 transition-opacity pt-14 mt-6",
         {
           'cursor-crosshair': eraserMode,
           'opacity-50 pointer-events-none': isLoading

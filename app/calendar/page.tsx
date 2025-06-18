@@ -59,7 +59,7 @@ export default function CalendarPage() {
   return (
     <AppLayout>
       
-      <div className="max-w-7xl mx-auto px-4 pb-6">
+      <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Calendar Component */}
         <YearCalendar
           data={data}
