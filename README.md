@@ -93,6 +93,13 @@ npm test
 
 ## Recent Changes
 
+### Pinned Tasks Time Display Fix (Latest)
+- **Issue Resolution**: Fixed timezone interpretation issues causing incorrect time displays in pinned tasks
+- **Display Format**: Improved time formatting to show proper units (days, hours, minutes) instead of everything as minutes
+- **Data Integrity**: Enhanced storage loading to reconstruct dates safely from baseDate + startHour
+- **Defensive Programming**: Added type checking for Date objects vs strings throughout the codebase
+- **Timeline Density**: Adjusted `PIXELS_PER_HOUR` from 210 to 205 for more compact timeline view
+
 ### Stability Improvements
 - **Error Boundary Implementation**: Added global ErrorBoundary component to catch and handle JavaScript errors
 - **Graceful Error Recovery**: Users can continue using the app even when individual components fail

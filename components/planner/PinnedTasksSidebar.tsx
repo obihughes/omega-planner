@@ -96,12 +96,25 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
   };
 
   const formatCompactTimeRemaining = (timeRemaining: string): string => {
+    // Handle "Due now" case
+    if (timeRemaining === "Due now") {
+      return "Now";
+    }
+    
     // Handle complex patterns first (e.g., "Due in 2 days 3 hrs")
     const dayHourMatch = timeRemaining.match(/(\d+)\s+day\w*\s+(\d+)\s+hr/);
     if (dayHourMatch) {
       const days = dayHourMatch[1];
       const hours = dayHourMatch[2];
       return `${days}d ${hours}h`;
+    }
+    
+    // Handle hour + minute patterns (e.g., "Due in 5 hrs 30 mins")
+    const hourMinMatch = timeRemaining.match(/(\d+)\s+hr\w*\s+(\d+)\s+min/);
+    if (hourMinMatch) {
+      const hours = hourMinMatch[1];
+      const minutes = hourMinMatch[2];
+      return `${hours}h ${minutes}m`;
     }
     
     // Handle overdue patterns
@@ -118,13 +131,13 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
       }
     }
     
-    // Handle single time units
-    if (timeRemaining.includes('min')) {
-      const mins = timeRemaining.match(/(\d+)/)?.[1];
-      return `${mins}m`;
+    // Handle single time units - order matters! Check larger units first
+    if (timeRemaining.includes('day')) {
+      const days = timeRemaining.match(/(\d+)\s+day/)?.[1];
+      return `${days}d`;
     }
     if (timeRemaining.includes('hr')) {
-      const hrs = timeRemaining.match(/(\d+)/)?.[1];
+      const hrs = timeRemaining.match(/(\d+)\s+hr/)?.[1];
       // Convert large hour values to days
       const hourNum = parseInt(hrs || '0');
       if (hourNum >= 24) {
@@ -134,16 +147,19 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
       }
       return `${hrs}h`;
     }
-    if (timeRemaining.includes('day')) {
-      const days = timeRemaining.match(/(\d+)/)?.[1];
-      return `${days}d`;
+    if (timeRemaining.includes('min')) {
+      const mins = timeRemaining.match(/(\d+)\s+min/)?.[1];
+      return `${mins}m`;
     }
     
     // Return as-is for edge cases
     return timeRemaining;
   };
 
-  const hasOverdueTasks = pinnedTasks.some(task => new Date(task.dueDate).getTime() < new Date().getTime());
+  const hasOverdueTasks = pinnedTasks.some(task => {
+    const taskDueDate = task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate);
+    return taskDueDate.getTime() < new Date().getTime();
+  });
 
   return (
     <>
@@ -185,8 +201,9 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
             <p className="text-muted-foreground text-sm text-center pt-4 w-full">No tasks pinned yet.</p> 
           ) : (
             pinnedTasks.map(pinnedTask => {
-              const { text: timeRemainingText, isOverdue } = formatTimeRemaining(new Date(pinnedTask.dueDate));
-              const dueDateObj = new Date(pinnedTask.dueDate);
+              // Ensure we have a proper Date object, handling potential serialization issues
+              const dueDateObj = pinnedTask.dueDate instanceof Date ? pinnedTask.dueDate : new Date(pinnedTask.dueDate);
+              const { text: timeRemainingText, isOverdue } = formatTimeRemaining(dueDateObj);
 
               return (
                 <div 

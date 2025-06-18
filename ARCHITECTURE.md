@@ -182,10 +182,16 @@ The application includes various utility functions:
 **Important**: All date operations throughout the application use **local timezone** consistently to prevent timezone mismatches that can cause tasks to appear on wrong dates when the date changes.
 
 ### Key Functions:
+- `dateFromDateKey()`: Safely converts YYYY-MM-DD strings to Date objects in local timezone
 - `getCalendarDateForColumn()`: Uses local timezone to calculate dates for timeline columns
 - `getDateWithoutTime()`: Normalizes dates to midnight in local timezone
 - `getDateKey()`: Generates consistent YYYY-MM-DD format date keys in local timezone
 - `tasksByDate` mapping: Uses local timezone date keys for task organization
+
+### Recent Fix (Pinned Tasks):
+- **Issue**: Pinned tasks displayed incorrect times due to `new Date(baseDateString)` causing timezone interpretation issues
+- **Solution**: Updated pinned task dueDate calculation to use `dateFromDateKey()` for timezone-safe parsing
+- **Files Updated**: `hooks/useDailyPlannerState.ts` - both task pinning and sync functions now use consistent timezone handling
 
 ### Previous Issue Fixed:
 - Mixed UTC/local timezone operations were causing tasks to display on incorrect dates

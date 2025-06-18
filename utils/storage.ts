@@ -278,11 +278,35 @@ const TaskStorage = {
         console.error('Loaded pinned data is invalid (tasks array missing or not an array): ', data);
         return [];
       }
-      // Convert dueDate strings back to Date objects
-      return data.tasks.map((task: any) => ({
-        ...task,
-        dueDate: new Date(task.dueDate) 
-      }));
+      // Convert dueDate strings back to Date objects with proper timezone handling
+      return data.tasks.map((task: any) => {
+        // Migrate old ISO format baseDate if needed
+        let baseDate = task.baseDate;
+        if (baseDate && baseDate.includes('T')) {
+          baseDate = migrateISOToDateKey(baseDate);
+        }
+        
+        // Reconstruct dueDate from baseDate and startHour to avoid timezone issues
+        let dueDate: Date;
+        if (baseDate && typeof task.startHour === 'number') {
+          // Use dateFromDateKey for timezone-safe parsing
+          const dateParts = baseDate.split('-').map(Number);
+          const reconstructedDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2], 0, 0, 0, 0);
+          const hours = Math.floor(task.startHour);
+          const minutes = Math.round((task.startHour - hours) * 60);
+          reconstructedDate.setHours(hours, minutes, 0, 0);
+          dueDate = reconstructedDate;
+        } else {
+          // Fallback: try to parse the stored dueDate (might have timezone issues)
+          dueDate = new Date(task.dueDate);
+        }
+        
+        return {
+          ...task,
+          baseDate,
+          dueDate
+        };
+      });
     } catch (err) {
       console.error('Failed to parse pinned tasks from localStorage. Data was: ', savedData, err);
       return [];

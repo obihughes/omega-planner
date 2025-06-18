@@ -580,7 +580,10 @@ export default function DailyPlanner() {
                 </TabsTrigger>
               </TabsList>
               <div className="flex-1 p-2">
-                {pinnedTasks.some(task => new Date(task.dueDate).getTime() < new Date().getTime()) && (
+                {pinnedTasks.some(task => {
+          const taskDueDate = task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate);
+          return taskDueDate.getTime() < new Date().getTime();
+        }) && (
                    <Button
                       variant="outline"
                       size="sm"

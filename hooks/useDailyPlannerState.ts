@@ -439,22 +439,26 @@ export function useDailyPlanner() {
   const handlePinTask = useCallback((originalTask: Task) => {
     const taskToPin = { ...originalTask };
 
-    // The baseDate is already a UTC date string (e.g., "2025-06-17T00:00:00.000Z")
-    // representing the start of the day in UTC.
-    const dueDate = new Date(taskToPin.baseDate);
-
-    // Add the task's start hour to this UTC date.
-    // The startHour is a float (e.g., 14.5 for 2:30 PM).
-    dueDate.setUTCHours(0, 0, 0, 0); // Reset time to be safe
-    dueDate.setTime(dueDate.getTime() + taskToPin.startHour * 60 * 60 * 1000);
+    // Use dateFromDateKey for timezone-safe date parsing
+    const dueDate = dateFromDateKey(taskToPin.baseDate);
+    
+    // Add the task's start hour to this date
+    // The startHour is a float (e.g., 14.5 for 2:30 PM)
+    const hours = Math.floor(taskToPin.startHour);
+    const minutes = Math.round((taskToPin.startHour - hours) * 60);
+    dueDate.setHours(hours, minutes, 0, 0);
 
     const newPinnedTask: PinnedTask = {
       ...taskToPin,
       originalId: taskToPin.id,
       pinnedId: getNextId(),
-      dueDate: dueDate, // Use the correctly constructed UTC dueDate
+      dueDate: dueDate, // Use the correctly constructed dueDate
     };
-    setPinnedTasks(prevPinnedTasks => [...prevPinnedTasks, newPinnedTask].sort((a,b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()));
+    setPinnedTasks(prevPinnedTasks => [...prevPinnedTasks, newPinnedTask].sort((a,b) => {
+      const aDate = a.dueDate instanceof Date ? a.dueDate : new Date(a.dueDate);
+      const bDate = b.dueDate instanceof Date ? b.dueDate : new Date(b.dueDate);
+      return aDate.getTime() - bDate.getTime();
+    }));
   }, [getNextId, setPinnedTasks]);
 
   const handleUnpinTask = useCallback((pinnedIdToUnpin: string) => {
@@ -467,7 +471,10 @@ export function useDailyPlanner() {
   const clearOverduePinnedTasks = useCallback(() => {
     const now = new Date();
     setPinnedTasks(prevPinnedTasks => 
-      prevPinnedTasks.filter(task => new Date(task.dueDate).getTime() >= now.getTime())
+      prevPinnedTasks.filter(task => {
+        const taskDueDate = task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate);
+        return taskDueDate.getTime() >= now.getTime();
+      })
     );
     // TODO: Consider adding a confirmation modal before this operation
   }, [setPinnedTasks]);
@@ -484,18 +491,22 @@ export function useDailyPlanner() {
     const newPinnedTasks = pinnedTasks.map(pinnedTask => {
       const correspondingTimelineTask = timelineTasksMap.get(pinnedTask.originalId);
       if (correspondingTimelineTask) {
-        // Recalculate dueDate based on timeline task's startHour and baseDate (which is UTC)
-        const newDueDate = new Date(correspondingTimelineTask.baseDate);
-        newDueDate.setUTCHours(0,0,0,0); // Reset time
-        newDueDate.setTime(newDueDate.getTime() + correspondingTimelineTask.startHour * 60 * 60 * 1000);
+        // Recalculate dueDate based on timeline task's startHour and baseDate using timezone-safe parsing
+        const newDueDate = dateFromDateKey(correspondingTimelineTask.baseDate);
+        const hours = Math.floor(correspondingTimelineTask.startHour);
+        const minutes = Math.round((correspondingTimelineTask.startHour - hours) * 60);
+        newDueDate.setHours(hours, minutes, 0, 0);
 
         // Check if an update is needed
+        // Compare dueDate properly handling potential serialization issues
+        const currentDueDate = pinnedTask.dueDate instanceof Date ? pinnedTask.dueDate : new Date(pinnedTask.dueDate);
+        
         if (
           pinnedTask.name !== correspondingTimelineTask.name ||
           pinnedTask.duration !== correspondingTimelineTask.duration ||
           pinnedTask.color !== correspondingTimelineTask.color ||
           pinnedTask.notes !== correspondingTimelineTask.notes ||
-          new Date(pinnedTask.dueDate).getTime() !== newDueDate.getTime()
+          currentDueDate.getTime() !== newDueDate.getTime()
         ) {
           updatedOccurred = true;
           return {
@@ -515,7 +526,11 @@ export function useDailyPlanner() {
     });
 
     if (updatedOccurred) {
-      setPinnedTasks(newPinnedTasks.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()));
+      setPinnedTasks(newPinnedTasks.sort((a, b) => {
+        const aDate = a.dueDate instanceof Date ? a.dueDate : new Date(a.dueDate);
+        const bDate = b.dueDate instanceof Date ? b.dueDate : new Date(b.dueDate);
+        return aDate.getTime() - bDate.getTime();
+      }));
     }
     // TODO: Optionally, provide feedback to the user if sync occurred or not.
   }, [tasks, pinnedTasks, setPinnedTasks]);
