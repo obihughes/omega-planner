@@ -60,7 +60,7 @@ export const DEFAULT_BOTTOM_DAY_OFFSET = 1;
 export const DEFAULT_TASK_COLOR_INDEX = 10;
 
 // Constants from DailyPlanner.tsx
-export const TIMELINE_COLUMN_HEIGHT = 110;
+export const TIMELINE_COLUMN_HEIGHT = 130;
 export const TASK_BASE_TOP = 0;
 export const TASK_BASE_BOTTOM_PADDING = 33;
 // TASK_HEIGHT is derived: TIMELINE_COLUMN_HEIGHT - TASK_BASE_TOP - TASK_BASE_BOTTOM_PADDING;
