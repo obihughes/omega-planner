@@ -14,7 +14,7 @@ import {
     DEFAULT_TASK_COLOR_INDEX,
     TASK_COLORS
 } from '../../lib/constants';
-import { getCalendarDateForColumn, getDateWithoutTime, isSameCalendarDate } from '../../utils/dateUtils';
+import { getCalendarDateForColumn, getDateWithoutTime, isSameCalendarDate, getDateKey } from '../../utils/dateUtils';
 import { formatTime } from '@/utils/formatters';
 
 interface TimelineColumnProps {
@@ -56,7 +56,8 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
     }
 
     const columnCalendarDate = getCalendarDateForColumn(dayOffset);
-    const tasksForThisColumnDate = tasksByDate.get(columnCalendarDate.toISOString()) || [];
+    const dateKey = getDateKey(columnCalendarDate);
+    const tasksForThisColumnDate = tasksByDate.get(dateKey) || [];
 
     const tasksToRender = tasksForThisColumnDate.filter(t => {
         if (draggingTask && draggingTask.task.id === t.id) {

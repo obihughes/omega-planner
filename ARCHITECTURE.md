@@ -175,4 +175,30 @@ The application includes various utility functions:
     *   `POOL_TASKS_KEY` (for task pool)
     *   `PINNED_TASKS_KEY` (for pinned tasks)
     *   `TASK_ID_COUNTER_KEY` (for the next available task ID)
-    *   `DAY_VIEW_SETTINGS_KEY` (for `topDayOffset` and `bottomDayOffset`) 
+    *   `DAY_VIEW_SETTINGS_KEY` (for `topDayOffset` and `bottomDayOffset`)
+
+## Date Handling Architecture
+
+**Important**: All date operations throughout the application use **local timezone** consistently to prevent timezone mismatches that can cause tasks to appear on wrong dates when the date changes.
+
+### Key Functions:
+- `getCalendarDateForColumn()`: Uses local timezone to calculate dates for timeline columns
+- `getDateWithoutTime()`: Normalizes dates to midnight in local timezone
+- `getDateKey()`: Generates consistent YYYY-MM-DD format date keys in local timezone
+- `tasksByDate` mapping: Uses local timezone date keys for task organization
+
+### Previous Issue Fixed:
+- Mixed UTC/local timezone operations were causing tasks to display on incorrect dates
+- Now all date calculations, storage, and retrieval use consistent local timezone approach
+
+## Data Flow
+1. User interactions trigger state updates in `useDailyPlannerState`
+2. State changes are persisted to local storage
+3. UI components reactively update based on state changes
+4. Date-based task filtering uses consistent local timezone date keys
+
+## Architecture Principles
+- **Separation of Concerns**: Clear distinction between UI, state, and data layers
+- **Consistent Date Handling**: All date operations use local timezone
+- **Real-time Updates**: Immediate UI feedback with persistent storage
+- **Modular Design**: Reusable components and hooks 

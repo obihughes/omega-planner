@@ -1,33 +1,35 @@
 /**
  * Helper function to get the actual calendar date for a column offset from the current day.
- * The date is normalized to midnight (00:00:00:000).
+ * The date is normalized to midnight (00:00:00:000) in local timezone.
  * @param {number} columnDayOffset - The number of days to offset from the current date.
- * @returns {Date} The calculated calendar date, normalized to midnight UTC.
+ * @returns {Date} The calculated calendar date, normalized to midnight in local timezone.
  */
 export const getCalendarDateForColumn = (columnDayOffset: number): Date => {
   const now = new Date();
-  const year = now.getUTCFullYear();
-  const month = now.getUTCMonth();
-  const day = now.getUTCDate() + columnDayOffset;
+  // Use local timezone consistently
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const day = now.getDate() + columnDayOffset;
   
-  // Create a new Date using UTC constructor to avoid any timezone issues
-  return new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
+  // Create a new Date using local timezone constructor
+  return new Date(year, month, day, 0, 0, 0, 0);
 };
 
 /**
  * Helper function to extract a Date object representing the calendar date (normalized to midnight)
  * from an ISO date string.
  * @param {string} isoDateString - The ISO string representation of a date.
- * @returns {Date} A Date object normalized to midnight of the given ISO string's date in UTC.
+ * @returns {Date} A Date object normalized to midnight of the given ISO string's date in local timezone.
  */
 export const getDateWithoutTime = (isoDateString: string): Date => {
   const date = new Date(isoDateString);
-  const year = date.getUTCFullYear();
-  const month = date.getUTCMonth(); 
-  const day = date.getUTCDate();
+  // Use local timezone consistently - get the calendar date components
+  const year = date.getFullYear();
+  const month = date.getMonth(); 
+  const day = date.getDate();
   
-  // Create a new Date using UTC constructor to avoid any timezone issues
-  return new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
+  // Create a new Date using local timezone constructor
+  return new Date(year, month, day, 0, 0, 0, 0);
 };
 
 /**
@@ -39,7 +41,31 @@ export const getDateWithoutTime = (isoDateString: string): Date => {
  */
 export const isSameCalendarDate = (date1: Date, date2: Date): boolean => {
   if (!date1 || !date2) return false; // Add a guard for null or undefined dates
-  return date1.getUTCFullYear() === date2.getUTCFullYear() &&
-         date1.getUTCMonth() === date2.getUTCMonth() &&
-         date1.getUTCDate() === date2.getUTCDate();
+  // Use local timezone consistently
+  return date1.getFullYear() === date2.getFullYear() &&
+         date1.getMonth() === date2.getMonth() &&
+         date1.getDate() === date2.getDate();
+};
+
+/**
+ * Helper function to generate a consistent date key string in YYYY-MM-DD format
+ * using local timezone.
+ * @param {Date} date - The date to generate a key for.
+ * @returns {string} Date key in YYYY-MM-DD format.
+ */
+export const getDateKey = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+/**
+ * Helper function to generate a consistent date key string from an ISO date string.
+ * @param {string} isoDateString - The ISO date string.
+ * @returns {string} Date key in YYYY-MM-DD format.
+ */
+export const getDateKeyFromISOString = (isoDateString: string): string => {
+  const date = new Date(isoDateString);
+  return getDateKey(date);
 }; 

@@ -17,7 +17,7 @@ import {
 } from '../lib/constants';
 import { useModalManager } from './useModalManager';
 import type { ActiveModalTask as ImportedActiveModalTask } from './useModalManager';
-import { getDateWithoutTime as getUtilDateWithoutTime, isSameCalendarDate as utilIsSameCalendarDate, getCalendarDateForColumn } from '../utils/dateUtils'; // Import the utility
+import { getDateWithoutTime as getUtilDateWithoutTime, isSameCalendarDate as utilIsSameCalendarDate, getCalendarDateForColumn, getDateKey } from '../utils/dateUtils'; // Import the utility
 // import { checkOverlap } from '../utils/taskUtils'; // checkOverlap is available via wildcard import
 
 // Define the type for the resizingTask state
@@ -87,9 +87,10 @@ export function useDailyPlanner() {
   const tasksByDate = useMemo(() => {
     const map = new Map<string, Task[]>();
     tasks.forEach(task => {
-      // Ensure baseDate is a valid string and normalize it.
+      // Ensure baseDate is a valid string and normalize it to local timezone
       const dateNormalized = getUtilDateWithoutTime(task.baseDate);
-      const dateStr = dateNormalized.toISOString().split('T')[0];
+      // Generate consistent date key using utility function
+      const dateStr = getDateKey(dateNormalized);
       
       if (!map.has(dateStr)) {
         map.set(dateStr, []);

@@ -282,14 +282,15 @@ export function useModalManager({
       const tempId = `temp-new-${Date.now()}`;
       const today = new Date();
       today.setHours(0,0,0,0);
-      setActiveEditModalTask({
+            setActiveEditModalTask({
         id: tempId,
         name: "New Task", // Default name
         startHour: options?.initialStartHour ?? 9,
         duration: 1,
-        baseDate: today.toISOString(), 
-        dayOffset: 0,
+        baseDate: today.toISOString(),
         color: TASK_COLORS[0],
+        notes: "",
+        completed: false,
         isFromPool: options?.isFromPool || false,
         isNew: true,
       });

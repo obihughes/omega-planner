@@ -27,7 +27,7 @@ import {
 import { MemoizedTaskCard } from './TaskCard';
 import { EditTaskModal } from './EditTaskModal';
 import { ViewTaskNotesModal } from './ViewTaskNotesModal';
-import { getCalendarDateForColumn } from '../../utils/dateUtils';
+import { getCalendarDateForColumn, getDateKey, getDateKeyFromISOString } from '../../utils/dateUtils';
 import { resolveCollisionsForResize, resolveCollisionsForDrag } from '../../utils/taskUtils';
 
 type TimelinePeriod = 'night' | 'morning' | 'afternoon' | 'evening';
@@ -128,6 +128,8 @@ export default function DailyPlanner() {
         livePreviewDuration = nearestSnapPoint - initialStartHour;
     }
 
+    const resizeDateKey = getDateKeyFromISOString(originalTaskAtResizeStart.baseDate);
+    
     const collisionResult = resolveCollisionsForResize(
       { 
         id: originalTaskAtResizeStart.id, 
@@ -137,7 +139,7 @@ export default function DailyPlanner() {
       },
       livePreviewStartHour, 
       livePreviewDuration, 
-      tasksByDate.get(new Date(originalTaskAtResizeStart.baseDate).toISOString().split('T')[0]) || [],
+      tasksByDate.get(resizeDateKey) || [],
       edge
     );
 
@@ -221,7 +223,7 @@ export default function DailyPlanner() {
       const targetColumnDate = getCalendarDateForColumn(targetDayOffset);
 
       // Use the same date key format as in useDailyPlannerState.ts
-      const targetDateKey = targetColumnDate.toISOString().split('T')[0];
+      const targetDateKey = getDateKey(targetColumnDate);
       const tasksForTargetDate = tasksByDate.get(targetDateKey) || [];
       
       const collisionResult = resolveCollisionsForDrag(
@@ -397,7 +399,7 @@ export default function DailyPlanner() {
     }
 
     const columnCalendarDate = getCalendarDateForColumn(dayOffset);
-    const dateKey = columnCalendarDate.toISOString().split('T')[0];
+    const dateKey = getDateKey(columnCalendarDate);
     const tasksForThisColumnDate = tasksByDate.get(dateKey) || [];
     
     // Filter out the original task if it's being dragged
@@ -407,7 +409,7 @@ export default function DailyPlanner() {
 
     // If a task is being dragged, check if it belongs in this column
     if (draggingTask) {
-        const draggedTaskDateKey = new Date(draggingTask.task.baseDate).toISOString().split('T')[0];
+        const draggedTaskDateKey = getDateKeyFromISOString(draggingTask.task.baseDate);
         if (draggedTaskDateKey === dateKey) {
             tasksToDisplay.push(draggingTask.task);
         }
