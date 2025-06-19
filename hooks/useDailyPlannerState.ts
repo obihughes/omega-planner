@@ -56,6 +56,7 @@ export function useDailyPlanner() {
     taskElement: HTMLDivElement | null; 
     task: Task; 
     offsetX?: number;
+    originalBaseDate?: string; // Track the original date when drag started
   } | null>(null);
   
   // Use the new ResizingTaskState interface here
@@ -283,9 +284,9 @@ export function useDailyPlanner() {
   // --- Global Mouse Event Handlers ---
   const handleMouseUpGlobal = useCallback(() => {
     if (draggingTask) {
-      const { task: finalDraggedTaskData, initialStartHour } = draggingTask;
+      const { task: finalDraggedTaskData, initialStartHour, originalBaseDate } = draggingTask;
       
-      const originalDate = getTodayDateKey(); // Today's date in YYYY-MM-DD format
+      const originalDate = originalBaseDate || finalDraggedTaskData.baseDate; // Use stored original date, fallback to current
       const finalTargetDate = finalDraggedTaskData.baseDate; // Already in YYYY-MM-DD format
 
       const otherTasksOnFinalDate = tasks.filter(t => {
@@ -295,14 +296,14 @@ export function useDailyPlanner() {
 
       let conflict = false;
       for (const otherTask of otherTasksOnFinalDate) {
-        if (checkOverlap(finalDraggedTaskData.startHour, finalDraggedTaskData.duration, otherTask.startHour, otherTask.duration)) {
+        const hasOverlap = checkOverlap(finalDraggedTaskData.startHour, finalDraggedTaskData.duration, otherTask.startHour, otherTask.duration);
+        if (hasOverlap) {
           conflict = true;
           break;
         }
       }
 
       if (conflict) {
-        console.warn(`[Drag End] Conflict detected. Reverting task ${finalDraggedTaskData.id} to original position.`);
         // Revert to the original position
         setTasks(currentTasks =>
           currentTasks.map(task =>
@@ -312,7 +313,6 @@ export function useDailyPlanner() {
           )
         );
       } else {
-    
         // Commit the new position
         setTasks(currentTasks =>
           currentTasks.map(task =>

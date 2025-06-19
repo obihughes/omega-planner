@@ -191,14 +191,6 @@ export default function DailyPlanner() {
     // Use elementFromPoint to find the element underneath the mouse cursor
     const elementUnderMouse = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement;
     const dropZone = elementUnderMouse?.closest('[data-testid^="timeline-area-"]') as HTMLElement;
-    
-    console.log("🐛 [DRAG] handleMouseMoveDrag", { 
-      taskId: draggedTaskItem.id, 
-      mouseX: e.clientX, 
-      mouseY: e.clientY,
-      foundDropZone: !!dropZone,
-      dropZoneTestId: dropZone?.getAttribute('data-testid')
-    });
 
     if (dropZone) {
       const dayOffsetAttr = dropZone.getAttribute('data-day-offset');
@@ -241,36 +233,21 @@ export default function DailyPlanner() {
       );
 
       if (collisionResult.canMove) {
-        console.log("🐛 [DRAG] Updating dragging task position", { 
-          taskId: draggedTaskItem.id,
-          newStartHour: collisionResult.snappedNewStartHour, 
-          newBaseDate: targetDateKey,
-          targetDayOffset 
-        });
         setDraggingTask(prev => {
           if (!prev || !prev.task) return null;
           if (prev.task.startHour === collisionResult.snappedNewStartHour && prev.task.baseDate === targetDateKey) {
             return prev;
           }
-          console.log("🐛 [DRAG] Actually updating dragging task state");
           return { ...prev, task: { ...prev.task, startHour: collisionResult.snappedNewStartHour, baseDate: targetDateKey } };
         });
-      } else {
-        console.log("🐛 [DRAG] Cannot move due to collision", { taskId: draggedTaskItem.id });
       }
     }
   }, [draggingTask, setDraggingTask, tasksByDate]);
 
   const handleMouseUp = useCallback(() => {
     if (draggingTask && draggingTask.task) {
-        console.log("🐛 [DRAG] handleMouseUp - Saving dragged task", { 
-          taskId: draggingTask.task.id, 
-          finalBaseDate: draggingTask.task.baseDate, 
-          finalStartHour: draggingTask.task.startHour 
-        });
         saveTaskFromModal(draggingTask.task, { isNew: false }); 
         setDraggingTask(null);
-        console.log("🐛 [DRAG] handleMouseUp - Drag operation completed");
     }
     
     if (resizingTask && resizingTask.task) {
@@ -378,7 +355,6 @@ export default function DailyPlanner() {
   };
 
   const handleDragStart = (task: Task, e: React.MouseEvent) => {
-    console.log("🐛 [DRAG] handleDragStart called", { taskId: task.id, taskName: task.name, baseDate: task.baseDate });
     e.preventDefault();
     cancelCopy();
     setResizingTask(null);
@@ -386,13 +362,13 @@ export default function DailyPlanner() {
     const rect = e.currentTarget.getBoundingClientRect();
     const offsetX = e.clientX - rect.left;
     
-    console.log("🐛 [DRAG] Setting draggingTask state", { offsetX, initialMouseY: e.clientY });
     setDraggingTask({ 
       task: { ...task }, 
       offsetX,
       initialMouseY: e.clientY,
       initialStartHour: task.startHour,
-      taskElement: null
+      taskElement: null,
+      originalBaseDate: task.baseDate // Store the original date when drag starts
     });
   };
 
@@ -432,14 +408,8 @@ export default function DailyPlanner() {
 
     // If a task is being dragged, check if it belongs in this column
     if (draggingTask) {
-        console.log("🐛 [DRAG] Checking if dragged task belongs in this column", { 
-            draggedTaskBaseDate: draggingTask.task.baseDate, 
-            columnDateKey: dateKey,
-            dayOffset
-        });
         const draggedTaskDateKey = draggingTask.task.baseDate; // baseDate is already YYYY-MM-DD
         if (draggedTaskDateKey === dateKey) {
-            console.log("🐛 [DRAG] Adding dragged task to column render list");
             tasksToDisplay.push(draggingTask.task);
         }
     }

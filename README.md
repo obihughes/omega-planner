@@ -93,7 +93,14 @@ npm test
 
 ## Recent Changes
 
-### Pinned Tasks Time Display Fix (Latest)
+### Drag and Drop Bug Fix (Latest)
+- **Issue Resolution**: Fixed critical bug where dragged tasks would be teleported to incorrect dates when conflicts occurred
+- **Root Cause**: Global mouse up handler was using `getTodayDateKey()` instead of the task's actual original date for conflict reversion
+- **Solution**: Added proper original date tracking in drag state to ensure tasks revert to their correct original positions
+- **Affected Areas**: Task drag and drop, cross-day task movement, collision resolution system
+- **Technical Details**: Enhanced `draggingTask` state to include `originalBaseDate` field for accurate conflict handling
+
+### Pinned Tasks Time Display Fix
 - **Issue Resolution**: Fixed timezone interpretation issues causing incorrect time displays in pinned tasks
 - **Display Format**: Improved time formatting to show proper units (days, hours, minutes) instead of everything as minutes
 - **Data Integrity**: Enhanced storage loading to reconstruct dates safely from baseDate + startHour

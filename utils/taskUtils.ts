@@ -140,6 +140,7 @@ export const resolveCollisionsForDrag = (
       if (checkOverlap(snappedNewStartHour, taskDuration, otherTask.startHour, otherTask.duration)) {
         canMove = false; // If still overlaps, mark as cannot move for this iteration
       }
+      
       // If we adjust due to one task, we might create a new collision with another.
       // For simplicity, the original logic broke after the first collision adjustment.
       // To maintain that, we can break here. Or, for a more robust solution,
