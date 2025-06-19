@@ -386,7 +386,7 @@ export function useDailyPlanner() {
       duration: taskData.duration,
       color: taskData.color || TASK_COLORS[DEFAULT_TASK_COLOR_INDEX], // Use default color index
       startHour: 0, // Not relevant for pool
-      baseDate: new Date().toISOString(), // Add base date for pool tasks
+      baseDate: getTodayDateKey(), // Add base date for pool tasks in YYYY-MM-DD format
       notes: "",
       completed: false
     };
@@ -598,7 +598,7 @@ export function useDailyPlanner() {
       ...copyingTaskData, // Spread properties from the source task being copied
       id: getNextId(),     // Assign a new ID
       startHour: targetStartHour,
-      baseDate: normalizedBaseDate.toISOString() // Use the specific target date
+      baseDate: getDateKey(normalizedBaseDate) // Use the specific target date in YYYY-MM-DD format
     };
 
     setTasks(prevTasks => [...prevTasks, newTask]);

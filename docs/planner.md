@@ -11,6 +11,7 @@ The Daily Planner is the core component for task scheduling and timeline managem
 - **Cross-Day Support**: Move tasks between different days while maintaining proper date tracking
 
 ### Recent Bug Fixes
+- **Fixed Copy/Paste Rendering Issue**: Resolved bug where copied tasks wouldn't render until page reload by ensuring consistent YYYY-MM-DD date format in the `handleDropCopy` function
 - **Fixed Date Tracking Issue**: Resolved bug where dragged tasks would be reverted to incorrect dates due to improper original date tracking in conflict resolution
 - **Improved Collision Resolution**: Enhanced the drag and drop system to properly handle conflicts and date consistency
 

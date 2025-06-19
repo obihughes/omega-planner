@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Task } from '@/types/planner';
 import { TASK_COLORS } from '@/lib/constants';
-import { dateFromDateKey } from '@/utils/dateUtils';
+import { dateFromDateKey, getDateKey } from '@/utils/dateUtils';
 
 /**
  * Interface for modal-related task data
@@ -288,7 +288,7 @@ export function useModalManager({
         name: "New Task", // Default name
         startHour: options?.initialStartHour ?? 9,
         duration: 1,
-        baseDate: today.toISOString(),
+        baseDate: getDateKey(today),
         color: TASK_COLORS[0],
         notes: "",
         completed: false,

@@ -93,7 +93,13 @@ npm test
 
 ## Recent Changes
 
-### Drag and Drop Bug Fix (Latest)
+### Copy/Paste Rendering Bug Fix (Latest)
+- **Issue Resolution**: Fixed bug where copied and pasted tasks wouldn't render until page reload or other actions
+- **Root Cause**: The `handleDropCopy` function was setting `baseDate` using `toISOString()` format instead of consistent YYYY-MM-DD format
+- **Solution**: Changed to use `getDateKey()` utility for proper date format consistency across the application
+- **Technical Details**: Ensured all task `baseDate` values use YYYY-MM-DD format for proper task-to-date mapping
+
+### Drag and Drop Bug Fix
 - **Issue Resolution**: Fixed critical bug where dragged tasks would be teleported to incorrect dates when conflicts occurred
 - **Root Cause**: Global mouse up handler was using `getTodayDateKey()` instead of the task's actual original date for conflict reversion
 - **Solution**: Added proper original date tracking in drag state to ensure tasks revert to their correct original positions
