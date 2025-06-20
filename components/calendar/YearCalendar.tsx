@@ -95,7 +95,7 @@ function EventPeriodDetailsModal({
           {item!.notes && (
             <div>
               <p className="text-sm text-muted-foreground mb-1">Notes</p>
-              <div className="text-sm p-3 bg-accent/50 rounded-md whitespace-pre-wrap border border-border max-h-32 overflow-y-auto">{item!.notes}</div>
+              <div className="text-sm p-3 bg-muted/50 rounded-md whitespace-pre-wrap border border-border max-h-32 overflow-y-auto">{item!.notes}</div>
             </div>
           )}
         </div>
@@ -179,7 +179,7 @@ function DayDetailsModal({
                             <div className="text-sm text-muted-foreground">{event.description}</div>
                           )}
                           {event.notes && (
-                            <div className="text-sm text-foreground mt-1 p-2 bg-accent/50 rounded-md whitespace-pre-wrap border border-border max-h-24 overflow-y-auto">{event.notes}</div>
+                            <div className="text-sm text-foreground mt-1 p-2 bg-muted/50 rounded-md whitespace-pre-wrap border border-border max-h-24 overflow-y-auto">{event.notes}</div>
                           )}
                         </div>
                         <Edit2 className="w-4 h-4 text-muted-foreground" />
@@ -212,7 +212,7 @@ function DayDetailsModal({
                             <div className="text-sm text-muted-foreground">{period.description}</div>
                           )}
                           {period.notes && (
-                            <div className="text-sm text-foreground mt-1 p-2 bg-accent/50 rounded-md whitespace-pre-wrap border border-border max-h-24 overflow-y-auto">{period.notes}</div>
+                            <div className="text-sm text-foreground mt-1 p-2 bg-muted/50 rounded-md whitespace-pre-wrap border border-border max-h-24 overflow-y-auto">{period.notes}</div>
                           )}
                         </div>
                         <Edit2 className="w-4 h-4 text-muted-foreground" />
@@ -322,6 +322,14 @@ export function YearCalendar({
     setTimeout(() => {
       setCurrentYear(prevYear => prevYear + (direction === 'next' ? 1 : -1));
       setIsLoading(false);
+      // Define starting position based on navigation direction
+      if (direction === 'next') {
+        // Scroll to top when navigating forward
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        // Scroll to bottom when navigating backward
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      }
     }, 0);
   };
 
@@ -575,8 +583,8 @@ export function YearCalendar({
 
         {/* Week Days Header */}
         <div className="grid grid-cols-7 gap-1 mb-2">
-          {weekDays.map(day => (
-            <div key={day} className={cn("text-xs font-medium text-muted-foreground text-center py-1", inter.className)}>
+          {weekDays.map((day, index) => (
+            <div key={`${day}-${index}`} className={cn("text-xs font-medium text-muted-foreground text-center py-1", inter.className)}>
               {day}
             </div>
           ))}
@@ -692,37 +700,40 @@ export function YearCalendar({
   };
 
   return (
-    <div className={`space-y-4 ${className} relative`}>
-      {/* Fixed Year Navigation */}
-      <Button
-          variant="outline"
-          onClick={() => navigateYear('prev')}
-          className="fixed left-0 top-1/2 -translate-y-1/2 z-30 h-auto px-2 py-8 rounded-l-none shadow-lg"
-          title={`Go to ${currentYear - 1}`}
-      >
-        <span className="[writing-mode:vertical-rl] font-semibold tracking-widest text-sm">
-            {currentYear - 1}
-        </span>
-      </Button>
-      <Button
-          variant="outline"
-          onClick={() => navigateYear('next')}
-          className="fixed right-0 top-1/2 -translate-y-1/2 z-30 h-auto px-2 py-8 rounded-r-none shadow-lg"
-          title={`Go to ${currentYear + 1}`}
-      >
-        <span className="[writing-mode:vertical-rl] font-semibold tracking-widest text-sm">
-            {currentYear + 1}
-        </span>
-      </Button>
-
+    <div className={`${className} relative`}>
       {/* Year Navigation & Controls */}
-      <div className="flex items-center justify-center gap-4 relative mb-4">
+      <div 
+        className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm flex items-center justify-center gap-4 relative border-b border-border shadow-sm h-14 -mb-14"
+        style={{ position: 'sticky', top: '0', zIndex: 40 }}
+      >
         <div className="flex-1"> {headerLeftControls}</div>
         
-        <div className="flex-shrink-0">
+        <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              onClick={() => navigateYear('prev')}
+              size="sm"
+              className="flex items-center gap-2"
+              title={`Go to ${currentYear - 1}`}
+            >
+              <ChevronLeft className="w-4 h-4" />
+              {currentYear - 1}
+            </Button>
+            
             <h2 className="text-xl font-bold text-foreground min-w-[100px] text-center">
               {currentYear}
             </h2>
+            
+            <Button
+              variant="outline"
+              onClick={() => navigateYear('next')}
+              size="sm"
+              className="flex items-center gap-2"
+              title={`Go to ${currentYear + 1}`}
+            >
+              {currentYear + 1}
+              <ChevronRight className="w-4 h-4" />
+            </Button>
         </div>
 
         <div className="flex-1 flex items-center justify-end gap-2">
@@ -759,12 +770,14 @@ export function YearCalendar({
             {headerRightControls}
         </div>
       </div>
-
+      
       {/* 12-Month Grid */}
       <div className={cn(
-        "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-10 transition-opacity",
-        eraserMode ? 'cursor-crosshair' : '',
-        isLoading ? 'opacity-50 pointer-events-none' : 'opacity-100'
+        "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-10 transition-opacity pt-14 mt-6",
+        {
+          'cursor-crosshair': eraserMode,
+          'opacity-50 pointer-events-none': isLoading
+        }
       )}>
         {Array.from({ length: 12 }, (_, month) => renderMonth(month))}
       </div>
@@ -785,7 +798,7 @@ export function YearCalendar({
         </div>
       )}
 
-      {/* Modals */}
+      {/* Modals are outside the main flow */}
       <EventModal
         isOpen={eventModalOpen}
         onClose={() => {

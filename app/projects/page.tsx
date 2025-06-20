@@ -6,7 +6,7 @@ import { useProjects } from '@/hooks/useProjects';
 import { Project } from '@/types';
 import { ProjectCard } from '@/components/projects/ProjectCard';
 import { ProjectsCalendar } from '@/components/projects/ProjectsCalendar';
-import { Navigation } from '@/components/ui/Navigation';
+import { AppLayout } from '@/components/ui/AppLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -291,9 +291,7 @@ export default function ProjectsPage() {
   const activeProject = activeId ? projects.find(p => p.id === activeId) : null;
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      
+    <AppLayout>
       <div className="container mx-auto px-6 py-6">
         <Tabs value={activeView} onValueChange={(value: string) => setActiveView(value as 'active' | 'archived' | 'calendar')}>
           <div className="flex items-center justify-between mb-6">
@@ -508,6 +506,6 @@ export default function ProjectsPage() {
           />
         )}
       </Suspense>
-    </div>
+    </AppLayout>
   );
 } 

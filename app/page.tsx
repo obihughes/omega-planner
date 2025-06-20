@@ -4,13 +4,12 @@ import React, { lazy, Suspense } from 'react';
 
 // Lazy load the heavy DailyPlanner component
 const DailyPlanner = lazy(() => import('@/components/planner/DailyPlanner'));
-import { Navigation } from '@/components/ui/Navigation';
+import { AppLayout } from '@/components/ui/AppLayout';
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      <main className="p-4">
+    <AppLayout>
+      <div className="px-6 pb-6">
         <div className="max-w-7xl mx-auto">
           <Suspense fallback={
             <div className="flex items-center justify-center h-96">
@@ -20,7 +19,7 @@ export default function Home() {
             <DailyPlanner />
           </Suspense>
         </div>
-      </main>
-    </div>
+      </div>
+    </AppLayout>
   );
 } 

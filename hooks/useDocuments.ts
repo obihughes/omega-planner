@@ -20,6 +20,7 @@ export function useDocuments() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [settings, setSettings] = useState(defaultSettings);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   // Load documents from localStorage on mount
   useEffect(() => {
@@ -30,9 +31,11 @@ export function useDocuments() {
         setDocuments(data.documents || []);
         setSettings({ ...defaultSettings, ...data.settings });
         
-        // Auto-select last opened document
+        // Auto-select last opened document (only if not trashed)
         if (data.settings.lastOpenDocument) {
-          const lastDoc = data.documents.find(doc => doc.id === data.settings.lastOpenDocument);
+          const lastDoc = data.documents.find(doc => 
+            doc.id === data.settings.lastOpenDocument && !doc.isTrashed
+          );
           if (lastDoc) {
             setSelectedDocument(lastDoc);
           }
@@ -64,7 +67,8 @@ export function useDocuments() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       tags: [],
-      isStarred: false
+      isStarred: false,
+      isTrashed: false
     };
 
     const updatedDocuments = [newDocument, ...documents];
@@ -84,7 +88,12 @@ export function useDocuments() {
     );
     
     setDocuments(updatedDocuments);
-    setSelectedDocument(updatedDocument);
+    
+    // Only update selectedDocument if it's the same document and not trashed
+    if (selectedDocument?.id === updatedDocument.id && !updatedDocument.isTrashed) {
+      setSelectedDocument(updatedDocument);
+    }
+    
     saveToStorage(updatedDocuments);
   };
 
@@ -104,15 +113,54 @@ export function useDocuments() {
     saveToStorage(updatedDocuments, newSettings);
   };
 
-  const selectDocument = (documentId: string) => {
-    const document = documents.find(doc => doc.id === documentId);
+  const trashDocument = (documentId: string) => {
+    const updatedDocuments = documents.map(doc =>
+      doc.id === documentId
+        ? { ...doc, isTrashed: true, updatedAt: new Date().toISOString() }
+        : doc
+    );
+    
+    setDocuments(updatedDocuments);
+    
+    // If the trashed document was selected, clear selection
+    if (selectedDocument?.id === documentId) {
+      setSelectedDocument(null);
+      const newSettings = { ...settings, lastOpenDocument: undefined };
+      setSettings(newSettings);
+      saveToStorage(updatedDocuments, newSettings);
+    } else {
+      saveToStorage(updatedDocuments);
+    }
+  };
+
+  const restoreDocument = (documentId: string) => {
+    const updatedDocuments = documents.map(doc =>
+      doc.id === documentId
+        ? { ...doc, isTrashed: false, updatedAt: new Date().toISOString() }
+        : doc
+    );
+    
+    setDocuments(updatedDocuments);
+    saveToStorage(updatedDocuments);
+  };
+
+  const selectDocument = useCallback((documentId: string) => {
+    // Prevent rapid navigation that causes glitches
+    if (isNavigating) return;
+    
+    setIsNavigating(true);
+    
+    const document = documents.find(doc => doc.id === documentId && !doc.isTrashed);
     if (document) {
       setSelectedDocument(document);
       const newSettings = { ...settings, lastOpenDocument: documentId };
       setSettings(newSettings);
       saveToStorage(documents, newSettings);
     }
-  };
+    
+    // Reset navigation flag after a short delay
+    setTimeout(() => setIsNavigating(false), 100);
+  }, [documents, settings, isNavigating]);
 
   const starDocument = (documentId: string) => {
     const updatedDocuments = documents.map(doc =>
@@ -135,13 +183,20 @@ export function useDocuments() {
     saveToStorage(documents, newSettings);
   };
 
+  // Filter out trashed documents for the main view
+  const activeDocuments = documents.filter(doc => !doc.isTrashed);
+  const trashedDocuments = documents.filter(doc => doc.isTrashed);
+
   return {
-    documents,
+    documents: activeDocuments,
+    trashedDocuments,
     selectedDocument,
     settings,
     createDocument,
     updateDocument,
     deleteDocument,
+    trashDocument,
+    restoreDocument,
     selectDocument,
     starDocument,
     clearSelection

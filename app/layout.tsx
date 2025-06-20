@@ -3,6 +3,7 @@
 import "@/app/globals.css";
 import { Lexend } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const lexend = Lexend({ subsets: ["latin"] });
 
@@ -23,9 +24,11 @@ export default function RootLayout({
           enableSystem={true}
           disableTransitionOnChange={false}
         >
-          <div className="min-h-screen bg-background text-foreground">
-            {children}
-          </div>
+          <ErrorBoundary>
+            <div className="min-h-screen bg-background text-foreground">
+              {children}
+            </div>
+          </ErrorBoundary>
         </ThemeProvider>
       </body>
     </html>

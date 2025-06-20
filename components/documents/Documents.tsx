@@ -4,24 +4,33 @@ import React, { useState, useEffect } from 'react';
 import { Document } from '@/types';
 import DocumentEditor from './DocumentEditor';
 import { useDocuments } from '@/hooks/useDocuments';
-import { Plus, X, Star, Search, FileText } from 'lucide-react';
+import { Plus, X, Star, Search, FileText, Save, Move, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 export default function Documents() {
   const {
     documents,
+    trashedDocuments,
     selectedDocument,
     createDocument,
     updateDocument,
     deleteDocument,
+    trashDocument,
+    restoreDocument,
     selectDocument,
     starDocument,
     clearSelection
   } = useDocuments();
 
+  const [editingDocumentId, setEditingDocumentId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [showTrash, setShowTrash] = useState(false);
+  const [dragMode, setDragMode] = useState(false);
 
   const filteredDocuments = documents.filter(doc =>
     doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -46,6 +55,16 @@ export default function Documents() {
 
   const handleSaveDocument = (document: Document) => {
     updateDocument(document);
+    setHasUnsavedChanges(false);
+  };
+
+  const handleManualSave = () => {
+    if (selectedDocument && hasUnsavedChanges) {
+      setIsAutoSaving(true);
+      updateDocument(selectedDocument);
+      setHasUnsavedChanges(false);
+      setTimeout(() => setIsAutoSaving(false), 1000);
+    }
   };
 
   const handleCloseDocument = (documentId: string, e?: React.MouseEvent) => {
@@ -73,6 +92,35 @@ export default function Documents() {
 
   const getTruncatedTitle = (title: string, maxLength: number = 25) => {
     return title.length > maxLength ? title.substring(0, maxLength) + '...' : title;
+  };
+
+  const handleTitleDoubleClick = (document: Document) => {
+    setEditingDocumentId(document.id);
+    setEditingTitle(document.title);
+  };
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditingTitle(e.target.value);
+  };
+
+  const handleTitleBlur = () => {
+    if (editingDocumentId) {
+      const document = documents.find(doc => doc.id === editingDocumentId);
+      if (document && document.title !== editingTitle) {
+        updateDocument({ ...document, title: editingTitle });
+      }
+    }
+    setEditingDocumentId(null);
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleTitleBlur();
+    }
+  };
+
+  const handleToggleDragMode = () => {
+    setDragMode(!dragMode);
   };
 
   return (
@@ -117,13 +165,25 @@ export default function Documents() {
                       : ""
                   )}
                 >
-                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 flex-1 min-w-0" onDoubleClick={() => handleTitleDoubleClick(document)}>
                     {document.isStarred && (
                       <Star className="w-3 h-3 text-yellow-500 fill-current flex-shrink-0" />
                     )}
-                    <span className="text-sm truncate">
-                      {getTruncatedTitle(document.title || 'Untitled')}
-                    </span>
+                    {editingDocumentId === document.id ? (
+                      <input
+                        type="text"
+                        value={editingTitle}
+                        onChange={handleTitleChange}
+                        onBlur={handleTitleBlur}
+                        onKeyDown={handleTitleKeyDown}
+                        className="text-sm bg-transparent outline-none focus:ring-0 border-0 p-0"
+                        autoFocus
+                      />
+                    ) : (
+                      <span className="text-sm truncate">
+                        {getTruncatedTitle(document.title || 'Untitled')}
+                      </span>
+                    )}
                   </div>
                   
                   {/* Close button */}
@@ -145,11 +205,66 @@ export default function Documents() {
 
           {/* Controls */}
           <div className="flex items-center gap-1 px-4 py-2 border-l border-border/50">
+            {selectedDocument && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleManualSave}
+                  disabled={!hasUnsavedChanges || isAutoSaving}
+                  className="h-7 px-2 text-xs"
+                  title="Save document"
+                >
+                  <Save className="w-3.5 h-3.5 mr-1" />
+                  {isAutoSaving ? 'Saving...' : 'Save'}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => starDocument(selectedDocument.id)}
+                  className="h-7 w-7 p-0"
+                  title="Star document"
+                >
+                  {selectedDocument.isStarred ? (
+                    <Star className="w-3.5 h-3.5 text-yellow-500 fill-current" />
+                  ) : (
+                    <Star className="w-3.5 h-3.5" />
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    if (window.confirm('Move this document to trash? You can restore it later.')) {
+                      trashDocument(selectedDocument.id);
+                    }
+                  }}
+                  className="h-7 w-7 p-0"
+                  title="Move to trash"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleToggleDragMode}
+                  className={cn(
+                    "h-7 px-2 text-xs",
+                    dragMode ? "bg-blue-100 text-blue-700" : ""
+                  )}
+                  title={dragMode ? "Exit drag mode" : "Enter drag mode"}
+                >
+                  <Move className="w-3.5 h-3.5 mr-1" />
+                  {dragMode ? "Exit Drag" : "Click to Drag"}
+                </Button>
+              </>
+            )}
             <Button
               variant={showSearch ? "default" : "ghost"}
               size="sm"
               onClick={() => setShowSearch(!showSearch)}
               className="h-7 w-7 p-0"
+              title="Search documents"
             >
               <Search className="w-3.5 h-3.5" />
             </Button>
@@ -157,8 +272,19 @@ export default function Documents() {
               onClick={handleCreateDocument}
               size="sm"
               className="h-7 w-7 p-0"
+              title="Create new document"
             >
               <Plus className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              variant={showTrash ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setShowTrash(!showTrash)}
+              className="h-7 px-2 text-xs"
+              title={showTrash ? "Show active documents" : "Show trash"}
+            >
+              <Trash2 className="w-3.5 h-3.5 mr-1" />
+              {showTrash ? "Active" : "Trash"} ({showTrash ? documents.length : trashedDocuments.length})
             </Button>
           </div>
         </div>
@@ -166,13 +292,71 @@ export default function Documents() {
 
       {/* Editor Area */}
       <div className="flex-1 overflow-hidden">
-        {selectedDocument ? (
+        {showTrash ? (
+          <div className="flex-1 p-6">
+            <div className="max-w-4xl mx-auto">
+              <h2 className="text-xl font-semibold mb-4">Trash</h2>
+              {trashedDocuments.length === 0 ? (
+                <div className="text-center text-muted-foreground py-12">
+                  <Trash2 className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>Trash is empty</p>
+                </div>
+              ) : (
+                <div className="grid gap-3">
+                  {trashedDocuments.map((document) => (
+                    <div
+                      key={document.id}
+                      className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-medium">{document.title}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            Moved to trash {new Date(document.updatedAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => restoreDocument(document.id)}
+                            className="h-7 px-2 text-xs"
+                          >
+                            Restore
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              if (window.confirm('Permanently delete this document? This cannot be undone.')) {
+                                deleteDocument(document.id);
+                              }
+                            }}
+                            className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : selectedDocument ? (
           <DocumentEditor
             document={selectedDocument}
-            onSave={handleSaveDocument}
+            onSave={(doc) => {
+              handleSaveDocument(doc);
+              setHasUnsavedChanges(false);
+            }}
             onClose={() => handleCloseDocument(selectedDocument.id)}
             onDelete={handleDeleteDocument}
             onStar={() => starDocument(selectedDocument.id)}
+            onChange={() => setHasUnsavedChanges(true)}
+            dragMode={dragMode}
+            onDragModeChange={setDragMode}
           />
         ) : (
           <div className="flex-1 flex items-center justify-center text-muted-foreground">

@@ -68,4 +68,95 @@ Utilities are organized by their primary purpose:
 - `formatters.ts` - Data formatting and transformation
 - `storage.ts` - Data persistence and storage operations
 
-When adding new utility files, follow the same pattern of grouping related functionality together. 
+When adding new utility files, follow the same pattern of grouping related functionality together.
+
+## Task Utilities (`utils/taskUtils.ts`)
+
+### Collision Detection and Resolution
+
+#### `checkOverlap(task1Start, task1Duration, task2Start, task2Duration): boolean`
+Determines if two tasks overlap in time.
+
+**Parameters:**
+- `task1Start`: Start hour of the first task
+- `task1Duration`: Duration in hours of the first task  
+- `task2Start`: Start hour of the second task
+- `task2Duration`: Duration in hours of the second task
+
+**Returns:** `true` if tasks overlap, `false` otherwise
+
+#### `resolveCollisionsForResize(taskToResizeDetails, proposedStartHour, proposedDuration, allTasks, edgeBeingResized): CollisionResolutionResizeResult`
+Handles collision resolution when resizing tasks.
+
+#### `resolveCollisionsForDrag(draggedTaskDetails, proposedStartHour, targetDateKey, allTasks, timelineStartHour, timelineEndHour): CollisionResolutionDragResult`
+**Enhanced collision resolution for drag operations with improved date handling.**
+
+Resolves conflicts when dragging tasks to new positions, ensuring proper placement and avoiding overlaps.
+
+**Parameters:**
+- `draggedTaskDetails`: Essential details of the task being dragged (id, duration, baseDate)
+- `proposedStartHour`: The proposed new start hour
+- `targetDateKey`: Target date in YYYY-MM-DD format
+- `allTasks`: Array of all tasks for conflict checking
+- `timelineStartHour`: Earliest valid hour
+- `timelineEndHour`: Latest valid hour
+
+**Returns:** Object with `snappedNewStartHour` and `canMove` boolean
+
+**Key Features:**
+- Automatically finds available space when conflicts occur
+- Respects timeline boundaries
+- Snaps to 15-minute intervals
+- Proper date-based task filtering
+
+**Recent Improvements:**
+- Enhanced date key consistency for cross-day drag operations
+- Improved conflict detection accuracy
+- Better handling of edge cases in collision resolution
+
+## Date Utilities (`utils/dateUtils.ts`)
+
+### Date Key Management
+All date utilities use consistent YYYY-MM-DD format for reliable date operations.
+
+#### `getDateKeyFromOffset(dayOffset): string`
+Generates date key for today + offset days.
+
+#### `dateFromDateKey(dateKey): Date`
+Converts YYYY-MM-DD string to Date object (local timezone).
+
+#### `getTodayDateKey(): string`
+Gets today's date in YYYY-MM-DD format.
+
+#### `getCalendarDateForColumn(columnDayOffset): string`
+Helper for getting date keys for timeline columns.
+
+**Important:** All date utilities are timezone-safe and use consistent formatting to prevent date-related bugs in drag and drop operations.
+
+## Storage Utilities (`utils/storage.ts`)
+
+### Task Persistence
+Handles local storage operations for tasks, pool tasks, and planner settings.
+
+#### `TaskStorage.save(tasks)`
+Persists main timeline tasks.
+
+#### `TaskStorage.load()`
+Retrieves saved timeline tasks.
+
+#### `TaskStorage.savePoolTasks(tasks)`
+Persists task pool.
+
+#### `TaskStorage.loadPoolTasks()`
+Retrieves task pool.
+
+## Formatter Utilities (`utils/formatters.ts`)
+
+### Time Display
+Handles consistent time formatting across the application.
+
+#### `formatTime(hour): string`
+Converts decimal hour to readable time format (e.g., 14.5 → "2:30 PM").
+
+#### `formatDuration(hours): string`
+Formats duration for display. 

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useProjects } from '@/hooks/useProjects';
 import { Project, ProjectTask } from '@/types';
 import { TaskItem } from '@/components/projects/TaskItem';
-import { Navigation } from '@/components/ui/Navigation';
+import { AppLayout } from '@/components/ui/AppLayout';
 import { 
   DndContext, 
   closestCenter,
@@ -176,12 +176,11 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   // Early returns after all hooks are defined
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navigation />
+      <AppLayout>
         <div className="flex items-center justify-center h-96">
           <div className="text-muted-foreground">Loading project...</div>
         </div>
-      </div>
+      </AppLayout>
     );
   }
 
@@ -227,9 +226,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   const totalTasks = tasks.length || 0;
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      
+    <AppLayout>
       <div className="max-w-6xl mx-auto px-4 py-6">
         {/* Header */}
         <div className="flex items-center space-x-4 mb-6">
@@ -385,6 +382,6 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
           />
         )}
       </Suspense>
-    </div>
+    </AppLayout>
   );
 } 

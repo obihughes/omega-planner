@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Task } from '@/types/planner';
 import { TASK_COLORS } from '@/lib/constants';
+import { dateFromDateKey, getDateKey } from '@/utils/dateUtils';
 
 /**
  * Interface for modal-related task data
@@ -282,14 +283,15 @@ export function useModalManager({
       const tempId = `temp-new-${Date.now()}`;
       const today = new Date();
       today.setHours(0,0,0,0);
-      setActiveEditModalTask({
+            setActiveEditModalTask({
         id: tempId,
         name: "New Task", // Default name
         startHour: options?.initialStartHour ?? 9,
         duration: 1,
-        baseDate: today.toISOString(), 
-        dayOffset: 0,
+        baseDate: getDateKey(today),
         color: TASK_COLORS[0],
+        notes: "",
+        completed: false,
         isFromPool: options?.isFromPool || false,
         isNew: true,
       });
@@ -319,8 +321,7 @@ export function useModalManager({
     const isNew = options?.isNew ?? activeEditModalTask?.isNew ?? false;
     const isFromPool = options?.isFromPool ?? activeEditModalTask?.isFromPool ?? false;
 
-    console.log("[useModalManager] saveTaskFromModal called. isNew:", isNew, "isFromPool:", isFromPool, "Task ID:", taskDataFromForm.id);
-    console.log("[useModalManager] Task data from form:", JSON.parse(JSON.stringify(taskDataFromForm)));
+
 
     if (isNew) {
       if (!taskDataFromForm.name || !taskDataFromForm.baseDate) {
@@ -329,8 +330,8 @@ export function useModalManager({
         alert("New task must have a name and a date.");
         return;
       }
-      // Ensure baseDate is a Date object before passing to onAddTask
-      const targetDate = new Date(taskDataFromForm.baseDate);
+      // Convert YYYY-MM-DD to Date object properly to avoid timezone issues
+      const targetDate = dateFromDateKey(taskDataFromForm.baseDate);
       // onAddTask expects dayOffset to be 0 if targetDate is the specific calendar date.
       // taskDataFromForm should have duration, color, notes, completed already set.
       onAddTask(
@@ -354,10 +355,10 @@ export function useModalManager({
       }
       const { id, ...updatedFields } = taskDataFromForm;
       if (isFromPool) {
-        console.log("[useModalManager] Updating POOL task ID:", id, "with fields:", updatedFields);
+
         onUpdatePoolTask(id, updatedFields);
       } else {
-        console.log("[useModalManager] Updating TIMELINE task ID:", id, "with fields:", updatedFields);
+        
         onUpdateTask(id, updatedFields);
       }
     }

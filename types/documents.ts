@@ -10,6 +10,7 @@ export interface Document {
   updatedAt: string;
   tags?: string[];
   isStarred?: boolean;
+  isTrashed?: boolean;
 }
 
 export interface DocumentsStorageData {

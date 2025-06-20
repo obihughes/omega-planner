@@ -17,7 +17,7 @@ import {
 } from '../lib/constants';
 import { useModalManager } from './useModalManager';
 import type { ActiveModalTask as ImportedActiveModalTask } from './useModalManager';
-import { getDateWithoutTime as getUtilDateWithoutTime, isSameCalendarDate as utilIsSameCalendarDate } from '../utils/dateUtils'; // Import the utility
+import { getDateKeyFromOffset, dateFromDateKey, getTodayDateKey, addDaysToDateKey, getDateKey } from '../utils/dateUtils'; // Import the new utility functions
 // import { checkOverlap } from '../utils/taskUtils'; // checkOverlap is available via wildcard import
 
 // Define the type for the resizingTask state
@@ -51,13 +51,12 @@ export function useDailyPlanner() {
   const [isTaskPoolOpen, setIsTaskPoolOpen] = useState<boolean>(true); // Added for default open task pool
 
   const [draggingTask, setDraggingTask] = useState<{
-    // taskIndex: number; // No longer used
     initialMouseY: number; 
     initialStartHour: number; 
-    initialDayOffset: number; 
-    taskElement: HTMLDivElement; 
+    taskElement: HTMLDivElement | null; 
     task: Task; 
-    offsetX?: number; // Added for smoother drag positioning
+    offsetX?: number;
+    originalBaseDate?: string; // Track the original date when drag started
   } | null>(null);
   
   // Use the new ResizingTaskState interface here
@@ -78,7 +77,7 @@ export function useDailyPlanner() {
   const [cloneConflictStrategy, setCloneConflictStrategy] = useState<'skip' | 'replace' | 'adjust'>('skip');
 
   const [isClient, setIsClient] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false); // New state for sidebar collapse
+  // Removed isSidebarCollapsed state since we moved to top horizontal layout
   const [viewingTaskNotes, setViewingTaskNotes] = useState<Task | null>(null); // State for View Notes Modal
 
   useEffect(() => {
@@ -89,10 +88,8 @@ export function useDailyPlanner() {
   const tasksByDate = useMemo(() => {
     const map = new Map<string, Task[]>();
     tasks.forEach(task => {
-      // Ensure baseDate is a valid string and normalize it.
-      // tasks should always have baseDate as ISO string at midnight UTC.
-      const dateNormalized = getUtilDateWithoutTime(task.baseDate); // Use imported utility
-      const dateStr = dateNormalized.toISOString();
+      // baseDate is already in YYYY-MM-DD format, use it directly
+      const dateStr = task.baseDate;
       
       if (!map.has(dateStr)) {
         map.set(dateStr, []);
@@ -211,35 +208,31 @@ export function useDailyPlanner() {
 
   /**
    * Adds a new task to the main timeline.
-   * The new task's 'baseDate' is set to midnight of the provided 'targetDate'.
-   * Its 'dayOffset' will be 0 relative to this 'baseDate'.
-   * @param {Date} targetDate - The specific calendar date for the new task.
+   * @param {Date|string} targetDate - The target date (Date object or YYYY-MM-DD string).
    * @param {number} startHour - The start hour for the new task.
    * @param {object} taskData - Object containing name, duration, and color for the new task.
-   * @param {number} [dayOffset=0] - Should generally be 0 as targetDate now defines the specific day.
-   *                                 Included for flexibility but defaults to 0.
+   * @param {number} [dayOffset=0] - Kept for backward compatibility, ignored.
    */
   const handleAddTask = useCallback((
-    targetDate: Date,
+    targetDate: Date | string,
     startHour: number,
     taskData: { name: string; duration: number; color: string; notes?: string; completed?: boolean; },
-    dayOffset: number = 0 // Default dayOffset to 0
+    dayOffset: number = 0 // Kept for backward compatibility
   ) => {
-    // Create a normalized base date from the targetDate with time set to midnight
-    const normalizedBaseDate = new Date(targetDate);
-    normalizedBaseDate.setHours(0, 0, 0, 0);
+    // Convert to YYYY-MM-DD format
+    const baseDateKey = typeof targetDate === 'string' ? targetDate : getDateKey(targetDate);
     
     const newTask: Task = {
       id: getNextId(),
       name: taskData.name,
       startHour,
       duration: taskData.duration,
-      dayOffset, // Use the provided dayOffset, defaulting to 0
-      color: taskData.color || TASK_COLORS[DEFAULT_TASK_COLOR_INDEX], // Use default color index
-      baseDate: normalizedBaseDate.toISOString(), // baseDate is the normalized targetDate
-      notes: taskData.notes, // Add notes
-      completed: taskData.completed // Add completed status
+      color: taskData.color || TASK_COLORS[DEFAULT_TASK_COLOR_INDEX],
+      baseDate: baseDateKey, // Use the YYYY-MM-DD string
+      notes: taskData.notes || "",
+      completed: taskData.completed || false
     };
+    
     setTasks(prevTasks => [...prevTasks, newTask]);
   }, [getNextId]);
 
@@ -291,30 +284,41 @@ export function useDailyPlanner() {
   // --- Global Mouse Event Handlers ---
   const handleMouseUpGlobal = useCallback(() => {
     if (draggingTask) {
-      const { task: finalDraggedTaskData, /* taskIndex, */ initialStartHour: originalStartHourBeforeDrag, initialDayOffset: originalDayOffsetBeforeDrag } = draggingTask;
+      const { task: finalDraggedTaskData, initialStartHour, originalBaseDate } = draggingTask;
       
-      const finalTargetDate = getUtilDateWithoutTime(finalDraggedTaskData.baseDate);
+      const originalDate = originalBaseDate || finalDraggedTaskData.baseDate; // Use stored original date, fallback to current
+      const finalTargetDate = finalDraggedTaskData.baseDate; // Already in YYYY-MM-DD format
 
       const otherTasksOnFinalDate = tasks.filter(t => {
         if (t.id === finalDraggedTaskData.id) return false;
-        const otherTaskDate = getUtilDateWithoutTime(t.baseDate);
-        return utilIsSameCalendarDate(otherTaskDate, finalTargetDate);
+        return t.baseDate === finalTargetDate; // Simple string comparison
       });
 
       let conflict = false;
       for (const otherTask of otherTasksOnFinalDate) {
-        if (checkOverlap(finalDraggedTaskData.startHour, finalDraggedTaskData.duration, otherTask.startHour, otherTask.duration)) {
+        const hasOverlap = checkOverlap(finalDraggedTaskData.startHour, finalDraggedTaskData.duration, otherTask.startHour, otherTask.duration);
+        if (hasOverlap) {
           conflict = true;
           break;
         }
       }
 
       if (conflict) {
-      } else {
-        const newTasks = tasks.map(task =>
-          task.id === finalDraggedTaskData.id ? { ...finalDraggedTaskData } : task
+        // Revert to the original position
+        setTasks(currentTasks =>
+          currentTasks.map(task =>
+            task.id === finalDraggedTaskData.id
+              ? { ...task, startHour: initialStartHour, baseDate: originalDate }
+              : task
+          )
         );
-        setTasks(newTasks);
+      } else {
+        // Commit the new position
+        setTasks(currentTasks =>
+          currentTasks.map(task =>
+            task.id === finalDraggedTaskData.id ? { ...finalDraggedTaskData } : task
+          )
+        );
       }
       setDraggingTask(null); 
     }
@@ -348,7 +352,7 @@ export function useDailyPlanner() {
                 startHour: finalStartHour, 
                 duration: finalDuration, 
                 baseDate: rawPreviewTask.baseDate, // Ensure the correct baseDate from the preview is used
-                dayOffset: 0 // Ensure dayOffset is 0 as per new system
+
               }
             : task
         )
@@ -376,14 +380,15 @@ export function useDailyPlanner() {
 
   // --- Task Pool Functions ---
   const handleActualAddPoolTask = useCallback((taskData: { name: string; duration: number; color?: string }) => {
-    const newPoolTask: Task = {
+        const newPoolTask: Task = {
       id: getNextId(),
       name: taskData.name,
       duration: taskData.duration,
       color: taskData.color || TASK_COLORS[DEFAULT_TASK_COLOR_INDEX], // Use default color index
-      dayOffset: -1000, // Special dayOffset for pool tasks
       startHour: 0, // Not relevant for pool
-      baseDate: new Date().toISOString() // Add base date for pool tasks
+      baseDate: getTodayDateKey(), // Add base date for pool tasks in YYYY-MM-DD format
+      notes: "",
+      completed: false
     };
     setPoolTasks(prevPoolTasks => [...prevPoolTasks, newPoolTask]);
   }, [getNextId, setPoolTasks]);
@@ -394,7 +399,7 @@ export function useDailyPlanner() {
       const poolTaskCopy: Task = {
         ...taskToCopy,
         id: getNextId(), // New ID for the copy in the pool
-        dayOffset: -1000, // Pool task identifier
+
         // Keep original startHour and duration as template values
       };
       setPoolTasks(prevPoolTasks => [...prevPoolTasks, poolTaskCopy]);
@@ -410,7 +415,6 @@ export function useDailyPlanner() {
       const newTaskForTimeline: Task = {
         ...taskToMove,
         id: getNextId(), // New ID for the timeline instance
-        dayOffset: targetDayOffset,
         startHour: targetStartHour,
       };
       setTasks(prev => [...prev, newTaskForTimeline]);
@@ -435,28 +439,26 @@ export function useDailyPlanner() {
   const handlePinTask = useCallback((originalTask: Task) => {
     const taskToPin = { ...originalTask };
 
-    // 1. Reconstruct the Date object for the UTC moment representing local midnight.
-    const tempUtcDate = new Date(taskToPin.baseDate);
-
-    // 2. Get the LOCAL calendar date components from this Date object.
-    const localYear = tempUtcDate.getFullYear();
-    const localMonth = tempUtcDate.getMonth();
-    const localDay = tempUtcDate.getDate();
-
-    // 3. Get the LOCAL time components from the task's startHour.
-    const taskHours = Math.floor(taskToPin.startHour);
-    const taskMinutes = Math.round((taskToPin.startHour % 1) * 60);
-
-    // 4. Create a NEW Date object using these LOCAL components.
-    const localDueDate = new Date(localYear, localMonth, localDay, taskHours, taskMinutes, 0, 0);
+    // Use dateFromDateKey for timezone-safe date parsing
+    const dueDate = dateFromDateKey(taskToPin.baseDate);
+    
+    // Add the task's start hour to this date
+    // The startHour is a float (e.g., 14.5 for 2:30 PM)
+    const hours = Math.floor(taskToPin.startHour);
+    const minutes = Math.round((taskToPin.startHour - hours) * 60);
+    dueDate.setHours(hours, minutes, 0, 0);
 
     const newPinnedTask: PinnedTask = {
       ...taskToPin,
       originalId: taskToPin.id,
       pinnedId: getNextId(),
-      dueDate: localDueDate, // Use the correctly constructed localDueDate
+      dueDate: dueDate, // Use the correctly constructed dueDate
     };
-    setPinnedTasks(prevPinnedTasks => [...prevPinnedTasks, newPinnedTask].sort((a,b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()));
+    setPinnedTasks(prevPinnedTasks => [...prevPinnedTasks, newPinnedTask].sort((a,b) => {
+      const aDate = a.dueDate instanceof Date ? a.dueDate : new Date(a.dueDate);
+      const bDate = b.dueDate instanceof Date ? b.dueDate : new Date(b.dueDate);
+      return aDate.getTime() - bDate.getTime();
+    }));
   }, [getNextId, setPinnedTasks]);
 
   const handleUnpinTask = useCallback((pinnedIdToUnpin: string) => {
@@ -469,7 +471,10 @@ export function useDailyPlanner() {
   const clearOverduePinnedTasks = useCallback(() => {
     const now = new Date();
     setPinnedTasks(prevPinnedTasks => 
-      prevPinnedTasks.filter(task => new Date(task.dueDate).getTime() >= now.getTime())
+      prevPinnedTasks.filter(task => {
+        const taskDueDate = task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate);
+        return taskDueDate.getTime() >= now.getTime();
+      })
     );
     // TODO: Consider adding a confirmation modal before this operation
   }, [setPinnedTasks]);
@@ -486,22 +491,22 @@ export function useDailyPlanner() {
     const newPinnedTasks = pinnedTasks.map(pinnedTask => {
       const correspondingTimelineTask = timelineTasksMap.get(pinnedTask.originalId);
       if (correspondingTimelineTask) {
-        // Recalculate dueDate based on timeline task's local date and time
-        const tempUtcDate = new Date(correspondingTimelineTask.baseDate);
-        const localYear = tempUtcDate.getFullYear();
-        const localMonth = tempUtcDate.getMonth();
-        const localDay = tempUtcDate.getDate();
-        const taskHours = Math.floor(correspondingTimelineTask.startHour);
-        const taskMinutes = Math.round((correspondingTimelineTask.startHour % 1) * 60);
-        const newDueDate = new Date(localYear, localMonth, localDay, taskHours, taskMinutes, 0, 0);
+        // Recalculate dueDate based on timeline task's startHour and baseDate using timezone-safe parsing
+        const newDueDate = dateFromDateKey(correspondingTimelineTask.baseDate);
+        const hours = Math.floor(correspondingTimelineTask.startHour);
+        const minutes = Math.round((correspondingTimelineTask.startHour - hours) * 60);
+        newDueDate.setHours(hours, minutes, 0, 0);
 
         // Check if an update is needed
+        // Compare dueDate properly handling potential serialization issues
+        const currentDueDate = pinnedTask.dueDate instanceof Date ? pinnedTask.dueDate : new Date(pinnedTask.dueDate);
+        
         if (
           pinnedTask.name !== correspondingTimelineTask.name ||
           pinnedTask.duration !== correspondingTimelineTask.duration ||
           pinnedTask.color !== correspondingTimelineTask.color ||
           pinnedTask.notes !== correspondingTimelineTask.notes ||
-          new Date(pinnedTask.dueDate).getTime() !== newDueDate.getTime()
+          currentDueDate.getTime() !== newDueDate.getTime()
         ) {
           updatedOccurred = true;
           return {
@@ -521,7 +526,11 @@ export function useDailyPlanner() {
     });
 
     if (updatedOccurred) {
-      setPinnedTasks(newPinnedTasks.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()));
+      setPinnedTasks(newPinnedTasks.sort((a, b) => {
+        const aDate = a.dueDate instanceof Date ? a.dueDate : new Date(a.dueDate);
+        const bDate = b.dueDate instanceof Date ? b.dueDate : new Date(b.dueDate);
+        return aDate.getTime() - bDate.getTime();
+      }));
     }
     // TODO: Optionally, provide feedback to the user if sync occurred or not.
   }, [tasks, pinnedTasks, setPinnedTasks]);
@@ -588,9 +597,8 @@ export function useDailyPlanner() {
     const newTask: Task = {
       ...copyingTaskData, // Spread properties from the source task being copied
       id: getNextId(),     // Assign a new ID
-      dayOffset: 0,        // dayOffset is 0 because baseDate is the specific target date
       startHour: targetStartHour,
-      baseDate: normalizedBaseDate.toISOString() // Use the specific target date
+      baseDate: getDateKey(normalizedBaseDate) // Use the specific target date in YYYY-MM-DD format
     };
 
     setTasks(prevTasks => [...prevTasks, newTask]);
@@ -607,25 +615,23 @@ export function useDailyPlanner() {
    * @param {Date} destinationCalendarDate - The specific calendar date to which tasks will be cloned (normalized to midnight).
    */
   const cloneDayTasks = useCallback((sourceCalendarDate: Date, destinationCalendarDate: Date) => {
-    const sourceDateNormalized = getUtilDateWithoutTime(sourceCalendarDate.toISOString());
-    const destinationDateForComparison = getUtilDateWithoutTime(destinationCalendarDate.toISOString());
+    // Convert Date objects to YYYY-MM-DD format using our utility
+    const sourceDateKey = getDateKey(sourceCalendarDate);
+    const destinationDateKey = getDateKey(destinationCalendarDate);
 
     const tasksFromSourceDay = tasks.filter(task => {
-      const taskCalendarDate = getUtilDateWithoutTime(task.baseDate);
-      return utilIsSameCalendarDate(taskCalendarDate, sourceDateNormalized);
+      return task.baseDate === sourceDateKey; // Simple string comparison
     });
 
     const existingDestinationTasks = tasks.filter(t => {
-      const taskAbsDate = getUtilDateWithoutTime(t.baseDate);
-      return utilIsSameCalendarDate(taskAbsDate, destinationDateForComparison) && t.dayOffset === 0;
+      return t.baseDate === destinationDateKey; // Simple string comparison
     });
     
     const newClonedTasks = tasksFromSourceDay.map(sourceTask => {
       const newTask: Task = {
         ...sourceTask,
         id: getNextId(),
-        dayOffset: 0,
-        baseDate: destinationDateForComparison.toISOString()
+        baseDate: destinationDateKey // Use the YYYY-MM-DD string directly
       };
       return newTask;
     });
@@ -743,15 +749,19 @@ export function useDailyPlanner() {
   useEffect(() => {
     const loadedTasks = TaskStorage.load();
     if (loadedTasks) {
-      setTasks(loadedTasks);
+      // Sanitize loaded data to remove legacy dayOffset property
+      const sanitizedTasks = loadedTasks.map(({ dayOffset, ...task }: any) => task);
+      setTasks(sanitizedTasks);
     }
     const loadedPoolTasks = TaskStorage.loadPoolTasks();
     if (loadedPoolTasks) {
-      setPoolTasks(loadedPoolTasks);
+      const sanitizedPoolTasks = loadedPoolTasks.map(({ dayOffset, ...task }: any) => task);
+      setPoolTasks(sanitizedPoolTasks);
     }
     const loadedPinnedTasks = TaskStorage.loadPinnedTasks();
     if (loadedPinnedTasks) {
-      setPinnedTasks(loadedPinnedTasks);
+      const sanitizedPinnedTasks = loadedPinnedTasks.map(({ dayOffset, ...task }: any) => task);
+      setPinnedTasks(sanitizedPinnedTasks);
     }
 
     // Initialize taskIdCounter and taskIdCounterRef
@@ -786,7 +796,7 @@ export function useDailyPlanner() {
     // --- MODIFIED DAY VIEW SETTINGS LOGIC ---
     _setTopDayOffset(DEFAULT_TOP_DAY_OFFSET);
     _setBottomDayOffset(DEFAULT_BOTTOM_DAY_OFFSET);
-    console.log('📅 Forcing application default day view settings and saving to storage.');
+
     TaskStorage.saveDayViewSettings({ topDayOffset: DEFAULT_TOP_DAY_OFFSET, bottomDayOffset: DEFAULT_BOTTOM_DAY_OFFSET });
     // --- END MODIFIED LOGIC ---
 
@@ -797,27 +807,7 @@ export function useDailyPlanner() {
 
     // Check for mobile view and persisted sidebar state
     if (typeof window !== 'undefined') {
-      const mobileMediaQuery = window.matchMedia("(max-width: 768px)");
-      const persistedCollapseState = TaskStorage.loadSidebarCollapsed();
-
-      if (mobileMediaQuery.matches) {
-        setIsSidebarCollapsed(true);
-      } else if (persistedCollapseState !== null) {
-        setIsSidebarCollapsed(persistedCollapseState);
-      }
-      // Listener for future changes (e.g. resizing window across breakpoint)
-      const handleResize = () => {
-        if (mobileMediaQuery.matches) {
-          setIsSidebarCollapsed(true);
-        } else {
-          // If not mobile, and there was a persisted state, use it. Otherwise, default to false (expanded).
-          const nonMobilePersistedState = TaskStorage.loadSidebarCollapsed();
-          setIsSidebarCollapsed(nonMobilePersistedState !== null ? nonMobilePersistedState : false);
-        }
-      };
-      mobileMediaQuery.addEventListener('change', handleResize);
-      // Cleanup listener on unmount
-      return () => mobileMediaQuery.removeEventListener('change', handleResize);
+      // Removed sidebar collapse logic since we moved to top horizontal layout
     }
 
   }, []); // Empty dependency array means this runs once on mount
@@ -843,16 +833,7 @@ export function useDailyPlanner() {
     }
   }, [pinnedTasks]);
 
-  // Save sidebar collapsed state
-  useEffect(() => {
-    if (initialLoadComplete.current && typeof window !== 'undefined') {
-      // Only save if not on mobile, as mobile defaults to collapsed
-      const mobileMediaQuery = window.matchMedia("(max-width: 768px)");
-      if (!mobileMediaQuery.matches) {
-        TaskStorage.saveSidebarCollapsed(isSidebarCollapsed);
-      }
-    }
-  }, [isSidebarCollapsed]);
+  // Removed sidebar collapsed state saving since we moved to top horizontal layout
 
   // Save day view settings whenever they change
   useEffect(() => {
@@ -923,7 +904,6 @@ export function useDailyPlanner() {
     initialDayOffsetForModal,
     initialStartHourForModal,
     showClearPoolModal,
-    isSidebarCollapsed,
     isTaskPoolOpen,
     isClient,
     topDayOffset,
@@ -951,7 +931,6 @@ export function useDailyPlanner() {
     setTopDayOffset,
     setBottomDayOffset,
     setIsTaskPoolOpen,
-    setIsSidebarCollapsed,
     setCloneConflictStrategy,
     
     // State Setters (from modalManager, aliased)
