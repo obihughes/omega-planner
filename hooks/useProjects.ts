@@ -1,183 +1,200 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Project, ProjectTask, ProjectsStorageData } from '@/types';
-
-const STORAGE_KEY = 'omega-planner-projects';
-const STORAGE_VERSION = '1.0.0';
-
-// Helper to save to localStorage
-const saveProjectsToStorage = (projects: Project[]) => {
-  try {
-    const data: ProjectsStorageData = {
-      version: STORAGE_VERSION,
-      projects: projects,
-      lastUpdated: new Date().toISOString()
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch (error) {
-    console.error('Error saving projects:', error);
-  }
-};
+import { Project, ProjectTask } from '@/types';
+import { supabase } from '@/lib/supabaseClient';
 
 export function useProjects() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Load projects from localStorage
-  useEffect(() => {
+  // Load projects from Supabase
+  const fetchProjects = useCallback(async () => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const data: ProjectsStorageData = JSON.parse(stored);
-        if (data.version === STORAGE_VERSION) {
-          const migratedProjects = data.projects.map((project, index) => ({
-            ...project,
-            order: project.order ?? index, // Ensure order exists
-            tasks: project.tasks.map((task, index) => ({
-              ...task,
-              order: task.order ?? index,
-            })),
-          }));
-          setProjects(migratedProjects);
-        }
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('is_deleted', false)
+        .order('order', { ascending: true });
+
+      if (error) {
+        throw error;
       }
+
+      // Note: Tasks are not stored in the projects table in this new schema.
+      // We will need to handle tasks separately. For now, initialize as empty.
+      const projectsWithEmptyTasks = data.map(p => ({ ...p, tasks: [], progress: 0 }));
+      setProjects(projectsWithEmptyTasks);
+
     } catch (error) {
-      console.error('Error loading projects:', error);
+      console.error('Error loading projects from Supabase:', error);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Generic state-safe update function
-  const updateProjectsState = (updater: (prevProjects: Project[]) => Project[]) => {
-    setProjects(prevProjects => {
-      const updatedProjects = updater(prevProjects);
-      saveProjectsToStorage(updatedProjects);
-      return updatedProjects;
-    });
-  };
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
 
-  const createProject = useCallback((projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'tasks' | 'progress' | 'order'>) => {
-    const newProject: Project = {
-      ...projectData,
-      id: `project-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      tasks: [],
-      progress: 0,
-      order: Date.now(), // Use timestamp for initial ordering
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    
-    updateProjectsState(prevProjects => [...prevProjects, newProject]);
-    return newProject;
+  const createProject = useCallback(async (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'tasks' | 'progress' | 'order'>) => {
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .insert([{ ...projectData, order: projects.length }])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      const newProjectWithEmptyTasks = { ...data, tasks: [], progress: 0 };
+      setProjects(prevProjects => [...prevProjects, newProjectWithEmptyTasks]);
+      return newProjectWithEmptyTasks;
+
+    } catch (error) {
+      console.error('Error creating project:', error);
+      return null;
+    }
+  }, [projects.length]);
+
+  const updateProject = useCallback(async (projectId: string, updates: Partial<Project>) => {
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', projectId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setProjects(prevProjects => 
+        prevProjects.map(p => 
+          p.id === projectId ? { ...p, ...data, tasks: p.tasks } : p // preserve tasks
+        )
+      );
+    } catch (error) {
+      console.error('Error updating project:', error);
+    }
   }, []);
 
-  const updateProject = useCallback((projectId: string, updates: Partial<Project>) => {
-    updateProjectsState(prevProjects => 
-      prevProjects.map(p => 
-        p.id === projectId ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p
-      )
-    );
+  const deleteProject = useCallback(async (projectId: string) => {
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({ is_deleted: true, updated_at: new Date().toISOString() })
+        .eq('id', projectId);
+
+      if (error) throw error;
+
+      setProjects(prevProjects => prevProjects.filter(p => p.id !== projectId));
+    } catch (error) {
+      console.error('Error deleting project:', error);
+    }
   }, []);
 
-  // Soft delete a project by setting `isDeleted: true`
-  const deleteProject = useCallback((projectId: string) => {
-    updateProjectsState(prevProjects =>
-      prevProjects.map(p =>
-        p.id === projectId ? { ...p, isDeleted: true, updatedAt: new Date().toISOString() } : p
-      )
-    );
-  }, []);
-
-  // Restore a deleted project
-  const restoreProject = useCallback((projectId: string) => {
-    updateProjectsState(prevProjects =>
-      prevProjects.map(p =>
-        p.id === projectId ? { ...p, isDeleted: false, updatedAt: new Date().toISOString() } : p
-      )
-    );
+  // Restore a deleted project (example, not fully implemented in UI yet)
+  const restoreProject = useCallback(async (projectId: string) => {
+    // This would require fetching deleted projects first.
+    // For now, it's a placeholder for future functionality.
+    console.log('Restoring project:', projectId);
   }, []);
 
   // Permanently delete a project
-  const permanentlyDeleteProject = useCallback((projectId: string) => {
-    updateProjectsState(prevProjects =>
-      prevProjects.filter(p => p.id !== projectId)
-    );
+  const permanentlyDeleteProject = useCallback(async (projectId: string) => {
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', projectId);
+
+      if (error) throw error;
+      
+      // No need to update state, as it should already be filtered out by `deleteProject`
+    } catch (error) {
+      console.error('Error permanently deleting project:', error);
+    }
   }, []);
 
   // Reorder projects
-  const reorderProjects = useCallback((activeId: string, overId: string) => {
+  const reorderProjects = useCallback(async (activeId: string, overId: string) => {
     if (activeId === overId) return;
     
-    updateProjectsState(prevProjects => {
-      const activeIndex = prevProjects.findIndex(p => p.id === activeId);
-      const overIndex = prevProjects.findIndex(p => p.id === overId);
-      
-      if (activeIndex === -1 || overIndex === -1) return prevProjects;
+    const originalProjects = [...projects];
+    const activeIndex = projects.findIndex(p => p.id === activeId);
+    const overIndex = projects.findIndex(p => p.id === overId);
+    
+    if (activeIndex === -1 || overIndex === -1) return;
 
-      const reorderedProjects = Array.from(prevProjects);
-      const [movedProject] = reorderedProjects.splice(activeIndex, 1);
-      reorderedProjects.splice(overIndex, 0, movedProject);
-      
-      // Update order values based on new positions
-      return reorderedProjects.map((project, index) => ({
-        ...project,
-        order: index,
-        updatedAt: new Date().toISOString()
+    const reordered = Array.from(projects);
+    const [movedProject] = reordered.splice(activeIndex, 1);
+    reordered.splice(overIndex, 0, movedProject);
+    
+    const updatedProjectsWithOrder = reordered.map((project, index) => ({
+      ...project,
+      order: index,
+    }));
+    
+    setProjects(updatedProjectsWithOrder);
+
+    try {
+      const updates = updatedProjectsWithOrder.map(p => ({
+        id: p.id,
+        order: p.order,
+        updated_at: new Date().toISOString()
       }));
-    });
-  }, []);
+
+      const { error } = await supabase.from('projects').upsert(updates);
+      if (error) throw error;
+
+    } catch (error) {
+      console.error('Error reordering projects:', error);
+      setProjects(originalProjects); // Revert on error
+    }
+  }, [projects]);
+
+  // --- Task-related functions are now more complex ---
+  // --- They will need their own `tasks` table in Supabase ---
+  // --- For now, they will only manipulate local state ---
 
   const addTaskToProject = useCallback((projectId: string, taskData: Omit<ProjectTask, 'id' | 'createdAt' | 'updatedAt' | 'order'>) => {
-    let newTask: ProjectTask | null = null;
-    updateProjectsState(prevProjects => 
-      prevProjects.map(project => {
-        if (project.id === projectId) {
-          newTask = {
-            ...taskData,
-            id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            order: project.tasks.length,
-          };
-          const updatedTasks = [...project.tasks, newTask];
-          const completedTasks = updatedTasks.filter(t => t.status === 'completed').length;
-          const progress = updatedTasks.length > 0 ? Math.round((completedTasks / updatedTasks.length) * 100) : 0;
-          return { ...project, tasks: updatedTasks, progress, updatedAt: new Date().toISOString() };
+    const newTask: ProjectTask = {
+      ...taskData,
+      id: `task-local-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      order: 0 // Will need to be managed properly later
+    };
+    
+    setProjects(prevProjects => 
+      prevProjects.map(p => {
+        if (p.id === projectId) {
+          return { ...p, tasks: [...p.tasks, newTask] };
         }
-        return project;
+        return p;
       })
     );
+    console.warn("Task created locally. To persist, create a 'tasks' table in Supabase.");
     return newTask;
   }, []);
 
   const updateTaskInProject = useCallback((projectId: string, taskId: string, updates: Partial<ProjectTask>) => {
-    updateProjectsState(prevProjects => 
-      prevProjects.map(project => {
-        if (project.id === projectId) {
-          const updatedTasks = project.tasks.map(task => {
-            if (task.id === taskId) {
-              const updatedTask = { ...task, ...updates, updatedAt: new Date().toISOString() };
-              if (updates.status === 'completed' && task.status !== 'completed') {
-                updatedTask.completedAt = new Date().toISOString();
-              } else if (updates.status && updates.status !== 'completed' && task.status === 'completed') {
-                updatedTask.completedAt = undefined;
-              }
-              return updatedTask;
-            }
-            return task;
-          });
-          const completedTasks = updatedTasks.filter(t => t.status === 'completed').length;
-          const progress = updatedTasks.length > 0 ? Math.round((completedTasks / updatedTasks.length) * 100) : 0;
-          return { ...project, tasks: updatedTasks, progress, updatedAt: new Date().toISOString() };
+    setProjects(prevProjects => 
+      prevProjects.map(p => {
+        if (p.id === projectId) {
+          const updatedTasks = p.tasks.map(t => t.id === taskId ? { ...t, ...updates } : t);
+          return { ...p, tasks: updatedTasks };
         }
-        return project;
+        return p;
       })
     );
+    console.warn("Task updated locally. To persist, create a 'tasks' table in Supabase.");
   }, []);
 
   const reorderTasksInProject = useCallback((projectId: string, activeId: string, overId: string) => {
+    console.warn("Task reordering is local-only until a 'tasks' table is created in Supabase.");
     if (activeId === overId) return;
-    updateProjectsState(prevProjects => {
+
+    setProjects(prevProjects => {
       const projectIndex = prevProjects.findIndex(p => p.id === projectId);
       if (projectIndex === -1) return prevProjects;
 
@@ -191,30 +208,22 @@ export function useProjects() {
       reorderedTasks.splice(overTaskIndex, 0, movedTask);
       
       project.tasks = reorderedTasks.map((task, index) => ({ ...task, order: index }));
-      project.updatedAt = new Date().toISOString();
-
+      
       const newProjects = [...prevProjects];
       newProjects[projectIndex] = project;
       return newProjects;
     });
   }, []);
 
-  const deleteTaskFromProject = useCallback((projectId: string, taskId: string) => {
-    updateProjectsState(prevProjects => 
-      prevProjects.map(project => {
-        if (project.id === projectId) {
-          const updatedTasks = project.tasks.filter(t => t.id !== taskId);
-          const completedTasks = updatedTasks.filter(t => t.status === 'completed').length;
-          const progress = updatedTasks.length > 0 ? Math.round((completedTasks / updatedTasks.length) * 100) : 0;
-          return { ...project, tasks: updatedTasks, progress, updatedAt: new Date().toISOString() };
-        }
-        return project;
-      })
-    );
-  }, []);
+  // This function would be removed or refactored once tasks are in their own table
+  const getProjectById = useCallback((projectId: string) => {
+    return projects.find(p => p.id === projectId);
+  }, [projects]);
+
 
   return {
-    projects,
+    projects: projects.filter(p => !p.isDeleted),
+    allProjects: projects,
     loading,
     createProject,
     updateProject,
@@ -224,7 +233,7 @@ export function useProjects() {
     reorderProjects,
     addTaskToProject,
     updateTaskInProject,
-    deleteTaskFromProject,
-    reorderTasksInProject
+    reorderTasksInProject,
+    getProjectById
   };
 } 
