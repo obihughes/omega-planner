@@ -311,7 +311,7 @@ export default function ProjectsPage() {
               </TabsTrigger>
               <TabsTrigger value="calendar" className="flex items-center space-x-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm">
                 <Calendar className="w-4 h-4" />
-                <span>Calendar</span>
+                <span>Project Calendar</span>
               </TabsTrigger>
             </TabsList>
 

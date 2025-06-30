@@ -179,4 +179,14 @@ All components now use consistent timezone-safe date handling:
 
 **Files Modified**:
 - `components/primitives/CustomTimePicker.tsx`
-- `components/planner/EditTaskModal.tsx` 
+- `components/planner/EditTaskModal.tsx`
+
+### Projects Due Date Calculation Fix
+Corrected off-by-one error where projects displayed "Due in 1 day" when due today.
+
+Files Updated:
+- `components/projects/ProjectCard.tsx`
+- `app/projects/[id]/page.tsx`
+- `components/projects/ProjectsCalendar.tsx`
+
+These now use Math.floor for upcoming dates and Math.ceil for overdue. 

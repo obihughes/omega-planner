@@ -63,7 +63,8 @@ function ProjectCardComponent({
     due.setHours(23, 59, 59, 999);
 
     const diffMs = due.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    const dayMs = 1000 * 60 * 60 * 24;
+    const diffDays = diffMs >= 0 ? Math.floor(diffMs / dayMs) : Math.ceil(diffMs / dayMs);
 
     if (diffDays < -1) return { text: `Overdue by ${Math.abs(diffDays)} days`, isOverdue: true };
     if (diffDays === -1) return { text: `Overdue by 1 day`, isOverdue: true };
