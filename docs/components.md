@@ -163,4 +163,20 @@ All components now use consistent timezone-safe date handling:
 - `dateFromDateKey()` for YYYY-MM-DD string parsing
 - Defensive Date object checking throughout
 - Consistent local timezone operations
-- Proper serialization/deserialization handling 
+- Proper serialization/deserialization handling
+
+### Branding Update - Symbol-Only Navigation Header
+**Change**: Removed text ("Omega Planner") from the Navigation sidebar header so only the Ω symbol is displayed when the sidebar is expanded.
+
+**Files Modified**:
+- `components/ui/Navigation.tsx`
+
+### Time Picker Modal Interaction Fix 
+**Issue**: Clicking inside the CustomTimePicker popup within `EditTaskModal` caused the modal to submit & close because the popup control buttons defaulted to form submission.
+
+**Resolution**:
+1. Added `type="button"` to all internal control buttons in `CustomTimePicker` to prevent unintended form submission.
+
+**Files Modified**:
+- `components/primitives/CustomTimePicker.tsx`
+- `components/planner/EditTaskModal.tsx` 

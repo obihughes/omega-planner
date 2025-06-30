@@ -120,6 +120,14 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
           }
         }
         
+        // Check for CustomTimePicker popups (identified by data attribute)
+        const timePickerPopups = document.querySelectorAll('[data-custom-timepicker-popup="true"]');
+        for (let i = 0; i < timePickerPopups.length; i++) {
+          if (timePickerPopups[i].contains(target)) {
+            return; // Don't close modal if clicking on time picker popup
+          }
+        }
+        
         onClose();
       }
     };

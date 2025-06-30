@@ -64,16 +64,9 @@ export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse 
       {/* Logo/Brand Section */}
       <div className="p-4 border-b border-border/40 relative">
         {!isCollapsed ? (
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center justify-center">
             <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary/80 rounded-lg flex items-center justify-center shadow-lg">
               <span className="text-lg font-bold text-primary-foreground">Ω</span>
-            </div>
-            <div className="flex flex-col leading-tight">
-              <span className="text-base font-semibold text-foreground">Omega</span>
-              <div className="flex items-center space-x-2">
-                <span className="text-base font-semibold text-foreground">Planner</span>
-                <span className="text-xs text-muted-foreground/80 bg-muted/50 px-1.5 py-0.5 rounded">v1.0</span>
-              </div>
             </div>
           </div>
         ) : (
