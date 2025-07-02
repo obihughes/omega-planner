@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigation } from './Navigation';
 import { cn } from '@/lib/utils';
 
@@ -9,7 +9,19 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
-  const [isNavigationCollapsed, setIsNavigationCollapsed] = useState(false);
+  const [isNavigationCollapsed, setIsNavigationCollapsed] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('navCollapsed') === 'true';
+    }
+    return false;
+  });
+
+  // Persist collapsed state to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('navCollapsed', String(isNavigationCollapsed));
+    }
+  }, [isNavigationCollapsed]);
 
   return (
     <div className="flex min-h-screen bg-background">

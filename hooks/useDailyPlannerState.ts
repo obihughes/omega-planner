@@ -884,6 +884,48 @@ export function useDailyPlanner() {
     syncPinnedTasksWithTimeline();
   }, [tasks, syncPinnedTasksWithTimeline]); // Sync when tasks change
 
+  // --- TASK ASSIGNMENT FUNCTIONS ---
+  const handleAssignTask = useCallback((task: Task, targetDate: Date, startHour: number = 9) => {
+    // Remove task from pool
+    setPoolTasks(prev => prev.filter(t => t.id !== task.id));
+    
+    // Add task to timeline with target date and time
+    const targetDateKey = getDateKey(targetDate);
+    const assignedTask: Task = {
+      ...task,
+      baseDate: targetDateKey,
+      startHour: startHour,
+      completed: false
+    };
+    
+    setTasks(prev => [...prev, assignedTask]);
+  }, []);
+
+  const handleUnassignTask = useCallback((task: Task) => {
+    // Remove from timeline
+    setTasks(prev => prev.filter(t => t.id !== task.id));
+    
+    // Add back to pool (remove scheduling-specific properties)
+    const poolTask: Task = {
+      ...task,
+      baseDate: '', // Clear the date
+      startHour: task.startHour || 9, // Keep start hour as suggestion
+      completed: false
+    };
+    
+    setPoolTasks(prev => [...prev, poolTask]);
+  }, []);
+
+  const handleRescheduleTask = useCallback((task: Task, newDate: Date) => {
+    const newDateKey = getDateKey(newDate);
+    
+    setTasks(prev => prev.map(t => 
+      t.id === task.id 
+        ? { ...t, baseDate: newDateKey }
+        : t
+    ));
+  }, []);
+
   // --- RETURNED STATE AND FUNCTIONS ---
   return {
     // State
@@ -993,6 +1035,11 @@ export function useDailyPlanner() {
     handleCopyAndEnterPasteMode,
     openViewNotesModal,
     closeViewNotesModal,
+
+    // Task Assignment Functions
+    handleAssignTask,
+    handleUnassignTask,
+    handleRescheduleTask,
 
     // Specific Modal Related Aliases / Properties (ensure these are distinct and necessary)
     isModalOpen: showClearPoolModal,

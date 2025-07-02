@@ -22,9 +22,42 @@ The main orchestrating component for the daily planner interface.
 - Drag and drop functionality
 - Pinned tasks sidebar integration
 - Task pool sidebar integration
+- **NEW: Task assignment calendar integration**
 
 **Props:**
 - Uses custom hooks for state management
+
+### TaskAssignmentCalendar (`components/planner/TaskAssignmentCalendar.tsx`)
+**NEW COMPONENT:** Calendar view for assigning pool tasks to specific dates.
+
+**Key Features:**
+- Projects-calendar-style month grid layout
+- Visual task assignment interface
+- Drag & drop from pool tasks to calendar dates
+- Click-to-assign workflow for pool tasks
+- Task rescheduling between dates
+- Monthly navigation and statistics
+- Integration with existing task pool system
+
+**Props:**
+```typescript
+interface TaskAssignmentCalendarProps {
+  poolTasks: Task[];
+  scheduledTasks: Map<string, Task[]>;
+  onAssignTask: (task: Task, date: Date, startHour?: number) => void;
+  onUnassignTask: (task: Task) => void;
+  onRescheduleTask: (task: Task, newDate: Date) => void;
+  openEditModal: (task: Task, options?: any) => void;
+}
+```
+
+**Usage:**
+- Available as third tab in daily planner (Pool | Pinned | Calendar)
+- Shows unscheduled tasks at top for assignment
+- Month grid displays scheduled tasks as colored cards
+- Drag tasks from pool to calendar dates or click task then click date
+- Tasks can be rescheduled by dragging between dates
+- Visual feedback during assignment mode
 
 ### TaskCard (`components/planner/TaskCard.tsx`)
 Individual task representation component with interaction capabilities.
@@ -94,6 +127,12 @@ Reusable UI primitives built with consistent styling.
 - Consistent design system
 - Dark mode support
 - Accessibility features
+
+### Navigation Collapse Persistence
+Navigation collapsed/expanded state is now persisted in `localStorage` and respected across route changes.
+
+File Updated:
+- `components/ui/AppLayout.tsx`
 
 ## Calendar Components
 

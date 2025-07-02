@@ -9,7 +9,7 @@ This directory contains the core components for the Daily Planner application.
 `DailyPlanner` is the main orchestrator component that renders the entire planner interface including:
 - Timeline views for multiple days
 - Task cards within timelines
-- Sidebar with task pool and pinned tasks
+- Sidebar with task pool, pinned tasks, and calendar assignment
 - Modal dialogs for editing, confirmation, etc.
 
 **Usage:**
@@ -18,6 +18,36 @@ import { DailyPlanner } from '@/components/planner';
 
 export default function PlannerPage() {
   return <DailyPlanner />;
+}
+```
+
+### TaskAssignmentCalendar
+
+`TaskAssignmentCalendar` is a calendar view component for assigning unscheduled tasks to specific dates.
+
+**Features:**
+- Month grid layout matching projects calendar style
+- Visual display of pool tasks for assignment
+- Drag & drop task assignment to dates
+- Click-to-assign workflow (click task, then click date)
+- Task rescheduling between dates
+- Monthly navigation
+- Summary statistics
+
+**Integration:**
+- Accessible via "Calendar" tab in daily planner sidebar
+- Uses existing task pool and scheduled tasks data
+- Integrates with task edit modal system
+
+**Props:**
+```typescript
+interface TaskAssignmentCalendarProps {
+  poolTasks: Task[];
+  scheduledTasks: Map<string, Task[]>;
+  onAssignTask: (task: Task, date: Date, startHour?: number) => void;
+  onUnassignTask: (task: Task) => void;
+  onRescheduleTask: (task: Task, newDate: Date) => void;
+  openEditModal: (task: Task, options?: any) => void;
 }
 ```
 

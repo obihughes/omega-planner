@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui";
-import { Pin, CopyPlus, Trash2 } from 'lucide-react';
+import { Pin, CopyPlus, Trash2, Calendar } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { formatTime } from '@/utils/formatters';
 import { Task } from '../../types/planner';
 import { TaskPoolSidebar } from './TaskPoolSidebar';
 import { PinnedTasksSidebar } from './PinnedTasksSidebar';
+import { TaskAssignmentCalendar } from './TaskAssignmentCalendar';
 import { useDailyPlanner } from '../../hooks/useDailyPlannerState';
 import { 
     TASK_COLORS, 
@@ -75,7 +76,10 @@ export default function DailyPlanner() {
     clearOverduePinnedTasks,
     syncPinnedTasksWithTimeline,
     handleTaskColorChange,
-    copyTaskToPool
+    copyTaskToPool,
+    handleAssignTask,
+    handleUnassignTask,
+    handleRescheduleTask
   } = useDailyPlanner();
 
   const [currentTimeForMarker, setCurrentTimeForMarker] = useState(new Date());
@@ -539,14 +543,17 @@ export default function DailyPlanner() {
         )}
         
         <div className="mb-4 bg-card border border-border rounded-lg shadow-sm overflow-hidden">
-          <Tabs defaultValue="pinned" className="flex h-28">
+          <Tabs defaultValue="pinned" className="flex min-h-28 max-h-96">
             <div className="flex flex-col w-32 border-r border-border bg-muted/20">
               <TabsList className="flex-col h-auto bg-transparent p-2">
-                <TabsTrigger value="pool" className="w-full justify-start text-sm py-3">
+                <TabsTrigger value="pool" className="w-full justify-start text-sm py-2">
                   <CopyPlus className="mr-2 h-4 w-4" /> Pool
                 </TabsTrigger>
-                <TabsTrigger value="pinned" className="w-full justify-start text-sm py-3">
+                <TabsTrigger value="pinned" className="w-full justify-start text-sm py-2">
                   <Pin className="mr-2 h-4 w-4" /> Pinned
+                </TabsTrigger>
+                <TabsTrigger value="calendar" className="w-full justify-start text-sm py-2">
+                  <Calendar className="mr-2 h-4 w-4" /> Calendar
                 </TabsTrigger>
               </TabsList>
               <div className="flex-1 p-2">
@@ -590,6 +597,16 @@ export default function DailyPlanner() {
                       openEditModal={openEditModal}
                       onClearOverduePinnedTasks={clearOverduePinnedTasks}
                       onSyncPinnedTasks={syncPinnedTasksWithTimeline}
+                  />
+              </TabsContent>
+              <TabsContent value="calendar" className="h-full m-0 p-0">
+                  <TaskAssignmentCalendar
+                      poolTasks={poolTasks}
+                      scheduledTasks={tasksByDate}
+                      onAssignTask={handleAssignTask}
+                      onUnassignTask={handleUnassignTask}
+                      onRescheduleTask={handleRescheduleTask}
+                      openEditModal={openEditModal}
                   />
               </TabsContent>
             </div>
