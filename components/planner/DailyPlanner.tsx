@@ -84,6 +84,7 @@ export default function DailyPlanner() {
 
   const [currentTimeForMarker, setCurrentTimeForMarker] = useState(new Date());
   const [targetCopyDayOffset, setTargetCopyDayOffset] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<'daily' | 'monthly'>('daily');
 
   useEffect(() => {
       const timerId = setInterval(() => setCurrentTimeForMarker(new Date()), 60000);
@@ -541,19 +542,48 @@ export default function DailyPlanner() {
         {viewingTaskNotes && (
           <ViewTaskNotesModal task={viewingTaskNotes} onClose={closeViewNotesModal} onEdit={openEditModal} />
         )}
-        
-        <div className="mb-4 bg-card border border-border rounded-lg shadow-sm overflow-hidden">
-          <Tabs defaultValue="pinned" className="flex min-h-28 max-h-96">
+
+        {/* Page View Mode Navigation */}
+        <div className="mb-4 bg-card border border-border rounded-lg shadow-sm overflow-hidden p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-foreground">Daily Planner</h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant={viewMode === 'daily' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('daily')}
+                className="flex items-center gap-2"
+              >
+                <Calendar className="w-4 h-4" />
+                Daily View
+              </Button>
+              <Button
+                variant={viewMode === 'monthly' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('monthly')}
+                className="flex items-center gap-2"
+              >
+                <Calendar className="w-4 h-4" />
+                Monthly View
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Conditional Content Based on View Mode */}
+        {viewMode === 'daily' && (
+          <>
+            <div className="mb-4 bg-card border border-border rounded-lg shadow-sm overflow-hidden">
+              <Tabs defaultValue="pinned" className="flex h-28">
             <div className="flex flex-col w-32 border-r border-border bg-muted/20">
               <TabsList className="flex-col h-auto bg-transparent p-2">
-                <TabsTrigger value="pool" className="w-full justify-start text-sm py-2">
+                <TabsTrigger value="pool" className="w-full justify-start text-sm py-3">
                   <CopyPlus className="mr-2 h-4 w-4" /> Pool
                 </TabsTrigger>
-                <TabsTrigger value="pinned" className="w-full justify-start text-sm py-2">
+                <TabsTrigger value="pinned" className="w-full justify-start text-sm py-3">
                   <Pin className="mr-2 h-4 w-4" /> Pinned
-                </TabsTrigger>
-                <TabsTrigger value="calendar" className="w-full justify-start text-sm py-2">
-                  <Calendar className="mr-2 h-4 w-4" /> Calendar
                 </TabsTrigger>
               </TabsList>
               <div className="flex-1 p-2">
@@ -597,16 +627,6 @@ export default function DailyPlanner() {
                       openEditModal={openEditModal}
                       onClearOverduePinnedTasks={clearOverduePinnedTasks}
                       onSyncPinnedTasks={syncPinnedTasksWithTimeline}
-                  />
-              </TabsContent>
-              <TabsContent value="calendar" className="h-full m-0 p-0">
-                  <TaskAssignmentCalendar
-                      poolTasks={poolTasks}
-                      scheduledTasks={tasksByDate}
-                      onAssignTask={handleAssignTask}
-                      onUnassignTask={handleUnassignTask}
-                      onRescheduleTask={handleRescheduleTask}
-                      openEditModal={openEditModal}
                   />
               </TabsContent>
             </div>
@@ -674,6 +694,22 @@ export default function DailyPlanner() {
               </div>
             </div>
         </div>
+          </>
+        )}
+
+        {/* Monthly View */}
+        {viewMode === 'monthly' && (
+          <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
+            <TaskAssignmentCalendar
+              poolTasks={poolTasks}
+              scheduledTasks={tasksByDate}
+              onAssignTask={handleAssignTask}
+              onUnassignTask={handleUnassignTask}
+              onRescheduleTask={handleRescheduleTask}
+              openEditModal={openEditModal}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,118 +1,130 @@
-# Planner Components
+# Daily Planner Components
 
-This directory contains the core components for the Daily Planner application.
+This directory contains all components related to the daily planning functionality.
 
-## Components
+## Core Components
 
 ### DailyPlanner
+**File**: `DailyPlanner.tsx`
+**Purpose**: Main orchestrating component with page-level view mode navigation
 
-`DailyPlanner` is the main orchestrator component that renders the entire planner interface including:
-- Timeline views for multiple days
-- Task cards within timelines
-- Sidebar with task pool, pinned tasks, and calendar assignment
-- Modal dialogs for editing, confirmation, etc.
+**Features:**
+- **Page-Level View Modes**: Toggle between Daily View and Monthly View
+  - Daily View: Timeline-based planning with Pool/Pinned sidebar
+  - Monthly View: Full-page calendar for task assignment
+- Timeline visualization across 4 periods (night, morning, afternoon, evening)
+- Dual-day view with independent navigation
+- Task management (create, edit, delete, move, resize)
+- Drag and drop functionality between time slots and days
+- Copy/paste tasks across different days
 
-**Usage:**
-```jsx
-import { DailyPlanner } from '@/components/planner';
-
-export default function PlannerPage() {
-  return <DailyPlanner />;
-}
-```
+**View Modes:**
+1. **Daily View** (default):
+   - Pool/Pinned task sidebar with tabs
+   - Timeline sections for detailed time-based planning
+   - Task collision detection and resolution
+   
+2. **Monthly View**:
+   - Full TaskAssignmentCalendar component
+   - Visual month grid for task assignment
+   - Pool tasks integration for scheduling
 
 ### TaskAssignmentCalendar
-
-`TaskAssignmentCalendar` is a calendar view component for assigning unscheduled tasks to specific dates.
+**File**: `TaskAssignmentCalendar.tsx`
+**Purpose**: Calendar view for assigning pool tasks to specific dates
 
 **Features:**
-- Month grid layout matching projects calendar style
-- Visual display of pool tasks for assignment
-- Drag & drop task assignment to dates
-- Click-to-assign workflow (click task, then click date)
+- Projects-calendar visual styling (month grid, 130px cells)
+- Pool tasks display section at top
+- Drag & drop from pool to calendar dates
+- Click-to-assign workflow (click task then click date)
 - Task rescheduling between dates
-- Monthly navigation
-- Summary statistics
+- Monthly navigation and summary statistics
 
 **Integration:**
-- Accessible via "Calendar" tab in daily planner sidebar
-- Uses existing task pool and scheduled tasks data
-- Integrates with task edit modal system
+- Used within DailyPlanner's Monthly View mode
+- Shares task data and operations with daily timeline
+- Maintains consistent styling with projects calendar
 
-**Props:**
-```typescript
-interface TaskAssignmentCalendarProps {
-  poolTasks: Task[];
-  scheduledTasks: Map<string, Task[]>;
-  onAssignTask: (task: Task, date: Date, startHour?: number) => void;
-  onUnassignTask: (task: Task) => void;
-  onRescheduleTask: (task: Task, newDate: Date) => void;
-  openEditModal: (task: Task, options?: any) => void;
-}
+### Timeline Components
+
+#### TaskCard
+**File**: `TaskCard.tsx`
+**Purpose**: Individual task representation in timeline
+
+**Features:**
+- Visual task display with color coding
+- Drag handles for repositioning
+- Resize handles for duration adjustment
+- Click actions for editing and notes
+- Time conflict indicators
+
+#### TimelineColumn
+**File**: `TimelineColumn.tsx`
+**Purpose**: Single timeline period container
+
+**Features:**
+- Hour-by-hour grid layout
+- Drop zone for task placement
+- Time markers and labels
+- Period-specific styling (night, morning, afternoon, evening)
+
+### Sidebar Components
+
+#### TaskPoolSidebar
+**File**: `TaskPoolSidebar.tsx`
+**Purpose**: Unscheduled tasks management
+
+**Features:**
+- List of unscheduled tasks
+- Add new pool tasks
+- Drag to timeline or calendar
+- Bulk operations (clear pool)
+
+#### PinnedTasksSidebar
+**File**: `PinnedTasksSidebar.tsx`
+**Purpose**: Important tasks tracking
+
+**Features:**
+- Due date countdown
+- Priority task management
+- Overdue task highlighting
+- Sync with timeline functionality
+
+### Modal Components
+
+#### EditTaskModal
+**File**: `EditTaskModal.tsx`
+**Purpose**: Comprehensive task editing interface
+
+#### ViewTaskNotesModal
+**File**: `ViewTaskNotesModal.tsx`
+**Purpose**: Read-only task notes display
+
+## State Management
+
+All components use the `useDailyPlannerState` hook for:
+- Task CRUD operations
+- Timeline state management
+- Sidebar state coordination
+- Calendar integration
+- View mode management
+
+## Navigation Flow
+
+```
+DailyPlanner
+├── View Mode Navigation (Daily | Monthly)
+├── Daily View
+│   ├── Pool/Pinned Sidebar Tabs
+│   └── Timeline Sections (Top Day + Bottom Day)
+└── Monthly View
+    └── TaskAssignmentCalendar (Full Page)
 ```
 
-### TaskCard
+## Usage Patterns
 
-`TaskCard` is a reusable component that represents a single task in the timeline.
-
-**Features:**
-- Displays task name, time range, and duration
-- Handles inline editing
-- Provides buttons for actions (edit, copy, pin)
-- Supports dragging and resizing
-
-**Props:**
-```typescript
-export interface TaskCardProps {
-  task: Task;
-  height: number;
-  onStartEdit: (task: Task) => void;
-  onUpdateTask: (taskId: string, updatedFields: Partial<Omit<Task, 'id'>>) => void;
-  onDelete: (taskId: string) => void;
-  onCopy: (task: Task) => void;
-  onColorChange: (taskId: string, color: string) => void;
-  editingTaskId: string | null;
-  setEditingTaskId: (id: string | null) => void;
-  onMoveToPool: (taskId: string) => void;
-  onPinTask?: (task: Task) => void;
-}
-```
-
-### TaskPoolSidebar
-
-`TaskPoolSidebar` manages the "unscheduled" tasks that aren't currently on the timeline.
-
-**Features:**
-- Displays a list of tasks in the pool
-- Allows adding new tasks to the pool
-- Provides buttons to copy tasks to the timeline
-- Allows editing and deleting pool tasks
-
-### PinnedTasksSidebar
-
-`PinnedTasksSidebar` displays tasks that have been pinned for quick access.
-
-**Features:**
-- Shows pinned tasks sorted by due time
-- Displays time remaining for each task
-- Allows unpinning tasks
-- Allows clearing all overdue pinned tasks
-- Allows syncing pinned tasks with the timeline
-
-### EditTaskModal
-
-`EditTaskModal` is a dialog component used for creating new tasks or editing existing tasks (from the timeline, task pool, or pinned tasks).
-
-**Features:**
-- Form for task name, duration, color, notes, etc.
-- Handles both new task creation and updates to existing tasks.
-- Integrates with color picker.
-- Provides actions like Pin, Copy to Pool, Delete.
-
-### ViewTaskNotesModal
-
-`ViewTaskNotesModal` is a dialog component used for displaying the full notes of a task.
-
-**Features:**
-- Read-only view of task notes.
-- Option to quickly open the `EditTaskModal` for the viewed task. 
+1. **Daily Planning**: Use Daily View for detailed time-based task scheduling
+2. **Task Assignment**: Use Monthly View to assign pool tasks to specific dates
+3. **Task Management**: Edit tasks through modals accessible from both views
+4. **Workflow**: Move tasks from Pool → Calendar (Monthly) → Timeline (Daily) 

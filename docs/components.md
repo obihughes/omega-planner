@@ -13,19 +13,44 @@ This document provides detailed information about the components used in the Dai
 
 ## Planner Components
 
-### DailyPlanner (`components/planner/DailyPlanner.tsx`)
-The main orchestrating component for the daily planner interface.
+### **DailyPlanner**
+**Location**: `components/planner/DailyPlanner.tsx`
+
+The main daily planning interface with timeline views and task management.
 
 **Key Features:**
-- Timeline visualization with hour-by-hour layout
-- Task management (create, edit, delete, move)
-- Drag and drop functionality
-- Pinned tasks sidebar integration
-- Task pool sidebar integration
-- **NEW: Task assignment calendar integration**
+- **Page-Level View Modes**: Toggle between Daily View and Monthly View
+  - **Daily View**: Traditional timeline-based planning with Pool/Pinned sidebar
+  - **Monthly View**: Full-page calendar for task assignment and scheduling
+- **Timeline System**: 4 time periods (night, morning, afternoon, evening) across two days
+- **Task Pool Integration**: Unscheduled tasks in collapsible sidebar
+- **Pinned Tasks**: Important tasks with due date tracking
+- **Drag & Drop**: Move tasks between timeline slots and dates
+- **Task Editing**: Inline editing, resizing, and detailed modal editing
+- **Copy/Paste**: Clone tasks across days and time slots
 
-**Props:**
-- Uses custom hooks for state management
+**View Mode Navigation:**
+- Located above the sidebar area
+- Two buttons: "Daily View" (default) and "Monthly View"
+- Completely switches the page layout and functionality
+- Daily View shows timeline + sidebar, Monthly View shows full calendar
+
+**Daily View Components:**
+- Pool/Pinned task sidebar with tabs
+- Dual-day timeline view with navigation
+- Task cards with drag/drop and resize functionality
+- Time-based task scheduling and collision detection
+
+**Monthly View Components:**
+- Full TaskAssignmentCalendar component
+- Pool tasks display for assignment
+- Month grid with visual task cards
+- Drag & drop from pool to calendar dates
+
+**State Management:**
+- Uses `useDailyPlanner` hook for all task operations
+- Manages view mode state locally (`daily` | `monthly`)
+- Handles task assignment, scheduling, and pool management
 
 ### TaskAssignmentCalendar (`components/planner/TaskAssignmentCalendar.tsx`)
 **NEW COMPONENT:** Calendar view for assigning pool tasks to specific dates.
