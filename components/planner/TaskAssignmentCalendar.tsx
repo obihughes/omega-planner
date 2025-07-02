@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Clock, Calendar as CalendarIcon, Edit3, Arro
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatDuration } from '@/utils/formatters';
+import { QuickAddTaskModal } from '@/components/modals/QuickAddTaskModal';
 
 interface TaskAssignmentCalendarProps {
   poolTasks: Task[];
@@ -13,6 +14,7 @@ interface TaskAssignmentCalendarProps {
   onAssignTask: (task: Task, date: Date, startHour?: number) => void;
   onUnassignTask: (task: Task) => void;
   onRescheduleTask: (task: Task, newDate: Date) => void;
+  onCreatePoolTask: (dateKey: string, task: Partial<Task>) => void;
   openEditModal: (task: Task, options?: any) => void;
 }
 
@@ -22,11 +24,14 @@ export function TaskAssignmentCalendar({
   onAssignTask,
   onUnassignTask,
   onRescheduleTask,
+  onCreatePoolTask,
   openEditModal
 }: TaskAssignmentCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [assigningTask, setAssigningTask] = useState<Task | null>(null);
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
+  const [quickAddModalOpen, setQuickAddModalOpen] = useState(false);
+  const [selectedDateForAdd, setSelectedDateForAdd] = useState<Date | null>(null);
 
   // Get the first day of the current month and calculate calendar grid
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -81,6 +86,10 @@ export function TaskAssignmentCalendar({
       // Assign the task to this date
       onAssignTask(assigningTask, date, 9); // Default to 9 AM
       setAssigningTask(null);
+    } else {
+      // Open Quick-Add modal for creating a new task
+      setSelectedDateForAdd(date);
+      setQuickAddModalOpen(true);
     }
   };
 
@@ -139,6 +148,21 @@ export function TaskAssignmentCalendar({
     });
   };
 
+  const handleQuickAddSave = (task: Partial<Task>) => {
+    if (!selectedDateForAdd) return;
+    
+    const dateKey = selectedDateForAdd.toISOString().split('T')[0];
+    onCreatePoolTask(dateKey, task);
+    
+    setQuickAddModalOpen(false);
+    setSelectedDateForAdd(null);
+  };
+
+  const handleQuickAddClose = () => {
+    setQuickAddModalOpen(false);
+    setSelectedDateForAdd(null);
+  };
+
   return (
     <div className="h-full flex flex-col bg-card">
       {/* Assignment Mode Header */}
@@ -174,11 +198,7 @@ export function TaskAssignmentCalendar({
             Unscheduled Tasks ({poolTasks.length})
           </h3>
           
-          {poolTasks.length === 0 ? (
-            <div className="text-center py-6 text-muted-foreground text-sm">
-              All tasks are scheduled! 🎉
-            </div>
-          ) : (
+          {poolTasks.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-4">
               {poolTasks.map(task => (
                 <div
@@ -294,47 +314,11 @@ export function TaskAssignmentCalendar({
                     {date.getDate()}
                   </div>
                   
-                  {/* Scheduled Tasks */}
-                  <div className="space-y-1">
-                    {dayTasks.slice(0, 3).map(task => (
-                      <div
-                        key={task.id}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, task, false)}
-                        className="p-1.5 rounded text-xs cursor-pointer hover:scale-[1.02] transition-all shadow-sm border group"
-                        style={{ 
-                          backgroundColor: task.color + '15', 
-                          borderColor: task.color + '40',
-                          borderLeftWidth: '2px',
-                          borderLeftColor: task.color
-                        }}
-                        onClick={() => handleTaskClick(task, true)}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium truncate flex-1 text-xs">
-                            {task.name}
-                          </span>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-3 w-3 p-0 opacity-0 group-hover:opacity-100"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleTaskClick(task, true);
-                            }}
-                          >
-                            <Edit3 className="w-2 h-2" />
-                          </Button>
-                        </div>
-                        <div className="flex items-center text-muted-foreground mt-0.5">
-                          <Clock className="w-2 h-2 mr-1" />
-                          <span className="text-xs">{formatDuration(task.duration)}</span>
-                        </div>
-                      </div>
-                    ))}
-                    {dayTasks.length > 3 && (
-                      <div className="text-xs text-muted-foreground p-1">
-                        +{dayTasks.length - 3} more tasks
+                  {/* Empty space for clean calendar look */}
+                  <div className="flex-1 flex items-center justify-center">
+                    {!isAssignmentTarget && isCurrentMonthDay && (
+                      <div className="text-xs text-muted-foreground opacity-0 hover:opacity-100 transition-opacity">
+                        Click to add task
                       </div>
                     )}
                   </div>
@@ -387,6 +371,14 @@ export function TaskAssignmentCalendar({
           </div>
         </div>
       </div>
+
+      {/* Quick Add Task Modal */}
+      <QuickAddTaskModal
+        isOpen={quickAddModalOpen}
+        onClose={handleQuickAddClose}
+        onSave={handleQuickAddSave}
+        selectedDate={selectedDateForAdd}
+      />
     </div>
   );
 } 

@@ -79,7 +79,10 @@ export default function DailyPlanner() {
     copyTaskToPool,
     handleAssignTask,
     handleUnassignTask,
-    handleRescheduleTask
+    handleRescheduleTask,
+    addPoolTaskForDate,
+    getPoolTasksForDate,
+    removePoolTaskForDate
   } = useDailyPlanner();
 
   const [currentTimeForMarker, setCurrentTimeForMarker] = useState(new Date());
@@ -706,6 +709,7 @@ export default function DailyPlanner() {
               onAssignTask={handleAssignTask}
               onUnassignTask={handleUnassignTask}
               onRescheduleTask={handleRescheduleTask}
+              onCreatePoolTask={addPoolTaskForDate}
               openEditModal={openEditModal}
             />
           </div>

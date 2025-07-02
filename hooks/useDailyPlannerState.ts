@@ -44,6 +44,7 @@ export function useDailyPlanner() {
   // --- STATE ---
   const [tasks, setTasks] = useState<Task[]>([]);
   const [poolTasks, setPoolTasks] = useState<Task[]>([]);
+  const [poolTasksByDate, setPoolTasksByDate] = useState<Map<string, Task[]>>(new Map());
   const [pinnedTasks, setPinnedTasks] = useState<PinnedTask[]>([]);
   const [taskIdCounter, setTaskIdCounter] = useState<number>(-1); // Last used ID, primarily for display or effects
   const taskIdCounterRef = useRef<number>(-1); // Ref for the actual latest ID counter for generation
@@ -926,6 +927,50 @@ export function useDailyPlanner() {
     ));
   }, []);
 
+  // --- POOL TASKS BY DATE FUNCTIONS ---
+  const addPoolTaskForDate = useCallback((dateKey: string, task: Partial<Task>) => {
+    const newTask: Task = {
+      id: task.id || `pool-task-${Date.now()}-${Math.random()}`,
+      name: task.name || '',
+      startHour: task.startHour || 9,
+      duration: task.duration || 1,
+      color: task.color || TASK_COLORS[DEFAULT_TASK_COLOR_INDEX],
+      baseDate: dateKey,
+      notes: task.notes || '',
+      completed: false,
+      poolDate: dateKey
+    };
+
+    setPoolTasksByDate(prev => {
+      const newMap = new Map(prev);
+      const existingTasks = newMap.get(dateKey) || [];
+      newMap.set(dateKey, [...existingTasks, newTask]);
+      return newMap;
+    });
+
+    return newTask;
+  }, []);
+
+  const getPoolTasksForDate = useCallback((dateKey: string): Task[] => {
+    return poolTasksByDate.get(dateKey) || [];
+  }, [poolTasksByDate]);
+
+  const removePoolTaskForDate = useCallback((dateKey: string, taskId: string) => {
+    setPoolTasksByDate(prev => {
+      const newMap = new Map(prev);
+      const existingTasks = newMap.get(dateKey) || [];
+      const filteredTasks = existingTasks.filter(task => task.id !== taskId);
+      
+      if (filteredTasks.length === 0) {
+        newMap.delete(dateKey);
+      } else {
+        newMap.set(dateKey, filteredTasks);
+      }
+      
+      return newMap;
+    });
+  }, []);
+
   // --- RETURNED STATE AND FUNCTIONS ---
   return {
     // State
@@ -1040,6 +1085,12 @@ export function useDailyPlanner() {
     handleAssignTask,
     handleUnassignTask,
     handleRescheduleTask,
+
+    // Pool Tasks By Date Functions
+    poolTasksByDate,
+    addPoolTaskForDate,
+    getPoolTasksForDate,
+    removePoolTaskForDate,
 
     // Specific Modal Related Aliases / Properties (ensure these are distinct and necessary)
     isModalOpen: showClearPoolModal,
