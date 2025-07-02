@@ -100,6 +100,23 @@ export function useDailyPlanner() {
     return map;
   }, [tasks]);
 
+  // Memoized combined pool tasks (general pool + current viewed date pool tasks)
+  const combinedPoolTasks = useMemo(() => {
+    if (!isClient) return poolTasks;
+    
+    // Get the currently viewed date (using topDayOffset as primary view)
+    const today = new Date();
+    const viewedDate = new Date(today);
+    viewedDate.setDate(today.getDate() + topDayOffset);
+    const viewedDateKey = viewedDate.toISOString().split('T')[0];
+    
+    // Get pool tasks for currently viewed date
+    const viewedDatePoolTasks = poolTasksByDate.get(viewedDateKey) || [];
+    
+    // Combine general pool tasks with viewed date pool tasks
+    return [...poolTasks, ...viewedDatePoolTasks];
+  }, [poolTasks, poolTasksByDate, isClient, topDayOffset]);
+
   // --- UTILITY FUNCTIONS (originally in DailyPlanner.tsx) ---
   /**
    * Generates a display label for a given day offset.
@@ -764,6 +781,9 @@ export function useDailyPlanner() {
       const sanitizedPinnedTasks = loadedPinnedTasks.map(({ dayOffset, ...task }: any) => task);
       setPinnedTasks(sanitizedPinnedTasks);
     }
+    
+    const loadedPoolTasksByDate = TaskStorage.loadPoolTasksByDate();
+    setPoolTasksByDate(loadedPoolTasksByDate);
 
     // Initialize taskIdCounter and taskIdCounterRef
     const allLoadedTasksForIdCalc = [
@@ -833,6 +853,13 @@ export function useDailyPlanner() {
       TaskStorage.savePinnedTasks(pinnedTasks);
     }
   }, [pinnedTasks]);
+
+  // Save pool tasks by date whenever they change
+  useEffect(() => {
+    if (initialLoadComplete.current && typeof window !== 'undefined') {
+      TaskStorage.savePoolTasksByDate(poolTasksByDate);
+    }
+  }, [poolTasksByDate]);
 
   // Removed sidebar collapsed state saving since we moved to top horizontal layout
 
@@ -974,7 +1001,7 @@ export function useDailyPlanner() {
   // --- RETURNED STATE AND FUNCTIONS ---
   return {
     // State
-    poolTasks,
+    poolTasks: combinedPoolTasks,
     pinnedTasks,
     taskIdCounter,
     activeSidebarTab,

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -57,6 +57,9 @@ export function QuickAddTaskModal({ isOpen, onClose, onSave, selectedDate }: Qui
               day: 'numeric' 
             })}
           </DialogTitle>
+          <DialogDescription>
+            Create a new task that will be added to your task pool for this date.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">

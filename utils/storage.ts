@@ -7,6 +7,7 @@ import { Task, PinnedTask } from '@/types/planner';
 // Configuration
 const STORAGE_KEY = 'daily-planner-tasks';
 const POOL_STORAGE_KEY = 'daily-planner-pool-tasks';
+const POOL_TASKS_BY_DATE_KEY = 'daily-planner-pool-tasks-by-date';
 const PINNED_STORAGE_KEY = 'daily-planner-pinned-tasks';
 const STORAGE_VERSION = '2.0'; // Bumped version for YYYY-MM-DD format
 const DAY_VIEW_SETTINGS_KEY = 'daily-planner-day-view-settings';
@@ -350,6 +351,63 @@ const TaskStorage = {
       localStorage.setItem(TASK_ID_COUNTER_KEY, String(id));
     } catch (err) {
       console.error('Failed to save next ID to localStorage', err);
+    }
+  },
+
+  /**
+   * Saves pool tasks by date to localStorage.
+   * @param {Map<string, Task[]>} poolTasksByDate - Map of date strings to task arrays.
+   */
+  savePoolTasksByDate: (poolTasksByDate: Map<string, Task[]>): void => {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      // Convert Map to object for JSON serialization
+      const dataObject: { [key: string]: Task[] } = {};
+      poolTasksByDate.forEach((tasks, dateKey) => {
+        dataObject[dateKey] = tasks;
+      });
+      
+      const data = {
+        version: STORAGE_VERSION,
+        poolTasksByDate: dataObject,
+        lastUpdated: new Date().toISOString()
+      };
+      localStorage.setItem(POOL_TASKS_BY_DATE_KEY, JSON.stringify(data));
+      
+    } catch (err) {
+      console.error('Failed to save pool tasks by date to localStorage', err);
+    }
+  },
+
+  /**
+   * Loads pool tasks by date from localStorage.
+   * @returns {Map<string, Task[]>} Map of date strings to task arrays.
+   */
+  loadPoolTasksByDate: (): Map<string, Task[]> => {
+    if (typeof window === 'undefined') return new Map();
+    const savedData = localStorage.getItem(POOL_TASKS_BY_DATE_KEY);
+    if (!savedData) return new Map();
+
+    try {
+      const data = JSON.parse(savedData);
+      if (!data.poolTasksByDate || typeof data.poolTasksByDate !== 'object') {
+        console.error('Loaded pool tasks by date is invalid: ', data);
+        return new Map();
+      }
+      
+      // Convert object back to Map
+      const map = new Map<string, Task[]>();
+      Object.entries(data.poolTasksByDate).forEach(([dateKey, tasks]) => {
+        if (Array.isArray(tasks)) {
+          map.set(dateKey, tasks as Task[]);
+        }
+      });
+      
+      return map;
+    } catch (err) {
+      console.error('Failed to parse pool tasks by date from localStorage. Data was: ', savedData, err);
+      return new Map();
     }
   },
 
