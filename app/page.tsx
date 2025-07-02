@@ -1,9 +1,10 @@
 'use client';
 
-import React, { lazy, Suspense } from 'react';
+import React, { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 
-// Lazy load the heavy DailyPlanner component
-const DailyPlanner = lazy(() => import('@/components/planner/DailyPlanner'));
+// Dynamically import the heavy DailyPlanner component (client-side only)
+const DailyPlanner = dynamic(() => import('@/components/planner/DailyPlanner'), { ssr: false });
 import { AppLayout } from '@/components/ui/AppLayout';
 
 export default function Home() {
