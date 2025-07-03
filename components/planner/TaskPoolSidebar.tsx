@@ -136,8 +136,7 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
                 draggable
                 onDragStart={(e) => handleDragStartPoolItem(e, task)}
                 className={cn(
-                  "relative p-3 rounded-lg bg-card border border-border/50 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-24 cursor-grab active:cursor-grabbing",
-                  task.color
+                  "relative p-3 rounded-lg bg-transparent border border-border/50 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-24 cursor-grab active:cursor-grabbing"
                 )}
               >
                 <div className="flex items-start justify-between gap-3 h-full">

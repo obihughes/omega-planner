@@ -782,7 +782,7 @@ export default function DailyPlanner() {
         {/* Weekly View */}
         {viewMode === 'weekly' && (
           <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
-            <WeeklyView />
+            <WeeklyView editTask={editTask} />
           </div>
         )}
 

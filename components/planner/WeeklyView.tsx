@@ -19,10 +19,10 @@ import { getDateKey, dateFromDateKey } from '@/utils/dateUtils';
 import { TASK_COLORS, DEFAULT_TASK_COLOR_INDEX } from '@/lib/constants';
 
 interface WeeklyViewProps {
-  // Props can be added here if needed
+  editTask: (task: Task) => void;
 }
 
-export default function WeeklyView({}: WeeklyViewProps) {
+export default function WeeklyView({ editTask }: WeeklyViewProps) {
   const {
     tasksByDate,
     getPoolTasksForDate,
@@ -236,12 +236,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
                 {/* Day Tasks Container */}
                 <div className="flex-1 flex flex-col min-h-0">
                   {dayData.scheduled.length === 0 && dayData.unscheduled.length === 0 ? (
-                    <div className="flex-1 flex items-center justify-center">
-                      <div className="h-24 w-full border-2 border-dashed border-muted rounded-lg flex flex-col items-center justify-center text-center p-3 hover:border-border transition-colors">
-                        <Calendar className="w-5 h-5 text-muted-foreground mb-2" />
-                        <div className="text-xs text-muted-foreground">No tasks</div>
-                      </div>
-                    </div>
+                    <div className="flex-1"></div>
                   ) : (
                     <div className="flex-1 flex flex-col gap-2 overflow-y-auto">
                       {/* Show unscheduled tasks first */}
@@ -249,15 +244,15 @@ export default function WeeklyView({}: WeeklyViewProps) {
                         <div
                           key={task.id}
                           className={`
-                            relative p-2 rounded-md transition-all duration-200 hover:shadow-sm group
-                            min-h-[60px] flex flex-col justify-between
+                            relative px-2 py-1 rounded-md transition-all duration-200 hover:shadow-sm group
+                            min-h-[40px] flex flex-col justify-between
                             bg-muted/30 border border-dashed border-muted-foreground/30 hover:border-muted-foreground/50
                             ${task.completed ? 'opacity-60' : ''}
                           `}
                         >
-                          <div className="space-y-1">
+                          <div>
                             {/* Task Name */}
-                            <div className={`text-xs font-medium leading-tight truncate ${
+                            <div className={`text-xs font-medium leading-tight truncate mb-0.5 ${
                               task.completed ? 'line-through text-muted-foreground' : 'text-foreground'
                             }`}>
                               {task.name}
@@ -275,7 +270,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
                           
                           {/* Edit button for task cards */}
                           <button
-                            onClick={() => openEditModal(task)}
+                            onClick={() => editTask(task)}
                             className="absolute top-1 right-1 w-4 h-4 bg-muted hover:bg-muted/80 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
                             title="Edit Task"
                           >
@@ -289,15 +284,15 @@ export default function WeeklyView({}: WeeklyViewProps) {
                         <div
                           key={task.id}
                           className={`
-                            relative p-2 rounded-md transition-all duration-200 hover:shadow-sm group
-                            min-h-[60px] flex flex-col justify-between
+                            relative px-2 py-1 rounded-md transition-all duration-200 hover:shadow-sm group
+                            min-h-[40px] flex flex-col justify-between
                             ${task.color} border border-border/40 hover:ring-1 hover:ring-border/60
                             ${task.completed ? 'opacity-60' : ''}
                           `}
                         >
-                          <div className="space-y-1">
+                          <div>
                             {/* Task Name */}
-                            <div className={`text-xs font-medium leading-tight truncate ${
+                            <div className={`text-xs font-medium leading-tight truncate mb-0.5 ${
                               task.completed ? 'line-through text-muted-foreground' : ''
                             }`}>
                               {task.name}
@@ -319,7 +314,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
                           
                           {/* Edit button for task cards */}
                           <button
-                            onClick={() => openEditModal(task)}
+                            onClick={() => editTask(task)}
                             className="absolute top-1 right-1 w-4 h-4 bg-black/10 hover:bg-black/20 dark:bg-white/10 dark:hover:bg-white/20 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
                             title="Edit Task"
                           >
