@@ -203,7 +203,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
             const isPastDay = isPast(date);
 
             return (
-              <div key={dateKey} className="flex flex-col h-full">
+              <div key={dateKey} className="flex flex-col h-full relative group">
                 {/* Day Header */}
                 <div className={`p-4 rounded-lg border mb-4 text-center ${
                   isCurrentDay 
@@ -225,15 +225,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
                     <div className="flex-1 flex items-center justify-center">
                       <div className="h-24 w-full border-2 border-dashed border-muted rounded-lg flex flex-col items-center justify-center text-center p-3 hover:border-border transition-colors">
                         <Calendar className="w-5 h-5 text-muted-foreground mb-2" />
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleCreateTask(date)}
-                          className="text-xs h-auto p-1 text-muted-foreground hover:text-foreground"
-                        >
-                          <Plus className="w-3 h-3 mr-1" />
-                          Add Task
-                        </Button>
+                        <div className="text-xs text-muted-foreground">No tasks</div>
                       </div>
                     </div>
                   ) : (
@@ -243,11 +235,10 @@ export default function WeeklyView({}: WeeklyViewProps) {
                         {dayTasks.map((task) => (
                           <Card 
                             key={task.id}
-                            className={`cursor-pointer transition-all duration-200 hover:shadow-sm border-l-4 group ${
+                            className={`transition-all duration-200 hover:shadow-sm border-l-4 group relative ${
                               task.completed ? 'opacity-60' : ''
                             }`}
                             style={{ borderLeftColor: task.color }}
-                            onClick={() => openEditModal(task)}
                           >
                             <CardContent className="p-3">
                               <div className="space-y-2">
@@ -272,23 +263,30 @@ export default function WeeklyView({}: WeeklyViewProps) {
                                 </div>
                               </div>
                             </CardContent>
+                            
+                            {/* Edit button for task cards */}
+                            <button
+                              onClick={() => openEditModal(task)}
+                              className="absolute top-2 right-2 w-6 h-6 bg-muted hover:bg-muted/80 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="Edit Task"
+                            >
+                              <MoreVertical className="w-3 h-3" />
+                            </button>
                           </Card>
                         ))}
                       </div>
-                      
-                      {/* Add Task Button */}
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleCreateTask(date)}
-                        className="w-full h-8 text-xs border border-dashed border-muted hover:border-border hover:bg-muted/50 transition-colors"
-                      >
-                        <Plus className="w-3 h-3 mr-1" />
-                        Add Task
-                      </Button>
                     </div>
                   )}
                 </div>
+                
+                {/* Hidden popup add button - appears on hover */}
+                <button
+                  onClick={() => handleCreateTask(date)}
+                  className="absolute top-2 right-2 w-8 h-8 bg-primary hover:bg-primary/90 rounded-full flex items-center justify-center text-primary-foreground opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-10"
+                  title="Add Task"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
               </div>
             );
           })}
