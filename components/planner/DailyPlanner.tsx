@@ -86,7 +86,10 @@ export default function DailyPlanner() {
     handleRescheduleTask,
     addPoolTaskForDate,
     getPoolTasksForDate,
-    removePoolTaskForDate
+    removePoolTaskForDate,
+    getCombinedPoolTasks,
+    addPoolTask,
+    removePoolTask
   } = useDailyPlanner();
 
   const [currentTimeForMarker, setCurrentTimeForMarker] = useState(new Date());
@@ -734,7 +737,16 @@ export default function DailyPlanner() {
         {/* Unscheduled View */}
         {viewMode === 'unscheduled' && (
           <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
-            <UnscheduledTasksView />
+            <UnscheduledTasksView 
+              poolTasks={generalPoolTasks}
+              pinnedTasks={pinnedTasks}
+              getPoolTasksForDate={getPoolTasksForDate}
+              getCombinedPoolTasks={getCombinedPoolTasks}
+              addPoolTask={addPoolTask}
+              removePoolTask={removePoolTask}
+              removePoolTaskForDate={removePoolTaskForDate}
+              openEditModal={openEditModal}
+            />
           </div>
         )}
 

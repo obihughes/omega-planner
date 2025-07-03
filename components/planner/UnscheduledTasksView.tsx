@@ -13,23 +13,31 @@ import {
   Edit3
 } from 'lucide-react';
 import { Task } from '@/types';
-import { useDailyPlanner } from '@/hooks/useDailyPlannerState';
 import { TASK_COLORS, DEFAULT_TASK_COLOR_INDEX } from '@/lib/constants';
 import { formatDuration } from '@/utils/formatters';
 import { cn } from '@/lib/utils';
 
-export default function UnscheduledTasksView() {
-  const {
-    poolTasks,
-    pinnedTasks,
-    getPoolTasksForDate,
-    getCombinedPoolTasks,
-    addPoolTask,
-    removePoolTask,
-    removePoolTaskForDate,
-    openEditModal
-  } = useDailyPlanner();
+interface UnscheduledTasksViewProps {
+  poolTasks: Task[];
+  pinnedTasks: Task[];
+  getPoolTasksForDate: (dateKey: string) => Task[];
+  getCombinedPoolTasks: () => Task[];
+  addPoolTask: (task: Task) => void;
+  removePoolTask: (taskId: string) => void;
+  removePoolTaskForDate: (dateKey: string, taskId: string) => void;
+  openEditModal: (task: Task, options?: any) => void;
+}
 
+export default function UnscheduledTasksView({
+  poolTasks,
+  pinnedTasks,
+  getPoolTasksForDate,
+  getCombinedPoolTasks,
+  addPoolTask,
+  removePoolTask,
+  removePoolTaskForDate,
+  openEditModal
+}: UnscheduledTasksViewProps) {
   // Local state
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'pinned' | 'today'>('all');
