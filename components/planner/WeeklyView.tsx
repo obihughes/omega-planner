@@ -76,6 +76,9 @@ export default function WeeklyView({}: WeeklyViewProps) {
       const scheduledTasks = dayTasks.filter(task => !task.poolDate && task.startHour !== undefined);
       const unscheduledTasks = poolTasks;
       
+      // Sort scheduled tasks by start time
+      scheduledTasks.sort((a, b) => (a.startHour || 0) - (b.startHour || 0));
+      
       weekTasksMap.set(dateKey, {
         scheduled: scheduledTasks,
         unscheduled: unscheduledTasks
@@ -246,64 +249,20 @@ export default function WeeklyView({}: WeeklyViewProps) {
                     </div>
                   ) : (
                     <div className="flex-1 flex flex-col gap-2 overflow-y-auto">
-                      {/* Show scheduled tasks first */}
-                      {dayData.scheduled.map((task) => (
-                        <div
-                          key={task.id}
-                          className={`
-                            relative p-3 rounded-md transition-all duration-200 hover:shadow-sm group
-                            min-h-[80px] max-h-[80px] flex flex-col justify-between
-                            ${task.color} border border-border/40 hover:ring-1 hover:ring-border/60
-                            ${task.completed ? 'opacity-60' : ''}
-                          `}
-                        >
-                          <div className="space-y-2">
-                            {/* Task Name */}
-                            <div className={`text-sm font-bold leading-tight ${
-                              task.completed ? 'line-through text-muted-foreground' : ''
-                            }`}>
-                              {task.name}
-                            </div>
-                            
-                            {/* Task Meta */}
-                            <div className="flex items-center justify-between text-xs opacity-90">
-                              <div className="flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                {formatDuration(task.duration)}
-                              </div>
-                              {task.startHour && !task.poolDate && (
-                                <div className="text-xs font-medium">
-                                  {formatTime(task.startHour)}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          
-                          {/* Edit button for task cards */}
-                          <button
-                            onClick={() => openEditModal(task)}
-                            className="absolute top-2 right-2 w-6 h-6 bg-black/10 hover:bg-black/20 dark:bg-white/10 dark:hover:bg-white/20 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
-                            title="Edit Task"
-                          >
-                            <MoreVertical className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ))}
-
-                      {/* Show unscheduled tasks after scheduled ones */}
+                      {/* Show unscheduled tasks first */}
                       {dayData.unscheduled.map((task) => (
                         <div
                           key={task.id}
                           className={`
-                            relative p-2.5 rounded-md transition-all duration-200 hover:shadow-sm group
-                            min-h-[80px] max-h-[80px] flex flex-col justify-between
+                            relative p-2 rounded-md transition-all duration-200 hover:shadow-sm group
+                            min-h-[60px] flex flex-col justify-between
                             bg-muted/30 border border-dashed border-muted-foreground/30 hover:border-muted-foreground/50
                             ${task.completed ? 'opacity-60' : ''}
                           `}
                         >
-                          <div className="space-y-1.5">
+                          <div className="space-y-1">
                             {/* Task Name */}
-                            <div className={`text-sm font-medium leading-tight ${
+                            <div className={`text-xs font-medium leading-tight truncate ${
                               task.completed ? 'line-through text-muted-foreground' : 'text-foreground'
                             }`}>
                               {task.name}
@@ -313,21 +272,63 @@ export default function WeeklyView({}: WeeklyViewProps) {
                             <div className="flex items-center justify-between text-xs text-muted-foreground">
                               <div className="flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
-                                {formatDuration(task.duration)}
+                                <span className="text-xs">{formatDuration(task.duration)}</span>
                               </div>
-                              <div className="text-xs text-muted-foreground">
-                                No time set
-                              </div>
+                              <span className="text-xs">No time</span>
                             </div>
                           </div>
                           
                           {/* Edit button for task cards */}
                           <button
                             onClick={() => openEditModal(task)}
-                            className="absolute top-2 right-2 w-5 h-5 bg-muted hover:bg-muted/80 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+                            className="absolute top-1 right-1 w-4 h-4 bg-muted hover:bg-muted/80 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
                             title="Edit Task"
                           >
-                            <MoreVertical className="w-3 h-3" />
+                            <MoreVertical className="w-2.5 h-2.5" />
+                          </button>
+                        </div>
+                      ))}
+
+                      {/* Show scheduled tasks after unscheduled ones */}
+                      {dayData.scheduled.map((task) => (
+                        <div
+                          key={task.id}
+                          className={`
+                            relative p-2 rounded-md transition-all duration-200 hover:shadow-sm group
+                            min-h-[60px] flex flex-col justify-between
+                            ${task.color} border border-border/40 hover:ring-1 hover:ring-border/60
+                            ${task.completed ? 'opacity-60' : ''}
+                          `}
+                        >
+                          <div className="space-y-1">
+                            {/* Task Name */}
+                            <div className={`text-xs font-medium leading-tight truncate ${
+                              task.completed ? 'line-through text-muted-foreground' : ''
+                            }`}>
+                              {task.name}
+                            </div>
+                            
+                            {/* Task Meta */}
+                            <div className="flex items-center justify-between text-xs opacity-90">
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                <span className="text-xs">{formatDuration(task.duration)}</span>
+                              </div>
+                              {task.startHour && !task.poolDate && (
+                                <span className="text-xs font-medium">
+                                  {formatTime(task.startHour)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Edit button for task cards */}
+                          <button
+                            onClick={() => openEditModal(task)}
+                            className="absolute top-1 right-1 w-4 h-4 bg-black/10 hover:bg-black/20 dark:bg-white/10 dark:hover:bg-white/20 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+                            title="Edit Task"
+                          >
+                            <MoreVertical className="w-2.5 h-2.5" />
                           </button>
                         </div>
                       ))}

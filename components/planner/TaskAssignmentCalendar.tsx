@@ -131,10 +131,28 @@ export function TaskAssignmentCalendar({
       // Assign the task to this date
       onAssignTask(assigningTask, date, 9); // Default to 9 AM
       setAssigningTask(null);
-    } else {
-      // Open Quick-Add modal for creating a new task
-      createQuickTask(date);
     }
+    // Remove single-click task creation
+  };
+
+  const handleDateDoubleClick = (date: Date) => {
+    if (assigningTask) return; // Don't create tasks during assignment mode
+    
+    // Create unscheduled task for this date
+    const dateKey = date.toISOString().split('T')[0];
+    
+    const newTask = {
+      name: "New Task",
+      duration: 1,
+      color: '', // Will default to grey in the modal system
+      notes: "",
+      completed: false,
+      poolDate: dateKey,
+      baseDate: dateKey
+    };
+    
+    // Create the task directly for this date
+    onAddPoolTaskForDate(dateKey, newTask);
   };
 
   const handleTaskAssignClick = (task: Task) => {
@@ -332,6 +350,7 @@ export function TaskAssignmentCalendar({
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, day)}
                 onClick={() => handleDateClick(day)}
+                onDoubleClick={() => handleDateDoubleClick(day)}
                 className={cn(
                   "relative p-2 h-32 border border-border/20 rounded-lg flex flex-col justify-start items-start group transition-colors",
                   isCurrentMonthDay ? "bg-card hover:bg-muted/50" : "bg-muted/20 text-muted-foreground hover:bg-muted/40",
