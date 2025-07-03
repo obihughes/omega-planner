@@ -6,9 +6,9 @@ import { ChevronLeft, ChevronRight, Clock, Calendar as CalendarIcon, Edit3, Arro
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatDuration } from '@/utils/formatters';
-import { QuickAddTaskModal } from '@/components/modals/QuickAddTaskModal';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { useModalManager } from '@/hooks/useModalManager';
 
 interface TaskAssignmentCalendarProps {
   poolTasks: Task[];
@@ -18,7 +18,10 @@ interface TaskAssignmentCalendarProps {
   onUnassignTask: (task: Task) => void;
   onRescheduleTask: (task: Task, newDate: Date) => void;
   onCreatePoolTask: (dateKey: string, task: Partial<Task>) => void;
-  openEditModal: (task: Task, options?: any) => void;
+  onAddTask: (targetDate: Date, startHour: number, taskData: any, dayOffset?: number) => void;
+  onUpdateTask: (taskId: string, updatedFields: Partial<Task>) => void;
+  onAddPoolTaskForDate: (dateKey: string, task: Partial<Task>) => void;
+  onClearPool: () => void;
   getPoolTasksForDate: (dateKey: string) => Task[];
 }
 
@@ -30,15 +33,38 @@ export function TaskAssignmentCalendar({
   onUnassignTask,
   onRescheduleTask,
   onCreatePoolTask,
-  openEditModal,
+  onAddTask,
+  onUpdateTask,
+  onAddPoolTaskForDate,
+  onClearPool,
   getPoolTasksForDate
 }: TaskAssignmentCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [assigningTask, setAssigningTask] = useState<Task | null>(null);
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
-  const [quickAddModalOpen, setQuickAddModalOpen] = useState(false);
-  const [selectedDateForAdd, setSelectedDateForAdd] = useState<Date | null>(null);
   const [showPastEvents, setShowPastEvents] = useState(false);
+
+  // Set up the unified modal manager
+  const modalManager = useModalManager({
+    onAddTask: onAddTask,
+    onUpdateTask: onUpdateTask,
+    onUpdatePoolTask: onUpdateTask,
+    onAddPoolTask: (task: Task) => {
+      // For monthly view, we need to create pool tasks with proper date handling
+      const dateKey = task.poolDate || task.baseDate;
+      if (dateKey) {
+        onCreatePoolTask(dateKey, task);
+      }
+    },
+    onAddPoolTaskForDate: (dateKey: string, task: Partial<Task>) => {
+      onCreatePoolTask(dateKey, task);
+    },
+    onClearPool: onClearPool,
+    onCloneTasks: () => {},
+    topDayOffset: 0
+  });
+
+  const { createQuickTask, editTask, activeEditModalTask, closeEditModal, saveTaskFromModal } = modalManager;
 
   // Get the first day of the current month and calculate calendar grid
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -107,8 +133,7 @@ export function TaskAssignmentCalendar({
       setAssigningTask(null);
     } else {
       // Open Quick-Add modal for creating a new task
-      setSelectedDateForAdd(date);
-      setQuickAddModalOpen(true);
+      createQuickTask(date);
     }
   };
 
@@ -161,25 +186,7 @@ export function TaskAssignmentCalendar({
   const handleTaskClick = (task: Task, isScheduled: boolean) => {
     if (assigningTask) return; // Don't open edit modal during assignment
     
-    openEditModal(task, { 
-      isFromPool: !isScheduled,
-      showUnassignOption: isScheduled 
-    });
-  };
-
-  const handleQuickAddSave = (task: Partial<Task>) => {
-    if (!selectedDateForAdd) return;
-    
-    const dateKey = selectedDateForAdd.toISOString().split('T')[0];
-    onCreatePoolTask(dateKey, task);
-    
-    setQuickAddModalOpen(false);
-    setSelectedDateForAdd(null);
-  };
-
-  const handleQuickAddClose = () => {
-    setQuickAddModalOpen(false);
-    setSelectedDateForAdd(null);
+    editTask(task);
   };
 
   return (
@@ -416,13 +423,6 @@ export function TaskAssignmentCalendar({
           </div>
         </div>
       </div>
-
-      <QuickAddTaskModal 
-        isOpen={quickAddModalOpen}
-        onClose={handleQuickAddClose}
-        onSave={handleQuickAddSave}
-        selectedDate={selectedDateForAdd}
-      />
     </div>
   );
 }

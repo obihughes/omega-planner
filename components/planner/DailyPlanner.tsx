@@ -39,7 +39,7 @@ type TimelinePeriod = 'night' | 'morning' | 'afternoon' | 'evening';
 export default function DailyPlanner() {
   const {
     tasksByDate,
-    poolTasks,
+    poolTasks: combinedPoolTasks,
     generalPoolTasks,
     currentDayPoolTasks,
     pinnedTasks,
@@ -89,42 +89,32 @@ export default function DailyPlanner() {
     addPoolTask,
     removePoolTask,
     handleAddTask,
-    handleUpdateTask
+    handleUpdateTask,
+    targetCopyDayOffset,
+    showClearPoolConfirmation,
+    activeEditModalTask,
+    timelineScrollRef,
+    cloneConflictStrategy,
+    PIXELS_PER_MINUTE,
+    setCopyingTaskData,
+    setTargetCopyDayOffset,
+    setCloneConflictStrategy,
+    getOrderedDayOffsets,
+    handleTaskCompletionToggle,
+    handleMouseUpGlobal,
+    moveTaskFromPool,
+    poolTasksByDate,
+    closeEditModal,
+    saveTaskFromModal
   } = useDailyPlanner();
 
   const [currentTimeForMarker, setCurrentTimeForMarker] = useState(new Date());
-  const [targetCopyDayOffset, setTargetCopyDayOffset] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<'daily' | 'unscheduled' | 'weekly' | 'monthly'>('daily');
-
-  const modalManager = useModalManager({
-    onAddTask: handleAddTask,
-    onUpdateTask: handleUpdateTask,
-    onUpdatePoolTask: handleUpdateTask,
-    onAddPoolTask: addPoolTask,
-    onAddPoolTaskForDate: addPoolTaskForDate,
-    onClearPool: clearPool,
-    onCloneTasks: (sourceDate: Date, destinationDate: Date) => {
-      console.log(`Cloning tasks from ${sourceDate} to ${destinationDate}`);
-    },
-    topDayOffset: 0
-  });
-
-  const {
-    activeEditModalTask,
-    createTimelineTask,
-    createPoolTask,
-    createPoolTaskForDate,
-    editTask,
-    closeEditModal,
-    saveTaskFromModal
-  } = modalManager;
 
   useEffect(() => {
       const timerId = setInterval(() => setCurrentTimeForMarker(new Date()), 60000);
       return () => clearInterval(timerId);
   }, []);
-
-  const timelineScrollRef = useRef<HTMLDivElement>(null);
 
   const handleResizeStart = (task: Task, edge: 'start' | 'end', e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
@@ -710,7 +700,7 @@ export default function DailyPlanner() {
                     </span>
                   )}
                 </div>
-                <Button onClick={() => createTimelineTask(dateFromDateKey(getCalendarDateForColumn(topDayOffset)), 9)}>
+                <Button onClick={() => openEditModal()}>
                     Add Task
                 </Button>
               </div>
@@ -768,9 +758,7 @@ export default function DailyPlanner() {
               addPoolTask={addPoolTask}
               removePoolTask={removePoolTask}
               removePoolTaskForDate={removePoolTaskForDate}
-              createPoolTask={createPoolTask}
-              createPoolTaskForDate={createPoolTaskForDate}
-              editTask={editTask}
+              openEditModal={openEditModal}
             />
           </div>
         )}
@@ -793,7 +781,10 @@ export default function DailyPlanner() {
               onUnassignTask={handleUnassignTask}
               onRescheduleTask={handleRescheduleTask}
               onCreatePoolTask={addPoolTaskForDate}
-              openEditModal={openEditModal}
+              onAddTask={handleAddTask}
+              onUpdateTask={handleUpdateTask}
+              onAddPoolTaskForDate={addPoolTaskForDate}
+              onClearPool={clearPool}
               getPoolTasksForDate={getPoolTasksForDate}
             />
           </div>
