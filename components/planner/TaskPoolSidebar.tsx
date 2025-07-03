@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Task } from '../../types/planner';
 import { Input, Button } from "@/components/ui";
-import { CopyPlus, Trash2, Edit3, Pin, PinOff, GripVertical, X as XIcon, ChevronDownIcon, Eye } from 'lucide-react';
+import { CopyPlus, Trash2, Edit3, Pin, PinOff, GripVertical, X as XIcon, ChevronDownIcon, Eye, Clock } from 'lucide-react';
 import { formatDuration } from '@/utils/formatters';
 import { DURATION_OPTIONS as APP_DURATION_OPTIONS, TASK_COLORS as APP_TASK_COLORS } from '../../lib/constants';
 import { cn } from '@/lib/utils';
@@ -25,7 +25,7 @@ export interface TaskPoolSidebarProps {
   // Utility functions
   onDeletePoolTask?: (taskId: string) => void;
   onClearPool?: () => void;
-  openEditModal: (task: Task, isFromPool?: boolean) => void;
+  openEditModal: (task: Task, options?: { isNew?: boolean, isFromPool?: boolean, isPinned?: boolean }) => void;
   onAddTaskToTimeline: (task: Task, dayOffset: number) => void;
 }
 
@@ -126,66 +126,54 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
           <CopyPlus className="w-4 h-4" />
         </Button>
 
-        <div className="flex space-x-2 p-2 pr-14 overflow-x-auto">
+        <div className="p-2 flex space-x-3 overflow-x-auto overflow-y-hidden flex-grow">
           {poolTasks.length === 0 ? (
-            <div className="text-muted-foreground text-sm p-2 text-center w-full">
-              No unscheduled tasks.
-            </div>
+            <p className="text-muted-foreground text-sm text-center pt-4 w-full">No unscheduled tasks.</p>
           ) : (
             poolTasks.map(task => (
               <div 
                 key={task.id}
                 draggable
                 onDragStart={(e) => handleDragStartPoolItem(e, task)}
-                className={cn(
-                  "p-3 rounded-lg shadow-sm cursor-grab active:cursor-grabbing group transition-all duration-150",
-                  "flex flex-col justify-between text-left flex-shrink-0 w-60 h-20",
-                  "border border-border/50 bg-card hover:shadow-md hover:border-border",
-                  "dark:border-border dark:bg-card dark:hover:border-border/80"
-                )}
+                className="relative p-3 rounded-lg bg-card border border-border/50 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-24 cursor-grab active:cursor-grabbing"
                 style={{ 
-                  backgroundColor: task.color + '15', 
-                  borderLeftColor: task.color,
-                  borderLeftWidth: '3px'
+                  backgroundColor: task.color + '10'
                 }}
-                onClick={() => openEditModal(task, true)}
               >
-                <div className="flex-grow">
-                  <p className="font-medium text-sm leading-tight break-words text-foreground truncate">
-                    {task.name || "Untitled Task"}
-                  </p>
-                </div>
-                <div className="mt-1.5 flex items-center text-muted-foreground">
-                  <span className="text-xs"> 
-                    {formatDuration(task.duration)}
-                  </span>
-                  <div className="flex items-center gap-1.5 ml-auto">
+                <div className="flex items-start justify-between gap-3 h-full">
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    {/* Color status dot */}
+                    <div 
+                      className="w-3 h-3 rounded-full flex-shrink-0 mt-1"
+                      style={{ backgroundColor: task.color }}
+                    />
+                    
+                    <div className="flex-1 min-w-0">
+                      {/* Task name */}
+                      <p className="font-medium text-sm text-foreground truncate leading-tight mb-2">
+                        {task.name || "Untitled Task"}
+                      </p>
+                      
+                      {/* Duration */}
+                      <div className="flex items-center gap-1 mb-1">
+                        <Clock className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                        <span className="text-xs text-muted-foreground truncate">{formatDuration(task.duration)}</span>
+                      </div>
+                      
+                      {/* Status */}
+                      <div className="text-xs">
+                        <span className="text-muted-foreground">
+                          {task.completed ? 'Completed' : 'Unscheduled'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Action buttons - stacked vertically */}
+                  <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       type="button"
-                      className={cn(
-                        "h-5 w-5 rounded flex items-center justify-center transition-colors",
-                        "bg-background/80 hover:bg-background text-foreground hover:text-primary",
-                        "border border-border/50 hover:border-border"
-                      )}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        const poolTask = poolTasks.find(t => t.id === task.id);
-                        if (poolTask) {
-                          // Call onAddTaskToTimeline to copy to schedule
-                          onAddTaskToTimeline(poolTask, topDayOffset); 
-                        }
-                      }}
-                      title="Copy to Schedule"
-                    >
-                      <CopyPlus className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      className={cn(
-                        "h-5 w-5 rounded flex items-center justify-center transition-colors",
-                        "bg-background/80 hover:bg-background text-foreground hover:text-primary",
-                        "border border-border/50 hover:border-border"
-                      )}
+                      className="h-6 w-6 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -193,29 +181,55 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
                       }}
                       title="View Notes"
                     >
-                      <Eye className="w-3.5 h-3.5" />
+                      <Eye className="w-3 h-3" />
                     </button>
                     <button
                       type="button"
-                      className={cn(
-                        "h-5 w-5 rounded flex items-center justify-center transition-colors",
-                        "bg-background/80 hover:bg-background text-foreground hover:text-primary",
-                        "border border-border/50 hover:border-border"
-                      )}
+                      className="h-6 w-6 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEditModal(task, { isFromPool: true });
+                      }}
+                      title="Edit Task"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      className="h-6 w-6 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                       onClick={(e) => {
                         e.preventDefault();
-                        openEditModal(task, true);
+                        const poolTask = poolTasks.find(t => t.id === task.id);
+                        if (poolTask) {
+                          onAddTaskToTimeline(poolTask, topDayOffset); 
+                        }
                       }}
-                      title="Edit Pool Task"
+                      title="Copy to Schedule"
                     >
-                      <Edit3 className="w-3.5 h-3.5" />
+                      <CopyPlus className="w-3 h-3" />
                     </button>
+                    {onDeletePoolTask && (
+                      <button
+                        type="button"
+                        className="h-6 w-6 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onDeletePoolTask(task.id);
+                        }}
+                        title="Delete Task"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
             ))
           )}
         </div>
+
+
       </div>
 
       {showPoolTaskForm && (
@@ -309,10 +323,10 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
             </button>
 
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white pt-1 pr-8 line-clamp-2">
-              {viewingPoolTask.name}
+              {viewingPoolTask?.name}
             </h3>
 
-            {viewingPoolTask.notes && viewingPoolTask.notes.trim() !== "" && (
+            {viewingPoolTask?.notes && viewingPoolTask.notes.trim() !== "" && (
               <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap max-h-60 overflow-y-auto border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
                 {viewingPoolTask.notes}
               </div>
