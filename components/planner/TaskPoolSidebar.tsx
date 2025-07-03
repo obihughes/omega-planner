@@ -169,11 +169,11 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
                     </div>
                   </div>
                   
-                  {/* Action buttons - stacked vertically */}
-                  <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {/* Action buttons - stacked vertically (smaller for 4 buttons) */}
+                  <div className="absolute top-1 right-1 flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       type="button"
-                      className="h-6 w-6 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                      className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -181,22 +181,22 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
                       }}
                       title="View Notes"
                     >
-                      <Eye className="w-3 h-3" />
+                      <Eye className="w-2.5 h-2.5" />
                     </button>
                     <button
                       type="button"
-                      className="h-6 w-6 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                      className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                       onClick={(e) => {
                         e.stopPropagation();
                         openEditModal(task, { isFromPool: true });
                       }}
                       title="Edit Task"
                     >
-                      <Edit3 className="w-3 h-3" />
+                      <Edit3 className="w-2.5 h-2.5" />
                     </button>
                     <button
                       type="button"
-                      className="h-6 w-6 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                      className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                       onClick={(e) => {
                         e.preventDefault();
                         const poolTask = poolTasks.find(t => t.id === task.id);
@@ -206,12 +206,12 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
                       }}
                       title="Copy to Schedule"
                     >
-                      <CopyPlus className="w-3 h-3" />
+                      <CopyPlus className="w-2.5 h-2.5" />
                     </button>
                     {onDeletePoolTask && (
                       <button
                         type="button"
-                        className="h-6 w-6 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                        className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -219,7 +219,7 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
                         }}
                         title="Delete Task"
                       >
-                        <Trash2 className="w-3 h-3" />
+                        <Trash2 className="w-2.5 h-2.5" />
                       </button>
                     )}
                   </div>
