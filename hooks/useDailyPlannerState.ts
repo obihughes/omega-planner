@@ -998,6 +998,25 @@ export function useDailyPlanner() {
     });
   }, []);
 
+  // Get combined pool tasks (general pool + all date-specific tasks)
+  const getCombinedPoolTasks = useCallback((): Task[] => {
+    const allDateTasks: Task[] = [];
+    poolTasksByDate.forEach((tasks) => {
+      allDateTasks.push(...tasks);
+    });
+    return [...poolTasks, ...allDateTasks];
+  }, [poolTasks, poolTasksByDate]);
+
+  // Add task to general pool
+  const addPoolTask = useCallback((task: Task) => {
+    setPoolTasks(prev => [...prev, task]);
+  }, [setPoolTasks]);
+
+  // Remove task from general pool
+  const removePoolTask = useCallback((taskId: string) => {
+    setPoolTasks(prev => prev.filter(task => task.id !== taskId));
+  }, [setPoolTasks]);
+
   // --- RETURNED STATE AND FUNCTIONS ---
   return {
     // State
@@ -1118,6 +1137,9 @@ export function useDailyPlanner() {
     addPoolTaskForDate,
     getPoolTasksForDate,
     removePoolTaskForDate,
+    getCombinedPoolTasks,
+    addPoolTask,
+    removePoolTask,
 
     // Specific Modal Related Aliases / Properties (ensure these are distinct and necessary)
     isModalOpen: showClearPoolModal,

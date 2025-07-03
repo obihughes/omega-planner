@@ -52,6 +52,38 @@ The main daily planning interface with timeline views and task management.
 - Manages view mode state locally (`daily` | `monthly`)
 - Handles task assignment, scheduling, and pool management
 
+### **UnscheduledTasksPage** **(Phase 2)**
+**Location**: `app/unscheduled/page.tsx`
+
+A dedicated full-page view for comprehensive unscheduled task management.
+
+**Key Features:**
+- **Full-Page Layout**: Masonry/board-style task grid for better visibility
+- **Advanced Search & Filtering**: Real-time search with multiple sort options
+- **Bulk Operations**: Multi-select tasks for batch operations (delete, etc.)
+- **Task Statistics**: Overview cards showing total tasks, hours, and averages
+- **Three Task Views**:
+  - **All Tasks**: Combined view of general pool + date-specific tasks
+  - **General Pool**: Universal unscheduled tasks
+  - **Today's Tasks**: Date-specific tasks for current date
+
+**Enhanced Features:**
+- **Task Creation**: Quick task creation with immediate editing
+- **Visual Task Cards**: Color-coded cards with duration and metadata
+- **Responsive Grid**: Adaptive layout (1-4 columns based on screen size)
+- **Selection System**: Click to select, bulk operations toolbar
+- **Sort Options**: By name, duration, color, or creation date
+- **Empty States**: Contextual prompts for task creation
+
+**Integration:**
+- Shares task data with Daily Planner via `useDailyPlanner` hook
+- Tasks created here appear in Daily View pool
+- Seamless workflow: Unscheduled → Monthly Assignment → Daily Scheduling
+
+**Navigation:**
+- Added to main navigation as "Unscheduled Tasks" with Clock icon
+- Independent page accessible via `/unscheduled` route
+
 ### TaskAssignmentCalendar (`components/planner/TaskAssignmentCalendar.tsx`)
 **NEW COMPONENT:** Calendar view for assigning pool tasks to specific dates.
 
