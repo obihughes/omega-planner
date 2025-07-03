@@ -929,24 +929,36 @@ export function useDailyPlanner() {
   }, [setPoolTasks]);
 
   const handleAssignTask = useCallback((task: Task, targetDate: Date, startHour: number = 9) => {
-    // Remove task from any pool it might be in
+    // When a task from the general pool is assigned to a day in the monthly calendar,
+    // it should be moved to that day's specific task pool, not the timeline.
+    
+    // 1. Remove from the general "unscheduled" pool.
     removePoolTask(task.id);
+
+    // 2. If it was previously in another day's pool, remove it from there.
     if (task.poolDate) {
-      removePoolTaskForDate(task.poolDate, task.id);
+        removePoolTaskForDate(task.poolDate, task.id);
     }
     
-    // Add task to timeline with target date and time
+    // 3. Add it to the target date's pool.
     const targetDateKey = getDateKey(targetDate);
-    const assignedTask: Task = {
-      ...task,
-      baseDate: targetDateKey,
-      startHour: startHour,
-      poolDate: targetDateKey, // Also mark it as a pool task for this date
-      completed: false
+    const taskForNewPool = { 
+        ...task, 
+        poolDate: targetDateKey, // Set the new pool date
+        baseDate: '',            // Ensure it's not on the timeline
+        startHour: 0             // Reset start hour as it's not scheduled
     };
     
-    setTasks(prev => [...prev.filter(t => t.id !== assignedTask.id), assignedTask]);
-  }, [removePoolTask, removePoolTaskForDate]);
+    setPoolTasksByDate(prev => {
+        const newMap = new Map(prev);
+        const tasksForDay = newMap.get(targetDateKey) || [];
+        // Avoid adding duplicates
+        if (!tasksForDay.some(t => t.id === taskForNewPool.id)) {
+           newMap.set(targetDateKey, [...tasksForDay, taskForNewPool]);
+        }
+        return newMap;
+    });
+  }, [removePoolTask, removePoolTaskForDate, setPoolTasksByDate]);
 
   const handleUnassignTask = useCallback((task: Task) => {
     // Remove from timeline
