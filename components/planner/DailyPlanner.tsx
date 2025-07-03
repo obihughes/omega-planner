@@ -31,6 +31,7 @@ import { ViewTaskNotesModal } from './ViewTaskNotesModal';
 import { getCalendarDateForColumn, getDateKeyFromOffset, dateFromDateKey } from '../../utils/dateUtils';
 import { resolveCollisionsForResize, resolveCollisionsForDrag } from '../../utils/taskUtils';
 import UnscheduledTasksView from './UnscheduledTasksView';
+import WeeklyView from './WeeklyView';
 
 type TimelinePeriod = 'night' | 'morning' | 'afternoon' | 'evening';
 
@@ -88,7 +89,7 @@ export default function DailyPlanner() {
 
   const [currentTimeForMarker, setCurrentTimeForMarker] = useState(new Date());
   const [targetCopyDayOffset, setTargetCopyDayOffset] = useState<number | null>(null);
-  const [viewMode, setViewMode] = useState<'daily' | 'monthly' | 'unscheduled'>('daily');
+  const [viewMode, setViewMode] = useState<'daily' | 'unscheduled' | 'weekly' | 'monthly'>('daily');
 
   useEffect(() => {
       const timerId = setInterval(() => setCurrentTimeForMarker(new Date()), 60000);
@@ -573,6 +574,15 @@ export default function DailyPlanner() {
                 Unscheduled
               </Button>
               <Button
+                variant={viewMode === 'weekly' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('weekly')}
+                className="flex items-center gap-2"
+              >
+                <Calendar className="w-4 h-4" />
+                Weekly View
+              </Button>
+              <Button
                 variant={viewMode === 'monthly' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('monthly')}
@@ -714,6 +724,13 @@ export default function DailyPlanner() {
         {viewMode === 'unscheduled' && (
           <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
             <UnscheduledTasksView />
+          </div>
+        )}
+
+        {/* Weekly View */}
+        {viewMode === 'weekly' && (
+          <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
+            <WeeklyView />
           </div>
         )}
 
