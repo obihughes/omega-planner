@@ -10,7 +10,8 @@ import {
   Plus, 
   Calendar,
   Clock,
-  MoreVertical
+  MoreVertical,
+  CalendarOff
 } from 'lucide-react';
 import { Task } from '@/types';
 import { useDailyPlanner } from '@/hooks/useDailyPlannerState';
@@ -244,28 +245,31 @@ export default function WeeklyView({ editTask }: WeeklyViewProps) {
                         <div
                           key={task.id}
                           className={`
-                            relative px-2 py-1 rounded-md transition-all duration-200 hover:shadow-sm group
-                            min-h-[40px] flex flex-col justify-between
+                            relative px-2 pt-2 pb-1 rounded-md transition-all duration-200 hover:shadow-sm group
+                            min-h-[80px] flex flex-row justify-between items-start
                             bg-muted/30 border border-dashed border-muted-foreground/30 hover:border-muted-foreground/50
                             ${task.completed ? 'opacity-60' : ''}
                           `}
                         >
-                          <div>
+                          {/* Left side: Name and "No time" */}
+                          <div className="flex flex-col mr-2">
                             {/* Task Name */}
-                            <div className={`text-xs font-medium leading-tight truncate mb-0.5 ${
+                            <div className={`text-base font-semibold leading-tight truncate ${
                               task.completed ? 'line-through text-muted-foreground' : 'text-foreground'
                             }`}>
                               {task.name}
                             </div>
                             
-                            {/* Task Meta */}
-                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                <span className="text-xs">{formatDuration(task.duration)}</span>
-                              </div>
-                              <span className="text-xs">No time</span>
+                            {/* "No time" text */}
+                            <div className="flex items-center gap-1.5 text-sm text-foreground/70 mt-1">
+                                <CalendarOff className="w-4 h-4" />
+                                <span>Unscheduled</span>
                             </div>
+                          </div>
+
+                          {/* Right side: Duration */}
+                          <div className="text-sm font-semibold text-foreground/70 flex-shrink-0">
+                            {formatDuration(task.duration)}
                           </div>
                           
                           {/* Edit button for task cards */}
@@ -284,32 +288,33 @@ export default function WeeklyView({ editTask }: WeeklyViewProps) {
                         <div
                           key={task.id}
                           className={`
-                            relative px-2 py-1 rounded-md transition-all duration-200 hover:shadow-sm group
-                            min-h-[40px] flex flex-col justify-between
+                            relative px-2 pt-2 pb-1 rounded-md transition-all duration-200 hover:shadow-sm group
+                            min-h-[80px] flex flex-row justify-between items-start
                             ${task.color} border border-border/40 hover:ring-1 hover:ring-border/60
                             ${task.completed ? 'opacity-60' : ''}
                           `}
                         >
-                          <div>
+                          {/* Left side: Name and Start Time */}
+                          <div className="flex flex-col mr-2">
                             {/* Task Name */}
-                            <div className={`text-xs font-medium leading-tight truncate mb-0.5 ${
+                            <div className={`text-base font-semibold leading-tight truncate ${
                               task.completed ? 'line-through text-muted-foreground' : ''
                             }`}>
                               {task.name}
                             </div>
                             
-                            {/* Task Meta */}
-                            <div className="flex items-center justify-between text-xs opacity-90">
-                              <div className="flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                <span className="text-xs">{formatDuration(task.duration)}</span>
-                              </div>
-                              {task.startHour && !task.poolDate && (
-                                <span className="text-xs font-medium">
-                                  {formatTime(task.startHour)}
-                                </span>
-                              )}
-                            </div>
+                            {/* Start Time */}
+                            {task.startHour && !task.poolDate && (
+                                <div className="flex items-center gap-1.5 text-sm opacity-80 mt-1">
+                                    <Clock className="w-4 h-4" />
+                                    <span>{formatTime(task.startHour)}</span>
+                                </div>
+                            )}
+                          </div>
+
+                          {/* Right side: Duration */}
+                          <div className="text-sm font-semibold opacity-80 flex-shrink-0">
+                            {formatDuration(task.duration)}
                           </div>
                           
                           {/* Edit button for task cards */}

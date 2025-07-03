@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { Button } from "@/components/ui";
 import { Pin, CopyPlus, Trash2, Calendar, Clock } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 
 import { formatTime } from '@/utils/formatters';
 import { Task } from '../../types/planner';
@@ -641,35 +642,35 @@ export default function DailyPlanner() {
           <>
             <div className="mb-4 bg-card border border-border rounded-lg shadow-sm overflow-hidden">
               <Tabs defaultValue="pinned" className="flex h-28">
-            <div className="flex flex-col w-32 border-r border-border bg-muted/20">
-              <TabsList className="flex-col h-auto bg-transparent p-2">
-                <TabsTrigger value="pool" className="w-full justify-start text-sm py-3">
-                  <CopyPlus className="mr-2 h-4 w-4" /> Pool
-                </TabsTrigger>
-                <TabsTrigger value="pinned" className="w-full justify-start text-sm py-3">
-                  <Pin className="mr-2 h-4 w-4" /> Pinned
-                </TabsTrigger>
-              </TabsList>
-              <div className="flex-1 p-2">
-                {pinnedTasks.some(task => {
-          const taskDueDate = task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate);
-          return taskDueDate.getTime() < new Date().getTime();
-        }) && (
-                   <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-muted-foreground text-xs h-8 w-full"
-                      onClick={clearOverduePinnedTasks}
-                      title="Clear all overdue pinned tasks"
-                    >
-                      <Trash2 className="w-3 h-3 mr-1" /> Clear
-                  </Button>
-                )}
-              </div>
-            </div>
-            <div className="flex-1">
-              <TabsContent value="pool" className="h-full m-0 p-0">
-                  <TaskPoolSidebar
+                <div className="flex flex-col w-32 border-r border-border bg-muted/20">
+                  <TabsList className="flex-col h-auto bg-transparent p-2">
+                    <TabsTrigger value="pool" className="w-full justify-start text-sm py-3">
+                      <CopyPlus className="mr-2 h-4 w-4" /> Pool
+                    </TabsTrigger>
+                    <TabsTrigger value="pinned" className="w-full justify-start text-sm py-3">
+                      <Pin className="mr-2 h-4 w-4" /> Pinned
+                    </TabsTrigger>
+                  </TabsList>
+                  <div className="flex-1 p-2">
+                    {pinnedTasks.some(task => {
+                      const taskDueDate = task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate);
+                      return taskDueDate.getTime() < new Date().getTime();
+                    }) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-muted-foreground text-xs h-8 w-full"
+                        onClick={clearOverduePinnedTasks}
+                        title="Clear all overdue pinned tasks"
+                      >
+                        <Trash2 className="w-3 h-3 mr-1" /> Clear
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <TabsContent value="pool" className="h-full m-0 p-0">
+                    <TaskPoolSidebar
                       poolTasks={currentDayPoolTasks}
                       TASK_COLORS={TASK_COLORS}
                       activeTab="pool"
@@ -681,83 +682,83 @@ export default function DailyPlanner() {
                       onDeletePoolTask={handleDeletePoolTask}
                       onClearPool={clearPool}
                       openEditModal={(task, options) => openEditModal(task, options)}
-                  />
-              </TabsContent>
-              <TabsContent value="pinned" className="h-full m-0 p-0">
-                  <PinnedTasksSidebar
+                    />
+                  </TabsContent>
+                  <TabsContent value="pinned" className="h-full m-0 p-0">
+                    <PinnedTasksSidebar
                       pinnedTasks={pinnedTasks}
                       onUnpinTask={handleUnpinTask}
                       formatTimeRemaining={formatTimeRemaining}
                       openEditModal={openEditModal}
                       onClearOverduePinnedTasks={clearOverduePinnedTasks}
                       onSyncPinnedTasks={syncPinnedTasksWithTimeline}
-                  />
-              </TabsContent>
-            </div>
-          </Tabs>
-        </div>
-
-        <div className="space-y-6" ref={timelineScrollRef}>
-            <div className="bg-card p-4 rounded-lg shadow-sm border border-border">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center">
-                  <Button variant="ghost" size="icon" onClick={() => setTopDayOffset(topDayOffset - 7)} title="Previous week">«</Button>
-                  <Button variant="ghost" size="icon" onClick={() => setTopDayOffset(topDayOffset - 1)} title="Previous day">‹</Button>
-                  <span className="text-foreground font-medium text-center px-3 w-52">
-                    {isClient ? getDateLabel(topDayOffset) : "Loading..."}
-                  </span>
-                  <Button variant="ghost" size="icon" onClick={() => setTopDayOffset(topDayOffset + 1)} title="Next day">›</Button>
-                  <Button variant="ghost" size="icon" onClick={() => setTopDayOffset(topDayOffset + 7)} title="Next week">»</Button>
-                  {isClient && getRelativeDayLabel(topDayOffset) && (
-                    <span className="text-xs text-muted-foreground ml-2 px-1.5 py-0.5 bg-muted rounded-sm">
-                      {getRelativeDayLabel(topDayOffset)}
-                    </span>
-                  )}
+                    />
+                  </TabsContent>
                 </div>
-                <Button onClick={() => openEditModal()}>
-                    Add Task
-                </Button>
-              </div>
-              <div className="border border-border/30 rounded-md overflow-hidden">
-                <div className="flex flex-col">
-                    {renderDayColumn(topDayOffset, 'night')}
-                    {renderDayColumn(topDayOffset, 'morning')}
-                    {renderDayColumn(topDayOffset, 'afternoon')}
-                    {renderDayColumn(topDayOffset, 'evening')}
-                </div>
-              </div>
+              </Tabs>
             </div>
 
-            <div className="bg-card p-4 rounded-lg shadow-sm border border-border">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center">
-                    <Button variant="ghost" size="icon" onClick={() => setBottomDayOffset(bottomDayOffset - 7)} title="Previous week">«</Button>
-                    <Button variant="ghost" size="icon" onClick={() => setBottomDayOffset(bottomDayOffset - 1)} title="Previous day">‹</Button>
-                    <span className="text-foreground font-medium text-center px-3 w-52">
-                        {isClient ? getDateLabel(bottomDayOffset) : "Loading..."}
-                    </span>
-                    <Button variant="ghost" size="icon" onClick={() => setBottomDayOffset(bottomDayOffset + 1)} title="Next day">›</Button>
-                    <Button variant="ghost" size="icon" onClick={() => setBottomDayOffset(bottomDayOffset + 7)} title="Next week">»</Button>
-                    {isClient && getRelativeDayLabel(bottomDayOffset) && (
+            <div className="space-y-6" ref={timelineScrollRef}>
+                <div className="bg-card p-4 rounded-lg shadow-sm border border-border">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                      <Button variant="ghost" size="icon" onClick={() => setTopDayOffset(topDayOffset - 7)} title="Previous week">«</Button>
+                      <Button variant="ghost" size="icon" onClick={() => setTopDayOffset(topDayOffset - 1)} title="Previous day">‹</Button>
+                      <span className="text-foreground font-medium text-center px-3 w-52">
+                        {isClient ? getDateLabel(topDayOffset) : "Loading..."}
+                      </span>
+                      <Button variant="ghost" size="icon" onClick={() => setTopDayOffset(topDayOffset + 1)} title="Next day">›</Button>
+                      <Button variant="ghost" size="icon" onClick={() => setTopDayOffset(topDayOffset + 7)} title="Next week">»</Button>
+                      {isClient && getRelativeDayLabel(topDayOffset) && (
                         <span className="text-xs text-muted-foreground ml-2 px-1.5 py-0.5 bg-muted rounded-sm">
-                        {getRelativeDayLabel(bottomDayOffset)}
+                          {getRelativeDayLabel(topDayOffset)}
                         </span>
-                    )}
+                      )}
+                    </div>
+                    <Button onClick={() => openEditModal()}>
+                        Add Task
+                    </Button>
+                  </div>
+                  <div className="border border-border/30 rounded-md overflow-hidden">
+                    <div className="flex flex-col">
+                        {renderDayColumn(topDayOffset, 'night')}
+                        {renderDayColumn(topDayOffset, 'morning')}
+                        {renderDayColumn(topDayOffset, 'afternoon')}
+                        {renderDayColumn(topDayOffset, 'evening')}
+                    </div>
+                  </div>
                 </div>
-                <Button onClick={() => cloneDayTasks(dateFromDateKey(getCalendarDateForColumn(bottomDayOffset)), dateFromDateKey(getCalendarDateForColumn(topDayOffset)))} title="Clone tasks to the other visible day">
-                    Clone to {bottomDayOffset < topDayOffset ? 'Top' : 'Bottom'}
-                </Button>
-              </div>
-              <div className="border border-border/30 rounded-md overflow-hidden">
-                <div className="flex flex-col">
-                    {renderDayColumn(bottomDayOffset, 'night')}
-                    {renderDayColumn(bottomDayOffset, 'morning')}
-                    {renderDayColumn(bottomDayOffset, 'afternoon')}
-                    {renderDayColumn(bottomDayOffset, 'evening')}
+
+                <div className="bg-card p-4 rounded-lg shadow-sm border border-border">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                        <Button variant="ghost" size="icon" onClick={() => setBottomDayOffset(bottomDayOffset - 7)} title="Previous week">«</Button>
+                        <Button variant="ghost" size="icon" onClick={() => setBottomDayOffset(bottomDayOffset - 1)} title="Previous day">‹</Button>
+                        <span className="text-foreground font-medium text-center px-3 w-52">
+                            {isClient ? getDateLabel(bottomDayOffset) : "Loading..."}
+                        </span>
+                        <Button variant="ghost" size="icon" onClick={() => setBottomDayOffset(bottomDayOffset + 1)} title="Next day">›</Button>
+                        <Button variant="ghost" size="icon" onClick={() => setBottomDayOffset(bottomDayOffset + 7)} title="Next week">»</Button>
+                        {isClient && getRelativeDayLabel(bottomDayOffset) && (
+                            <span className="text-xs text-muted-foreground ml-2 px-1.5 py-0.5 bg-muted rounded-sm">
+                            {getRelativeDayLabel(bottomDayOffset)}
+                            </span>
+                        )}
+                    </div>
+                    <Button onClick={() => cloneDayTasks(dateFromDateKey(getCalendarDateForColumn(bottomDayOffset)), dateFromDateKey(getCalendarDateForColumn(topDayOffset)))} title="Clone tasks to the other visible day">
+                        Clone to {bottomDayOffset < topDayOffset ? 'Top' : 'Bottom'}
+                    </Button>
+                  </div>
+                  <div className="border border-border/30 rounded-md overflow-hidden">
+                    <div className="flex flex-col">
+                        {renderDayColumn(bottomDayOffset, 'night')}
+                        {renderDayColumn(bottomDayOffset, 'morning')}
+                        {renderDayColumn(bottomDayOffset, 'afternoon')}
+                        {renderDayColumn(bottomDayOffset, 'evening')}
+                    </div>
+                  </div>
                 </div>
-              </div>
             </div>
-        </div>
           </>
         )}
 
@@ -765,7 +766,7 @@ export default function DailyPlanner() {
         {viewMode === 'unscheduled' && (
           <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
             <UnscheduledTasksView 
-              poolTasks={generalPoolTasks}
+              poolTasks={combinedPoolTasks}
               pinnedTasks={pinnedTasks}
               getPoolTasksForDate={getPoolTasksForDate}
               getCombinedPoolTasks={getCombinedPoolTasks}
@@ -807,6 +808,8 @@ export default function DailyPlanner() {
             />
           </div>
         )}
+
+
       </div>
     </div>
   );
