@@ -1,16 +1,19 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Task } from '@/types/planner';
-import { ChevronLeft, ChevronRight, Clock, Calendar as CalendarIcon, Edit3, ArrowLeft } from 'lucide-react';
+import { Task, PinnedTask } from '@/types/planner';
+import { ChevronLeft, ChevronRight, Clock, Calendar as CalendarIcon, Edit3, ArrowLeft, Pin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatDuration } from '@/utils/formatters';
 import { QuickAddTaskModal } from '@/components/modals/QuickAddTaskModal';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 
 interface TaskAssignmentCalendarProps {
   poolTasks: Task[];
   scheduledTasks: Map<string, Task[]>; // tasksByDate
+  pinnedTasks: PinnedTask[];
   onAssignTask: (task: Task, date: Date, startHour?: number) => void;
   onUnassignTask: (task: Task) => void;
   onRescheduleTask: (task: Task, newDate: Date) => void;
@@ -22,6 +25,7 @@ interface TaskAssignmentCalendarProps {
 export function TaskAssignmentCalendar({
   poolTasks,
   scheduledTasks,
+  pinnedTasks,
   onAssignTask,
   onUnassignTask,
   onRescheduleTask,
@@ -34,6 +38,7 @@ export function TaskAssignmentCalendar({
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [quickAddModalOpen, setQuickAddModalOpen] = useState(false);
   const [selectedDateForAdd, setSelectedDateForAdd] = useState<Date | null>(null);
+  const [showPastEvents, setShowPastEvents] = useState(false);
 
   // Get the first day of the current month and calculate calendar grid
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -49,6 +54,13 @@ export function TaskAssignmentCalendar({
     date.setDate(startDate.getDate() + i);
     daysInCalendar.push(date);
   }
+
+  const getPinnedTasksForDate = (date: Date) => {
+    return pinnedTasks.filter(task => {
+      const taskDate = new Date(task.dueDate);
+      return taskDate.toDateString() === date.toDateString();
+    });
+  };
 
   // Group scheduled tasks by date
   const tasksByDate = useMemo(() => {
@@ -272,13 +284,39 @@ export function TaskAssignmentCalendar({
           </Button>
         </div>
 
+        <div className="flex items-center space-x-2 mb-4">
+          <Switch
+            id="show-past-events"
+            checked={showPastEvents}
+            onCheckedChange={setShowPastEvents}
+          />
+          <Label htmlFor="show-past-events">Show Past Scheduled Events</Label>
+        </div>
+
         {/* Calendar Grid */}
         <div className="grid grid-cols-7 grid-rows-5 gap-2">
           {daysInCalendar.map(day => {
             const dateKey = day.toISOString().split('T')[0];
+            const isPastDay = new Date(day) < new Date() && !isToday(day);
+
             const tasksForDay = getTasksForDate(day);
             const poolTasksForDay = getPoolTasksForDateKey(day);
-            const allTasks = [...tasksForDay, ...poolTasksForDay];
+            const pinnedTasksForDay = getPinnedTasksForDate(day);
+
+            const monthlyPinnedTasks = tasksForDay.filter(t => t.isMonthlyPinned);
+            
+            let allTasks = [...pinnedTasksForDay, ...poolTasksForDay, ...monthlyPinnedTasks];
+            if (showPastEvents && isPastDay) {
+              allTasks = [...allTasks, ...tasksForDay.filter(t => !t.isMonthlyPinned)];
+            }
+
+            // Remove duplicates
+            allTasks = allTasks.filter((task, index, self) =>
+              index === self.findIndex((t) => (
+                t.id === task.id
+              ))
+            )
+
             const isCurrentMonthDay = isCurrentMonth(day);
 
             return (
@@ -314,13 +352,14 @@ export function TaskAssignmentCalendar({
                       onDragStart={(e) => handleDragStart(e, task, !task.startHour)}
                       onClick={(e) => { e.stopPropagation(); handleTaskClick(task, !!task.startHour); }}
                       className={cn(
-                        "p-1.5 rounded text-xs leading-tight font-medium truncate cursor-pointer",
+                        "p-1.5 rounded text-xs leading-tight font-medium truncate cursor-pointer flex items-center gap-1.5",
                         "border-l-2",
                         task.color ? task.color : "bg-muted",
                         !task.startHour && "opacity-70"
                       )}
                     >
-                      {task.name}
+                      {'dueDate' in task && <Pin className="w-3 h-3 flex-shrink-0" />}
+                      <span>{task.name}</span>
                     </div>
                   ))}
                   {allTasks.length > 3 && (

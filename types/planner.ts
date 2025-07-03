@@ -37,6 +37,12 @@ export interface Task {
    * When set, indicates this task is in the pool for a specific date
    */
   poolDate?: string;
+
+  /** 
+   * When true, this task will be displayed on the monthly calendar view
+   * regardless of whether it is scheduled or not.
+   */
+  isMonthlyPinned?: boolean;
 }
 
 /**

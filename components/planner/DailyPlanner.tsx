@@ -751,6 +751,7 @@ export default function DailyPlanner() {
             <TaskAssignmentCalendar
               poolTasks={generalPoolTasks}
               scheduledTasks={tasksByDate}
+              pinnedTasks={pinnedTasks}
               onAssignTask={handleAssignTask}
               onUnassignTask={handleUnassignTask}
               onRescheduleTask={handleRescheduleTask}

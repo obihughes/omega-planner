@@ -7,6 +7,8 @@ import { CustomTimePicker } from '@/components/primitives';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { cn } from "../../lib/utils";
 import { getDateWithoutTime, dateFromDateKey, getDateKey } from '@/utils/dateUtils';
 
@@ -59,6 +61,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   const [duration, setDuration] = useState(taskToEdit.duration);
   const [color, setColor] = useState(taskToEdit.color || TASK_COLORS[DEFAULT_TASK_COLOR_INDEX]);
   const [notes, setNotes] = useState(taskToEdit.notes || '');
+  const [isMonthlyPinned, setIsMonthlyPinned] = useState(taskToEdit.isMonthlyPinned || false);
   const [selectedDate, setSelectedDate] = useState<Date>(
     taskToEdit.baseDate ? dateFromDateKey(taskToEdit.baseDate) : new Date()
   );
@@ -76,6 +79,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
     setDuration(taskToEdit.duration);
     setColor(taskToEdit.color || TASK_COLORS[DEFAULT_TASK_COLOR_INDEX]);
     setNotes(taskToEdit.notes || '');
+    setIsMonthlyPinned(taskToEdit.isMonthlyPinned || false);
     setSelectedDate(
       taskToEdit.baseDate ? dateFromDateKey(taskToEdit.baseDate) : new Date()
     );
@@ -156,6 +160,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
       duration,
       color,
       notes,
+      isMonthlyPinned,
       baseDate: getDateKey(selectedDate)
     };
     onSave(finalTask, { isNew: taskToEdit.isNew, isFromPool: taskToEdit.isFromPool });
@@ -285,6 +290,11 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
             </div>
           </div>
           
+          <div className="flex items-center space-x-2">
+            <Switch id="monthly-pin" checked={isMonthlyPinned} onCheckedChange={setIsMonthlyPinned} />
+            <Label htmlFor="monthly-pin">Show on Monthly Calendar</Label>
+          </div>
+
           <div>
             {/* <label htmlFor="taskNotes" className="block text-sm font-medium text-neutral-300 mb-1">Notes</label> */}
             <textarea
