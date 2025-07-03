@@ -521,7 +521,7 @@ export function useModalManager({
       startHour: 0, // No specific start time for pool tasks
       duration: 1,
       baseDate: date ? getDateKey(date) : '', // Empty baseDate for general pool
-      color: TASK_COLORS[0],
+      color: '', // No color by default for unscheduled tasks
       notes: "",
       completed: false,
       isFromPool: true,
@@ -545,7 +545,7 @@ export function useModalManager({
       startHour: 0,
       duration: 1,
       baseDate: targetDateKey,
-      color: TASK_COLORS[0],
+      color: '', // No color by default for unscheduled tasks
       notes: "",
       completed: false,
       isFromPool: true,

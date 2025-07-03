@@ -3,7 +3,6 @@
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Plus, 
   Search, 
@@ -46,56 +45,21 @@ export default function UnscheduledTasksView({
 }: UnscheduledTasksViewProps) {
   // Local state
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState<'all' | 'pinned' | 'today'>('all');
 
-  // Get today's date key
-  const todayKey = new Date().toISOString().split('T')[0];
-  const todayTasks = getPoolTasksForDate(todayKey);
+  // Get all unscheduled tasks (pool tasks + today's specific tasks)
+  const allUnscheduledTasks = useMemo(() => {
+    return getCombinedPoolTasks();
+  }, [getCombinedPoolTasks]);
 
-  // Display tasks based on active tab
+  // Apply search filter
   const displayTasks = useMemo(() => {
-    let tasks: Task[] = [];
+    if (!searchTerm) return allUnscheduledTasks;
     
-    switch (activeTab) {
-      case 'all':
-        tasks = getCombinedPoolTasks();
-        break;
-      case 'pinned':
-        tasks = pinnedTasks;
-        break;
-      case 'today':
-        tasks = todayTasks;
-        break;
-    }
-
-    // Apply search filter
-    if (searchTerm) {
-      tasks = tasks.filter(task => 
-        task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (task.notes && task.notes.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-    }
-
-    return tasks;
-  }, [activeTab, poolTasks, pinnedTasks, todayTasks, getCombinedPoolTasks, searchTerm]);
-
-  // Create new task - use appropriate context-aware function based on tab
-  const handleCreateTask = () => {
-    switch (activeTab) {
-      case 'all':
-        createPoolTask(); // General pool task
-        break;
-      case 'today':
-        createPoolTaskForDate(new Date()); // Today's date-specific pool task
-        break;
-      case 'pinned':
-        // For pinned tab, create a general pool task (pinning happens after creation)
-        createPoolTask();
-        break;
-      default:
-        createPoolTask();
-    }
-  };
+    return allUnscheduledTasks.filter(task => 
+      task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (task.notes && task.notes.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+  }, [allUnscheduledTasks, searchTerm]);
 
   // Delete task
   const handleDeleteTask = (task: Task) => {
@@ -111,57 +75,45 @@ export default function UnscheduledTasksView({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
+      {/* Simplified Header - Everything on one line */}
       <div className="p-6 border-b border-border">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-xl font-semibold text-foreground">Unscheduled Tasks</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              {totalTasks} tasks • {formatDuration(totalHours)}
-            </p>
+        <div className="flex items-center justify-between gap-4">
+          {/* Left side - Title and stats */}
+          <div className="flex items-center gap-6">
+            <div>
+              <h2 className="text-xl font-semibold text-foreground">Unscheduled Tasks</h2>
+              <p className="text-sm text-muted-foreground">
+                {totalTasks} tasks • {formatDuration(totalHours)}
+              </p>
+            </div>
           </div>
-          <Button onClick={handleCreateTask} className="flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            Add Task
-          </Button>
-        </div>
 
-        {/* Search */}
-        <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <Input
-            placeholder="Search tasks..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+          {/* Right side - Search and Add button */}
+          <div className="flex items-center gap-3">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <Input
+                placeholder="Search tasks..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 w-64"
+              />
+            </div>
+            
+            {/* Add Task Button */}
+            <Button onClick={() => createPoolTask()} className="flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Add Task
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'all' | 'pinned' | 'today')} className="flex-1 flex flex-col">
-        <div className="px-6 py-3 border-b border-border">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="all">All Tasks ({getCombinedPoolTasks().length})</TabsTrigger>
-            <TabsTrigger value="pinned">Pinned ({pinnedTasks.length})</TabsTrigger>
-            <TabsTrigger value="today">Today ({todayTasks.length})</TabsTrigger>
-          </TabsList>
-        </div>
-
-        <div className="flex-1 overflow-hidden">
-          <TabsContent value="all" className="h-full m-0">
-            <TaskList tasks={displayTasks} onEdit={editTask} onDelete={handleDeleteTask} />
-          </TabsContent>
-          
-          <TabsContent value="pinned" className="h-full m-0">
-            <TaskList tasks={displayTasks} onEdit={editTask} onDelete={handleDeleteTask} />
-          </TabsContent>
-          
-          <TabsContent value="today" className="h-full m-0">
-            <TaskList tasks={displayTasks} onEdit={editTask} onDelete={handleDeleteTask} />
-          </TabsContent>
-        </div>
-      </Tabs>
+      {/* Task List */}
+      <div className="flex-1 overflow-auto">
+        <TaskList tasks={displayTasks} onEdit={editTask} onDelete={handleDeleteTask} />
+      </div>
     </div>
   );
 }
@@ -179,7 +131,7 @@ function TaskList({ tasks, onEdit, onDelete }: TaskListProps) {
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="text-center">
           <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-foreground mb-2">No tasks found</h3>
+          <h3 className="text-lg font-medium text-foreground mb-2">No unscheduled tasks</h3>
           <p className="text-sm text-muted-foreground">Create a new task to get started</p>
         </div>
       </div>
@@ -188,20 +140,22 @@ function TaskList({ tasks, onEdit, onDelete }: TaskListProps) {
 
   return (
     <div className="p-6">
-      <div className="grid gap-3 auto-fit-250">
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {tasks.map((task) => (
           <div
             key={task.id}
-            className="relative p-3 rounded-md bg-card border border-border/40 hover:border-border transition-all duration-200 hover:shadow-sm group"
+            className="relative p-4 rounded-lg bg-card border border-border/40 hover:border-border transition-all duration-200 hover:shadow-sm group"
           >
-            {/* Color indicator dot */}
-            {task.color && <div 
-              className={cn("absolute top-2 left-2 w-2.5 h-2.5 rounded-full", task.color)}
-            />}
+            {/* Color indicator dot - only show if task has a color */}
+            {task.color && (
+              <div 
+                className={cn("absolute top-3 left-3 w-3 h-3 rounded-full", task.color)}
+              />
+            )}
             
             {/* Task Content */}
-            <div className="space-y-2 pl-6">
-              <div className="pr-16">
+            <div className={cn("space-y-3", task.color ? "pl-6" : "")}>
+              <div className="pr-12">
                 <h3 className="font-medium text-sm leading-tight text-foreground">{task.name}</h3>
                 {task.notes && (
                   <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{task.notes}</p>
@@ -213,31 +167,36 @@ function TaskList({ tasks, onEdit, onDelete }: TaskListProps) {
                   <Clock className="w-3 h-3" />
                   {formatDuration(task.duration)}
                 </div>
+                
                 {task.poolDate && (
-                  <div className="text-xs bg-muted px-2 py-0.5 rounded">
-                    {new Date(task.poolDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  <div className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                    {new Date(task.poolDate).toLocaleDateString(undefined, { 
+                      month: 'short', 
+                      day: 'numeric' 
+                    })}
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button
+            {/* Action buttons */}
+            <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-muted-foreground hover:text-foreground"
                 onClick={() => onEdit(task)}
-                className="p-1 rounded bg-accent hover:bg-accent/80 transition-colors"
-                title="Edit task"
               >
                 <Edit3 className="w-3 h-3" />
-              </button>
-              
-              <button
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-muted-foreground hover:text-destructive"
                 onClick={() => onDelete(task)}
-                className="p-1 rounded bg-accent hover:bg-accent/80 transition-colors text-destructive"
-                title="Delete task"
               >
                 <Trash2 className="w-3 h-3" />
-              </button>
+              </Button>
             </div>
           </div>
         ))}

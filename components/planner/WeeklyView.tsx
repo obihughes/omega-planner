@@ -29,7 +29,11 @@ export default function WeeklyView({}: WeeklyViewProps) {
     openEditModal,
     handleAssignTask,
     handleUnassignTask,
-    handleRescheduleTask
+    handleRescheduleTask,
+    handleAddTask,
+    handleUpdateTask,
+    addPoolTask,
+    clearPool
   } = useDailyPlanner();
 
   // State for week navigation
@@ -58,17 +62,23 @@ export default function WeeklyView({}: WeeklyViewProps) {
   const weekDates = getWeekDates(weekOffset);
   const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-  // Get tasks for the week
+  // Get tasks for the week - separate scheduled and unscheduled
   const weekTasks = useMemo(() => {
-    const weekTasksMap = new Map<string, Task[]>();
+    const weekTasksMap = new Map<string, { scheduled: Task[], unscheduled: Task[] }>();
     
     weekDates.forEach(date => {
       const dateKey = getDateKey(date);
       const dayTasks = tasksByDate.get(dateKey) || [];
       const poolTasks = getPoolTasksForDate(dateKey);
       
-      // Combine scheduled tasks and pool tasks for the day
-      weekTasksMap.set(dateKey, [...dayTasks, ...poolTasks]);
+      // Separate scheduled tasks (have specific times) from unscheduled (pool tasks)
+      const scheduledTasks = dayTasks.filter(task => !task.poolDate && task.startHour !== undefined);
+      const unscheduledTasks = poolTasks;
+      
+      weekTasksMap.set(dateKey, {
+        scheduled: scheduledTasks,
+        unscheduled: unscheduledTasks
+      });
     });
     
     return weekTasksMap;
@@ -96,9 +106,10 @@ export default function WeeklyView({}: WeeklyViewProps) {
     return null;
   };
 
-  // Create new task for specific day (add to pool for that day)
+  // Create new task for specific day (use context-aware function)
   const handleCreateTask = (date: Date) => {
-    const newTask: Task = {
+    // Create a temp task and open edit modal directly
+    const newTask = {
       id: `task-${Date.now()}`,
       name: 'New Task',
       startHour: 0,
@@ -107,12 +118,11 @@ export default function WeeklyView({}: WeeklyViewProps) {
       color: '',
       notes: '',
       completed: false,
-      poolDate: getDateKey(date) // Add as pool task for this date
+      poolDate: getDateKey(date),
+      isNew: true,
+      isFromPool: true
     };
-
-    // First add to pool, then open edit modal
-    const dateKey = getDateKey(date);
-    addPoolTaskForDate(dateKey, newTask);
+    
     openEditModal(newTask, { isNew: true, isFromPool: true });
   };
 
@@ -121,8 +131,8 @@ export default function WeeklyView({}: WeeklyViewProps) {
     let totalTasks = 0;
     let completedTasks = 0;
 
-    weekTasks.forEach(dayTasks => {
-      dayTasks.forEach(task => {
+    weekTasks.forEach(dayData => {
+      [...dayData.scheduled, ...dayData.unscheduled].forEach(task => {
         totalTasks++;
         if (task.completed) completedTasks++;
       });
@@ -202,7 +212,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
         <div className="grid grid-cols-7 gap-4 h-full">
           {weekDates.map((date, index) => {
             const dateKey = getDateKey(date);
-            const dayTasks = weekTasks.get(dateKey) || [];
+            const dayData = weekTasks.get(dateKey) || { scheduled: [], unscheduled: [] };
             const dayName = dayNames[index];
             const isCurrentDay = isToday(date);
             const isPastDay = isPast(date);
@@ -226,7 +236,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
 
                 {/* Day Tasks Container */}
                 <div className="flex-1 flex flex-col min-h-0">
-                  {dayTasks.length === 0 ? (
+                  {dayData.scheduled.length === 0 && dayData.unscheduled.length === 0 ? (
                     <div className="flex-1 flex items-center justify-center">
                       <div className="h-24 w-full border-2 border-dashed border-muted rounded-lg flex flex-col items-center justify-center text-center p-3 hover:border-border transition-colors">
                         <Calendar className="w-5 h-5 text-muted-foreground mb-2" />
@@ -235,50 +245,106 @@ export default function WeeklyView({}: WeeklyViewProps) {
                     </div>
                   ) : (
                     <div className="flex-1 flex flex-col gap-2">
-                      {/* Task List */}
-                      <div className="space-y-2 flex-1 overflow-y-auto">
-                        {dayTasks.map((task) => (
-                          <div 
-                            key={task.id}
-                            className={`
-                              relative p-3 rounded-md transition-all duration-200 hover:shadow-sm group
-                              ${task.color} border border-border/40 hover:ring-1 hover:ring-border/60
-                              ${task.completed ? 'opacity-60' : ''}
-                            `}
-                          >
-                            <div className="space-y-2">
-                              {/* Task Name */}
-                              <div className={`text-sm font-bold leading-tight ${
-                                task.completed ? 'line-through text-muted-foreground' : ''
-                              }`}>
-                                {task.name}
-                              </div>
-                              
-                              {/* Task Meta */}
-                              <div className="flex items-center justify-between text-xs opacity-90">
-                                <div className="flex items-center gap-1">
-                                  <Clock className="w-3 h-3" />
-                                  {formatDuration(task.duration)}
-                                </div>
-                                {task.startHour && !task.poolDate && (
-                                  <div className="text-xs font-medium">
-                                    {formatTime(task.startHour)}
+                      {/* Scheduled Tasks */}
+                      {dayData.scheduled.length > 0 && (
+                        <>
+                          <div className="text-sm font-semibold mb-2">Scheduled Tasks</div>
+                          <div className="space-y-2 flex-1 overflow-y-auto">
+                            {dayData.scheduled.map((task) => (
+                              <div 
+                                key={task.id}
+                                className={`
+                                  relative p-3 rounded-md transition-all duration-200 hover:shadow-sm group
+                                  ${task.color} border border-border/40 hover:ring-1 hover:ring-border/60
+                                  ${task.completed ? 'opacity-60' : ''}
+                                `}
+                              >
+                                <div className="space-y-2">
+                                  {/* Task Name */}
+                                  <div className={`text-sm font-bold leading-tight ${
+                                    task.completed ? 'line-through text-muted-foreground' : ''
+                                  }`}>
+                                    {task.name}
                                   </div>
-                                )}
+                                  
+                                  {/* Task Meta */}
+                                  <div className="flex items-center justify-between text-xs opacity-90">
+                                    <div className="flex items-center gap-1">
+                                      <Clock className="w-3 h-3" />
+                                      {formatDuration(task.duration)}
+                                    </div>
+                                    {task.startHour && !task.poolDate && (
+                                      <div className="text-xs font-medium">
+                                        {formatTime(task.startHour)}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                {/* Edit button for task cards */}
+                                <button
+                                  onClick={() => openEditModal(task)}
+                                  className="absolute top-2 right-2 w-6 h-6 bg-black/10 hover:bg-black/20 dark:bg-white/10 dark:hover:bg-white/20 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+                                  title="Edit Task"
+                                >
+                                  <MoreVertical className="w-3 h-3" />
+                                </button>
                               </div>
-                            </div>
-                            
-                            {/* Edit button for task cards */}
-                            <button
-                              onClick={() => openEditModal(task)}
-                              className="absolute top-2 right-2 w-6 h-6 bg-black/10 hover:bg-black/20 dark:bg-white/10 dark:hover:bg-white/20 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
-                              title="Edit Task"
-                            >
-                              <MoreVertical className="w-3 h-3" />
-                            </button>
+                            ))}
                           </div>
-                        ))}
-                      </div>
+                        </>
+                      )}
+
+                      {/* Unscheduled Tasks */}
+                      {dayData.unscheduled.length > 0 && (
+                        <>
+                          <div className="flex items-center gap-2 mt-4 mb-2">
+                            <div className="text-sm font-semibold text-muted-foreground">Unscheduled</div>
+                            <div className="flex-1 h-px bg-border"></div>
+                          </div>
+                          <div className="space-y-2">
+                            {dayData.unscheduled.map((task) => (
+                              <div 
+                                key={task.id}
+                                className={`
+                                  relative p-2.5 rounded-md transition-all duration-200 hover:shadow-sm group
+                                  bg-muted/30 border border-dashed border-muted-foreground/30 hover:border-muted-foreground/50
+                                  ${task.completed ? 'opacity-60' : ''}
+                                `}
+                              >
+                                <div className="space-y-1.5">
+                                  {/* Task Name */}
+                                  <div className={`text-sm font-medium leading-tight ${
+                                    task.completed ? 'line-through text-muted-foreground' : 'text-foreground'
+                                  }`}>
+                                    {task.name}
+                                  </div>
+                                  
+                                  {/* Task Meta */}
+                                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                    <div className="flex items-center gap-1">
+                                      <Clock className="w-3 h-3" />
+                                      {formatDuration(task.duration)}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                      No time set
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                {/* Edit button for task cards */}
+                                <button
+                                  onClick={() => openEditModal(task)}
+                                  className="absolute top-2 right-2 w-5 h-5 bg-muted hover:bg-muted/80 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+                                  title="Edit Task"
+                                >
+                                  <MoreVertical className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>

@@ -78,7 +78,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   
   // Determine which UI elements to show
   const showTimePicker = isTimelineMode; // Only show time picker for timeline tasks
-  const showDatePicker = !isQuickMode; // Hide date picker in quick mode (date is pre-selected)
+  const showDatePicker = !isQuickMode && !isPoolMode; // Hide date picker in quick mode and for pool tasks
   const showAdvancedOptions = !isQuickMode; // Hide advanced options in quick mode
   const showNotesField = !isQuickMode; // Hide notes in quick mode for simplicity
   const showMonthlyToggle = !isQuickMode && !isTimelineMode; // Only for pool tasks, not quick mode
