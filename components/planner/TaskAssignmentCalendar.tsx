@@ -322,8 +322,36 @@ export function TaskAssignmentCalendar({
                     {date.getDate()}
                   </div>
                   
-                  {/* Show date-specific pool tasks */}
+                  {/* Show scheduled tasks first */}
                   <div className="space-y-1">
+                    {dayTasks.map((task, taskIndex) => (
+                      <div
+                        key={`scheduled-${task.id}-${taskIndex}`}
+                        className={cn(
+                          "text-xs p-1 rounded cursor-pointer transition-all hover:scale-[1.02]",
+                          "border border-border/30"
+                        )}
+                        style={{ 
+                          backgroundColor: task.color + '30', 
+                          borderLeftColor: task.color,
+                          borderLeftWidth: '3px'
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleTaskClick(task, true);
+                        }}
+                      >
+                        <div className="font-medium truncate text-foreground">
+                          {task.name}
+                        </div>
+                        <div className="text-muted-foreground flex items-center">
+                          <Clock className="w-2 h-2 mr-1" />
+                          {formatDuration(task.duration)} • {task.startHour}:00
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {/* Show date-specific pool tasks */}
                     {dayPoolTasks.map((task, taskIndex) => (
                       <div
                         key={`pool-${task.id}-${taskIndex}`}
@@ -353,7 +381,7 @@ export function TaskAssignmentCalendar({
                   </div>
                   
                   {/* Empty space hint */}
-                  {dayPoolTasks.length === 0 && !isAssignmentTarget && isCurrentMonthDay && (
+                  {dayTasks.length === 0 && dayPoolTasks.length === 0 && !isAssignmentTarget && isCurrentMonthDay && (
                     <div className="flex-1 flex items-center justify-center">
                       <div className="text-xs text-muted-foreground opacity-0 hover:opacity-100 transition-opacity">
                         Click to add task

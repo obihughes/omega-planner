@@ -1024,7 +1024,16 @@ export function useDailyPlanner() {
   // --- RETURNED STATE AND FUNCTIONS ---
   return {
     // State
-    poolTasks: combinedPoolTasks,
+    poolTasks: combinedPoolTasks, // For monthly view - contains general + current day's pool tasks
+    generalPoolTasks: poolTasks, // For "Add to Pool" functionality - general unscheduled tasks only
+    currentDayPoolTasks: useMemo(() => {
+      if (!isClient) return [];
+      const today = new Date();
+      const viewedDate = new Date(today);
+      viewedDate.setDate(today.getDate() + topDayOffset);
+      const viewedDateKey = viewedDate.toISOString().split('T')[0];
+      return poolTasksByDate.get(viewedDateKey) || [];
+    }, [poolTasksByDate, isClient, topDayOffset]),
     pinnedTasks,
     taskIdCounter,
     activeSidebarTab,

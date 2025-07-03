@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Button } from "@/components/ui";
 import { Pin, CopyPlus, Trash2, Calendar, Clock } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -39,6 +39,8 @@ export default function DailyPlanner() {
   const {
     tasksByDate,
     poolTasks,
+    generalPoolTasks,
+    currentDayPoolTasks,
     pinnedTasks,
     activeSidebarTab,
     topDayOffset,
@@ -387,7 +389,7 @@ export default function DailyPlanner() {
     // ... existing code ...
   };
 
-  const renderColumn = useCallback((dayOffset: number, period: TimelinePeriod) => {
+  const renderDayColumn = useMemo(() => (dayOffset: number, period: TimelinePeriod) => {
     let startHour, endHour;
     switch (period) {
         case 'night': 
@@ -440,18 +442,27 @@ export default function DailyPlanner() {
             const markerLeft = (currentHourFloat - startHour) * APP_PIXELS_PER_HOUR;
             currentTimeMarker = (
                 <div className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-50 pointer-events-none" style={{ left: `${markerLeft}px` }} title={`Current time: ${formatTime(currentHourFloat)}`}>
-                    <div style={{ width: '0', height: '0', borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '6px solid #ef4444' }} />
+                    <div style={{ 
+                        position: 'absolute',
+                        top: '0px',
+                        left: '-3.75px',
+                        width: '0', 
+                        height: '0', 
+                        borderLeft: '4px solid transparent', 
+                        borderRight: '4px solid transparent', 
+                        borderTop: '6px solid #ef4444' 
+                    }} />
                 </div>
             );
         }
     }
 
     return (
-      <div className={`relative w-full ${isTargetCopyDay ? 'ring-2 ring-inset ring-blue-500' : ''}`}
+      <div className={`relative w-full flex flex-col ${isTargetCopyDay ? 'ring-2 ring-inset ring-blue-500' : ''}`}
         style={{ minWidth: `${APP_PIXELS_PER_HOUR * (endHour - startHour)}px`, height: `${TIMELINE_COLUMN_HEIGHT}px` }}
       >
         {renderTimeline(period)}
-        <div className={`relative h-full bg-background ${isTargetCopyDay ? 'cursor-copy' : ''}`}
+        <div className={`relative flex-grow bg-background ${isTargetCopyDay ? 'cursor-copy' : ''}`}
           data-testid={`timeline-area-${dayOffset}-${period}`}
           data-day-offset={dayOffset}
           data-section-period={period}
@@ -629,7 +640,7 @@ export default function DailyPlanner() {
             <div className="flex-1">
               <TabsContent value="pool" className="h-full m-0 p-0">
                   <TaskPoolSidebar
-                      poolTasks={poolTasks}
+                      poolTasks={currentDayPoolTasks}
                       TASK_COLORS={TASK_COLORS}
                       activeTab="pool"
                       topDayOffset={topDayOffset}
@@ -639,7 +650,7 @@ export default function DailyPlanner() {
                       onAddTaskToTimeline={(task, dayOffset) => { startCopy(task); const targetDateKey = getCalendarDateForColumn(dayOffset); const targetDate = dateFromDateKey(targetDateKey); handleDropCopy(targetDate, task.startHour || 9); }}
                       onDeletePoolTask={handleDeletePoolTask}
                       onClearPool={clearPool}
-                      openEditModal={(task, isFromPool) => openEditModal(task, { isFromPool: isFromPool })}
+                      openEditModal={(task, options) => openEditModal(task, options)}
                   />
               </TabsContent>
               <TabsContent value="pinned" className="h-full m-0 p-0">
@@ -679,10 +690,10 @@ export default function DailyPlanner() {
               </div>
               <div className="border border-border/30 rounded-md overflow-hidden">
                 <div className="flex flex-col">
-                    {renderColumn(topDayOffset, 'night')}
-                    {renderColumn(topDayOffset, 'morning')}
-                    {renderColumn(topDayOffset, 'afternoon')}
-                    {renderColumn(topDayOffset, 'evening')}
+                    {renderDayColumn(topDayOffset, 'night')}
+                    {renderDayColumn(topDayOffset, 'morning')}
+                    {renderDayColumn(topDayOffset, 'afternoon')}
+                    {renderDayColumn(topDayOffset, 'evening')}
                 </div>
               </div>
             </div>
@@ -709,10 +720,10 @@ export default function DailyPlanner() {
               </div>
               <div className="border border-border/30 rounded-md overflow-hidden">
                 <div className="flex flex-col">
-                    {renderColumn(bottomDayOffset, 'night')}
-                    {renderColumn(bottomDayOffset, 'morning')}
-                    {renderColumn(bottomDayOffset, 'afternoon')}
-                    {renderColumn(bottomDayOffset, 'evening')}
+                    {renderDayColumn(bottomDayOffset, 'night')}
+                    {renderDayColumn(bottomDayOffset, 'morning')}
+                    {renderDayColumn(bottomDayOffset, 'afternoon')}
+                    {renderDayColumn(bottomDayOffset, 'evening')}
                 </div>
               </div>
             </div>
@@ -738,7 +749,7 @@ export default function DailyPlanner() {
         {viewMode === 'monthly' && (
           <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
             <TaskAssignmentCalendar
-              poolTasks={poolTasks}
+              poolTasks={generalPoolTasks}
               scheduledTasks={tasksByDate}
               onAssignTask={handleAssignTask}
               onUnassignTask={handleUnassignTask}
