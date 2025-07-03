@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui";
-import { Pin, CopyPlus, Trash2, Calendar } from 'lucide-react';
+import { Pin, CopyPlus, Trash2, Calendar, Clock } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { formatTime } from '@/utils/formatters';
@@ -30,6 +30,7 @@ import { EditTaskModal } from './EditTaskModal';
 import { ViewTaskNotesModal } from './ViewTaskNotesModal';
 import { getCalendarDateForColumn, getDateKeyFromOffset, dateFromDateKey } from '../../utils/dateUtils';
 import { resolveCollisionsForResize, resolveCollisionsForDrag } from '../../utils/taskUtils';
+import UnscheduledTasksView from './UnscheduledTasksView';
 
 type TimelinePeriod = 'night' | 'morning' | 'afternoon' | 'evening';
 
@@ -87,7 +88,7 @@ export default function DailyPlanner() {
 
   const [currentTimeForMarker, setCurrentTimeForMarker] = useState(new Date());
   const [targetCopyDayOffset, setTargetCopyDayOffset] = useState<number | null>(null);
-  const [viewMode, setViewMode] = useState<'daily' | 'monthly'>('daily');
+  const [viewMode, setViewMode] = useState<'daily' | 'monthly' | 'unscheduled'>('daily');
 
   useEffect(() => {
       const timerId = setInterval(() => setCurrentTimeForMarker(new Date()), 60000);
@@ -563,6 +564,15 @@ export default function DailyPlanner() {
                 Daily View
               </Button>
               <Button
+                variant={viewMode === 'unscheduled' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('unscheduled')}
+                className="flex items-center gap-2"
+              >
+                <Clock className="w-4 h-4" />
+                Unscheduled
+              </Button>
+              <Button
                 variant={viewMode === 'monthly' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('monthly')}
@@ -698,6 +708,13 @@ export default function DailyPlanner() {
             </div>
         </div>
           </>
+        )}
+
+        {/* Unscheduled View */}
+        {viewMode === 'unscheduled' && (
+          <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
+            <UnscheduledTasksView />
+          </div>
         )}
 
         {/* Monthly View */}

@@ -30,15 +30,7 @@ export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse 
       href: '/',
       label: 'Daily Planner',
       icon: Calendar,
-      active: pathname === '/',
-      isParent: true
-    },
-    {
-      href: '/unscheduled',
-      label: 'Unscheduled Tasks',
-      icon: Clock,
-      active: pathname === '/unscheduled',
-      isChild: true
+      active: pathname === '/' || pathname === '/unscheduled'
     },
     {
       href: '/projects',
@@ -110,8 +102,7 @@ export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse 
                 href={item.href}
                 className={cn(
                   "w-full rounded-lg flex items-center text-sm font-medium transition-all duration-200 group relative",
-                  isCollapsed ? "px-2 py-2.5 justify-center" : 
-                    item.isChild ? "pl-6 pr-3 py-2.5 space-x-3" : "px-3 py-2.5 space-x-3",
+                  isCollapsed ? "px-2 py-2.5 justify-center" : "px-3 py-2.5 space-x-3",
                   item.active
                     ? "text-primary-foreground bg-gradient-to-r from-primary to-primary/90 shadow-md"
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary/80 hover:shadow-sm"
@@ -119,15 +110,11 @@ export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse 
                 title={isCollapsed ? item.label : undefined}
               >
                 <Icon className={cn(
-                  "transition-all duration-200",
-                  item.isChild ? "w-4 h-4" : "w-5 h-5",
+                  "w-5 h-5 transition-all duration-200",
                   item.active ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground group-hover:scale-110"
                 )} />
                 {!isCollapsed && (
-                  <span className={cn(
-                    "font-medium",
-                    item.isChild ? "text-sm" : ""
-                  )}>{item.label}</span>
+                  <span className="font-medium">{item.label}</span>
                 )}
                 {item.active && (
                   <div className="absolute inset-0 rounded-lg ring-2 ring-primary/20 ring-inset" />
