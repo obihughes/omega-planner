@@ -642,140 +642,45 @@ export default function DailyPlanner() {
           <>
             {/* Unified Task Pool and Pinned Tasks View */}
             <div className="mb-4 bg-card border border-border rounded-lg shadow-sm overflow-hidden">
-              <div className="h-32">
-                {/* Combined Header */}
-                <div className="flex items-center justify-between p-3 bg-muted/10 border-b border-border">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <CopyPlus className="w-4 h-4 text-muted-foreground" />
-                      <h3 className="text-sm font-semibold text-foreground">Task Pool</h3>
-                      <span className="text-xs text-muted-foreground">({currentDayPoolTasks.length})</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Pin className="w-4 h-4 text-muted-foreground" />
-                      <h3 className="text-sm font-semibold text-foreground">Pinned</h3>
-                      <span className="text-xs text-muted-foreground">({pinnedTasks.length})</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {pinnedTasks.some(task => {
-                      const taskDueDate = task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate);
-                      return taskDueDate.getTime() < new Date().getTime();
-                    }) && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-muted-foreground text-xs h-6"
-                        onClick={clearOverduePinnedTasks}
-                        title="Clear overdue pinned tasks"
-                      >
-                        <Trash2 className="w-3 h-3 mr-1" /> Clear Overdue
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-muted-foreground text-xs h-6"
-                      onClick={clearPool}
-                      title="Clear all pool tasks"
-                    >
-                      <Trash2 className="w-3 h-3 mr-1" /> Clear Pool
-                    </Button>
-                  </div>
-                </div>
-                
-                {/* Combined Content - Pool tasks first, then pinned tasks by due date */}
-                <div className="flex-1 overflow-hidden p-2">
-                  <div className="flex gap-3 h-full overflow-x-auto overflow-y-hidden">
-                    {/* Render Task Pool tasks first */}
-                    {currentDayPoolTasks.map((task) => (
-                      <div
-                        key={`pool-${task.id}`}
-                        draggable
-                        onDragStart={(e) => {
-                          e.dataTransfer.setData('text/plain', JSON.stringify({ ...task, source: 'pool' }));
-                        }}
-                        className="relative p-3 rounded-lg bg-transparent border border-border/50 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-20 cursor-grab active:cursor-grabbing"
-                      >
-                        <div className="flex items-start justify-between gap-3 h-full">
-                          <div className="flex items-start gap-3 flex-1 min-w-0">
-                            <div className="flex flex-col flex-1 min-w-0">
-                              <p className="font-medium text-sm text-foreground truncate leading-tight mb-2">
-                                {task.name || "Untitled Task"}
-                              </p>
-                              <div className="text-xs text-muted-foreground">
-                                <span>Pool Task</span>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {/* Action buttons */}
-                          <div className="absolute top-1 right-1 flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              type="button"
-                              className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                openEditModal(task, { isFromPool: true });
-                              }}
-                              title="Edit Task"
-                            >
-                              <Edit3 className="w-2.5 h-2.5" />
-                            </button>
-                            <button
-                              type="button"
-                              className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleDeletePoolTask(task.id);
-                              }}
-                              title="Delete Task"
-                            >
-                              <Trash2 className="w-2.5 h-2.5" />
-                            </button>
-                          </div>
-                        </div>
+              <div className="h-28 p-2">
+                <div className="flex gap-4 h-full overflow-x-auto overflow-y-hidden">
+                  
+                  {/* Task Pool Section */}
+                  {currentDayPoolTasks.length > 0 && (
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center h-full">
+                        <h3 className="text-xs font-semibold text-muted-foreground uppercase transform -rotate-90 whitespace-nowrap">
+                          Task Pool
+                        </h3>
                       </div>
-                    ))}
-                    
-                    {/* Render Pinned tasks sorted by due date */}
-                    {pinnedTasks
-                      .sort((a, b) => {
-                        const dateA = a.dueDate instanceof Date ? a.dueDate : new Date(a.dueDate);
-                        const dateB = b.dueDate instanceof Date ? b.dueDate : new Date(b.dueDate);
-                        return dateA.getTime() - dateB.getTime();
-                      })
-                      .map((task) => {
-                        const timeRemaining = formatTimeRemaining(task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate));
-                        return (
+                      <div className="h-full border-l border-border"></div>
+                      <div className="flex gap-3 h-full items-center">
+                        {currentDayPoolTasks.map((task) => (
                           <div
-                            key={`pinned-${task.id}`}
-                            className="relative p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-20"
+                            key={`pool-${task.id}`}
+                            draggable
+                            onDragStart={(e) => {
+                              e.dataTransfer.setData('text/plain', JSON.stringify({ ...task, source: 'pool' }));
+                            }}
+                            className="relative p-3 rounded-lg bg-transparent border border-border/50 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-20 cursor-grab active:cursor-grabbing"
                           >
                             <div className="flex items-start justify-between gap-3 h-full">
                               <div className="flex items-start gap-3 flex-1 min-w-0">
                                 <div className="flex flex-col flex-1 min-w-0">
-                                  <p className="font-medium text-sm text-foreground truncate leading-tight mb-1">
+                                  <p className="font-medium text-sm text-foreground truncate leading-tight mb-2">
                                     {task.name || "Untitled Task"}
                                   </p>
-                                  <div className={`text-xs ${timeRemaining.isOverdue ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`}>
-                                    <span>{timeRemaining.text}</span>
+                                  <div className="text-xs text-muted-foreground">
+                                    <span>Pool Task</span>
                                   </div>
                                 </div>
                               </div>
-                              
                               {/* Action buttons */}
                               <div className="absolute top-1 right-1 flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
                                   type="button"
                                   className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    openEditModal(task);
-                                  }}
+                                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEditModal(task, { isFromPool: true }); }}
                                   title="Edit Task"
                                 >
                                   <Edit3 className="w-2.5 h-2.5" />
@@ -783,21 +688,80 @@ export default function DailyPlanner() {
                                 <button
                                   type="button"
                                   className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    handleUnpinTask(task.id);
-                                  }}
-                                  title="Unpin Task"
+                                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeletePoolTask(task.id); }}
+                                  title="Delete Task"
                                 >
-                                  <PinOff className="w-2.5 h-2.5" />
+                                  <Trash2 className="w-2.5 h-2.5" />
                                 </button>
                               </div>
                             </div>
                           </div>
-                        );
-                      })}
-                  </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Pinned Tasks Section */}
+                  {pinnedTasks.length > 0 && (
+                    <div className="flex items-center gap-3">
+                      <div className="h-full border-l border-border"></div>
+                      <div className="flex items-center justify-center h-full">
+                        <h3 className="text-xs font-semibold text-muted-foreground uppercase transform -rotate-90 whitespace-nowrap">
+                          Pinned
+                        </h3>
+                      </div>
+                      <div className="h-full border-l border-border"></div>
+                      <div className="flex gap-3 h-full items-center">
+                        {pinnedTasks
+                          .sort((a, b) => {
+                            const dateA = a.dueDate instanceof Date ? a.dueDate : new Date(a.dueDate);
+                            const dateB = b.dueDate instanceof Date ? b.dueDate : new Date(b.dueDate);
+                            return dateA.getTime() - dateB.getTime();
+                          })
+                          .map((task) => {
+                            const timeRemaining = formatTimeRemaining(task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate));
+                            return (
+                              <div
+                                key={`pinned-${task.id}`}
+                                className="relative p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-20"
+                              >
+                                <div className="flex items-start justify-between gap-3 h-full">
+                                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                                    <div className="flex flex-col flex-1 min-w-0">
+                                      <p className="font-medium text-sm text-foreground truncate leading-tight mb-1">
+                                        {task.name || "Untitled Task"}
+                                      </p>
+                                      <div className={`text-xs ${timeRemaining.isOverdue ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`}>
+                                        <span>{timeRemaining.text}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  {/* Action buttons */}
+                                  <div className="absolute top-1 right-1 flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                      type="button"
+                                      className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEditModal(task); }}
+                                      title="Edit Task"
+                                    >
+                                      <Edit3 className="w-2.5 h-2.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleUnpinTask(task.id); }}
+                                      title="Unpin Task"
+                                    >
+                                      <PinOff className="w-2.5 h-2.5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
