@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { 
   Plus, 
   Search, 
@@ -15,11 +15,12 @@ import {
   Square,
   MoreVertical,
   SortAsc,
-  SortDesc
+  SortDesc,
+  Filter
 } from 'lucide-react';
 import { Task } from '@/types';
 import { useDailyPlanner } from '@/hooks/useDailyPlannerState';
-import { TASK_COLORS } from '@/lib/constants';
+import { TASK_COLORS, DEFAULT_TASK_COLOR_INDEX } from '@/lib/constants';
 import { formatDuration } from '@/utils/formatters';
 
 type SortOption = 'name' | 'duration' | 'color' | 'created';
@@ -161,63 +162,29 @@ export default function UnscheduledTasksView() {
     openEditModal(newTask, { isNew: true });
   };
 
-  const getTaskStats = () => {
-    const totalTasks = displayTasks.length;
-    const totalDuration = displayTasks.reduce((sum, task) => sum + task.duration, 0);
-    const averageDuration = totalTasks > 0 ? totalDuration / totalTasks : 0;
-    
-    return {
-      total: totalTasks,
-      totalHours: totalDuration,
-      averageHours: averageDuration
-    };
-  };
-
-  const stats = getTaskStats();
+  const totalTasks = displayTasks.length;
+  const totalHours = displayTasks.reduce((sum, task) => sum + task.duration, 0);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
-      {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-foreground mb-2">Unscheduled Tasks</h2>
-        <p className="text-muted-foreground">
-          Manage your task pool and organize unscheduled work
-        </p>
-      </div>
+    <div className="h-full flex flex-col">
+      {/* Simplified Header */}
+      <div className="p-6 border-b border-border">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-xl font-semibold text-foreground">Unscheduled Tasks</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              {totalTasks} tasks • {formatDuration(totalHours)}
+            </p>
+          </div>
+          <Button onClick={handleCreateTask} className="flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            Add Task
+          </Button>
+        </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Tasks</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Hours</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatDuration(stats.totalHours)}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Avg Duration</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatDuration(stats.averageHours)}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Controls */}
-      <div className="bg-card border border-border rounded-lg p-4 mb-6">
-        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-          {/* Search */}
-          <div className="relative flex-1 max-w-md">
+        {/* Simplified Controls */}
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
               placeholder="Search tasks..."
@@ -226,18 +193,16 @@ export default function UnscheduledTasksView() {
               className="pl-10"
             />
           </div>
-
-          {/* Sort Controls */}
+          
           <div className="flex items-center gap-2">
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortOption)}
               className="px-3 py-2 border border-border rounded-md bg-background text-foreground text-sm"
             >
-              <option value="created">Created</option>
+              <option value="created">Recently Added</option>
               <option value="name">Name</option>
               <option value="duration">Duration</option>
-              <option value="color">Color</option>
             </select>
             <Button
               variant="outline"
@@ -248,54 +213,49 @@ export default function UnscheduledTasksView() {
             </Button>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-2">
-            {selectedTasks.size > 0 && (
-              <>
-                <span className="text-sm text-muted-foreground">
-                  {selectedTasks.size} selected
-                </span>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={deleteSelectedTasks}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={clearSelection}
-                >
-                  Clear
-                </Button>
-              </>
-            )}
-            <Button onClick={handleCreateTask}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Task
-            </Button>
-          </div>
+          {selectedTasks.size > 0 && (
+            <div className="flex items-center gap-2 ml-4 pl-4 border-l border-border">
+              <span className="text-sm text-muted-foreground">
+                {selectedTasks.size} selected
+              </span>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={deleteSelectedTasks}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearSelection}
+              >
+                Clear
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Task Tabs */}
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="mb-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="all">All Tasks</TabsTrigger>
-          <TabsTrigger value="general">General Pool</TabsTrigger>
-          <TabsTrigger value="today">Today's Tasks</TabsTrigger>
-        </TabsList>
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="flex-1 flex flex-col">
+        <div className="px-6 pt-4">
+          <TabsList className="grid w-full max-w-md grid-cols-3">
+            <TabsTrigger value="all">All Tasks</TabsTrigger>
+            <TabsTrigger value="general">General</TabsTrigger>
+            <TabsTrigger value="today">Today</TabsTrigger>
+          </TabsList>
+        </div>
 
-        <TabsContent value={activeTab} className="mt-6">
+        <TabsContent value={activeTab} className="flex-1 px-6 pb-6">
           {/* Bulk Selection */}
           {displayTasks.length > 0 && (
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-2 mb-4 mt-4">
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 onClick={selectedTasks.size === displayTasks.length ? clearSelection : selectAllTasks}
+                className="text-sm"
               >
                 {selectedTasks.size === displayTasks.length ? (
                   <CheckSquare className="w-4 h-4 mr-2" />
@@ -309,74 +269,86 @@ export default function UnscheduledTasksView() {
 
           {/* Task Grid */}
           {displayTasks.length === 0 ? (
-            <div className="text-center py-12">
-              <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-foreground mb-2">No tasks found</h3>
-              <p className="text-muted-foreground mb-4">
-                {activeTab === 'today' 
-                  ? "No tasks for today. Create one to get started!" 
-                  : "No unscheduled tasks. Create one to get started!"
-                }
-              </p>
-              <Button onClick={handleCreateTask}>
-                <Plus className="w-4 h-4 mr-2" />
-                Create Task
-              </Button>
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center py-12">
+                <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-foreground mb-2">No tasks found</h3>
+                <p className="text-muted-foreground mb-4">
+                  {activeTab === 'today' 
+                    ? "No tasks for today. Create one to get started!" 
+                    : "No unscheduled tasks. Create one to get started!"
+                  }
+                </p>
+                <Button onClick={handleCreateTask}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Task
+                </Button>
+              </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
               {displayTasks.map((task) => (
                 <Card 
                   key={task.id}
-                  className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
+                  className={`cursor-pointer transition-all duration-200 hover:shadow-sm border ${
                     selectedTasks.has(task.id) 
-                      ? 'ring-2 ring-primary ring-offset-2' 
-                      : ''
-                  }`}
+                      ? 'ring-2 ring-primary border-primary' 
+                      : 'border-border hover:border-border/80'
+                  } ${task.completed ? 'opacity-60' : ''}`}
                   onClick={() => toggleTaskSelection(task.id)}
                 >
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        {selectedTasks.has(task.id) ? (
-                          <CheckSquare className="w-4 h-4 text-primary" />
-                        ) : (
-                          <Square className="w-4 h-4 text-muted-foreground" />
-                        )}
-                        <div 
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: task.color }}
-                        />
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openEditModal(task);
-                        }}
-                      >
-                        <MoreVertical className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <CardTitle className="text-sm font-medium truncate">
-                      {task.name}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Clock className="w-3 h-3" />
-                        {formatDuration(task.duration)}
-                      </div>
-                      {task.poolDate && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Calendar className="w-3 h-3" />
-                          {new Date(task.poolDate).toLocaleDateString()}
+                  <CardContent className="p-4">
+                    <div className="space-y-3">
+                      {/* Header Row */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {selectedTasks.has(task.id) ? (
+                            <CheckSquare className="w-4 h-4 text-primary" />
+                          ) : (
+                            <Square className="w-4 h-4 text-muted-foreground" />
+                          )}
+                          <div 
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: task.color }}
+                          />
                         </div>
-                      )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditModal(task);
+                          }}
+                          className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      
+                      {/* Task Name */}
+                      <div className={`font-medium text-sm leading-tight ${
+                        task.completed ? 'line-through text-muted-foreground' : 'text-foreground'
+                      }`}>
+                        {task.name}
+                      </div>
+                      
+                      {/* Meta Info */}
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {formatDuration(task.duration)}
+                        </div>
+                        {task.poolDate && (
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {new Date(task.poolDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Notes (if any) */}
                       {task.notes && (
-                        <p className="text-xs text-muted-foreground truncate">
+                        <p className="text-xs text-muted-foreground line-clamp-2">
                           {task.notes}
                         </p>
                       )}

@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -55,7 +55,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
   };
 
   const weekDates = getWeekDates(weekOffset);
-  const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   // Get tasks for the week
   const weekTasks = useMemo(() => {
@@ -111,27 +111,14 @@ export default function WeeklyView({}: WeeklyViewProps) {
     openEditModal(newTask, { isNew: true });
   };
 
-  // Handle task reschedule via drag and drop (to be implemented)
-  const handleTaskDrop = (task: Task, newDate: Date) => {
-    if (task.baseDate) {
-      // This is a scheduled task, reschedule it
-      handleRescheduleTask(task, newDate);
-    } else {
-      // This is a pool task, assign it
-      handleAssignTask(task, newDate, task.startHour || 9);
-    }
-  };
-
-  // Calculate task statistics for the week
+  // Calculate simple task statistics for the week
   const getWeekStats = () => {
     let totalTasks = 0;
-    let totalDuration = 0;
     let completedTasks = 0;
 
     weekTasks.forEach(dayTasks => {
       dayTasks.forEach(task => {
         totalTasks++;
-        totalDuration += task.duration;
         if (task.completed) completedTasks++;
       });
     });
@@ -139,8 +126,6 @@ export default function WeeklyView({}: WeeklyViewProps) {
     return {
       total: totalTasks,
       completed: completedTasks,
-      remaining: totalTasks - completedTasks,
-      totalHours: totalDuration,
       completionRate: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
     };
   };
@@ -163,196 +148,143 @@ export default function WeeklyView({}: WeeklyViewProps) {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
-      {/* Header with Navigation */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
+    <div className="h-full flex flex-col">
+      {/* Simplified Header */}
+      <div className="p-6 border-b border-border">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h2 className="text-2xl font-bold text-foreground">Weekly View</h2>
+            <h2 className="text-xl font-semibold text-foreground">Weekly View</h2>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={goToPreviousWeek}>
+              <Button variant="ghost" size="sm" onClick={goToPreviousWeek}>
                 <ChevronLeft className="w-4 h-4" />
               </Button>
-              <Button variant="ghost" onClick={goToCurrentWeek} className="min-w-32">
+              <Button variant="ghost" onClick={goToCurrentWeek} className="min-w-40 font-medium">
                 {getWeekRangeString()}
               </Button>
-              <Button variant="ghost" size="icon" onClick={goToNextWeek}>
+              <Button variant="ghost" size="sm" onClick={goToNextWeek}>
                 <ChevronRight className="w-4 h-4" />
               </Button>
               {getRelativeWeekLabel() && (
-                <span className="text-xs text-muted-foreground px-2 py-1 bg-muted rounded-sm">
+                <span className="text-xs text-muted-foreground px-2 py-1 bg-muted rounded-sm ml-2">
                   {getRelativeWeekLabel()}
                 </span>
               )}
             </div>
           </div>
-        </div>
 
-        {/* Week Statistics */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">Total Tasks</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-lg font-bold">{weekStats.total}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">Completed</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-lg font-bold text-green-600">{weekStats.completed}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">Remaining</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-lg font-bold text-orange-600">{weekStats.remaining}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">Total Hours</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-lg font-bold">{formatDuration(weekStats.totalHours)}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">Completion</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-lg font-bold text-blue-600">{weekStats.completionRate}%</div>
-            </CardContent>
-          </Card>
+          {/* Simplified Stats */}
+          <div className="flex items-center gap-6 text-sm">
+            <div className="text-center">
+              <div className="font-semibold text-foreground">{weekStats.total}</div>
+              <div className="text-muted-foreground">Tasks</div>
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-green-600">{weekStats.completed}</div>
+              <div className="text-muted-foreground">Done</div>
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-blue-600">{weekStats.completionRate}%</div>
+              <div className="text-muted-foreground">Complete</div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Week Grid */}
-      <div className="grid grid-cols-7 gap-4">
-        {weekDates.map((date, index) => {
-          const dateKey = getDateKey(date);
-          const dayTasks = weekTasks.get(dateKey) || [];
-          const dayName = dayNames[index];
-          const isCurrentDay = isToday(date);
-          const isPastDay = isPast(date);
+      <div className="flex-1 p-6">
+        <div className="grid grid-cols-7 gap-4 h-full">
+          {weekDates.map((date, index) => {
+            const dateKey = getDateKey(date);
+            const dayTasks = weekTasks.get(dateKey) || [];
+            const dayName = dayNames[index];
+            const isCurrentDay = isToday(date);
+            const isPastDay = isPast(date);
 
-          return (
-            <div key={dateKey} className="space-y-2">
-              {/* Day Header */}
-              <div className={`p-3 rounded-lg border ${
-                isCurrentDay 
-                  ? 'bg-primary text-primary-foreground border-primary' 
-                  : isPastDay
-                    ? 'bg-muted/50 text-muted-foreground border-muted'
-                    : 'bg-card text-foreground border-border'
-              }`}>
-                <div className="text-center">
-                  <div className="text-sm font-medium">{dayName}</div>
-                  <div className="text-lg font-bold">
-                    {date.getDate()}
-                  </div>
-                  <div className="text-xs opacity-75">
-                    {date.toLocaleDateString('en-US', { month: 'short' })}
+            return (
+              <div key={dateKey} className="flex flex-col h-full">
+                {/* Simplified Day Header */}
+                <div className={`p-3 rounded-lg border mb-3 ${
+                  isCurrentDay 
+                    ? 'bg-primary text-primary-foreground border-primary' 
+                    : isPastDay
+                      ? 'bg-muted/30 text-muted-foreground border-muted'
+                      : 'bg-card text-foreground border-border'
+                }`}>
+                  <div className="text-center">
+                    <div className="text-xs font-medium opacity-75">{dayName}</div>
+                    <div className="text-lg font-bold">{date.getDate()}</div>
                   </div>
                 </div>
-              </div>
 
-              {/* Day Tasks */}
-              <div className="space-y-2 min-h-64">
-                {dayTasks.length === 0 ? (
-                  <div className="p-4 border-2 border-dashed border-muted rounded-lg text-center">
-                    <Calendar className="w-6 h-6 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-xs text-muted-foreground mb-2">No tasks</p>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleCreateTask(date)}
-                      className="text-xs"
-                    >
-                      <Plus className="w-3 h-3 mr-1" />
-                      Add Task
-                    </Button>
-                  </div>
-                ) : (
-                  <>
-                    {dayTasks.map((task) => (
-                      <Card 
-                        key={task.id}
-                        className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
-                          task.completed ? 'opacity-60' : ''
-                        }`}
-                        onClick={() => openEditModal(task)}
+                {/* Day Tasks */}
+                <div className="flex-1 space-y-2 min-h-0">
+                  {dayTasks.length === 0 ? (
+                    <div className="h-32 border-2 border-dashed border-muted rounded-lg flex flex-col items-center justify-center text-center p-3">
+                      <Calendar className="w-5 h-5 text-muted-foreground mb-2" />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleCreateTask(date)}
+                        className="text-xs h-auto p-1"
                       >
-                        <CardContent className="p-3">
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <div 
-                                className="w-3 h-3 rounded-full flex-shrink-0"
-                                style={{ backgroundColor: task.color }}
-                              />
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openEditModal(task);
-                                }}
-                                className="p-1 h-auto"
-                              >
-                                <MoreVertical className="w-3 h-3" />
-                              </Button>
-                            </div>
-                            
-                            <div className={`text-sm font-medium truncate ${
-                              task.completed ? 'line-through text-muted-foreground' : 'text-foreground'
-                            }`}>
-                              {task.name}
-                            </div>
-                            
-                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                {formatDuration(task.duration)}
+                        <Plus className="w-3 h-3 mr-1" />
+                        Add Task
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      {dayTasks.map((task) => (
+                        <Card 
+                          key={task.id}
+                          className={`cursor-pointer transition-all duration-200 hover:shadow-sm border-l-4 ${
+                            task.completed ? 'opacity-60' : ''
+                          }`}
+                          style={{ borderLeftColor: task.color }}
+                          onClick={() => openEditModal(task)}
+                        >
+                          <CardContent className="p-3">
+                            <div className="space-y-2">
+                              {/* Task Name */}
+                              <div className={`text-sm font-medium leading-tight ${
+                                task.completed ? 'line-through text-muted-foreground' : 'text-foreground'
+                              }`}>
+                                {task.name}
                               </div>
-                              {task.startHour && (
-                                <div>
-                                  {formatTime(task.startHour)}
+                              
+                              {/* Task Meta */}
+                              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                <div className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  {formatDuration(task.duration)}
                                 </div>
-                              )}
+                                {task.startHour && (
+                                  <div className="text-xs">
+                                    {formatTime(task.startHour)}
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            
-                            {task.notes && (
-                              <p className="text-xs text-muted-foreground truncate">
-                                {task.notes}
-                              </p>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                    
-                    {/* Add Task Button */}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleCreateTask(date)}
-                      className="w-full text-xs"
-                    >
-                      <Plus className="w-3 h-3 mr-1" />
-                      Add Task
-                    </Button>
-                  </>
-                )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                      
+                      {/* Add Task Button */}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleCreateTask(date)}
+                        className="w-full h-8 text-xs border border-dashed border-muted hover:border-border"
+                      >
+                        <Plus className="w-3 h-3 mr-1" />
+                        Add Task
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );
