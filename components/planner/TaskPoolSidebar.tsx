@@ -45,7 +45,7 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
   const [showPoolTaskForm, setShowPoolTaskForm] = useState<boolean>(false);
   const [newPoolTaskName, setNewPoolTaskName] = useState<string>("");
   const [newPoolTaskDuration, setNewPoolTaskDuration] = useState<number>(1); // Default duration 1h
-  const [newPoolTaskColor, setNewPoolTaskColor] = useState<string>(APP_TASK_COLORS[0]);
+  const [newPoolTaskColor, setNewPoolTaskColor] = useState<string>('');
   const [viewingPoolTask, setViewingPoolTask] = useState<Task | null>(null);
 
   const poolFormMenuRef = useRef<HTMLDivElement>(null);
@@ -90,7 +90,7 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
     });
     setNewPoolTaskName("");
     setNewPoolTaskDuration(1);
-    setNewPoolTaskColor(APP_TASK_COLORS[0]);
+    setNewPoolTaskColor('');
     setShowPoolTaskForm(false);
   }, [
     newPoolTaskName, 
@@ -135,18 +135,17 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
                 key={task.id}
                 draggable
                 onDragStart={(e) => handleDragStartPoolItem(e, task)}
-                className="relative p-3 rounded-lg bg-card border border-border/50 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-24 cursor-grab active:cursor-grabbing"
-                style={{ 
-                  backgroundColor: task.color + '10'
-                }}
+                className={cn(
+                  "relative p-3 rounded-lg bg-card border border-border/50 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-24 cursor-grab active:cursor-grabbing",
+                  task.color
+                )}
               >
                 <div className="flex items-start justify-between gap-3 h-full">
                   <div className="flex items-start gap-3 flex-1 min-w-0">
                     {/* Color status dot */}
-                    <div 
-                      className="w-3 h-3 rounded-full flex-shrink-0 mt-1"
-                      style={{ backgroundColor: task.color }}
-                    />
+                    {task.color && <div 
+                      className={cn("w-3 h-3 rounded-full flex-shrink-0 mt-1", task.color)}
+                    />}
                     
                     <div className="flex-1 min-w-0">
                       {/* Task name */}
@@ -248,48 +247,65 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
             <h3 className="text-xl font-semibold text-gray-800 dark:text-white pt-1 pr-8">Add Task to Pool</h3>
             
             <div>
-              <label htmlFor="newPoolTaskNameInput" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Task Name</label>
+              <label htmlFor="new-pool-task-name" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Task Name
+              </label>
               <Input
-                id="newPoolTaskNameInput"
+                id="new-pool-task-name"
                 type="text"
                 value={newPoolTaskName}
                 onChange={(e) => setNewPoolTaskName(e.target.value)}
-                className="w-full text-sm"
-                placeholder="Enter task name"
+                placeholder="e.g., 'Draft project brief'"
+                className="mt-1 w-full"
                 autoFocus
               />
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="newPoolTaskDurationSelect" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duration</label>
-                  <select
-                    id="newPoolTaskDurationSelect"
-                    value={newPoolTaskDuration}
-                    onChange={(e) => setNewPoolTaskDuration(parseFloat(e.target.value))}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
-                  >
-                    {APP_DURATION_OPTIONS.map((opt: { value: number; label: string }) => (
-                        <option key={`pool-dur-${opt.value}`} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
-                 {/* Placeholder for potential second item in grid if needed */}
-                <div></div>
-            </div>
-
+            
             <div>
-              <div className="grid grid-cols-8 gap-1">
-                {APP_TASK_COLORS.map((color) => (
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Color
+              </label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <button
+                  type="button"
+                  className={cn(
+                    "w-7 h-7 rounded-full border-2 transition-all flex items-center justify-center",
+                    !newPoolTaskColor && "border-blue-500 scale-110"
+                  )}
+                  onClick={() => setNewPoolTaskColor('')}
+                  title="No color"
+                >
+                  <XIcon className="w-4 h-4 text-gray-500" />
+                </button>
+                {TASK_COLORS.map((color, index) => (
                   <button
-                    key={`pool-color-${color}`}
+                    key={index}
                     type="button"
-                    className={`w-8 h-8 rounded-md ${color} hover:ring-2 ring-gray-400 transition-all ${newPoolTaskColor === color ? 'ring-2 ring-blue-500' : ''}`}
+                    className={cn(
+                      "w-7 h-7 rounded-full border-2 transition-all",
+                      newPoolTaskColor === color ? "border-foreground scale-110" : "border-transparent hover:scale-105"
+                    )}
+                    style={{ backgroundColor: color.split(' ')[0] }} // Use only bg color for display
                     onClick={() => setNewPoolTaskColor(color)}
-                    title={color.split(' ')[0].replace('bg-', '').replace('-200', '').replace('-300', '')}
                   />
                 ))}
               </div>
+            </div>
+
+            <div>
+              <label htmlFor="new-pool-task-duration" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Duration
+              </label>
+              <select
+                id="new-pool-task-duration"
+                value={newPoolTaskDuration}
+                onChange={(e) => setNewPoolTaskDuration(parseFloat(e.target.value))}
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+              >
+                {APP_DURATION_OPTIONS.map((opt: { value: number; label: string }) => (
+                    <option key={`pool-dur-${opt.value}`} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
             </div>
             
             <div className="flex justify-end items-center pt-2 border-t border-gray-200 dark:border-gray-700">

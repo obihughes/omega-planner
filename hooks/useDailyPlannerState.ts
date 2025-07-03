@@ -864,55 +864,15 @@ export function useDailyPlanner() {
   }, [tasks, syncPinnedTasksWithTimeline]); // Sync when tasks change
 
   // --- TASK ASSIGNMENT FUNCTIONS ---
-  const handleAssignTask = useCallback((task: Task, targetDate: Date, startHour: number = 9) => {
-    // Remove task from pool
-    setPoolTasks(prev => prev.filter(t => t.id !== task.id));
-    
-    // Add task to timeline with target date and time
-    const targetDateKey = getDateKey(targetDate);
-    const assignedTask: Task = {
-      ...task,
-      baseDate: targetDateKey,
-      startHour: startHour,
-      completed: false
-    };
-    
-    setTasks(prev => [...prev, assignedTask]);
-  }, []);
-
-  const handleUnassignTask = useCallback((task: Task) => {
-    // Remove from timeline
-    setTasks(prev => prev.filter(t => t.id !== task.id));
-    
-    // Add back to pool (remove scheduling-specific properties)
-    const poolTask: Task = {
-      ...task,
-      baseDate: '', // Clear the date
-      startHour: task.startHour || 9, // Keep start hour as suggestion
-      completed: false
-    };
-    
-    setPoolTasks(prev => [...prev, poolTask]);
-  }, []);
-
-  const handleRescheduleTask = useCallback((task: Task, newDate: Date) => {
-    const newDateKey = getDateKey(newDate);
-    
-    setTasks(prev => prev.map(t => 
-      t.id === task.id 
-        ? { ...t, baseDate: newDateKey }
-        : t
-    ));
-  }, []);
-
+  
   // --- POOL TASKS BY DATE FUNCTIONS ---
   const addPoolTaskForDate = useCallback((dateKey: string, task: Partial<Task>) => {
     const newTask: Task = {
       id: task.id || `pool-task-${Date.now()}-${Math.random()}`,
       name: task.name || '',
-      startHour: task.startHour || 9,
+      startHour: task.startHour || 0,
       duration: task.duration || 1,
-      color: task.color || TASK_COLORS[DEFAULT_TASK_COLOR_INDEX],
+      color: task.color || '',
       baseDate: dateKey,
       notes: task.notes || '',
       completed: false,
@@ -967,6 +927,51 @@ export function useDailyPlanner() {
   const removePoolTask = useCallback((taskId: string) => {
     setPoolTasks(prev => prev.filter(task => task.id !== taskId));
   }, [setPoolTasks]);
+
+  const handleAssignTask = useCallback((task: Task, targetDate: Date, startHour: number = 9) => {
+    // Remove task from any pool it might be in
+    removePoolTask(task.id);
+    if (task.poolDate) {
+      removePoolTaskForDate(task.poolDate, task.id);
+    }
+    
+    // Add task to timeline with target date and time
+    const targetDateKey = getDateKey(targetDate);
+    const assignedTask: Task = {
+      ...task,
+      baseDate: targetDateKey,
+      startHour: startHour,
+      poolDate: targetDateKey, // Also mark it as a pool task for this date
+      completed: false
+    };
+    
+    setTasks(prev => [...prev.filter(t => t.id !== assignedTask.id), assignedTask]);
+  }, [removePoolTask, removePoolTaskForDate]);
+
+  const handleUnassignTask = useCallback((task: Task) => {
+    // Remove from timeline
+    setTasks(prev => prev.filter(t => t.id !== task.id));
+    
+    // Add back to pool (remove scheduling-specific properties)
+    const poolTask: Task = {
+      ...task,
+      baseDate: '', // Clear the date
+      startHour: task.startHour || 9, // Keep start hour as suggestion
+      completed: false
+    };
+    
+    setPoolTasks(prev => [...prev, poolTask]);
+  }, []);
+
+  const handleRescheduleTask = useCallback((task: Task, newDate: Date) => {
+    const newDateKey = getDateKey(newDate);
+    
+    setTasks(prev => prev.map(t => 
+      t.id === task.id 
+        ? { ...t, baseDate: newDateKey }
+        : t
+    ));
+  }, []);
 
   // --- Use Modal Manager ---
   const modalManager = useModalManager({

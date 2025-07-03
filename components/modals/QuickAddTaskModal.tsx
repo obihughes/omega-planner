@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TASK_COLORS, DEFAULT_TASK_COLOR_INDEX } from '@/lib/constants';
 import { Task } from '@/types/planner';
+import { XIcon } from 'lucide-react';
 
 interface QuickAddTaskModalProps {
   isOpen: boolean;
@@ -18,7 +19,7 @@ interface QuickAddTaskModalProps {
 export function QuickAddTaskModal({ isOpen, onClose, onSave, selectedDate }: QuickAddTaskModalProps) {
   const [taskName, setTaskName] = useState('');
   const [duration, setDuration] = useState(1);
-  const [selectedColorIndex, setSelectedColorIndex] = useState(DEFAULT_TASK_COLOR_INDEX);
+  const [selectedColorIndex, setSelectedColorIndex] = useState(-1);
 
   const handleSave = () => {
     if (!taskName.trim() || !selectedDate) return;
@@ -27,7 +28,7 @@ export function QuickAddTaskModal({ isOpen, onClose, onSave, selectedDate }: Qui
       id: `temp-pool-task-${Date.now()}`,
       name: taskName.trim(),
       duration,
-      color: TASK_COLORS[selectedColorIndex],
+      color: selectedColorIndex === -1 ? '' : TASK_COLORS[selectedColorIndex],
       notes: '',
       completed: false,
       poolDate: selectedDate.toISOString().split('T')[0], // YYYY-MM-DD format
@@ -42,7 +43,7 @@ export function QuickAddTaskModal({ isOpen, onClose, onSave, selectedDate }: Qui
   const handleClose = () => {
     setTaskName('');
     setDuration(1);
-    setSelectedColorIndex(DEFAULT_TASK_COLOR_INDEX);
+    setSelectedColorIndex(-1);
     onClose();
   };
 
@@ -92,6 +93,17 @@ export function QuickAddTaskModal({ isOpen, onClose, onSave, selectedDate }: Qui
           <div>
             <Label>Color</Label>
             <div className="flex flex-wrap gap-2 mt-2">
+              <button
+                type="button"
+                className={`w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center ${
+                  selectedColorIndex === -1
+                    ? 'border-foreground scale-110'
+                    : 'border-border hover:scale-105'
+                }`}
+                onClick={() => setSelectedColorIndex(-1)}
+              >
+                <XIcon className="w-5 h-5 text-muted-foreground" />
+              </button>
               {TASK_COLORS.map((color, index) => (
                 <button
                   key={index}
@@ -101,7 +113,7 @@ export function QuickAddTaskModal({ isOpen, onClose, onSave, selectedDate }: Qui
                       ? 'border-foreground scale-110' 
                       : 'border-border hover:scale-105'
                   }`}
-                  style={{ backgroundColor: color }}
+                  style={{ backgroundColor: color.split(' ')[0] }}
                   onClick={() => setSelectedColorIndex(index)}
                 />
               ))}

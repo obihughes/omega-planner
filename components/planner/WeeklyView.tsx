@@ -101,10 +101,10 @@ export default function WeeklyView({}: WeeklyViewProps) {
     const newTask: Task = {
       id: `task-${Date.now()}`,
       name: 'New Task',
-      startHour: 9,
+      startHour: 0,
       duration: 1,
       baseDate: getDateKey(date),
-      color: TASK_COLORS[DEFAULT_TASK_COLOR_INDEX],
+      color: '',
       notes: '',
       completed: false,
       poolDate: getDateKey(date) // Add as pool task for this date
@@ -260,7 +260,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
                                   <Clock className="w-3 h-3" />
                                   {formatDuration(task.duration)}
                                 </div>
-                                {task.startHour && (
+                                {task.startHour && !task.poolDate && (
                                   <div className="text-xs font-medium">
                                     {formatTime(task.startHour)}
                                   </div>

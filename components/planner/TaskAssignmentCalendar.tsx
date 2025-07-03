@@ -44,7 +44,7 @@ export function TaskAssignmentCalendar({
   startDate.setDate(firstDayOfMonth.getDate() - firstDayWeekday);
 
   const daysInCalendar = [];
-  for (let i = 0; i < 42; i++) { // 6 weeks * 7 days
+  for (let i = 0; i < 35; i++) { // 5 weeks * 7 days
     const date = new Date(startDate);
     date.setDate(startDate.getDate() + i);
     daysInCalendar.push(date);
@@ -216,14 +216,9 @@ export function TaskAssignmentCalendar({
                     "p-2 rounded-lg text-xs cursor-pointer transition-all shadow-sm border group",
                     assigningTask?.id === task.id 
                       ? "ring-2 ring-primary bg-primary/10" 
-                      : "hover:scale-[1.02]"
+                      : "hover:scale-[1.02]",
+                    task.color ? task.color : "bg-card"
                   )}
-                  style={{ 
-                    backgroundColor: task.color + '15', 
-                    borderColor: task.color + '40',
-                    borderLeftWidth: '3px',
-                    borderLeftColor: task.color
-                  }}
                   onClick={() => handleTaskAssignClick(task)}
                 >
                   <div className="flex items-center justify-between mb-1">
@@ -278,120 +273,65 @@ export function TaskAssignmentCalendar({
         </div>
 
         {/* Calendar Grid */}
-        <div className="card-enhanced rounded-xl overflow-hidden shadow-lg border border-border/50">
-          {/* Day Headers */}
-          <div className="grid grid-cols-7 border-b border-border/50 text-center font-semibold text-muted-foreground bg-card/80">
-            <div className="p-3 text-sm">Sun</div>
-            <div className="p-3 text-sm">Mon</div>
-            <div className="p-3 text-sm">Tue</div>
-            <div className="p-3 text-sm">Wed</div>
-            <div className="p-3 text-sm">Thu</div>
-            <div className="p-3 text-sm">Fri</div>
-            <div className="p-3 text-sm">Sat</div>
-          </div>
-          
-          {/* Calendar Days */}
-          <div className="grid grid-cols-7">
-            {daysInCalendar.map((date, index) => {
-              const dayTasks = getTasksForDate(date);
-              const dayPoolTasks = getPoolTasksForDateKey(date);
-              const isCurrentMonthDay = isCurrentMonth(date);
-              const isTodayDate = isToday(date);
-              const isAssignmentTarget = assigningTask !== null;
-              
-              return (
-                <div
-                  key={index}
+        <div className="grid grid-cols-7 grid-rows-5 gap-2">
+          {daysInCalendar.map(day => {
+            const dateKey = day.toISOString().split('T')[0];
+            const tasksForDay = getTasksForDate(day);
+            const poolTasksForDay = getPoolTasksForDateKey(day);
+            const allTasks = [...tasksForDay, ...poolTasksForDay];
+            const isCurrentMonthDay = isCurrentMonth(day);
+
+            return (
+              <div
+                key={dateKey}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, day)}
+                onClick={() => handleDateClick(day)}
+                className={cn(
+                  "relative p-2 h-32 border border-border/20 rounded-lg flex flex-col justify-start items-start group transition-colors",
+                  isCurrentMonthDay ? "bg-card hover:bg-muted/50" : "bg-muted/20 text-muted-foreground hover:bg-muted/40",
+                  isToday(day) && "border-2 border-primary/50",
+                  draggedTask && "hover:bg-green-500/10",
+                  assigningTask && "cursor-pointer"
+                )}
+              >
+                <time
+                  dateTime={dateKey}
                   className={cn(
-                    "min-h-[130px] p-3 border-r border-b border-border/50 last:border-r-0 transition-colors",
-                    !isCurrentMonthDay && "bg-muted/20 text-muted-foreground/50",
-                    isTodayDate && "bg-primary/10 border-primary/20",
-                    isAssignmentTarget && isCurrentMonthDay && "hover:bg-primary/5 cursor-pointer",
-                    isAssignmentTarget && !isCurrentMonthDay && "opacity-50",
-                    !isAssignmentTarget && "hover:bg-accent/30"
+                    "text-xs font-semibold",
+                    isToday(day) && "text-primary"
                   )}
-                  onClick={() => isCurrentMonthDay && handleDateClick(date)}
-                  onDragOver={handleDragOver}
-                  onDrop={(e) => handleDrop(e, date)}
                 >
-                  <div className={cn(
-                    "text-sm font-medium mb-2",
-                    !isCurrentMonthDay && "text-muted-foreground",
-                    isTodayDate && "text-primary font-bold"
-                  )}>
-                    {date.getDate()}
-                  </div>
-                  
-                  {/* Show scheduled tasks first */}
-                  <div className="space-y-1">
-                    {dayTasks.map((task, taskIndex) => (
-                      <div
-                        key={`scheduled-${task.id}-${taskIndex}`}
-                        className={cn(
-                          "text-xs p-1 rounded cursor-pointer transition-all hover:scale-[1.02]",
-                          "border border-border/30"
-                        )}
-                        style={{ 
-                          backgroundColor: task.color + '30', 
-                          borderLeftColor: task.color,
-                          borderLeftWidth: '3px'
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleTaskClick(task, true);
-                        }}
-                      >
-                        <div className="font-medium truncate text-foreground">
-                          {task.name}
-                        </div>
-                        <div className="text-muted-foreground flex items-center">
-                          <Clock className="w-2 h-2 mr-1" />
-                          {formatDuration(task.duration)} • {task.startHour}:00
-                        </div>
-                      </div>
-                    ))}
-                    
-                    {/* Show date-specific pool tasks */}
-                    {dayPoolTasks.map((task, taskIndex) => (
-                      <div
-                        key={`pool-${task.id}-${taskIndex}`}
-                        className={cn(
-                          "text-xs p-1 rounded cursor-pointer transition-all hover:scale-[1.02]",
-                          "border border-border/30"
-                        )}
-                        style={{ 
-                          backgroundColor: task.color + '20', 
-                          borderLeftColor: task.color,
-                          borderLeftWidth: '2px'
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleTaskClick(task, false);
-                        }}
-                      >
-                        <div className="font-medium truncate text-foreground">
-                          {task.name}
-                        </div>
-                        <div className="text-muted-foreground flex items-center">
-                          <Clock className="w-2 h-2 mr-1" />
-                          {formatDuration(task.duration)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  {/* Empty space hint */}
-                  {dayTasks.length === 0 && dayPoolTasks.length === 0 && !isAssignmentTarget && isCurrentMonthDay && (
-                    <div className="flex-1 flex items-center justify-center">
-                      <div className="text-xs text-muted-foreground opacity-0 hover:opacity-100 transition-opacity">
-                        Click to add task
-                      </div>
+                  {day.getDate()}
+                </time>
+
+                {/* Combined Tasks */}
+                <div className="w-full mt-1 space-y-1 overflow-y-auto">
+                  {allTasks.slice(0, 3).map(task => (
+                    <div
+                      key={task.id}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, task, !task.startHour)}
+                      onClick={(e) => { e.stopPropagation(); handleTaskClick(task, !!task.startHour); }}
+                      className={cn(
+                        "p-1.5 rounded text-xs leading-tight font-medium truncate cursor-pointer",
+                        "border-l-2",
+                        task.color ? task.color : "bg-muted",
+                        !task.startHour && "opacity-70"
+                      )}
+                    >
+                      {task.name}
+                    </div>
+                  ))}
+                  {allTasks.length > 3 && (
+                    <div className="text-xs text-muted-foreground font-medium pt-1">
+                      + {allTasks.length - 3} more
                     </div>
                   )}
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* Summary Statistics */}
@@ -438,8 +378,7 @@ export function TaskAssignmentCalendar({
         </div>
       </div>
 
-      {/* Quick Add Task Modal */}
-      <QuickAddTaskModal
+      <QuickAddTaskModal 
         isOpen={quickAddModalOpen}
         onClose={handleQuickAddClose}
         onSave={handleQuickAddSave}
@@ -447,4 +386,4 @@ export function TaskAssignmentCalendar({
       />
     </div>
   );
-} 
+}

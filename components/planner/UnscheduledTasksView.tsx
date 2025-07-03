@@ -16,6 +16,7 @@ import { Task } from '@/types';
 import { useDailyPlanner } from '@/hooks/useDailyPlannerState';
 import { TASK_COLORS, DEFAULT_TASK_COLOR_INDEX } from '@/lib/constants';
 import { formatDuration } from '@/utils/formatters';
+import { cn } from '@/lib/utils';
 
 export default function UnscheduledTasksView() {
   const {
@@ -69,10 +70,10 @@ export default function UnscheduledTasksView() {
     const newTask: Task = {
       id: `task-${Date.now()}`,
       name: 'New Task',
-      startHour: 9,
+      startHour: 0,
       duration: 1,
       baseDate: new Date().toISOString().split('T')[0],
-      color: TASK_COLORS[0],
+      color: '',
       notes: '',
       completed: false
     };
@@ -185,10 +186,9 @@ function TaskList({ tasks, onEdit, onDelete }: TaskListProps) {
             className="relative p-3 rounded-md bg-card border border-border/40 hover:border-border transition-all duration-200 hover:shadow-sm group"
           >
             {/* Color indicator dot */}
-            <div 
-              className="absolute top-2 left-2 w-2.5 h-2.5 rounded-full"
-              style={{ backgroundColor: task.color }}
-            />
+            {task.color && <div 
+              className={cn("absolute top-2 left-2 w-2.5 h-2.5 rounded-full", task.color)}
+            />}
             
             {/* Task Content */}
             <div className="space-y-2 pl-6">
