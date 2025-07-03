@@ -253,4 +253,30 @@ Files Updated:
 - `app/projects/[id]/page.tsx`
 - `components/projects/ProjectsCalendar.tsx`
 
-These now use Math.floor for upcoming dates and Math.ceil for overdue. 
+These now use Math.floor for upcoming dates and Math.ceil for overdue.
+
+### Phase 1 Implementation (Task Assignment System)
+- **TaskAssignmentCalendar**: Added date-specific task display in calendar cells
+- **TaskPoolSidebar**: Fixed styling issues for light/dark mode compatibility
+- **Combined Pool Logic**: Implemented merging of general and date-specific pool tasks
+- **Data Persistence**: Added full localStorage support for date-specific tasks
+- **UI/UX Improvements**: Enhanced visual styling and user interaction patterns
+
+### Styling Fixes
+- **Task Cards**: Proper borders, background colors, and theme compatibility
+- **Action Buttons**: Theme-aware styling with hover effects
+- **Calendar Cells**: Clean task display with colored borders and backgrounds
+- **Add Buttons**: Consistent styling across components
+
+## Future Enhancements
+
+### Phase 2: Weekly View
+- Task visualization in weekly format
+- Enhanced drag & drop between days
+- Weekly planning workflow
+
+### Phase 3: Advanced Features
+- Task dependencies
+- Recurring tasks
+- Advanced filtering and search
+- Performance optimizations 

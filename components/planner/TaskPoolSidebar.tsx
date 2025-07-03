@@ -4,6 +4,7 @@ import { Input, Button } from "@/components/ui";
 import { CopyPlus, Trash2, Edit3, Pin, PinOff, GripVertical, X as XIcon, ChevronDownIcon, Eye } from 'lucide-react';
 import { formatDuration } from '@/utils/formatters';
 import { DURATION_OPTIONS as APP_DURATION_OPTIONS, TASK_COLORS as APP_TASK_COLORS } from '../../lib/constants';
+import { cn } from '@/lib/utils';
 
 // Imported from DailyPlanner's constants, or pass as prop
 // For now, let's assume TASK_COLORS is passed as a prop.
@@ -113,74 +114,108 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-card text-foreground p-0">
-      <div className="flex-grow flex space-x-2 p-2 overflow-x-auto">
-        {poolTasks.length === 0 ? (
-          <div className="text-muted-foreground text-sm p-2 text-center w-full">
-            No unscheduled tasks.
-          </div>
-        ) : (
-          poolTasks.map(task => (
-            <div 
-              key={task.id}
-              draggable
-              onDragStart={(e) => handleDragStartPoolItem(e, task)}
-              className={`p-3 rounded-lg shadow-sm cursor-grab active:cursor-grabbing group border transition-all duration-150 flex flex-col justify-between text-left flex-shrink-0 w-60 h-20`}
-              style={{ backgroundColor: task.color || '#333', borderColor: task.color ? 'transparent' : '#444' }}
-              onClick={() => openEditModal(task, true)}
-            >
-              <div className="flex-grow">
-                <p className="font-medium text-sm leading-tight break-words text-white truncate">
-                  {task.name || "Untitled Task"}
-                </p>
-              </div>
-              <div className="mt-1.5 flex items-center text-neutral-400">
-                <span className="text-xs"> 
-                  {formatDuration(task.duration)}
-                </span>
-                <div className="flex items-center gap-1.5 ml-auto">
-                  <button
-                    type="button"
-                    className="h-5 w-5 rounded bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      const poolTask = poolTasks.find(t => t.id === task.id);
-                      if (poolTask) {
-                        // Call onAddTaskToTimeline to copy to schedule
-                        onAddTaskToTimeline(poolTask, topDayOffset); 
-                      }
-                    }}
-                    title="Copy to Schedule"
-                  >
-                    <CopyPlus className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    className="h-5 w-5 rounded bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setViewingPoolTask(task);
-                    }}
-                    title="View Notes"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    className="h-5 w-5 rounded bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      openEditModal(task, true);
-                    }}
-                    title="Edit Pool Task"
-                  >
-                    <Edit3 className="w-3.5 h-3.5" />
-                  </button>
+      <div className="relative flex-grow">
+        {/* Floating add button */}
+        <Button
+          size="icon"
+          variant="outline"
+          onClick={() => setShowPoolTaskForm(true)}
+          className="absolute top-2 right-2 z-10"
+          title="Add task to pool"
+        >
+          <CopyPlus className="w-4 h-4" />
+        </Button>
+
+        <div className="flex space-x-2 p-2 pr-14 overflow-x-auto">
+          {poolTasks.length === 0 ? (
+            <div className="text-muted-foreground text-sm p-2 text-center w-full">
+              No unscheduled tasks.
+            </div>
+          ) : (
+            poolTasks.map(task => (
+              <div 
+                key={task.id}
+                draggable
+                onDragStart={(e) => handleDragStartPoolItem(e, task)}
+                className={cn(
+                  "p-3 rounded-lg shadow-sm cursor-grab active:cursor-grabbing group transition-all duration-150",
+                  "flex flex-col justify-between text-left flex-shrink-0 w-60 h-20",
+                  "border border-border/50 bg-card hover:shadow-md hover:border-border",
+                  "dark:border-border dark:bg-card dark:hover:border-border/80"
+                )}
+                style={{ 
+                  backgroundColor: task.color + '15', 
+                  borderLeftColor: task.color,
+                  borderLeftWidth: '3px'
+                }}
+                onClick={() => openEditModal(task, true)}
+              >
+                <div className="flex-grow">
+                  <p className="font-medium text-sm leading-tight break-words text-foreground truncate">
+                    {task.name || "Untitled Task"}
+                  </p>
+                </div>
+                <div className="mt-1.5 flex items-center text-muted-foreground">
+                  <span className="text-xs"> 
+                    {formatDuration(task.duration)}
+                  </span>
+                  <div className="flex items-center gap-1.5 ml-auto">
+                    <button
+                      type="button"
+                      className={cn(
+                        "h-5 w-5 rounded flex items-center justify-center transition-colors",
+                        "bg-background/80 hover:bg-background text-foreground hover:text-primary",
+                        "border border-border/50 hover:border-border"
+                      )}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        const poolTask = poolTasks.find(t => t.id === task.id);
+                        if (poolTask) {
+                          // Call onAddTaskToTimeline to copy to schedule
+                          onAddTaskToTimeline(poolTask, topDayOffset); 
+                        }
+                      }}
+                      title="Copy to Schedule"
+                    >
+                      <CopyPlus className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      className={cn(
+                        "h-5 w-5 rounded flex items-center justify-center transition-colors",
+                        "bg-background/80 hover:bg-background text-foreground hover:text-primary",
+                        "border border-border/50 hover:border-border"
+                      )}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setViewingPoolTask(task);
+                      }}
+                      title="View Notes"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      className={cn(
+                        "h-5 w-5 rounded flex items-center justify-center transition-colors",
+                        "bg-background/80 hover:bg-background text-foreground hover:text-primary",
+                        "border border-border/50 hover:border-border"
+                      )}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        openEditModal(task, true);
+                      }}
+                      title="Edit Pool Task"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
-        )}
+            ))
+          )}
+        </div>
       </div>
 
       {showPoolTaskForm && (

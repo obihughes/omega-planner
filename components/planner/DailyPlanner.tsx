@@ -711,6 +711,7 @@ export default function DailyPlanner() {
               onRescheduleTask={handleRescheduleTask}
               onCreatePoolTask={addPoolTaskForDate}
               openEditModal={openEditModal}
+              getPoolTasksForDate={getPoolTasksForDate}
             />
           </div>
         )}

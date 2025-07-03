@@ -16,6 +16,7 @@ interface TaskAssignmentCalendarProps {
   onRescheduleTask: (task: Task, newDate: Date) => void;
   onCreatePoolTask: (dateKey: string, task: Partial<Task>) => void;
   openEditModal: (task: Task, options?: any) => void;
+  getPoolTasksForDate: (dateKey: string) => Task[];
 }
 
 export function TaskAssignmentCalendar({
@@ -25,7 +26,8 @@ export function TaskAssignmentCalendar({
   onUnassignTask,
   onRescheduleTask,
   onCreatePoolTask,
-  openEditModal
+  openEditModal,
+  getPoolTasksForDate
 }: TaskAssignmentCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [assigningTask, setAssigningTask] = useState<Task | null>(null);
@@ -79,6 +81,11 @@ export function TaskAssignmentCalendar({
   const getTasksForDate = (date: Date) => {
     const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD format
     return tasksByDate[dateKey] || [];
+  };
+
+  const getPoolTasksForDateKey = (date: Date) => {
+    const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+    return getPoolTasksForDate(dateKey);
   };
 
   const handleDateClick = (date: Date) => {
@@ -287,6 +294,7 @@ export function TaskAssignmentCalendar({
           <div className="grid grid-cols-7">
             {daysInCalendar.map((date, index) => {
               const dayTasks = getTasksForDate(date);
+              const dayPoolTasks = getPoolTasksForDateKey(date);
               const isCurrentMonthDay = isCurrentMonth(date);
               const isTodayDate = isToday(date);
               const isAssignmentTarget = assigningTask !== null;
@@ -314,14 +322,44 @@ export function TaskAssignmentCalendar({
                     {date.getDate()}
                   </div>
                   
-                  {/* Empty space for clean calendar look */}
-                  <div className="flex-1 flex items-center justify-center">
-                    {!isAssignmentTarget && isCurrentMonthDay && (
+                  {/* Show date-specific pool tasks */}
+                  <div className="space-y-1">
+                    {dayPoolTasks.map((task, taskIndex) => (
+                      <div
+                        key={`pool-${task.id}-${taskIndex}`}
+                        className={cn(
+                          "text-xs p-1 rounded cursor-pointer transition-all hover:scale-[1.02]",
+                          "border border-border/30"
+                        )}
+                        style={{ 
+                          backgroundColor: task.color + '20', 
+                          borderLeftColor: task.color,
+                          borderLeftWidth: '2px'
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleTaskClick(task, false);
+                        }}
+                      >
+                        <div className="font-medium truncate text-foreground">
+                          {task.name}
+                        </div>
+                        <div className="text-muted-foreground flex items-center">
+                          <Clock className="w-2 h-2 mr-1" />
+                          {formatDuration(task.duration)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Empty space hint */}
+                  {dayPoolTasks.length === 0 && !isAssignmentTarget && isCurrentMonthDay && (
+                    <div className="flex-1 flex items-center justify-center">
                       <div className="text-xs text-muted-foreground opacity-0 hover:opacity-100 transition-opacity">
                         Click to add task
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
