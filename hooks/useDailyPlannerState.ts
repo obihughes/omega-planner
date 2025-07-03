@@ -702,56 +702,7 @@ export function useDailyPlanner() {
     );
   }, [setPoolTasks]);
 
-  // --- Use Modal Manager ---
-  const modalManager = useModalManager({
-    onAddTask: handleAddTask,
-    onUpdateTask: handleUpdateTask,
-    onUpdatePoolTask: handleUpdatePoolTask,
-    onClearPool: clearPool,
-    onCloneTasks: cloneDayTasks,
-    topDayOffset
-  });
-
-  // Destructure all properties from modalManager as defined in ModalManagerState
-  // These will be directly available in the scope below
-  const {
-    showClearPoolConfirmation,
-    showCloneConfirmation: mmShowCloneConfirmation,
-    colorPickerState: mmColorPickerState,
-    activeEditModalTask: mmActiveEditModalTask,
-    initialDayOffsetForModal,
-    initialStartHourForModal,
-    toggleColorPicker: mmToggleColorPicker,
-    handleTaskColorChange: mmHandleTaskColorChange,
-    showClearPoolModal,
-    confirmClearPool,
-    cancelClearPool,
-    showCloneModal: mmShowCloneModal,
-    confirmCloneDay: mmConfirmCloneDay,
-    cancelCloneDay,
-    openEditModal: mmOpenEditModal,
-    closeEditModal: mmCloseEditModal,
-    saveTaskFromModal: mmSaveTaskFromModal,
-    setShowClearPoolConfirmation,
-    setShowCloneConfirmation: mmSetShowCloneConfirmation,
-    setColorPickerState,
-    setActiveEditModalTask: mmSetActiveEditModalTask,
-    setInitialDayOffsetForModal,
-    setInitialStartHourForModal
-  } = modalManager;
-
-  /**
-   * Sets the task data for copying, enters paste mode, and closes the edit modal.
-   * @param {Omit<Task, 'id'>} taskData - The data of the task to be copied.
-   */
-  const handleCopyAndEnterPasteMode = useCallback((taskData: Omit<Task, 'id'>) => {
-    const taskToCopy: Task = {
-      ...taskData,
-      id: 'temp-copy-id'
-    };
-    startCopy(taskToCopy);
-    mmCloseEditModal(); // Close the modal after starting copy
-  }, [startCopy, mmCloseEditModal]);
+  // --- Use Modal Manager (moved after pool functions are defined) ---
 
   const openViewNotesModal = useCallback((task: Task) => {
     setViewingTaskNotes(task);
@@ -1016,6 +967,59 @@ export function useDailyPlanner() {
   const removePoolTask = useCallback((taskId: string) => {
     setPoolTasks(prev => prev.filter(task => task.id !== taskId));
   }, [setPoolTasks]);
+
+  // --- Use Modal Manager ---
+  const modalManager = useModalManager({
+    onAddTask: handleAddTask,
+    onUpdateTask: handleUpdateTask,
+    onUpdatePoolTask: handleUpdatePoolTask,
+    onAddPoolTask: addPoolTask,
+    onAddPoolTaskForDate: addPoolTaskForDate,
+    onClearPool: clearPool,
+    onCloneTasks: cloneDayTasks,
+    topDayOffset
+  });
+
+  // Destructure all properties from modalManager as defined in ModalManagerState
+  // These will be directly available in the scope below
+  const {
+    showClearPoolConfirmation,
+    showCloneConfirmation: mmShowCloneConfirmation,
+    colorPickerState: mmColorPickerState,
+    activeEditModalTask: mmActiveEditModalTask,
+    initialDayOffsetForModal,
+    initialStartHourForModal,
+    toggleColorPicker: mmToggleColorPicker,
+    handleTaskColorChange: mmHandleTaskColorChange,
+    showClearPoolModal,
+    confirmClearPool,
+    cancelClearPool,
+    showCloneModal: mmShowCloneModal,
+    confirmCloneDay: mmConfirmCloneDay,
+    cancelCloneDay,
+    openEditModal: mmOpenEditModal,
+    closeEditModal: mmCloseEditModal,
+    saveTaskFromModal: mmSaveTaskFromModal,
+    setShowClearPoolConfirmation,
+    setShowCloneConfirmation: mmSetShowCloneConfirmation,
+    setColorPickerState,
+    setActiveEditModalTask: mmSetActiveEditModalTask,
+    setInitialDayOffsetForModal,
+    setInitialStartHourForModal
+  } = modalManager;
+
+  /**
+   * Sets the task data for copying, enters paste mode, and closes the edit modal.
+   * @param {Omit<Task, 'id'>} taskData - The data of the task to be copied.
+   */
+  const handleCopyAndEnterPasteMode = useCallback((taskData: Omit<Task, 'id'>) => {
+    const taskToCopy: Task = {
+      ...taskData,
+      id: 'temp-copy-id'
+    };
+    startCopy(taskToCopy);
+    mmCloseEditModal(); // Close the modal after starting copy
+  }, [startCopy, mmCloseEditModal]);
 
   // --- RETURNED STATE AND FUNCTIONS ---
   return {

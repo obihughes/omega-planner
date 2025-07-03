@@ -228,8 +228,6 @@ export const TaskPoolSidebar: React.FC<TaskPoolSidebarProps> = ({
             ))
           )}
         </div>
-
-
       </div>
 
       {showPoolTaskForm && (

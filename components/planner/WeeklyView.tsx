@@ -25,6 +25,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
   const {
     tasksByDate,
     getPoolTasksForDate,
+    addPoolTaskForDate,
     openEditModal,
     handleAssignTask,
     handleUnassignTask,
@@ -95,7 +96,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
     return null;
   };
 
-  // Create new task for specific day
+  // Create new task for specific day (add to pool for that day)
   const handleCreateTask = (date: Date) => {
     const newTask: Task = {
       id: `task-${Date.now()}`,
@@ -105,10 +106,14 @@ export default function WeeklyView({}: WeeklyViewProps) {
       baseDate: getDateKey(date),
       color: TASK_COLORS[DEFAULT_TASK_COLOR_INDEX],
       notes: '',
-      completed: false
+      completed: false,
+      poolDate: getDateKey(date) // Add as pool task for this date
     };
 
-    openEditModal(newTask, { isNew: true });
+    // First add to pool, then open edit modal
+    const dateKey = getDateKey(date);
+    addPoolTaskForDate(dateKey, newTask);
+    openEditModal(newTask, { isNew: true, isFromPool: true });
   };
 
   // Calculate simple task statistics for the week

@@ -64,7 +64,7 @@ export default function UnscheduledTasksView() {
     return tasks;
   }, [activeTab, poolTasks, pinnedTasks, todayTasks, getCombinedPoolTasks, searchTerm]);
 
-  // Create new task
+  // Create new task - open edit modal first, then add to pool after saving
   const handleCreateTask = () => {
     const newTask: Task = {
       id: `task-${Date.now()}`,
@@ -78,13 +78,13 @@ export default function UnscheduledTasksView() {
     };
 
     if (activeTab === 'today') {
-      // Add as pool task for today
+      // Mark as pool task for today
       const todayDate = new Date().toISOString().split('T')[0];
       newTask.poolDate = todayDate;
     }
 
-    addPoolTask(newTask);
-    openEditModal(newTask, { isNew: true });
+    // Open edit modal first - task will be added to pool when saved
+    openEditModal(newTask, { isNew: true, isFromPool: true });
   };
 
   // Delete task
@@ -182,27 +182,30 @@ function TaskList({ tasks, onEdit, onDelete }: TaskListProps) {
         {tasks.map((task) => (
           <div
             key={task.id}
-            className={`
-              relative p-4 rounded-lg transition-all duration-200 hover:shadow-md group
-              ${task.color} border border-border/50 hover:border-border
-            `}
+            className="relative p-3 rounded-md bg-card border border-border/40 hover:border-border transition-all duration-200 hover:shadow-sm group"
           >
+            {/* Color indicator dot */}
+            <div 
+              className="absolute top-2 left-2 w-2.5 h-2.5 rounded-full"
+              style={{ backgroundColor: task.color }}
+            />
+            
             {/* Task Content */}
-            <div className="space-y-3">
-              <div className="pr-8">
-                <h3 className="font-semibold text-base leading-tight">{task.name}</h3>
+            <div className="space-y-2 pl-6">
+              <div className="pr-16">
+                <h3 className="font-medium text-sm leading-tight text-foreground">{task.name}</h3>
                 {task.notes && (
-                  <p className="text-sm opacity-90 mt-1 line-clamp-2">{task.notes}</p>
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{task.notes}</p>
                 )}
               </div>
               
-              <div className="flex items-center justify-between text-sm opacity-90">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <Clock className="w-3 h-3" />
                   {formatDuration(task.duration)}
                 </div>
                 {task.poolDate && (
-                  <div className="text-xs bg-white/20 px-2 py-1 rounded">
+                  <div className="text-xs bg-muted px-2 py-0.5 rounded">
                     {new Date(task.poolDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </div>
                 )}
@@ -210,10 +213,10 @@ function TaskList({ tasks, onEdit, onDelete }: TaskListProps) {
             </div>
 
             {/* Action Buttons */}
-            <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
                 onClick={() => onEdit(task)}
-                className="p-1.5 rounded bg-white/20 hover:bg-white/30 transition-colors"
+                className="p-1 rounded bg-accent hover:bg-accent/80 transition-colors"
                 title="Edit task"
               >
                 <Edit3 className="w-3 h-3" />
@@ -221,7 +224,7 @@ function TaskList({ tasks, onEdit, onDelete }: TaskListProps) {
               
               <button
                 onClick={() => onDelete(task)}
-                className="p-1.5 rounded bg-white/20 hover:bg-white/30 transition-colors"
+                className="p-1 rounded bg-accent hover:bg-accent/80 transition-colors text-destructive"
                 title="Delete task"
               >
                 <Trash2 className="w-3 h-3" />

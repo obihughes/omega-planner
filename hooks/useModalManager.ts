@@ -35,6 +35,12 @@ export interface UseModalManagerProps {
   
   /** Callback to update a pool task */
   onUpdatePoolTask: (taskId: string, updatedFields: Partial<Omit<Task, 'id'>>) => void;
+
+  /** Callback to add a new pool task (general unscheduled) */
+  onAddPoolTask: (task: Task) => void;
+
+  /** Callback to add a new pool task for a specific date */
+  onAddPoolTaskForDate: (dateKey: string, task: Partial<Task>) => void;
   
   /** Callback to clear the task pool */
   onClearPool: () => void;
@@ -147,6 +153,8 @@ export function useModalManager({
   onAddTask,
   onUpdateTask,
   onUpdatePoolTask,
+  onAddPoolTask,
+  onAddPoolTaskForDate,
   onClearPool,
   onCloneTasks,
   topDayOffset
@@ -330,22 +338,41 @@ export function useModalManager({
         alert("New task must have a name and a date.");
         return;
       }
-      // Convert YYYY-MM-DD to Date object properly to avoid timezone issues
-      const targetDate = dateFromDateKey(taskDataFromForm.baseDate);
-      // onAddTask expects dayOffset to be 0 if targetDate is the specific calendar date.
-      // taskDataFromForm should have duration, color, notes, completed already set.
-      onAddTask(
-        targetDate,
-        taskDataFromForm.startHour,
-        {
-          name: taskDataFromForm.name,
-          duration: taskDataFromForm.duration,
-          color: taskDataFromForm.color || TASK_COLORS[0],
-          notes: taskDataFromForm.notes,
-          completed: taskDataFromForm.completed
-        },
-        0 // dayOffset is 0 because targetDate is specific
-      );
+
+      if (isFromPool) {
+        // Handle pool task creation
+        if (taskDataFromForm.poolDate) {
+          // Add to pool for specific date
+          onAddPoolTaskForDate(taskDataFromForm.poolDate, {
+            ...taskDataFromForm,
+            color: taskDataFromForm.color || TASK_COLORS[0]
+          });
+        } else {
+          // Add to general pool (unscheduled)
+          onAddPoolTask({
+            ...taskDataFromForm,
+            color: taskDataFromForm.color || TASK_COLORS[0]
+          });
+        }
+      } else {
+        // Handle timeline task creation
+        // Convert YYYY-MM-DD to Date object properly to avoid timezone issues
+        const targetDate = dateFromDateKey(taskDataFromForm.baseDate);
+        // onAddTask expects dayOffset to be 0 if targetDate is the specific calendar date.
+        // taskDataFromForm should have duration, color, notes, completed already set.
+        onAddTask(
+          targetDate,
+          taskDataFromForm.startHour,
+          {
+            name: taskDataFromForm.name,
+            duration: taskDataFromForm.duration,
+            color: taskDataFromForm.color || TASK_COLORS[0],
+            notes: taskDataFromForm.notes,
+            completed: taskDataFromForm.completed
+          },
+          0 // dayOffset is 0 because targetDate is specific
+        );
+      }
     } else {
       // Existing task: needs id and partial fields to update.
       if (!taskDataFromForm.id) {
