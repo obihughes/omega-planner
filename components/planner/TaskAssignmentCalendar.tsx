@@ -138,21 +138,26 @@ export function TaskAssignmentCalendar({
   const handleDateDoubleClick = (date: Date) => {
     if (assigningTask) return; // Don't create tasks during assignment mode
     
-    // Create unscheduled task for this date
+    // Create unscheduled task for this date using the unified modal
+    const tempId = `temp-pool-${Date.now()}`;
     const dateKey = date.toISOString().split('T')[0];
     
     const newTask = {
+      id: tempId,
       name: "New Task",
+      startHour: 0,
       duration: 1,
+      baseDate: dateKey,
       color: '', // Will default to grey in the modal system
       notes: "",
       completed: false,
-      poolDate: dateKey,
-      baseDate: dateKey
+      isFromPool: true,
+      isNew: true,
+      poolDate: dateKey
     };
     
-    // Create the task directly for this date
-    onAddPoolTaskForDate(dateKey, newTask);
+    // Open the unified modal for editing
+    editTask(newTask);
   };
 
   const handleTaskAssignClick = (task: Task) => {
