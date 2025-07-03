@@ -4,35 +4,26 @@ import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent } from '@/components/ui/card';
 import { 
   Plus, 
   Search, 
   Calendar,
   Clock,
   Trash2,
-  CheckSquare,
-  Square,
-  MoreVertical,
-  SortAsc,
-  SortDesc,
-  Filter
+  Edit3
 } from 'lucide-react';
 import { Task } from '@/types';
 import { useDailyPlanner } from '@/hooks/useDailyPlannerState';
 import { TASK_COLORS, DEFAULT_TASK_COLOR_INDEX } from '@/lib/constants';
 import { formatDuration } from '@/utils/formatters';
 
-type SortOption = 'name' | 'duration' | 'color' | 'created';
-
 export default function UnscheduledTasksView() {
   const {
     poolTasks,
-    poolTasksByDate,
+    pinnedTasks,
     getPoolTasksForDate,
     getCombinedPoolTasks,
     addPoolTask,
-    addPoolTaskForDate,
     removePoolTask,
     removePoolTaskForDate,
     openEditModal
@@ -40,16 +31,13 @@ export default function UnscheduledTasksView() {
 
   // Local state
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
-  const [sortBy, setSortBy] = useState<SortOption>('created');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [activeTab, setActiveTab] = useState<'all' | 'general' | 'today'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'pinned' | 'today'>('all');
 
   // Get today's date key
   const todayKey = new Date().toISOString().split('T')[0];
   const todayTasks = getPoolTasksForDate(todayKey);
 
-  // Combined tasks based on active tab
+  // Display tasks based on active tab
   const displayTasks = useMemo(() => {
     let tasks: Task[] = [];
     
@@ -57,8 +45,8 @@ export default function UnscheduledTasksView() {
       case 'all':
         tasks = getCombinedPoolTasks();
         break;
-      case 'general':
-        tasks = poolTasks;
+      case 'pinned':
+        tasks = pinnedTasks;
         break;
       case 'today':
         tasks = todayTasks;
@@ -73,71 +61,8 @@ export default function UnscheduledTasksView() {
       );
     }
 
-    // Apply sorting
-    tasks.sort((a, b) => {
-      let aValue: any, bValue: any;
-      
-      switch (sortBy) {
-        case 'name':
-          aValue = a.name.toLowerCase();
-          bValue = b.name.toLowerCase();
-          break;
-        case 'duration':
-          aValue = a.duration;
-          bValue = b.duration;
-          break;
-        case 'color':
-          aValue = a.color;
-          bValue = b.color;
-          break;
-        case 'created':
-        default:
-          aValue = new Date(a.id).getTime();
-          bValue = new Date(b.id).getTime();
-          break;
-      }
-
-      if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
-      return 0;
-    });
-
     return tasks;
-  }, [activeTab, poolTasks, todayTasks, getCombinedPoolTasks, searchTerm, sortBy, sortOrder]);
-
-  // Task selection handlers
-  const toggleTaskSelection = (taskId: string) => {
-    const newSelection = new Set(selectedTasks);
-    if (newSelection.has(taskId)) {
-      newSelection.delete(taskId);
-    } else {
-      newSelection.add(taskId);
-    }
-    setSelectedTasks(newSelection);
-  };
-
-  const selectAllTasks = () => {
-    setSelectedTasks(new Set(displayTasks.map(task => task.id)));
-  };
-
-  const clearSelection = () => {
-    setSelectedTasks(new Set());
-  };
-
-  // Bulk operations
-  const deleteSelectedTasks = () => {
-    selectedTasks.forEach(taskId => {
-      const task = displayTasks.find(t => t.id === taskId);
-      if (task) {
-        if (task.poolDate) {
-          removePoolTaskForDate(task.poolDate, taskId);
-        } else {
-          removePoolTask(taskId);
-        }
-      }
-    });
-    clearSelection();
-  };
+  }, [activeTab, poolTasks, pinnedTasks, todayTasks, getCombinedPoolTasks, searchTerm]);
 
   // Create new task
   const handleCreateTask = () => {
@@ -153,13 +78,22 @@ export default function UnscheduledTasksView() {
     };
 
     if (activeTab === 'today') {
-      addPoolTaskForDate(todayKey, newTask);
-    } else {
-      addPoolTask(newTask);
+      // Add as pool task for today
+      const todayDate = new Date().toISOString().split('T')[0];
+      newTask.poolDate = todayDate;
     }
 
-    // Open edit modal for immediate editing
+    addPoolTask(newTask);
     openEditModal(newTask, { isNew: true });
+  };
+
+  // Delete task
+  const handleDeleteTask = (task: Task) => {
+    if (task.poolDate) {
+      removePoolTaskForDate(task.poolDate, task.id);
+    } else {
+      removePoolTask(task.id);
+    }
   };
 
   const totalTasks = displayTasks.length;
@@ -167,7 +101,7 @@ export default function UnscheduledTasksView() {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Simplified Header */}
+      {/* Header */}
       <div className="p-6 border-b border-border">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -182,184 +116,120 @@ export default function UnscheduledTasksView() {
           </Button>
         </div>
 
-        {/* Simplified Controls */}
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Search tasks..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as SortOption)}
-              className="px-3 py-2 border border-border rounded-md bg-background text-foreground text-sm"
-            >
-              <option value="created">Recently Added</option>
-              <option value="name">Name</option>
-              <option value="duration">Duration</option>
-            </select>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-            >
-              {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
-            </Button>
-          </div>
-
-          {selectedTasks.size > 0 && (
-            <div className="flex items-center gap-2 ml-4 pl-4 border-l border-border">
-              <span className="text-sm text-muted-foreground">
-                {selectedTasks.size} selected
-              </span>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={deleteSelectedTasks}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={clearSelection}
-              >
-                Clear
-              </Button>
-            </div>
-          )}
+        {/* Search */}
+        <div className="relative max-w-sm">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+          <Input
+            placeholder="Search tasks..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
         </div>
       </div>
 
-      {/* Task Tabs */}
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="flex-1 flex flex-col">
-        <div className="px-6 pt-4">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
-            <TabsTrigger value="all">All Tasks</TabsTrigger>
-            <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="today">Today</TabsTrigger>
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'all' | 'pinned' | 'today')} className="flex-1 flex flex-col">
+        <div className="px-6 py-3 border-b border-border">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="all">All Tasks ({getCombinedPoolTasks().length})</TabsTrigger>
+            <TabsTrigger value="pinned">Pinned ({pinnedTasks.length})</TabsTrigger>
+            <TabsTrigger value="today">Today ({todayTasks.length})</TabsTrigger>
           </TabsList>
         </div>
 
-        <TabsContent value={activeTab} className="flex-1 px-6 pb-6">
-          {/* Bulk Selection */}
-          {displayTasks.length > 0 && (
-            <div className="flex items-center gap-2 mb-4 mt-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={selectedTasks.size === displayTasks.length ? clearSelection : selectAllTasks}
-                className="text-sm"
-              >
-                {selectedTasks.size === displayTasks.length ? (
-                  <CheckSquare className="w-4 h-4 mr-2" />
-                ) : (
-                  <Square className="w-4 h-4 mr-2" />
-                )}
-                {selectedTasks.size === displayTasks.length ? 'Deselect All' : 'Select All'}
-              </Button>
-            </div>
-          )}
+        <div className="flex-1 overflow-hidden">
+          <TabsContent value="all" className="h-full m-0">
+            <TaskList tasks={displayTasks} onEdit={openEditModal} onDelete={handleDeleteTask} />
+          </TabsContent>
+          
+          <TabsContent value="pinned" className="h-full m-0">
+            <TaskList tasks={displayTasks} onEdit={openEditModal} onDelete={handleDeleteTask} />
+          </TabsContent>
+          
+          <TabsContent value="today" className="h-full m-0">
+            <TaskList tasks={displayTasks} onEdit={openEditModal} onDelete={handleDeleteTask} />
+          </TabsContent>
+        </div>
+      </Tabs>
+    </div>
+  );
+}
 
-          {/* Task Grid */}
-          {displayTasks.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center py-12">
-                <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-foreground mb-2">No tasks found</h3>
-                <p className="text-muted-foreground mb-4">
-                  {activeTab === 'today' 
-                    ? "No tasks for today. Create one to get started!" 
-                    : "No unscheduled tasks. Create one to get started!"
-                  }
-                </p>
-                <Button onClick={handleCreateTask}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Task
-                </Button>
+// Task List Component
+interface TaskListProps {
+  tasks: Task[];
+  onEdit: (task: Task, options?: any) => void;
+  onDelete: (task: Task) => void;
+}
+
+function TaskList({ tasks, onEdit, onDelete }: TaskListProps) {
+  if (tasks.length === 0) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="text-center">
+          <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">No tasks found</h3>
+          <p className="text-sm text-muted-foreground">Create a new task to get started</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6">
+      <div className="grid gap-3 auto-fit-250">
+        {tasks.map((task) => (
+          <div
+            key={task.id}
+            className={`
+              relative p-4 rounded-lg transition-all duration-200 hover:shadow-md group
+              ${task.color} border border-border/50 hover:border-border
+            `}
+          >
+            {/* Task Content */}
+            <div className="space-y-3">
+              <div className="pr-8">
+                <h3 className="font-semibold text-base leading-tight">{task.name}</h3>
+                {task.notes && (
+                  <p className="text-sm opacity-90 mt-1 line-clamp-2">{task.notes}</p>
+                )}
+              </div>
+              
+              <div className="flex items-center justify-between text-sm opacity-90">
+                <div className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  {formatDuration(task.duration)}
+                </div>
+                {task.poolDate && (
+                  <div className="text-xs bg-white/20 px-2 py-1 rounded">
+                    {new Date(task.poolDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </div>
+                )}
               </div>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-              {displayTasks.map((task) => (
-                <Card 
-                  key={task.id}
-                  className={`cursor-pointer transition-all duration-200 hover:shadow-sm border ${
-                    selectedTasks.has(task.id) 
-                      ? 'ring-2 ring-primary border-primary' 
-                      : 'border-border hover:border-border/80'
-                  } ${task.completed ? 'opacity-60' : ''}`}
-                  onClick={() => toggleTaskSelection(task.id)}
-                >
-                  <CardContent className="p-4">
-                    <div className="space-y-3">
-                      {/* Header Row */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          {selectedTasks.has(task.id) ? (
-                            <CheckSquare className="w-4 h-4 text-primary" />
-                          ) : (
-                            <Square className="w-4 h-4 text-muted-foreground" />
-                          )}
-                          <div 
-                            className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: task.color }}
-                          />
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openEditModal(task);
-                          }}
-                          className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
-                      </div>
-                      
-                      {/* Task Name */}
-                      <div className={`font-medium text-sm leading-tight ${
-                        task.completed ? 'line-through text-muted-foreground' : 'text-foreground'
-                      }`}>
-                        {task.name}
-                      </div>
-                      
-                      {/* Meta Info */}
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {formatDuration(task.duration)}
-                        </div>
-                        {task.poolDate && (
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {new Date(task.poolDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Notes (if any) */}
-                      {task.notes && (
-                        <p className="text-xs text-muted-foreground line-clamp-2">
-                          {task.notes}
-                        </p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+
+            {/* Action Buttons */}
+            <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                onClick={() => onEdit(task)}
+                className="p-1.5 rounded bg-white/20 hover:bg-white/30 transition-colors"
+                title="Edit task"
+              >
+                <Edit3 className="w-3 h-3" />
+              </button>
+              
+              <button
+                onClick={() => onDelete(task)}
+                className="p-1.5 rounded bg-white/20 hover:bg-white/30 transition-colors"
+                title="Delete task"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
             </div>
-          )}
-        </TabsContent>
-      </Tabs>
+          </div>
+        ))}
+      </div>
     </div>
   );
 } 

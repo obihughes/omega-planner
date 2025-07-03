@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -233,46 +233,45 @@ export default function WeeklyView({}: WeeklyViewProps) {
                       {/* Task List */}
                       <div className="space-y-2 flex-1 overflow-y-auto">
                         {dayTasks.map((task) => (
-                          <Card 
+                          <div 
                             key={task.id}
-                            className={`transition-all duration-200 hover:shadow-sm border-l-4 group relative ${
-                              task.completed ? 'opacity-60' : ''
-                            }`}
-                            style={{ borderLeftColor: task.color }}
+                            className={`
+                              relative p-3 rounded-md transition-all duration-200 hover:shadow-sm group
+                              ${task.color} border border-border/40 hover:ring-1 hover:ring-border/60
+                              ${task.completed ? 'opacity-60' : ''}
+                            `}
                           >
-                            <CardContent className="p-3">
-                              <div className="space-y-2">
-                                {/* Task Name */}
-                                <div className={`text-sm font-medium leading-tight ${
-                                  task.completed ? 'line-through text-muted-foreground' : 'text-foreground'
-                                }`}>
-                                  {task.name}
-                                </div>
-                                
-                                {/* Task Meta */}
-                                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                  <div className="flex items-center gap-1">
-                                    <Clock className="w-3 h-3" />
-                                    {formatDuration(task.duration)}
-                                  </div>
-                                  {task.startHour && (
-                                    <div className="text-xs font-medium">
-                                      {formatTime(task.startHour)}
-                                    </div>
-                                  )}
-                                </div>
+                            <div className="space-y-2">
+                              {/* Task Name */}
+                              <div className={`text-sm font-bold leading-tight ${
+                                task.completed ? 'line-through text-muted-foreground' : ''
+                              }`}>
+                                {task.name}
                               </div>
-                            </CardContent>
+                              
+                              {/* Task Meta */}
+                              <div className="flex items-center justify-between text-xs opacity-90">
+                                <div className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  {formatDuration(task.duration)}
+                                </div>
+                                {task.startHour && (
+                                  <div className="text-xs font-medium">
+                                    {formatTime(task.startHour)}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                             
                             {/* Edit button for task cards */}
                             <button
                               onClick={() => openEditModal(task)}
-                              className="absolute top-2 right-2 w-6 h-6 bg-muted hover:bg-muted/80 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="absolute top-2 right-2 w-6 h-6 bg-black/10 hover:bg-black/20 dark:bg-white/10 dark:hover:bg-white/20 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
                               title="Edit Task"
                             >
                               <MoreVertical className="w-3 h-3" />
                             </button>
-                          </Card>
+                          </div>
                         ))}
                       </div>
                     </div>
