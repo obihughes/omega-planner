@@ -25,7 +25,11 @@ interface UnscheduledTasksViewProps {
   addPoolTask: (task: Task) => void;
   removePoolTask: (taskId: string) => void;
   removePoolTaskForDate: (dateKey: string, taskId: string) => void;
-  openEditModal: (task: Task, options?: any) => void;
+  
+  // New context-aware modal functions
+  createPoolTask: (date?: Date) => void;
+  createPoolTaskForDate: (date: Date) => void;
+  editTask: (task: Task) => void;
 }
 
 export default function UnscheduledTasksView({
@@ -36,7 +40,9 @@ export default function UnscheduledTasksView({
   addPoolTask,
   removePoolTask,
   removePoolTaskForDate,
-  openEditModal
+  createPoolTask,
+  createPoolTaskForDate,
+  editTask
 }: UnscheduledTasksViewProps) {
   // Local state
   const [searchTerm, setSearchTerm] = useState('');
@@ -73,27 +79,22 @@ export default function UnscheduledTasksView({
     return tasks;
   }, [activeTab, poolTasks, pinnedTasks, todayTasks, getCombinedPoolTasks, searchTerm]);
 
-  // Create new task - open edit modal first, then add to pool after saving
+  // Create new task - use appropriate context-aware function based on tab
   const handleCreateTask = () => {
-    const newTask: Task = {
-      id: `task-${Date.now()}`,
-      name: 'New Task',
-      startHour: 0,
-      duration: 1,
-      baseDate: new Date().toISOString().split('T')[0],
-      color: '',
-      notes: '',
-      completed: false
-    };
-
-    if (activeTab === 'today') {
-      // Mark as pool task for today
-      const todayDate = new Date().toISOString().split('T')[0];
-      newTask.poolDate = todayDate;
+    switch (activeTab) {
+      case 'all':
+        createPoolTask(); // General pool task
+        break;
+      case 'today':
+        createPoolTaskForDate(new Date()); // Today's date-specific pool task
+        break;
+      case 'pinned':
+        // For pinned tab, create a general pool task (pinning happens after creation)
+        createPoolTask();
+        break;
+      default:
+        createPoolTask();
     }
-
-    // Open edit modal first - task will be added to pool when saved
-    openEditModal(newTask, { isNew: true, isFromPool: true });
   };
 
   // Delete task
@@ -149,15 +150,15 @@ export default function UnscheduledTasksView({
 
         <div className="flex-1 overflow-hidden">
           <TabsContent value="all" className="h-full m-0">
-            <TaskList tasks={displayTasks} onEdit={openEditModal} onDelete={handleDeleteTask} />
+            <TaskList tasks={displayTasks} onEdit={editTask} onDelete={handleDeleteTask} />
           </TabsContent>
           
           <TabsContent value="pinned" className="h-full m-0">
-            <TaskList tasks={displayTasks} onEdit={openEditModal} onDelete={handleDeleteTask} />
+            <TaskList tasks={displayTasks} onEdit={editTask} onDelete={handleDeleteTask} />
           </TabsContent>
           
           <TabsContent value="today" className="h-full m-0">
-            <TaskList tasks={displayTasks} onEdit={openEditModal} onDelete={handleDeleteTask} />
+            <TaskList tasks={displayTasks} onEdit={editTask} onDelete={handleDeleteTask} />
           </TabsContent>
         </div>
       </Tabs>
@@ -168,7 +169,7 @@ export default function UnscheduledTasksView({
 // Task List Component
 interface TaskListProps {
   tasks: Task[];
-  onEdit: (task: Task, options?: any) => void;
+  onEdit: (task: Task) => void;
   onDelete: (task: Task) => void;
 }
 

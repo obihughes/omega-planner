@@ -11,30 +11,27 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { cn } from "../../lib/utils";
 import { getDateWithoutTime, dateFromDateKey, getDateKey } from '@/utils/dateUtils';
+import { EnhancedActiveModalTask } from '@/hooks/useModalManager';
 
 /**
  * Props for the EditTaskModal component.
  */
 interface EditTaskModalProps {
-  /** The task object to be edited or the template for a new task. 
-   *  `isNew` indicates if the task is being created.
-   *  `isFromPool` indicates if the task originated from the task pool.
-   *  `isPinned` indicates if the task is currently pinned (though this prop seems unused directly for pin status display).
-  */
-  taskToEdit: Task & { isNew?: boolean, isFromPool?: boolean, isPinned?: boolean };
+  /** The enhanced task object with creation context for better UI adaptation */
+  taskToEdit: EnhancedActiveModalTask;
   /** Callback function to save the task. */
   onSave: (task: Task, options?: { isNew?: boolean, isFromPool?: boolean }) => void;
   /** Callback function to close the modal. */
   onClose: () => void;
-  /** Optional callback for when the task color is changed (currently not directly used by a color picker in this modal but could be for future use or direct prop passing). */
+  /** Optional callback for when the task color is changed */
   onColorChange?: (taskId: string, color: string) => void;
   /** Optional callback to delete the task. If provided, a delete button is shown for existing tasks. */
   onDelete?: (taskId: string, isFromPool?: boolean) => void;
   /** Optional callback to pin the task. If provided, a pin button is shown. */
   onPinTask?: (task: Task) => void;
-  /** Optional callback to move the task to the task pool. If provided, a "To Pool" button is shown for existing, non-pool tasks. */
+  /** Optional callback to move the task to the task pool */
   onMoveToPool?: (taskId: string) => void;
-  /** Optional array of currently pinned tasks, used to determine if the task being edited is already pinned. Defaults to an empty array. */
+  /** Optional array of currently pinned tasks */
   pinnedTasks?: Task[];
   /** Optional callback to copy the current task's data, close the modal, and enter paste mode. */
   onCopyAndEnterPasteMode?: (taskData: Omit<Task, 'id'>) => void; 
@@ -66,12 +63,25 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
     taskToEdit.baseDate ? dateFromDateKey(taskToEdit.baseDate) : new Date()
   );
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  const [isDurationDropdownOpen, setIsDurationDropdownOpen] = useState(false); // Added this state
+  const [isDurationDropdownOpen, setIsDurationDropdownOpen] = useState(false);
 
   const modalRef = useRef<HTMLDivElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
-  const durationControlRef = useRef<HTMLDivElement>(null); // Added this ref
-  const durationDropdownRef = useRef<HTMLDivElement>(null); // Added this ref
+  const durationControlRef = useRef<HTMLDivElement>(null);
+  const durationDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Context-aware UI configuration
+  const creationContext = taskToEdit.creationContext;
+  const isQuickMode = creationContext?.mode === 'quick-add';
+  const isTimelineMode = creationContext?.mode === 'timeline';
+  const isPoolMode = creationContext?.mode === 'pool-general' || creationContext?.mode === 'pool-date';
+  
+  // Determine which UI elements to show
+  const showTimePicker = isTimelineMode; // Only show time picker for timeline tasks
+  const showDatePicker = !isQuickMode; // Hide date picker in quick mode (date is pre-selected)
+  const showAdvancedOptions = !isQuickMode; // Hide advanced options in quick mode
+  const showNotesField = !isQuickMode; // Hide notes in quick mode for simplicity
+  const showMonthlyToggle = !isQuickMode && !isTimelineMode; // Only for pool tasks, not quick mode
 
   useEffect(() => {
     setName(taskToEdit.name);
@@ -185,7 +195,13 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
         </button>
         
         <h2 className="text-xl font-semibold text-foreground pr-8">
-          {taskToEdit.isNew ? 'Create New Task' : 'Edit Task'}
+          {taskToEdit.isNew ? (
+            creationContext?.mode === 'quick-add' ? 'Quick Add Task' :
+            creationContext?.mode === 'timeline' ? 'Add Timeline Task' :
+            creationContext?.mode === 'pool-general' ? 'Add Task to Pool' :
+            creationContext?.mode === 'pool-date' ? 'Add Task for Date' :
+            'Create New Task'
+          ) : 'Edit Task'}
         </h2>
 
         <form onSubmit={handleSave} className="space-y-4">
@@ -204,44 +220,48 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
 
           {/* Date, Time, Duration, Color Section */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-4">
-            <div>
-              <label htmlFor="taskDate" className="block text-xs font-medium text-muted-foreground mb-1">Date</label>
-              <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal p-2.5 h-auto",
-                      !selectedDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4 opacity-80" />
-                    {selectedDate ? selectedDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={(date) => {
-                      if (date) {
-                        setSelectedDate(date);
-                        setIsDatePickerOpen(false);
-                      }
-                    }}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
+            {showDatePicker && (
+              <div>
+                <label htmlFor="taskDate" className="block text-xs font-medium text-muted-foreground mb-1">Date</label>
+                <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full justify-start text-left font-normal p-2.5 h-auto",
+                        !selectedDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4 opacity-80" />
+                      {selectedDate ? selectedDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={(date) => {
+                        if (date) {
+                          setSelectedDate(date);
+                          setIsDatePickerOpen(false);
+                        }
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
             
-            <div>
-              <label htmlFor="taskStartTime" className="block text-xs font-medium text-muted-foreground mb-1">Start Time</label>
-              <CustomTimePicker
-                value={startHour}
-                onChange={setStartHour}
-              />
-            </div>
+            {showTimePicker && (
+              <div>
+                <label htmlFor="taskStartTime" className="block text-xs font-medium text-muted-foreground mb-1">Start Time</label>
+                <CustomTimePicker
+                  value={startHour}
+                  onChange={setStartHour}
+                />
+              </div>
+            )}
 
             <div>
                 <label htmlFor="taskDuration" className="block text-xs font-medium text-muted-foreground mb-1">Duration</label>
@@ -290,22 +310,26 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
             </div>
           </div>
           
-          <div className="flex items-center space-x-2">
-            <Switch id="monthly-pin" checked={isMonthlyPinned} onCheckedChange={setIsMonthlyPinned} />
-            <Label htmlFor="monthly-pin">Show on Monthly Calendar</Label>
-          </div>
+          {showMonthlyToggle && (
+            <div className="flex items-center space-x-2">
+              <Switch id="monthly-pin" checked={isMonthlyPinned} onCheckedChange={setIsMonthlyPinned} />
+              <Label htmlFor="monthly-pin">Show on Monthly Calendar</Label>
+            </div>
+          )}
 
-          <div>
-            {/* <label htmlFor="taskNotes" className="block text-sm font-medium text-neutral-300 mb-1">Notes</label> */}
-            <textarea
-              id="taskNotes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-              className="w-full p-2.5 bg-input border border-border rounded-md focus:ring-1 focus:ring-ring focus:border-ring outline-none text-foreground placeholder-muted-foreground text-sm styled-scrollbar"
-              placeholder="Add notes..."
-            />
-          </div>
+          {showNotesField && (
+            <div>
+              {/* <label htmlFor="taskNotes" className="block text-sm font-medium text-neutral-300 mb-1">Notes</label> */}
+              <textarea
+                id="taskNotes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+                className="w-full p-2.5 bg-input border border-border rounded-md focus:ring-1 focus:ring-ring focus:border-ring outline-none text-foreground placeholder-muted-foreground text-sm styled-scrollbar"
+                placeholder="Add notes..."
+              />
+            </div>
+          )}
 
           {/* Modal Footer with Action Buttons - Revised Layout */}
           <div className="flex flex-col gap-3 pt-4 border-t border-border mt-4">

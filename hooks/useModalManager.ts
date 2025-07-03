@@ -13,6 +13,24 @@ export interface ActiveModalTask extends Task {
 }
 
 /**
+ * Context for task creation to determine modal behavior
+ */
+interface TaskCreationContext {
+  mode: 'timeline' | 'pool-general' | 'pool-date' | 'quick-add';
+  targetDate?: Date;
+  startHour?: number;
+  sourceView: 'daily' | 'weekly' | 'monthly' | 'unscheduled';
+  showSimplified?: boolean; // For quick-add mode
+}
+
+/**
+ * Enhanced ActiveModalTask with creation context
+ */
+export interface EnhancedActiveModalTask extends ActiveModalTask {
+  creationContext?: TaskCreationContext;
+}
+
+/**
  * Interface for clone confirmation modal data
  * Contains information about which day and period is being cloned
  */
@@ -68,7 +86,7 @@ export interface ModalManagerState {
   colorPickerState: { taskId: string; x: number; y: number } | null;
 
   /** Data for the active task edit/create modal, or null if not visible */
-  activeEditModalTask: ActiveModalTask | null;
+  activeEditModalTask: EnhancedActiveModalTask | null;
   initialDayOffsetForModal?: number;
   initialStartHourForModal?: number;
   
@@ -104,42 +122,41 @@ export interface ModalManagerState {
   /** Cancels cloning a day */
   cancelCloneDay: () => void;
   
-  // Task Edit Modal Functions
+  // Legacy Task Edit Modal Functions (for backward compatibility)
   /** Opens the task edit/create modal.
-   * If `task` is provided, it populates the modal for editing that task.
-   * If `task` is not provided or options.isNew is true, it prepares the modal for creating a new task,
-   * potentially using `options.initialDayOffset` and `options.initialStartHour` as defaults.
-   * The new task's `baseDate` is provisionally set based on `initialDayOffset` from today, 
-   * and `dayOffset` to 0. This may be refined by TaskFormModal if a more specific target is known.
-   * @param {Task} [task] - The task to edit. If undefined, prepares for new task creation.
-   * @param {object} [options] - Options for opening the modal.
-   * @param {boolean} [options.isFromPool] - Indicates if the task is from/for the task pool.
-   * @param {number} [options.initialDayOffset] - Suggested day offset for a new task (e.g., from view).
-   * @param {number} [options.initialStartHour] - Suggested start hour for a new task.
-   * @param {boolean} [options.isNew] - Explicitly states if this is for a new task.
+   * @deprecated Use specific creation functions instead: createTimelineTask, createPoolTask, createQuickTask, editTask
    */
   openEditModal: (task?: Task, options?: { isFromPool?: boolean; initialDayOffset?: number; initialStartHour?: number; isNew?: boolean }) => void;
+  
   /** Closes the task edit/create modal */
   closeEditModal: () => void;
-  /** Saves task data from the edit/create modal.
-   * If `activeEditModalTask.isNew` is true, it calls `onAddTask` with the task details.
-   * The `taskDataFromForm` for a new task must include `baseDate` (as specific target date) and `name`.
-   * `dayOffset` for `onAddTask` will be 0 as `baseDate` is specific.
-   * If `activeEditModalTask.isNew` is false, it calls `onUpdateTask` or `onUpdatePoolTask` based on `activeEditModalTask` context.
-   * @param {Task} taskDataFromForm - The complete task data from the form.
-   * @param {object} [options] - Options indicating if the task is new or from the pool.
-   * @param {boolean} [options.isNew] - Indicates if the task is new.
-   * @param {boolean} [options.isFromPool] - Indicates if the task is from the pool.
-   */
-  saveTaskFromModal: (taskDataFromForm: Task, options?: { isNew?: boolean; isFromPool?: boolean; }) => void;
   
+  /** Saves a task from the modal */
+  saveTaskFromModal: (taskData: Task, options?: { isNew?: boolean; isFromPool?: boolean }) => void;
+
+  // New Context-Aware Task Creation Functions
+  /** Creates a new task directly on the timeline (Daily view) */
+  createTimelineTask: (date: Date, startHour?: number) => void;
+  
+  /** Creates a new task in the general pool (Unscheduled view - All tab) */
+  createPoolTask: (date?: Date) => void;
+  
+  /** Creates a new task for a specific date's pool (Weekly view, Unscheduled - Today tab) */
+  createPoolTaskForDate: (date: Date) => void;
+  
+  /** Creates a new task with simplified UI (Monthly view) */
+  createQuickTask: (date: Date) => void;
+  
+  /** Opens modal to edit an existing task */
+  editTask: (task: Task) => void;
+
   // State Setters (if direct access is needed)
-  setShowClearPoolConfirmation: React.Dispatch<React.SetStateAction<boolean>>;
-  setShowCloneConfirmation: React.Dispatch<React.SetStateAction<CloneConfirmationData | null>>;
-  setColorPickerState: React.Dispatch<React.SetStateAction<{ taskId: string; x: number; y: number } | null>>;
-  setActiveEditModalTask: React.Dispatch<React.SetStateAction<ActiveModalTask | null>>;
-  setInitialDayOffsetForModal: React.Dispatch<React.SetStateAction<number | undefined>>;
-  setInitialStartHourForModal: React.Dispatch<React.SetStateAction<number | undefined>>;
+  setShowClearPoolConfirmation: (value: boolean) => void;
+  setShowCloneConfirmation: (value: CloneConfirmationData | null) => void;
+  setColorPickerState: (value: { taskId: string; x: number; y: number } | null) => void;
+  setActiveEditModalTask: (value: EnhancedActiveModalTask | null) => void;
+  setInitialDayOffsetForModal: (value: number | undefined) => void;
+  setInitialStartHourForModal: (value: number | undefined) => void;
 }
 
 /**
@@ -163,7 +180,7 @@ export function useModalManager({
   const [showClearPoolConfirmation, setShowClearPoolConfirmation] = useState<boolean>(false);
   const [showCloneConfirmation, setShowCloneConfirmation] = useState<CloneConfirmationData | null>(null);
   const [colorPickerState, setColorPickerState] = useState<{ taskId: string; x: number; y: number } | null>(null);
-  const [activeEditModalTask, setActiveEditModalTask] = useState<ActiveModalTask | null>(null);
+  const [activeEditModalTask, setActiveEditModalTask] = useState<EnhancedActiveModalTask | null>(null);
   const [initialDayOffsetForModal, setInitialDayOffsetForModal] = useState<number | undefined>(undefined);
   const [initialStartHourForModal, setInitialStartHourForModal] = useState<number | undefined>(undefined);
 
@@ -326,52 +343,127 @@ export function useModalManager({
    * @param {boolean} [options.isFromPool] - Indicates if the task is from the pool.
    */
   const saveTaskFromModal = useCallback((taskDataFromForm: Task, options?: { isNew?: boolean; isFromPool?: boolean; }) => {
-    const isNew = options?.isNew ?? activeEditModalTask?.isNew ?? false;
-    const isFromPool = options?.isFromPool ?? activeEditModalTask?.isFromPool ?? false;
+    if (!activeEditModalTask) {
+      console.error("[useModalManager] No active modal task found.");
+      return;
+    }
 
-
-
-    if (isNew) {
-      if (!taskDataFromForm.name || !taskDataFromForm.baseDate) {
-        console.error("[useModalManager] New task is missing name or baseDate:", taskDataFromForm);
-        // Optionally, show an error to the user
-        alert("New task must have a name and a date.");
-        return;
-      }
-
+    // Helper function for legacy creation logic
+    const handleLegacyCreation = (taskData: Task, isFromPool: boolean) => {
       if (isFromPool) {
         // Handle pool task creation
-        if (taskDataFromForm.poolDate) {
+        if (taskData.poolDate) {
           // Add to pool for specific date
-          onAddPoolTaskForDate(taskDataFromForm.poolDate, {
-            ...taskDataFromForm,
-            color: taskDataFromForm.color || TASK_COLORS[0]
+          onAddPoolTaskForDate(taskData.poolDate, {
+            ...taskData,
+            color: taskData.color || TASK_COLORS[0]
           });
         } else {
           // Add to general pool (unscheduled)
           onAddPoolTask({
-            ...taskDataFromForm,
-            color: taskDataFromForm.color || TASK_COLORS[0]
+            ...taskData,
+            color: taskData.color || TASK_COLORS[0]
           });
         }
       } else {
         // Handle timeline task creation
-        // Convert YYYY-MM-DD to Date object properly to avoid timezone issues
-        const targetDate = dateFromDateKey(taskDataFromForm.baseDate);
-        // onAddTask expects dayOffset to be 0 if targetDate is the specific calendar date.
-        // taskDataFromForm should have duration, color, notes, completed already set.
+        if (!taskData.baseDate) {
+          console.error("[useModalManager] Timeline task missing baseDate:", taskData);
+          alert("Timeline task must have a date.");
+          return;
+        }
+        const targetDate = dateFromDateKey(taskData.baseDate);
         onAddTask(
           targetDate,
-          taskDataFromForm.startHour,
+          taskData.startHour,
           {
-            name: taskDataFromForm.name,
-            duration: taskDataFromForm.duration,
-            color: taskDataFromForm.color || TASK_COLORS[0],
-            notes: taskDataFromForm.notes,
-            completed: taskDataFromForm.completed
+            name: taskData.name,
+            duration: taskData.duration,
+            color: taskData.color || TASK_COLORS[0],
+            notes: taskData.notes,
+            completed: taskData.completed
           },
           0 // dayOffset is 0 because targetDate is specific
         );
+      }
+    };
+
+    // Use creation context if available, otherwise fall back to options/flags
+    const creationContext = activeEditModalTask.creationContext;
+    const isNew = options?.isNew ?? activeEditModalTask.isNew ?? false;
+    const isFromPool = options?.isFromPool ?? activeEditModalTask.isFromPool ?? false;
+
+    if (isNew) {
+      if (!taskDataFromForm.name) {
+        console.error("[useModalManager] New task is missing name:", taskDataFromForm);
+        alert("New task must have a name.");
+        return;
+      }
+
+      // Handle creation based on context
+      if (creationContext) {
+        switch (creationContext.mode) {
+          case 'timeline':
+            // Timeline task creation
+            if (!taskDataFromForm.baseDate) {
+              console.error("[useModalManager] Timeline task missing baseDate:", taskDataFromForm);
+              alert("Timeline task must have a date.");
+              return;
+            }
+            const targetDate = dateFromDateKey(taskDataFromForm.baseDate);
+            onAddTask(
+              targetDate,
+              taskDataFromForm.startHour,
+              {
+                name: taskDataFromForm.name,
+                duration: taskDataFromForm.duration,
+                color: taskDataFromForm.color || TASK_COLORS[0],
+                notes: taskDataFromForm.notes,
+                completed: taskDataFromForm.completed
+              },
+              0 // dayOffset is 0 because targetDate is specific
+            );
+            break;
+
+          case 'pool-general':
+            // General pool task creation
+            onAddPoolTask({
+              ...taskDataFromForm,
+              baseDate: '', // Clear baseDate for general pool
+              color: taskDataFromForm.color || TASK_COLORS[0]
+            });
+            break;
+
+          case 'pool-date':
+          case 'quick-add':
+            // Date-specific pool task creation
+            if (taskDataFromForm.poolDate) {
+              onAddPoolTaskForDate(taskDataFromForm.poolDate, {
+                ...taskDataFromForm,
+                color: taskDataFromForm.color || TASK_COLORS[0]
+              });
+            } else if (taskDataFromForm.baseDate) {
+              // Fallback: use baseDate as poolDate
+              onAddPoolTaskForDate(taskDataFromForm.baseDate, {
+                ...taskDataFromForm,
+                poolDate: taskDataFromForm.baseDate,
+                color: taskDataFromForm.color || TASK_COLORS[0]
+              });
+            } else {
+              console.error("[useModalManager] Pool task missing date:", taskDataFromForm);
+              alert("Pool task must have a date.");
+              return;
+            }
+            break;
+
+          default:
+            console.warn("[useModalManager] Unknown creation context mode:", creationContext.mode);
+            // Fall back to legacy logic
+            handleLegacyCreation(taskDataFromForm, isFromPool);
+        }
+      } else {
+        // Legacy creation logic (for backward compatibility)
+        handleLegacyCreation(taskDataFromForm, isFromPool);
       }
     } else {
       // Existing task: needs id and partial fields to update.
@@ -382,15 +474,126 @@ export function useModalManager({
       }
       const { id, ...updatedFields } = taskDataFromForm;
       if (isFromPool) {
-
         onUpdatePoolTask(id, updatedFields);
       } else {
-        
         onUpdateTask(id, updatedFields);
       }
     }
     closeEditModal();
-  }, [activeEditModalTask, onAddTask, onUpdateTask, onUpdatePoolTask, closeEditModal]);
+  }, [activeEditModalTask, onAddTask, onUpdateTask, onUpdatePoolTask, onAddPoolTask, onAddPoolTaskForDate, closeEditModal]);
+
+  // New Context-Aware Task Creation Functions
+  /** Creates a new task directly on the timeline (Daily view) */
+  const createTimelineTask = useCallback((date: Date, startHour?: number) => {
+    const tempId = `temp-timeline-${Date.now()}`;
+    const targetDateKey = getDateKey(date);
+    const effectiveStartHour = startHour ?? 9; // Default to 9 if not provided
+    
+    setActiveEditModalTask({
+      id: tempId,
+      name: "New Task",
+      startHour: effectiveStartHour,
+      duration: 1,
+      baseDate: targetDateKey,
+      color: TASK_COLORS[0],
+      notes: "",
+      completed: false,
+      isFromPool: false,
+      isNew: true,
+      creationContext: {
+        mode: 'timeline',
+        targetDate: date,
+        startHour: effectiveStartHour,
+        sourceView: 'daily'
+      }
+    });
+  }, []);
+  
+  /** Creates a new task in the general pool (Unscheduled view - All tab) */
+  const createPoolTask = useCallback((date?: Date) => {
+    const tempId = `temp-pool-${Date.now()}`;
+    const today = new Date();
+    const targetDate = date || today;
+    
+    setActiveEditModalTask({
+      id: tempId,
+      name: "New Task",
+      startHour: 0, // No specific start time for pool tasks
+      duration: 1,
+      baseDate: date ? getDateKey(date) : '', // Empty baseDate for general pool
+      color: TASK_COLORS[0],
+      notes: "",
+      completed: false,
+      isFromPool: true,
+      isNew: true,
+      creationContext: {
+        mode: date ? 'pool-date' : 'pool-general',
+        targetDate: targetDate,
+        sourceView: 'unscheduled'
+      }
+    });
+  }, []);
+  
+  /** Creates a new task for a specific date's pool (Weekly view, Unscheduled - Today tab) */
+  const createPoolTaskForDate = useCallback((date: Date) => {
+    const tempId = `temp-pool-date-${Date.now()}`;
+    const targetDateKey = getDateKey(date);
+    
+    setActiveEditModalTask({
+      id: tempId,
+      name: "New Task",
+      startHour: 0,
+      duration: 1,
+      baseDate: targetDateKey,
+      color: TASK_COLORS[0],
+      notes: "",
+      completed: false,
+      isFromPool: true,
+      isNew: true,
+      poolDate: targetDateKey, // Specifically for this date's pool
+      creationContext: {
+        mode: 'pool-date',
+        targetDate: date,
+        sourceView: 'weekly'
+      }
+    });
+  }, []);
+  
+  /** Creates a new task with simplified UI (Monthly view) */
+  const createQuickTask = useCallback((date: Date) => {
+    const tempId = `temp-quick-${Date.now()}`;
+    const targetDateKey = getDateKey(date);
+    
+    setActiveEditModalTask({
+      id: tempId,
+      name: "New Task",
+      startHour: 0,
+      duration: 1,
+      baseDate: targetDateKey,
+      color: TASK_COLORS[0],
+      notes: "",
+      completed: false,
+      isFromPool: true,
+      isNew: true,
+      poolDate: targetDateKey,
+      creationContext: {
+        mode: 'quick-add',
+        targetDate: date,
+        sourceView: 'monthly',
+        showSimplified: true
+      }
+    });
+  }, []);
+  
+  /** Opens modal to edit an existing task */
+  const editTask = useCallback((task: Task) => {
+    setActiveEditModalTask({
+      ...task,
+      isFromPool: !!task.poolDate, // Determine if it's from pool based on poolDate
+      isNew: false,
+      creationContext: undefined // No creation context for existing tasks
+    });
+  }, []);
 
   return {
     // States
@@ -419,6 +622,13 @@ export function useModalManager({
     openEditModal,
     closeEditModal,
     saveTaskFromModal,
+
+    // New Context-Aware Task Creation Functions
+    createTimelineTask,
+    createPoolTask,
+    createPoolTaskForDate,
+    createQuickTask,
+    editTask,
 
     // State Setters (if direct access is needed)
     setShowClearPoolConfirmation,

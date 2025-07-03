@@ -32,6 +32,7 @@ import { getCalendarDateForColumn, getDateKeyFromOffset, dateFromDateKey } from 
 import { resolveCollisionsForResize, resolveCollisionsForDrag } from '../../utils/taskUtils';
 import UnscheduledTasksView from './UnscheduledTasksView';
 import WeeklyView from './WeeklyView';
+import { useModalManager } from '../../hooks/useModalManager';
 
 type TimelinePeriod = 'night' | 'morning' | 'afternoon' | 'evening';
 
@@ -54,11 +55,8 @@ export default function DailyPlanner() {
     resizingTask,
     setResizingTask,
     copyingTaskData,
-    activeEditModalTask,
     handleDeleteTask,
     openEditModal,
-    closeEditModal,
-    saveTaskFromModal,
     handleActualAddPoolTask,
     handleDeletePoolTask,
     clearPool,
@@ -89,12 +87,37 @@ export default function DailyPlanner() {
     removePoolTaskForDate,
     getCombinedPoolTasks,
     addPoolTask,
-    removePoolTask
+    removePoolTask,
+    handleAddTask,
+    handleUpdateTask
   } = useDailyPlanner();
 
   const [currentTimeForMarker, setCurrentTimeForMarker] = useState(new Date());
   const [targetCopyDayOffset, setTargetCopyDayOffset] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<'daily' | 'unscheduled' | 'weekly' | 'monthly'>('daily');
+
+  const modalManager = useModalManager({
+    onAddTask: handleAddTask,
+    onUpdateTask: handleUpdateTask,
+    onUpdatePoolTask: handleUpdateTask,
+    onAddPoolTask: addPoolTask,
+    onAddPoolTaskForDate: addPoolTaskForDate,
+    onClearPool: clearPool,
+    onCloneTasks: (sourceDate: Date, destinationDate: Date) => {
+      console.log(`Cloning tasks from ${sourceDate} to ${destinationDate}`);
+    },
+    topDayOffset: 0
+  });
+
+  const {
+    activeEditModalTask,
+    createTimelineTask,
+    createPoolTask,
+    createPoolTaskForDate,
+    editTask,
+    closeEditModal,
+    saveTaskFromModal
+  } = modalManager;
 
   useEffect(() => {
       const timerId = setInterval(() => setCurrentTimeForMarker(new Date()), 60000);
@@ -687,7 +710,7 @@ export default function DailyPlanner() {
                     </span>
                   )}
                 </div>
-                <Button onClick={() => openEditModal({ id: `temp-new-task-${Date.now()}`, name: "New Task", startHour: 9, duration: 1, baseDate: getCalendarDateForColumn(topDayOffset), color: TASK_COLORS[DEFAULT_TASK_COLOR_INDEX], notes: "", completed: false }, { isNew: true })}>
+                <Button onClick={() => createTimelineTask(dateFromDateKey(getCalendarDateForColumn(topDayOffset)), 9)}>
                     Add Task
                 </Button>
               </div>
@@ -745,7 +768,9 @@ export default function DailyPlanner() {
               addPoolTask={addPoolTask}
               removePoolTask={removePoolTask}
               removePoolTaskForDate={removePoolTaskForDate}
-              openEditModal={openEditModal}
+              createPoolTask={createPoolTask}
+              createPoolTaskForDate={createPoolTaskForDate}
+              editTask={editTask}
             />
           </div>
         )}
