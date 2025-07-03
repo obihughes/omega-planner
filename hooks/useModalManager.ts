@@ -511,6 +511,7 @@ export function useModalManager({
   
   /** Creates a new task in the general pool (Unscheduled view - All tab) */
   const createPoolTask = useCallback((date?: Date) => {
+    console.log('🐛 [useModalManager] createPoolTask called with date:', date);
     const tempId = `temp-pool-${Date.now()}`;
     const today = new Date();
     const targetDate = date || today;
@@ -561,16 +562,18 @@ export function useModalManager({
   
   /** Creates a new task with simplified UI (Monthly view) */
   const createQuickTask = useCallback((date: Date) => {
+    console.log('🐛 [useModalManager] createQuickTask called with date:', date);
     const tempId = `temp-quick-${Date.now()}`;
     const targetDateKey = getDateKey(date);
     
+    console.log('🐛 [useModalManager] Setting activeEditModalTask with tempId:', tempId, 'targetDateKey:', targetDateKey);
     setActiveEditModalTask({
       id: tempId,
       name: "New Task",
       startHour: 0,
       duration: 1,
       baseDate: targetDateKey,
-      color: TASK_COLORS[0],
+      color: TASK_COLORS[17], // Default grey color
       notes: "",
       completed: false,
       isFromPool: true,
@@ -583,17 +586,19 @@ export function useModalManager({
         showSimplified: true
       }
     });
-  }, []);
+  }, [setActiveEditModalTask]);
   
   /** Opens modal to edit an existing task */
   const editTask = useCallback((task: Task) => {
+    console.log('🐛 [useModalManager] editTask called with task:', task);
+    console.log('🐛 [useModalManager] Setting activeEditModalTask');
     setActiveEditModalTask({
       ...task,
       isFromPool: !!task.poolDate, // Determine if it's from pool based on poolDate
       isNew: false,
       creationContext: undefined // No creation context for existing tasks
     });
-  }, []);
+  }, [setActiveEditModalTask]);
 
   return {
     // States

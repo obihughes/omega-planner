@@ -102,7 +102,17 @@ export default function UnscheduledTasksView({
             </div>
             
             {/* Add Task Button */}
-            <Button onClick={() => createPoolTask()} className="flex items-center gap-2">
+            <Button onClick={() => {
+              console.log('🐛 [UnscheduledTasksView] Add Task button clicked');
+              console.log('🐛 [UnscheduledTasksView] createPoolTask function:', createPoolTask);
+              console.log('🐛 [UnscheduledTasksView] typeof createPoolTask:', typeof createPoolTask);
+              try {
+                createPoolTask();
+                console.log('🐛 [UnscheduledTasksView] createPoolTask() called successfully');
+              } catch (error) {
+                console.error('🐛 [UnscheduledTasksView] Error calling createPoolTask:', error);
+              }
+            }} className="flex items-center gap-2">
               <Plus className="w-4 h-4" />
               Add Task
             </Button>

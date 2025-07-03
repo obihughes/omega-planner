@@ -8,7 +8,6 @@ import { cn } from '@/lib/utils';
 import { formatDuration } from '@/utils/formatters';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { useModalManager } from '@/hooks/useModalManager';
 
 interface TaskAssignmentCalendarProps {
   poolTasks: Task[];
@@ -23,6 +22,8 @@ interface TaskAssignmentCalendarProps {
   onAddPoolTaskForDate: (dateKey: string, task: Partial<Task>) => void;
   onClearPool: () => void;
   getPoolTasksForDate: (dateKey: string) => Task[];
+  createQuickTask: (date: Date) => void;
+  editTask: (task: Task) => void;
 }
 
 export function TaskAssignmentCalendar({
@@ -37,34 +38,14 @@ export function TaskAssignmentCalendar({
   onUpdateTask,
   onAddPoolTaskForDate,
   onClearPool,
-  getPoolTasksForDate
+  getPoolTasksForDate,
+  createQuickTask,
+  editTask
 }: TaskAssignmentCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [assigningTask, setAssigningTask] = useState<Task | null>(null);
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [showPastEvents, setShowPastEvents] = useState(false);
-
-  // Set up the unified modal manager
-  const modalManager = useModalManager({
-    onAddTask: onAddTask,
-    onUpdateTask: onUpdateTask,
-    onUpdatePoolTask: onUpdateTask,
-    onAddPoolTask: (task: Task) => {
-      // For monthly view, we need to create pool tasks with proper date handling
-      const dateKey = task.poolDate || task.baseDate;
-      if (dateKey) {
-        onCreatePoolTask(dateKey, task);
-      }
-    },
-    onAddPoolTaskForDate: (dateKey: string, task: Partial<Task>) => {
-      onCreatePoolTask(dateKey, task);
-    },
-    onClearPool: onClearPool,
-    onCloneTasks: () => {},
-    topDayOffset: 0
-  });
-
-  const { createQuickTask, editTask, activeEditModalTask, closeEditModal, saveTaskFromModal } = modalManager;
 
   // Get the first day of the current month and calculate calendar grid
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -136,28 +117,23 @@ export function TaskAssignmentCalendar({
   };
 
   const handleDateDoubleClick = (date: Date) => {
-    if (assigningTask) return; // Don't create tasks during assignment mode
+    console.log('🐛 [TaskAssignmentCalendar] Double-click detected on date:', date);
+    console.log('🐛 [TaskAssignmentCalendar] assigningTask:', assigningTask);
+    console.log('🐛 [TaskAssignmentCalendar] createQuickTask function:', createQuickTask);
+    console.log('🐛 [TaskAssignmentCalendar] typeof createQuickTask:', typeof createQuickTask);
     
-    // Create unscheduled task for this date using the unified modal
-    const tempId = `temp-pool-${Date.now()}`;
-    const dateKey = date.toISOString().split('T')[0];
+    if (assigningTask) {
+      console.log('🐛 [TaskAssignmentCalendar] Skipping task creation - assignment mode active');
+      return; // Don't create tasks during assignment mode
+    }
     
-    const newTask = {
-      id: tempId,
-      name: "New Task",
-      startHour: 0,
-      duration: 1,
-      baseDate: dateKey,
-      color: '', // Will default to grey in the modal system
-      notes: "",
-      completed: false,
-      isFromPool: true,
-      isNew: true,
-      poolDate: dateKey
-    };
-    
-    // Open the unified modal for editing
-    editTask(newTask);
+    try {
+      // Use the createQuickTask function designed for monthly view
+      createQuickTask(date);
+      console.log('🐛 [TaskAssignmentCalendar] createQuickTask() called successfully');
+    } catch (error) {
+      console.error('🐛 [TaskAssignmentCalendar] Error calling createQuickTask:', error);
+    }
   };
 
   const handleTaskAssignClick = (task: Task) => {

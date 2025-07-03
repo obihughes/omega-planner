@@ -26,15 +26,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
   const {
     tasksByDate,
     getPoolTasksForDate,
-    addPoolTaskForDate,
     openEditModal,
-    handleAssignTask,
-    handleUnassignTask,
-    handleRescheduleTask,
-    handleAddTask,
-    handleUpdateTask,
-    addPoolTask,
-    clearPool
   } = useDailyPlanner();
 
   // State for week navigation
@@ -222,7 +214,10 @@ export default function WeeklyView({}: WeeklyViewProps) {
             const isPastDay = isPast(date);
 
             return (
-              <div key={dateKey} className="flex flex-col h-full relative group">
+              <div 
+                key={dateKey} 
+                className="flex flex-col h-full relative group"
+              >
                 {/* Day Header */}
                 <div className={`p-4 rounded-lg border mb-4 text-center ${
                   isCurrentDay 

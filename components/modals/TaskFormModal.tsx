@@ -45,6 +45,13 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
   initialDayOffset = 0,
   initialStartHour = 9,
 }) => {
+  console.log('🐛 [TaskFormModal] Rendered with:', {
+    isOpen,
+    taskToEdit,
+    initialDayOffset,
+    initialStartHour
+  });
+
   const isNewTask = !taskToEdit;
   const [taskName, setTaskName] = useState("");
   const [startHour, setStartHour] = useState(initialStartHour);

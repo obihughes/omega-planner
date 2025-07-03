@@ -105,8 +105,22 @@ export default function DailyPlanner() {
     moveTaskFromPool,
     poolTasksByDate,
     closeEditModal,
-    saveTaskFromModal
+    saveTaskFromModal,
+    createPoolTask,
+    createPoolTaskForDate,
+    editTask,
+    createQuickTask,
   } = useDailyPlanner();
+
+  // Debug logging for modal functions
+  console.log('🐛 [DailyPlanner] Modal functions from useDailyPlanner:');
+  console.log('🐛 [DailyPlanner] createPoolTask:', createPoolTask, 'type:', typeof createPoolTask);
+  console.log('🐛 [DailyPlanner] createPoolTaskForDate:', createPoolTaskForDate, 'type:', typeof createPoolTaskForDate);
+  console.log('🐛 [DailyPlanner] editTask:', editTask, 'type:', typeof editTask);
+
+  // Debug logging for modal state
+  console.log('🐛 [DailyPlanner] activeEditModalTask:', activeEditModalTask);
+  console.log('🐛 [DailyPlanner] Modal should be open:', !!activeEditModalTask);
 
   const [currentTimeForMarker, setCurrentTimeForMarker] = useState(new Date());
   const [viewMode, setViewMode] = useState<'daily' | 'unscheduled' | 'weekly' | 'monthly'>('daily');
@@ -758,7 +772,9 @@ export default function DailyPlanner() {
               addPoolTask={addPoolTask}
               removePoolTask={removePoolTask}
               removePoolTaskForDate={removePoolTaskForDate}
-              openEditModal={openEditModal}
+              createPoolTask={createPoolTask}
+              createPoolTaskForDate={createPoolTaskForDate}
+              editTask={editTask}
             />
           </div>
         )}
@@ -786,6 +802,8 @@ export default function DailyPlanner() {
               onAddPoolTaskForDate={addPoolTaskForDate}
               onClearPool={clearPool}
               getPoolTasksForDate={getPoolTasksForDate}
+              createQuickTask={createQuickTask}
+              editTask={editTask}
             />
           </div>
         )}

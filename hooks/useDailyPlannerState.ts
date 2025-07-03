@@ -997,6 +997,13 @@ export function useDailyPlanner() {
     topDayOffset
   });
 
+  // Debug logging for modal manager functions
+  console.log('🐛 [useDailyPlanner] Modal functions check:', {
+    createPoolTask: typeof modalManager.createPoolTask,
+    createQuickTask: typeof modalManager.createQuickTask,
+    editTask: typeof modalManager.editTask
+  });
+
   // Destructure all properties from modalManager as defined in ModalManagerState
   // These will be directly available in the scope below
   const {
@@ -1040,7 +1047,7 @@ export function useDailyPlanner() {
 
   // --- RETURNED STATE AND FUNCTIONS ---
   return {
-    // State
+    // --- STATE ---
     poolTasks: combinedPoolTasks, // For monthly view - contains general + current day's pool tasks
     generalPoolTasks: poolTasks, // For "Add to Pool" functionality - general unscheduled tasks only
     currentDayPoolTasks: useMemo(() => {
@@ -1173,6 +1180,13 @@ export function useDailyPlanner() {
 
     // Specific Modal Related Aliases / Properties (ensure these are distinct and necessary)
     isModalOpen: showClearPoolModal,
-    modalType: 'Edit',
+    modalType: 'Edit' as const,
+
+    // NEW: Expose context-aware modal functions
+    createTimelineTask: modalManager.createTimelineTask,
+    createPoolTask: modalManager.createPoolTask,
+    createPoolTaskForDate: modalManager.createPoolTaskForDate,
+    createQuickTask: modalManager.createQuickTask,
+    editTask: modalManager.editTask
   };
 } 

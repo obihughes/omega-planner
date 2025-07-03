@@ -53,6 +53,13 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   pinnedTasks = [],
   onCopyAndEnterPasteMode,
 }) => {
+  console.log('🐛 [EditTaskModal] Rendered with:', {
+    task: taskToEdit,
+    context: taskToEdit?.creationContext
+  });
+  console.log('🐛 [EditTaskModal] isOpen calculated:', !!taskToEdit);
+  console.log('🐛 [EditTaskModal] Should render modal:', !!taskToEdit);
+
   const [name, setName] = useState(taskToEdit.name);
   const [startHour, setStartHour] = useState(taskToEdit.startHour);
   const [duration, setDuration] = useState(taskToEdit.duration);
