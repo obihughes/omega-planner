@@ -562,7 +562,25 @@ export default function DailyPlanner() {
                 className="flex items-center gap-2"
               >
                 <Calendar className="w-4 h-4" />
-                Daily View
+                Daily
+              </Button>
+              <Button
+                variant={viewMode === 'weekly' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('weekly')}
+                className="flex items-center gap-2"
+              >
+                <Calendar className="w-4 h-4" />
+                Weekly
+              </Button>
+              <Button
+                variant={viewMode === 'monthly' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('monthly')}
+                className="flex items-center gap-2"
+              >
+                <Calendar className="w-4 h-4" />
+                Monthly
               </Button>
               <Button
                 variant={viewMode === 'unscheduled' ? 'default' : 'outline'}
@@ -572,24 +590,6 @@ export default function DailyPlanner() {
               >
                 <Clock className="w-4 h-4" />
                 Unscheduled
-              </Button>
-              <Button
-                variant={viewMode === 'weekly' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('weekly')}
-                className="flex items-center gap-2"
-              >
-                <Calendar className="w-4 h-4" />
-                Weekly View
-              </Button>
-              <Button
-                variant={viewMode === 'monthly' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('monthly')}
-                className="flex items-center gap-2"
-              >
-                <Calendar className="w-4 h-4" />
-                Monthly View
               </Button>
             </div>
           </div>
