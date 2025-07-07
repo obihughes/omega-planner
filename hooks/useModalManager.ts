@@ -54,6 +54,9 @@ export interface UseModalManagerProps {
   /** Callback to update a pool task */
   onUpdatePoolTask: (taskId: string, updatedFields: Partial<Omit<Task, 'id'>>) => void;
 
+  /** Callback to update a date-specific pool task */
+  onUpdatePoolTaskForDate: (dateKey: string, taskId: string, updatedFields: Partial<Omit<Task, 'id'>>) => void;
+
   /** Callback to add a new pool task (general unscheduled) */
   onAddPoolTask: (task: Task) => void;
 
@@ -170,6 +173,7 @@ export function useModalManager({
   onAddTask,
   onUpdateTask,
   onUpdatePoolTask,
+  onUpdatePoolTaskForDate,
   onAddPoolTask,
   onAddPoolTaskForDate,
   onClearPool,
@@ -303,27 +307,39 @@ export function useModalManager({
       });
       setInitialDayOffsetForModal(undefined); 
       setInitialStartHourForModal(undefined); 
-    } else if (options?.isNew) {
-      // Task is not provided, but options.isNew is true. Create a default new task.
+    } else {
+      // This is the new logic path for when no task is provided.
+      // It implies creating a new task.
       const tempId = `temp-new-${Date.now()}`;
       const today = new Date();
       today.setHours(0,0,0,0);
-            setActiveEditModalTask({
+      
+      const targetDate = new Date(today);
+      const dayOffset = options?.initialDayOffset ?? topDayOffset; // Use hook's topDayOffset as a fallback
+      targetDate.setDate(targetDate.getDate() + dayOffset);
+      const targetDateKey = getDateKey(targetDate);
+      
+      setActiveEditModalTask({
         id: tempId,
-        name: "New Task", // Default name
-        startHour: options?.initialStartHour ?? 9,
-        duration: 1,
-        baseDate: getDateKey(today),
+        name: "", // Start with an empty name
+        startHour: options?.initialStartHour ?? 9, // Default start time
+        duration: 1, // Default duration
+        baseDate: targetDateKey,
         color: TASK_COLORS[0],
         notes: "",
         completed: false,
-        isFromPool: options?.isFromPool || false,
+        isFromPool: false,
         isNew: true,
+        creationContext: {
+          mode: 'timeline',
+          targetDate: targetDate,
+          sourceView: 'daily'
+        }
       });
       setInitialDayOffsetForModal(options?.initialDayOffset);
       setInitialStartHourForModal(options?.initialStartHour);
     }
-  }, [setActiveEditModalTask, setInitialDayOffsetForModal, setInitialStartHourForModal]);
+  }, [setActiveEditModalTask, setInitialDayOffsetForModal, setInitialStartHourForModal, topDayOffset]);
 
   /** Closes the task edit/create modal */
   const closeEditModal = useCallback(() => {
@@ -473,14 +489,24 @@ export function useModalManager({
         return;
       }
       const { id, ...updatedFields } = taskDataFromForm;
-      if (isFromPool) {
+      
+      // Determine the correct update function based on task type:
+      // 1. Date-specific pool tasks have poolDate property
+      // 2. General pool tasks have isFromPool true but no poolDate
+      // 3. Timeline tasks have isFromPool false
+      if (taskDataFromForm.poolDate) {
+        // Date-specific pool task
+        onUpdatePoolTaskForDate(taskDataFromForm.poolDate, id, updatedFields);
+      } else if (isFromPool) {
+        // General pool task
         onUpdatePoolTask(id, updatedFields);
       } else {
+        // Timeline task
         onUpdateTask(id, updatedFields);
       }
     }
     closeEditModal();
-  }, [activeEditModalTask, onAddTask, onUpdateTask, onUpdatePoolTask, onAddPoolTask, onAddPoolTaskForDate, closeEditModal]);
+  }, [activeEditModalTask, onAddTask, onUpdateTask, onUpdatePoolTask, onUpdatePoolTaskForDate, onAddPoolTask, onAddPoolTaskForDate, closeEditModal]);
 
   // New Context-Aware Task Creation Functions
   /** Creates a new task directly on the timeline (Daily view) */
@@ -516,7 +542,7 @@ export function useModalManager({
     const today = new Date();
     const targetDate = date || today;
     
-    setActiveEditModalTask({
+    const taskTemplate: EnhancedActiveModalTask = {
       id: tempId,
       name: "New Task",
       startHour: 0, // No specific start time for pool tasks
@@ -532,7 +558,12 @@ export function useModalManager({
         targetDate: targetDate,
         sourceView: 'unscheduled'
       }
-    });
+    };
+    
+    setActiveEditModalTask(taskTemplate);
+    // The line above is commented out. This is the bug.
+    // Nothing happens when this function is called.
+    
   }, []);
   
   /** Creates a new task for a specific date's pool (Weekly view, Unscheduled - Today tab) */

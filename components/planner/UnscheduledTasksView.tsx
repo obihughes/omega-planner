@@ -9,7 +9,8 @@ import {
   Calendar,
   Clock,
   Trash2,
-  Edit3
+  Edit3,
+  ClipboardList
 } from 'lucide-react';
 import { Task } from '@/types';
 import { TASK_COLORS, DEFAULT_TASK_COLOR_INDEX } from '@/lib/constants';
@@ -28,7 +29,8 @@ interface UnscheduledTasksViewProps {
   // New context-aware modal functions
   createPoolTask: (date?: Date) => void;
   createPoolTaskForDate: (date: Date) => void;
-  editTask: (task: Task) => void;
+  openEditModal: (task?: Task, options?: { isFromPool?: boolean; initialDayOffset?: number; initialStartHour?: number; isNew?: boolean }) => void;
+  openViewNotesModal: (task: Task) => void;
 }
 
 export default function UnscheduledTasksView({
@@ -41,7 +43,8 @@ export default function UnscheduledTasksView({
   removePoolTaskForDate,
   createPoolTask,
   createPoolTaskForDate,
-  editTask
+  openEditModal,
+  openViewNotesModal
 }: UnscheduledTasksViewProps) {
   // Local state
   const [searchTerm, setSearchTerm] = useState('');
@@ -122,7 +125,7 @@ export default function UnscheduledTasksView({
 
       {/* Task List */}
       <div className="flex-1 overflow-auto">
-        <TaskList tasks={displayTasks} onEdit={editTask} onDelete={handleDeleteTask} />
+        <TaskList tasks={displayTasks} onEdit={openEditModal} onDelete={handleDeleteTask} onViewNotes={openViewNotesModal} />
       </div>
     </div>
   );
@@ -131,11 +134,12 @@ export default function UnscheduledTasksView({
 // Task List Component
 interface TaskListProps {
   tasks: Task[];
-  onEdit: (task: Task) => void;
+  onEdit: (task?: Task, options?: { isFromPool?: boolean; initialDayOffset?: number; initialStartHour?: number; isNew?: boolean }) => void;
   onDelete: (task: Task) => void;
+  onViewNotes: (task: Task) => void;
 }
 
-function TaskList({ tasks, onEdit, onDelete }: TaskListProps) {
+function TaskList({ tasks, onEdit, onDelete, onViewNotes }: TaskListProps) {
   if (tasks.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center p-8">
@@ -190,23 +194,31 @@ function TaskList({ tasks, onEdit, onDelete }: TaskListProps) {
             </div>
 
             {/* Action buttons */}
-            <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                onClick={() => onEdit(task)}
+            <div className="absolute top-1 right-1 flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                type="button"
+                className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => onViewNotes(task)}
+                title="View Notes"
               >
-                <Edit3 className="w-3 h-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                <ClipboardList className="w-2.5 h-2.5" />
+              </button>
+              <button
+                type="button"
+                className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => onEdit(task, { isFromPool: true })}
+                title="Edit Task"
+              >
+                <Edit3 className="w-2.5 h-2.5" />
+              </button>
+              <button
+                type="button"
+                className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
                 onClick={() => onDelete(task)}
+                title="Delete Task"
               >
-                <Trash2 className="w-3 h-3" />
-              </Button>
+                <Trash2 className="w-2.5 h-2.5" />
+              </button>
             </div>
           </div>
         ))}

@@ -23,7 +23,7 @@ interface TaskAssignmentCalendarProps {
   onClearPool: () => void;
   getPoolTasksForDate: (dateKey: string) => Task[];
   createQuickTask: (date: Date) => void;
-  editTask: (task: Task) => void;
+  openEditModal: (task?: Task, options?: { isFromPool?: boolean; initialDayOffset?: number; initialStartHour?: number; isNew?: boolean }) => void;
 }
 
 export function TaskAssignmentCalendar({
@@ -40,7 +40,7 @@ export function TaskAssignmentCalendar({
   onClearPool,
   getPoolTasksForDate,
   createQuickTask,
-  editTask
+  openEditModal
 }: TaskAssignmentCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [assigningTask, setAssigningTask] = useState<Task | null>(null);
@@ -185,7 +185,7 @@ export function TaskAssignmentCalendar({
   const handleTaskClick = (task: Task, isScheduled: boolean) => {
     if (assigningTask) return; // Don't open edit modal during assignment
     
-    editTask(task);
+    openEditModal(task, { isFromPool: !isScheduled });
   };
 
   return (
@@ -232,6 +232,7 @@ export function TaskAssignmentCalendar({
                   onDragStart={(e) => handleDragStart(e, task, true)}
                   className={cn(
                     "p-2 rounded-lg text-xs cursor-pointer transition-all shadow-sm border group",
+                    "w-32 h-16 flex flex-col justify-between",
                     assigningTask?.id === task.id 
                       ? "ring-2 ring-primary bg-primary/10" 
                       : "hover:scale-[1.02]",
@@ -239,14 +240,14 @@ export function TaskAssignmentCalendar({
                   )}
                   onClick={() => handleTaskAssignClick(task)}
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-medium text-xs truncate flex-1">
+                  <div className="flex items-start justify-between min-h-0">
+                    <span className="font-medium text-xs line-clamp-2 flex-1 mr-1">
                       {task.name}
                     </span>
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100"
+                      className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100 flex-shrink-0"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleTaskClick(task, false);
@@ -255,9 +256,9 @@ export function TaskAssignmentCalendar({
                       <Edit3 className="w-3 h-3" />
                     </Button>
                   </div>
-                  <div className="flex items-center text-muted-foreground">
-                    <Clock className="w-2 h-2 mr-1" />
-                    <span>{formatDuration(task.duration)}</span>
+                  <div className="flex items-center text-muted-foreground mt-auto">
+                    <Clock className="w-2 h-2 mr-1 flex-shrink-0" />
+                    <span className="text-xs">{formatDuration(task.duration)}</span>
                   </div>
                 </div>
               ))}

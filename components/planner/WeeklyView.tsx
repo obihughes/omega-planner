@@ -20,10 +20,10 @@ import { getDateKey, dateFromDateKey } from '@/utils/dateUtils';
 import { TASK_COLORS, DEFAULT_TASK_COLOR_INDEX } from '@/lib/constants';
 
 interface WeeklyViewProps {
-  editTask: (task: Task) => void;
+  // Removed editTask prop - weekly view will no longer have edit functionality
 }
 
-export default function WeeklyView({ editTask }: WeeklyViewProps) {
+export default function WeeklyView({}: WeeklyViewProps) {
   const {
     tasksByDate,
     getPoolTasksForDate,
@@ -254,7 +254,7 @@ export default function WeeklyView({ editTask }: WeeklyViewProps) {
                           {/* Left side: Name and "No time" */}
                           <div className="flex flex-col mr-2">
                             {/* Task Name */}
-                            <div className={`text-base font-semibold leading-tight truncate ${
+                            <div className={`text-base font-semibold leading-tight line-clamp-2 ${
                               task.completed ? 'line-through text-muted-foreground' : 'text-foreground'
                             }`}>
                               {task.name}
@@ -271,15 +271,6 @@ export default function WeeklyView({ editTask }: WeeklyViewProps) {
                           <div className="text-sm font-semibold text-foreground/70 flex-shrink-0">
                             {formatDuration(task.duration)}
                           </div>
-                          
-                          {/* Edit button for task cards */}
-                          <button
-                            onClick={() => editTask(task)}
-                            className="absolute top-1 right-1 w-4 h-4 bg-muted hover:bg-muted/80 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
-                            title="Edit Task"
-                          >
-                            <MoreVertical className="w-2.5 h-2.5" />
-                          </button>
                         </div>
                       ))}
 
@@ -297,7 +288,7 @@ export default function WeeklyView({ editTask }: WeeklyViewProps) {
                           {/* Left side: Name and Start Time */}
                           <div className="flex flex-col mr-2">
                             {/* Task Name */}
-                            <div className={`text-base font-semibold leading-tight truncate ${
+                            <div className={`text-base font-semibold leading-tight line-clamp-2 ${
                               task.completed ? 'line-through text-muted-foreground' : ''
                             }`}>
                               {task.name}
@@ -316,15 +307,6 @@ export default function WeeklyView({ editTask }: WeeklyViewProps) {
                           <div className="text-sm font-semibold opacity-80 flex-shrink-0">
                             {formatDuration(task.duration)}
                           </div>
-                          
-                          {/* Edit button for task cards */}
-                          <button
-                            onClick={() => editTask(task)}
-                            className="absolute top-1 right-1 w-4 h-4 bg-black/10 hover:bg-black/20 dark:bg-white/10 dark:hover:bg-white/20 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
-                            title="Edit Task"
-                          >
-                            <MoreVertical className="w-2.5 h-2.5" />
-                          </button>
                         </div>
                       ))}
                     </div>

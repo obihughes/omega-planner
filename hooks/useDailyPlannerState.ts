@@ -434,6 +434,7 @@ export function useDailyPlanner() {
         ...taskToMove,
         id: getNextId(), // New ID for the timeline instance
         startHour: targetStartHour,
+        poolDate: undefined // Clear poolDate since this is now a scheduled task
       };
       setTasks(prev => [...prev, newTaskForTimeline]);
       setPoolTasks(prev => prev.filter(t => t.id !== poolTaskId)); // Remove from pool
@@ -616,7 +617,8 @@ export function useDailyPlanner() {
       ...copyingTaskData, // Spread properties from the source task being copied
       id: getNextId(),     // Assign a new ID
       startHour: targetStartHour,
-      baseDate: getDateKey(normalizedBaseDate) // Use the specific target date in YYYY-MM-DD format
+      baseDate: getDateKey(normalizedBaseDate), // Use the specific target date in YYYY-MM-DD format
+      poolDate: undefined // Clear poolDate since this is now a scheduled task
     };
 
     setTasks(prevTasks => [...prevTasks, newTask]);
@@ -894,17 +896,36 @@ export function useDailyPlanner() {
   }, [poolTasksByDate]);
 
   const removePoolTaskForDate = useCallback((dateKey: string, taskId: string) => {
+    console.log('🐛 [useDailyPlanner] removePoolTaskForDate called with dateKey:', dateKey, 'taskId:', taskId);
     setPoolTasksByDate(prev => {
+      console.log('🐛 [useDailyPlanner] Current poolTasksByDate before removal:', prev);
       const newMap = new Map(prev);
       const existingTasks = newMap.get(dateKey) || [];
+      console.log('🐛 [useDailyPlanner] Existing tasks for date:', existingTasks);
       const filteredTasks = existingTasks.filter(task => task.id !== taskId);
+      console.log('🐛 [useDailyPlanner] Filtered tasks after removal:', filteredTasks);
       
       if (filteredTasks.length === 0) {
         newMap.delete(dateKey);
+        console.log('🐛 [useDailyPlanner] Deleted empty date entry for:', dateKey);
       } else {
         newMap.set(dateKey, filteredTasks);
+        console.log('🐛 [useDailyPlanner] Updated tasks for date:', dateKey, filteredTasks);
       }
       
+      console.log('🐛 [useDailyPlanner] New poolTasksByDate after removal:', newMap);
+      return newMap;
+    });
+  }, []);
+
+  const updatePoolTaskForDate = useCallback((dateKey: string, taskId: string, updatedFields: Partial<Omit<Task, 'id'>>) => {
+    setPoolTasksByDate(prev => {
+      const newMap = new Map(prev);
+      const existingTasks = newMap.get(dateKey) || [];
+      const updatedTasks = existingTasks.map(task =>
+        task.id === taskId ? { ...task, ...updatedFields } : task
+      );
+      newMap.set(dateKey, updatedTasks);
       return newMap;
     });
   }, []);
@@ -990,6 +1011,7 @@ export function useDailyPlanner() {
     onAddTask: handleAddTask,
     onUpdateTask: handleUpdateTask,
     onUpdatePoolTask: handleUpdatePoolTask,
+    onUpdatePoolTaskForDate: updatePoolTaskForDate,
     onAddPoolTask: addPoolTask,
     onAddPoolTaskForDate: addPoolTaskForDate,
     onClearPool: clearPool,
@@ -1001,7 +1023,7 @@ export function useDailyPlanner() {
   console.log('🐛 [useDailyPlanner] Modal functions check:', {
     createPoolTask: typeof modalManager.createPoolTask,
     createQuickTask: typeof modalManager.createQuickTask,
-    editTask: typeof modalManager.editTask
+    openEditModal: typeof modalManager.openEditModal
   });
 
   // Destructure all properties from modalManager as defined in ModalManagerState
@@ -1056,7 +1078,9 @@ export function useDailyPlanner() {
       const viewedDate = new Date(today);
       viewedDate.setDate(today.getDate() + topDayOffset);
       const viewedDateKey = viewedDate.toISOString().split('T')[0];
-      return poolTasksByDate.get(viewedDateKey) || [];
+      const tasks = poolTasksByDate.get(viewedDateKey) || [];
+      console.log('🐛 [useDailyPlanner] currentDayPoolTasks calculation - viewedDateKey:', viewedDateKey, 'tasks:', tasks, 'topDayOffset:', topDayOffset);
+      return tasks;
     }, [poolTasksByDate, isClient, topDayOffset]),
     pinnedTasks,
     taskIdCounter,
@@ -1174,6 +1198,7 @@ export function useDailyPlanner() {
     addPoolTaskForDate,
     getPoolTasksForDate,
     removePoolTaskForDate,
+    updatePoolTaskForDate,
     getCombinedPoolTasks,
     addPoolTask,
     removePoolTask,
@@ -1186,7 +1211,6 @@ export function useDailyPlanner() {
     createTimelineTask: modalManager.createTimelineTask,
     createPoolTask: modalManager.createPoolTask,
     createPoolTaskForDate: modalManager.createPoolTaskForDate,
-    createQuickTask: modalManager.createQuickTask,
-    editTask: modalManager.editTask
+    createQuickTask: modalManager.createQuickTask
   };
 } 
