@@ -111,6 +111,7 @@ export default function DailyPlanner() {
     createPoolTaskForDate,
     editTask,
     createQuickTask,
+    handleDropFromPool,
   } = useDailyPlanner();
 
   const currentViewDateKey = useMemo(() => getDateKey(getCalendarDateForColumn(topDayOffset)), [topDayOffset]);
@@ -331,6 +332,39 @@ export default function DailyPlanner() {
     };
   }, [draggingTask, resizingTask, handleMouseMoveResize, handleMouseMoveDrag, handleMouseUp]);
 
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>, dayOffset: number, period: TimelinePeriod) => {
+    e.preventDefault();
+    const taskDataString = e.dataTransfer.getData('text/plain');
+    if (!taskDataString) return;
+
+    try {
+      const taskData = JSON.parse(taskDataString);
+      if (taskData.source !== 'pool') return;
+
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+
+      let baseHourForCalc: number;
+      switch (period) {
+        case 'night': baseHourForCalc = APP_TIMELINE_START_HOUR; break;
+        case 'morning': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_1; break;
+        case 'afternoon': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_2; break;
+        case 'evening': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_3; break;
+      }
+
+      const hourInBlock = x / APP_PIXELS_PER_HOUR;
+      const snappedNewStartHour = Math.round((baseHourForCalc + hourInBlock) * 4) / 4;
+
+      const targetDateKey = getCalendarDateForColumn(dayOffset);
+      const targetDate = dateFromDateKey(targetDateKey);
+
+      handleDropFromPool(taskData, targetDate, snappedNewStartHour);
+
+    } catch (err) {
+      console.error("Failed to handle drop", err);
+    }
+  };
+
   const renderTimeline = useCallback((period: TimelinePeriod) => {
     let startHour, endHour;
     switch (period) {
@@ -501,6 +535,8 @@ export default function DailyPlanner() {
           data-section-period={period}
           onClick={(e) => handleTimelineClick(e, dayOffset, period)}
           onDoubleClick={(e) => handleTimelineDoubleClick(e, dayOffset, period)}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => handleDrop(e, dayOffset, period)}
           onMouseEnter={() => {
             if (copyingTaskData) {
               setTargetCopyDayOffset(dayOffset);

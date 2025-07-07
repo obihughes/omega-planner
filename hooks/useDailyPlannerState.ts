@@ -18,6 +18,7 @@ import {
 import { useModalManager } from './useModalManager';
 import type { ActiveModalTask as ImportedActiveModalTask } from './useModalManager';
 import { getDateKeyFromOffset, dateFromDateKey, getTodayDateKey, addDaysToDateKey, getDateKey } from '../utils/dateUtils'; // Import the new utility functions
+import { nanoid } from 'nanoid';
 // import { checkOverlap } from '../utils/taskUtils'; // checkOverlap is available via wildcard import
 
 // Define the type for the resizingTask state
@@ -1067,6 +1068,33 @@ export function useDailyPlanner() {
     mmCloseEditModal(); // Close the modal after starting copy
   }, [startCopy, mmCloseEditModal]);
 
+  const handleDropFromPool = useCallback((task: Task, targetDate: Date, startHour: number) => {
+    // 1. Add the task to the timeline
+    const newTask = {
+      ...task,
+      id: nanoid(), // Assign a new ID to prevent key conflicts and mark it as a new entity
+      baseDate: getDateKey(targetDate),
+      startHour: startHour,
+      // Reset pool-specific properties if they exist
+      poolDate: undefined, 
+    };
+    
+    setTasks(prevTasks => {
+      const newTasks = [...prevTasks, newTask];
+      TaskStorage.save(newTasks);
+      return newTasks;
+    });
+
+    // 2. Remove the task from its original pool
+    if (task.poolDate) {
+      removePoolTaskForDate(task.poolDate, task.id);
+    } else {
+      removePoolTask(task.id);
+    }
+
+    return newTask;
+  }, [tasks, setTasks, poolTasks, setPoolTasks, poolTasksByDate, setPoolTasksByDate, removePoolTask, removePoolTaskForDate]);
+
   // --- RETURNED STATE AND FUNCTIONS ---
   return {
     // --- STATE ---
@@ -1211,6 +1239,7 @@ export function useDailyPlanner() {
     createTimelineTask: modalManager.createTimelineTask,
     createPoolTask: modalManager.createPoolTask,
     createPoolTaskForDate: modalManager.createPoolTaskForDate,
-    createQuickTask: modalManager.createQuickTask
+    createQuickTask: modalManager.createQuickTask,
+    handleDropFromPool,
   };
 } 
