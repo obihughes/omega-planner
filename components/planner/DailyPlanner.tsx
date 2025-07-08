@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 import { formatTime } from '@/utils/formatters';
 import { Task } from '../../types/planner';
-import { TaskPoolSidebar } from './TaskPoolSidebar';
+import { TaskInboxSidebar } from './TaskInboxSidebar';
 import { PinnedTasksSidebar } from './PinnedTasksSidebar';
 import { TaskAssignmentCalendar } from './TaskAssignmentCalendar';
 import { useDailyPlanner } from '../../hooks/useDailyPlannerState';
@@ -31,7 +31,7 @@ import { EditTaskModal } from './EditTaskModal';
 import { ViewTaskNotesModal } from './ViewTaskNotesModal';
 import { getCalendarDateForColumn, getDateKey, dateFromDateKey } from '../../utils/dateUtils';
 import { resolveCollisionsForResize, resolveCollisionsForDrag } from '../../utils/taskUtils';
-import UnscheduledTasksView from './UnscheduledTasksView';
+import TaskInboxView from './TaskInboxView';
 import WeeklyView from './WeeklyView';
 import { useModalManager } from '../../hooks/useModalManager';
 
@@ -109,25 +109,16 @@ export default function DailyPlanner() {
     saveTaskFromModal,
     createPoolTask,
     createPoolTaskForDate,
-    editTask,
     createQuickTask,
     handleDropFromPool,
   } = useDailyPlanner();
 
   const currentViewDateKey = useMemo(() => getDateKey(getCalendarDateForColumn(topDayOffset)), [topDayOffset]);
 
-  // Debug logging for modal functions
-  console.log('🐛 [DailyPlanner] Modal functions from useDailyPlanner:');
-  console.log('🐛 [DailyPlanner] createPoolTask:', createPoolTask, 'type:', typeof createPoolTask);
-  console.log('🐛 [DailyPlanner] createPoolTaskForDate:', createPoolTaskForDate, 'type:', typeof createPoolTaskForDate);
-  console.log('🐛 [DailyPlanner] editTask:', editTask, 'type:', typeof editTask);
 
-  // Debug logging for modal state
-  console.log('🐛 [DailyPlanner] activeEditModalTask:', activeEditModalTask);
-  console.log('🐛 [DailyPlanner] Modal should be open:', !!activeEditModalTask);
 
   const [currentTimeForMarker, setCurrentTimeForMarker] = useState(new Date());
-  const [viewMode, setViewMode] = useState<'daily' | 'unscheduled' | 'weekly' | 'monthly'>('daily');
+  const [viewMode, setViewMode] = useState<'daily' | 'inbox' | 'weekly' | 'monthly'>('daily');
 
   useEffect(() => {
       const timerId = setInterval(() => setCurrentTimeForMarker(new Date()), 60000);
@@ -618,7 +609,7 @@ export default function DailyPlanner() {
             onClose={closeEditModal}
             onColorChange={handleTaskColorChange}
             onPinTask={handlePinTask}
-            onMoveToPool={copyTaskToPool}
+                          onMoveToInbox={copyTaskToPool}
             pinnedTasks={pinnedTasks}
             onDelete={deleteTaskHandlerForModal}
             onCopyAndEnterPasteMode={handleCopyAndEnterPasteMode}
@@ -663,13 +654,13 @@ export default function DailyPlanner() {
                 Monthly
               </Button>
               <Button
-                variant={viewMode === 'unscheduled' ? 'default' : 'outline'}
+                variant={viewMode === 'inbox' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setViewMode('unscheduled')}
+                onClick={() => setViewMode('inbox')}
                 className="flex items-center gap-2"
               >
                 <Clock className="w-4 h-4" />
-                Unscheduled
+                Inbox
               </Button>
             </div>
           </div>
@@ -700,7 +691,7 @@ export default function DailyPlanner() {
                               {task.name || "Untitled Task"}
                             </p>
                             <div className="text-xs text-muted-foreground">
-                              <span>Pool Task</span>
+                              <span>Unscheduled</span>
                             </div>
                           </div>
                         </div>
@@ -728,18 +719,13 @@ export default function DailyPlanner() {
                             onClick={(e) => { 
                               e.preventDefault(); 
                               e.stopPropagation(); 
-                              console.log('🐛 [DailyPlanner] Delete button clicked for task:', task.id, 'currentViewDateKey:', currentViewDateKey);
-                              console.log('🐛 [DailyPlanner] Task object:', task);
                               
                               // Try to delete from date-specific pool first
                               if (task.poolDate) {
-                                console.log('🐛 [DailyPlanner] Task has poolDate:', task.poolDate, '- removing from date-specific pool');
                                 removePoolTaskForDate(task.poolDate, task.id);
                               } else if (task.baseDate && task.baseDate !== '') {
-                                console.log('🐛 [DailyPlanner] Task has baseDate:', task.baseDate, '- removing from date-specific pool');
                                 removePoolTaskForDate(task.baseDate, task.id);
                               } else {
-                                console.log('🐛 [DailyPlanner] Task has no poolDate/baseDate - removing from general pool');
                                 handleDeletePoolTask(task.id);
                               }
                             }}
@@ -885,10 +871,10 @@ export default function DailyPlanner() {
           </>
         )}
 
-        {/* Unscheduled View */}
-        {viewMode === 'unscheduled' && (
+        {/* Inbox View */}
+        {viewMode === 'inbox' && (
           <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
-            <UnscheduledTasksView 
+            <TaskInboxView 
               poolTasks={generalPoolTasks}
               pinnedTasks={pinnedTasks}
               getPoolTasksForDate={getPoolTasksForDate}

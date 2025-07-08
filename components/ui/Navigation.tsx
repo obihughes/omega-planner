@@ -30,7 +30,7 @@ export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse 
       href: '/',
       label: 'Daily Planner',
       icon: Calendar,
-      active: pathname === '/' || pathname === '/unscheduled'
+      active: pathname === '/' || pathname === '/inbox'
     },
     {
       href: '/projects',

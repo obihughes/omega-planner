@@ -17,7 +17,7 @@ import { TASK_COLORS, DEFAULT_TASK_COLOR_INDEX } from '@/lib/constants';
 import { formatDuration } from '@/utils/formatters';
 import { cn } from '@/lib/utils';
 
-interface UnscheduledTasksViewProps {
+interface TaskInboxViewProps {
   poolTasks: Task[];
   pinnedTasks: Task[];
   getPoolTasksForDate: (dateKey: string) => Task[];
@@ -33,7 +33,7 @@ interface UnscheduledTasksViewProps {
   openViewNotesModal: (task: Task) => void;
 }
 
-export default function UnscheduledTasksView({
+export default function TaskInboxView({
   poolTasks,
   pinnedTasks,
   getPoolTasksForDate,
@@ -45,24 +45,24 @@ export default function UnscheduledTasksView({
   createPoolTaskForDate,
   openEditModal,
   openViewNotesModal
-}: UnscheduledTasksViewProps) {
+}: TaskInboxViewProps) {
   // Local state
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Get all unscheduled tasks (pool tasks + today's specific tasks)
-  const allUnscheduledTasks = useMemo(() => {
+  // Get all inbox tasks (pool tasks + today's specific tasks)
+  const allInboxTasks = useMemo(() => {
     return getCombinedPoolTasks();
   }, [getCombinedPoolTasks]);
 
   // Apply search filter
   const displayTasks = useMemo(() => {
-    if (!searchTerm) return allUnscheduledTasks;
+    if (!searchTerm) return allInboxTasks;
     
-    return allUnscheduledTasks.filter(task => 
+    return allInboxTasks.filter(task => 
       task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (task.notes && task.notes.toLowerCase().includes(searchTerm.toLowerCase()))
     );
-  }, [allUnscheduledTasks, searchTerm]);
+  }, [allInboxTasks, searchTerm]);
 
   // Delete task
   const handleDeleteTask = (task: Task) => {
@@ -84,7 +84,7 @@ export default function UnscheduledTasksView({
           {/* Left side - Title and stats */}
           <div className="flex items-center gap-6">
             <div>
-              <h2 className="text-xl font-semibold text-foreground">Unscheduled Tasks</h2>
+              <h2 className="text-xl font-semibold text-foreground">Task Inbox</h2>
               <p className="text-sm text-muted-foreground">
                 {totalTasks} tasks • {formatDuration(totalHours)}
               </p>
@@ -106,15 +106,7 @@ export default function UnscheduledTasksView({
             
             {/* Add Task Button */}
             <Button onClick={() => {
-              console.log('🐛 [UnscheduledTasksView] Add Task button clicked');
-              console.log('🐛 [UnscheduledTasksView] createPoolTask function:', createPoolTask);
-              console.log('🐛 [UnscheduledTasksView] typeof createPoolTask:', typeof createPoolTask);
-              try {
-                createPoolTask();
-                console.log('🐛 [UnscheduledTasksView] createPoolTask() called successfully');
-              } catch (error) {
-                console.error('🐛 [UnscheduledTasksView] Error calling createPoolTask:', error);
-              }
+              createPoolTask();
             }} className="flex items-center gap-2">
               <Plus className="w-4 h-4" />
               Add Task
@@ -145,7 +137,7 @@ function TaskList({ tasks, onEdit, onDelete, onViewNotes }: TaskListProps) {
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="text-center">
           <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-foreground mb-2">No unscheduled tasks</h3>
+          <h3 className="text-lg font-medium text-foreground mb-2">Your inbox is empty</h3>
           <p className="text-sm text-muted-foreground">Create a new task to get started</p>
         </div>
       </div>
@@ -198,7 +190,11 @@ function TaskList({ tasks, onEdit, onDelete, onViewNotes }: TaskListProps) {
               <button
                 type="button"
                 className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                onClick={() => onViewNotes(task)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onViewNotes(task);
+                }}
                 title="View Notes"
               >
                 <ClipboardList className="w-2.5 h-2.5" />
@@ -206,15 +202,23 @@ function TaskList({ tasks, onEdit, onDelete, onViewNotes }: TaskListProps) {
               <button
                 type="button"
                 className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                onClick={() => onEdit(task, { isFromPool: true })}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onEdit(task, { isFromPool: true });
+                }}
                 title="Edit Task"
               >
                 <Edit3 className="w-2.5 h-2.5" />
               </button>
               <button
                 type="button"
-                className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
-                onClick={() => onDelete(task)}
+                className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onDelete(task);
+                }}
                 title="Delete Task"
               >
                 <Trash2 className="w-2.5 h-2.5" />

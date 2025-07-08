@@ -31,7 +31,7 @@ describe('TaskCard', () => {
     onColorChange: jest.fn(),
     editingTaskId: null,
     setEditingTaskId: jest.fn(),
-    onMoveToPool: jest.fn(),
+    onMoveToInbox: jest.fn(),
     onPinTask: jest.fn(),
   };
 

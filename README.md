@@ -35,7 +35,7 @@ npm run dev:clean
 - Copy/paste tasks
 - Time-based task organization
 - Responsive design
-- Task pool for unscheduled tasks
+- Task inbox for unscheduled tasks
 - Pinned tasks for quick access
 
 ### Calendar Features

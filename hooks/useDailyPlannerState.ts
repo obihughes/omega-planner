@@ -897,24 +897,17 @@ export function useDailyPlanner() {
   }, [poolTasksByDate]);
 
   const removePoolTaskForDate = useCallback((dateKey: string, taskId: string) => {
-    console.log('🐛 [useDailyPlanner] removePoolTaskForDate called with dateKey:', dateKey, 'taskId:', taskId);
     setPoolTasksByDate(prev => {
-      console.log('🐛 [useDailyPlanner] Current poolTasksByDate before removal:', prev);
       const newMap = new Map(prev);
       const existingTasks = newMap.get(dateKey) || [];
-      console.log('🐛 [useDailyPlanner] Existing tasks for date:', existingTasks);
       const filteredTasks = existingTasks.filter(task => task.id !== taskId);
-      console.log('🐛 [useDailyPlanner] Filtered tasks after removal:', filteredTasks);
       
       if (filteredTasks.length === 0) {
         newMap.delete(dateKey);
-        console.log('🐛 [useDailyPlanner] Deleted empty date entry for:', dateKey);
       } else {
         newMap.set(dateKey, filteredTasks);
-        console.log('🐛 [useDailyPlanner] Updated tasks for date:', dateKey, filteredTasks);
       }
       
-      console.log('🐛 [useDailyPlanner] New poolTasksByDate after removal:', newMap);
       return newMap;
     });
   }, []);
@@ -954,7 +947,7 @@ export function useDailyPlanner() {
     // When a task from the general pool is assigned to a day in the monthly calendar,
     // it should be moved to that day's specific task pool, not the timeline.
     
-    // 1. Remove from the general "unscheduled" pool.
+    // 1. Remove from the general "inbox" pool.
     removePoolTask(task.id);
 
     // 2. If it was previously in another day's pool, remove it from there.
@@ -1020,12 +1013,7 @@ export function useDailyPlanner() {
     topDayOffset
   });
 
-  // Debug logging for modal manager functions
-  console.log('🐛 [useDailyPlanner] Modal functions check:', {
-    createPoolTask: typeof modalManager.createPoolTask,
-    createQuickTask: typeof modalManager.createQuickTask,
-    openEditModal: typeof modalManager.openEditModal
-  });
+
 
   // Destructure all properties from modalManager as defined in ModalManagerState
   // These will be directly available in the scope below
@@ -1099,7 +1087,7 @@ export function useDailyPlanner() {
   return {
     // --- STATE ---
     poolTasks: combinedPoolTasks, // For monthly view - contains general + current day's pool tasks
-    generalPoolTasks: poolTasks, // For "Add to Pool" functionality - general unscheduled tasks only
+    generalPoolTasks: poolTasks, // For "Add to Inbox" functionality - general inbox tasks only
     currentDayPoolTasks: useMemo(() => {
       if (!isClient) return [];
       const today = new Date();
@@ -1107,7 +1095,6 @@ export function useDailyPlanner() {
       viewedDate.setDate(today.getDate() + topDayOffset);
       const viewedDateKey = viewedDate.toISOString().split('T')[0];
       const tasks = poolTasksByDate.get(viewedDateKey) || [];
-      console.log('🐛 [useDailyPlanner] currentDayPoolTasks calculation - viewedDateKey:', viewedDateKey, 'tasks:', tasks, 'topDayOffset:', topDayOffset);
       return tasks;
     }, [poolTasksByDate, isClient, topDayOffset]),
     pinnedTasks,

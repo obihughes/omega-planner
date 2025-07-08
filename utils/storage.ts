@@ -6,8 +6,8 @@ import { Task, PinnedTask } from '@/types/planner';
 
 // Configuration
 const STORAGE_KEY = 'daily-planner-tasks';
-const POOL_STORAGE_KEY = 'daily-planner-pool-tasks';
-const POOL_TASKS_BY_DATE_KEY = 'daily-planner-pool-tasks-by-date';
+const POOL_STORAGE_KEY = 'daily-planner-pool-tasks'; // Legacy key name for backward compatibility
+const POOL_TASKS_BY_DATE_KEY = 'daily-planner-pool-tasks-by-date'; // Legacy key name for backward compatibility
 const PINNED_STORAGE_KEY = 'daily-planner-pinned-tasks';
 const STORAGE_VERSION = '2.0'; // Bumped version for YYYY-MM-DD format
 const DAY_VIEW_SETTINGS_KEY = 'daily-planner-day-view-settings';
@@ -160,15 +160,15 @@ const TaskStorage = {
   },
   
   /**
-   * Saves the pool tasks to localStorage.
-   * Pool tasks use YYYY-MM-DD format for baseDate.
-   * @param {Task[]} poolTasks - The array of pool tasks to save.
+   * Saves the inbox tasks to localStorage.
+   * Inbox tasks use YYYY-MM-DD format for baseDate.
+   * @param {Task[]} poolTasks - The array of inbox tasks to save.
    */
   savePoolTasks: (poolTasks: Task[]): void => {
     if (typeof window === 'undefined') return;
     
     try {
-      // Ensure pool tasks have correct date format
+      // Ensure inbox tasks have correct date format
       const validatedTasks = poolTasks.map(task => {
         if (!task.baseDate) {
           const now = new Date();
@@ -200,7 +200,7 @@ const TaskStorage = {
       localStorage.setItem(POOL_STORAGE_KEY, JSON.stringify(data));
       
     } catch (err) {
-      console.error('Failed to save pool tasks to localStorage', err);
+      console.error('Failed to save inbox tasks to localStorage', err);
     }
   },
   
@@ -217,11 +217,11 @@ const TaskStorage = {
     try {
       const data = JSON.parse(savedData);
       if (!data.tasks || !Array.isArray(data.tasks)) {
-        console.error('Loaded pool data is invalid (tasks array missing or not an array): ', data);
+        console.error('Loaded inbox data is invalid (tasks array missing or not an array): ', data);
         return [];
       }
       
-      // Migrate pool tasks to new format if needed
+      // Migrate inbox tasks to new format if needed
       return data.tasks.map((task: any) => {
         if (!task.baseDate) {
           const now = new Date();
@@ -245,7 +245,7 @@ const TaskStorage = {
         return task;
       });
     } catch (err) {
-      console.error('Failed to parse pool tasks from localStorage. Data was: ', savedData, err);
+      console.error('Failed to parse inbox tasks from localStorage. Data was: ', savedData, err);
       return [];
     }
   },
@@ -355,7 +355,7 @@ const TaskStorage = {
   },
 
   /**
-   * Saves pool tasks by date to localStorage.
+   * Saves inbox tasks by date to localStorage.
    * @param {Map<string, Task[]>} poolTasksByDate - Map of date strings to task arrays.
    */
   savePoolTasksByDate: (poolTasksByDate: Map<string, Task[]>): void => {
@@ -376,7 +376,7 @@ const TaskStorage = {
       localStorage.setItem(POOL_TASKS_BY_DATE_KEY, JSON.stringify(data));
       
     } catch (err) {
-      console.error('Failed to save pool tasks by date to localStorage', err);
+      console.error('Failed to save inbox tasks by date to localStorage', err);
     }
   },
 
@@ -392,7 +392,7 @@ const TaskStorage = {
     try {
       const data = JSON.parse(savedData);
       if (!data.poolTasksByDate || typeof data.poolTasksByDate !== 'object') {
-        console.error('Loaded pool tasks by date is invalid: ', data);
+        console.error('Loaded inbox tasks by date is invalid: ', data);
         return new Map();
       }
       
@@ -406,7 +406,7 @@ const TaskStorage = {
       
       return map;
     } catch (err) {
-      console.error('Failed to parse pool tasks by date from localStorage. Data was: ', savedData, err);
+      console.error('Failed to parse inbox tasks by date from localStorage. Data was: ', savedData, err);
       return new Map();
     }
   },

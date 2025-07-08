@@ -19,7 +19,7 @@ interface TaskCreationContext {
   mode: 'timeline' | 'pool-general' | 'pool-date' | 'quick-add';
   targetDate?: Date;
   startHour?: number;
-  sourceView: 'daily' | 'weekly' | 'monthly' | 'unscheduled';
+  sourceView: 'daily' | 'weekly' | 'monthly' | 'inbox';
   showSimplified?: boolean; // For quick-add mode
 }
 
@@ -57,13 +57,13 @@ export interface UseModalManagerProps {
   /** Callback to update a date-specific pool task */
   onUpdatePoolTaskForDate: (dateKey: string, taskId: string, updatedFields: Partial<Omit<Task, 'id'>>) => void;
 
-  /** Callback to add a new pool task (general unscheduled) */
+  /** Callback to add a new inbox task (general unscheduled) */
   onAddPoolTask: (task: Task) => void;
 
-  /** Callback to add a new pool task for a specific date */
+  /** Callback to add a new inbox task for a specific date */
   onAddPoolTaskForDate: (dateKey: string, task: Partial<Task>) => void;
   
-  /** Callback to clear the task pool */
+  /** Callback to clear the task inbox */
   onClearPool: () => void;
   
   /** Callback to clone tasks from one calendar date to another */
@@ -535,9 +535,8 @@ export function useModalManager({
     });
   }, []);
   
-  /** Creates a new task in the general pool (Unscheduled view - All tab) */
+  /** Creates a new task in the general inbox (Inbox view - All tab) */
   const createPoolTask = useCallback((date?: Date) => {
-    console.log('🐛 [useModalManager] createPoolTask called with date:', date);
     const tempId = `temp-pool-${Date.now()}`;
     const today = new Date();
     const targetDate = date || today;
@@ -556,17 +555,14 @@ export function useModalManager({
       creationContext: {
         mode: date ? 'pool-date' : 'pool-general',
         targetDate: targetDate,
-        sourceView: 'unscheduled'
+        sourceView: 'inbox'
       }
     };
     
     setActiveEditModalTask(taskTemplate);
-    // The line above is commented out. This is the bug.
-    // Nothing happens when this function is called.
-    
   }, []);
   
-  /** Creates a new task for a specific date's pool (Weekly view, Unscheduled - Today tab) */
+  /** Creates a new task for a specific date's inbox (Weekly view, Inbox - Today tab) */
   const createPoolTaskForDate = useCallback((date: Date) => {
     const tempId = `temp-pool-date-${Date.now()}`;
     const targetDateKey = getDateKey(date);
@@ -593,11 +589,9 @@ export function useModalManager({
   
   /** Creates a new task with simplified UI (Monthly view) */
   const createQuickTask = useCallback((date: Date) => {
-    console.log('🐛 [useModalManager] createQuickTask called with date:', date);
     const tempId = `temp-quick-${Date.now()}`;
     const targetDateKey = getDateKey(date);
     
-    console.log('🐛 [useModalManager] Setting activeEditModalTask with tempId:', tempId, 'targetDateKey:', targetDateKey);
     setActiveEditModalTask({
       id: tempId,
       name: "New Task",
@@ -621,8 +615,6 @@ export function useModalManager({
   
   /** Opens modal to edit an existing task */
   const editTask = useCallback((task: Task) => {
-    console.log('🐛 [useModalManager] editTask called with task:', task);
-    console.log('🐛 [useModalManager] Setting activeEditModalTask');
     setActiveEditModalTask({
       ...task,
       isFromPool: !!task.poolDate, // Determine if it's from pool based on poolDate

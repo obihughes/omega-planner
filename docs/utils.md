@@ -136,7 +136,7 @@ Helper for getting date keys for timeline columns.
 ## Storage Utilities (`utils/storage.ts`)
 
 ### Task Persistence
-Handles local storage operations for tasks, pool tasks, and planner settings.
+Handles local storage operations for tasks, inbox tasks, and planner settings.
 
 #### `TaskStorage.save(tasks)`
 Persists main timeline tasks.
@@ -145,10 +145,10 @@ Persists main timeline tasks.
 Retrieves saved timeline tasks.
 
 #### `TaskStorage.savePoolTasks(tasks)`
-Persists task pool.
+Persists task inbox.
 
 #### `TaskStorage.loadPoolTasks()`
-Retrieves task pool.
+Retrieves task inbox.
 
 ## Formatter Utilities (`utils/formatters.ts`)
 

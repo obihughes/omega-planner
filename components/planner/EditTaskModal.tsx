@@ -30,7 +30,7 @@ interface EditTaskModalProps {
   /** Optional callback to pin the task. If provided, a pin button is shown. */
   onPinTask?: (task: Task) => void;
   /** Optional callback to move the task to the task pool */
-  onMoveToPool?: (taskId: string) => void;
+  onMoveToInbox?: (taskId: string) => void;
   /** Optional array of currently pinned tasks */
   pinnedTasks?: Task[];
   /** Optional callback to copy the current task's data, close the modal, and enter paste mode. */
@@ -49,7 +49,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   onColorChange,
   onDelete,
   onPinTask,
-  onMoveToPool,
+  onMoveToInbox,
   pinnedTasks = [],
   onCopyAndEnterPasteMode,
 }) => {
@@ -391,14 +391,14 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                   <Pin className="w-3 h-3 mr-1" /> {isTaskPinned ? 'Pinned' : 'Pin'}
                 </Button>
               )}
-              {!taskToEdit.isFromPool && onMoveToPool && !taskToEdit.isNew && (
+              {!taskToEdit.isFromPool && onMoveToInbox && !taskToEdit.isNew && (
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => { if (onMoveToPool) { onMoveToPool(taskToEdit.id); onClose();} }}
+                  onClick={() => { if (onMoveToInbox) { onMoveToInbox(taskToEdit.id); onClose();} }}
                   className="px-3 py-1.5 text-xs"
                 >
-                  To Pool
+                  To Inbox
                 </Button>
               )}
             </div>

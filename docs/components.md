@@ -23,7 +23,7 @@ The main daily planning interface with timeline views and task management.
   - **Daily View**: Traditional timeline-based planning with Pool/Pinned sidebar
   - **Monthly View**: Full-page calendar for task assignment and scheduling
 - **Timeline System**: 4 time periods (night, morning, afternoon, evening) across two days
-- **Task Pool Integration**: Unscheduled tasks in collapsible sidebar
+- **Task Inbox Integration**: Unscheduled tasks in collapsible sidebar
 - **Pinned Tasks**: Important tasks with due date tracking
 - **Drag & Drop**: Move tasks between timeline slots and dates
 - **Task Editing**: Inline editing, resizing, and detailed modal editing
@@ -36,26 +36,26 @@ The main daily planning interface with timeline views and task management.
 - Daily View shows timeline + sidebar, Monthly View shows full calendar
 
 **Daily View Components:**
-- Pool/Pinned task sidebar with tabs
+- Inbox/Pinned task sidebar with tabs
 - Dual-day timeline view with navigation
 - Task cards with drag/drop and resize functionality
 - Time-based task scheduling and collision detection
 
 **Monthly View Components:**
 - Full TaskAssignmentCalendar component
-- Pool tasks display for assignment
+- Inbox tasks display for assignment
 - Month grid with visual task cards
-- Drag & drop from pool to calendar dates
+- Drag & drop from inbox to calendar dates
 
 **State Management:**
 - Uses `useDailyPlanner` hook for all task operations
 - Manages view mode state locally (`daily` | `monthly`)
-- Handles task assignment, scheduling, and pool management
+- Handles task assignment, scheduling, and inbox management
 
-### **UnscheduledTasksPage** **(Phase 2)**
-**Location**: `app/unscheduled/page.tsx`
+### **TaskInboxPage** **(Phase 2)**
+**Location**: `app/inbox/page.tsx`
 
-A dedicated full-page view for comprehensive unscheduled task management.
+A dedicated full-page view for comprehensive inbox task management.
 
 **Key Features:**
 - **Full-Page Layout**: Masonry/board-style task grid for better visibility
@@ -64,7 +64,7 @@ A dedicated full-page view for comprehensive unscheduled task management.
 - **Task Statistics**: Overview cards showing total tasks, hours, and averages
 - **Three Task Views**:
   - **All Tasks**: Combined view of general pool + date-specific tasks
-  - **General Pool**: Universal unscheduled tasks
+  - **General Inbox**: Universal unscheduled tasks
   - **Today's Tasks**: Date-specific tasks for current date
 
 **Enhanced Features:**
@@ -78,28 +78,28 @@ A dedicated full-page view for comprehensive unscheduled task management.
 **Integration:**
 - Shares task data with Daily Planner via `useDailyPlanner` hook
 - Tasks created here appear in Daily View pool
-- Seamless workflow: Unscheduled → Monthly Assignment → Daily Scheduling
+- Seamless workflow: Inbox → Monthly Assignment → Daily Scheduling
 
 **Navigation:**
-- Added to main navigation as "Unscheduled Tasks" with Clock icon
-- Independent page accessible via `/unscheduled` route
+- Added to main navigation as "Task Inbox" with Clock icon
+- Independent page accessible via `/inbox` route
 
 ### TaskAssignmentCalendar (`components/planner/TaskAssignmentCalendar.tsx`)
-**NEW COMPONENT:** Calendar view for assigning pool tasks to specific dates.
+**NEW COMPONENT:** Calendar view for assigning inbox tasks to specific dates.
 
 **Key Features:**
 - Projects-calendar-style month grid layout
 - Visual task assignment interface
-- Drag & drop from pool tasks to calendar dates
-- Click-to-assign workflow for pool tasks
+- Drag & drop from inbox tasks to calendar dates
+- Click-to-assign workflow for inbox tasks
 - Task rescheduling between dates
 - Monthly navigation and statistics
-- Integration with existing task pool system
+- Integration with existing task inbox system
 
 **Props:**
 ```typescript
 interface TaskAssignmentCalendarProps {
-  poolTasks: Task[];
+  inboxTasks: Task[];
   scheduledTasks: Map<string, Task[]>;
   onAssignTask: (task: Task, date: Date, startHour?: number) => void;
   onUnassignTask: (task: Task) => void;
@@ -109,10 +109,10 @@ interface TaskAssignmentCalendarProps {
 ```
 
 **Usage:**
-- Available as third tab in daily planner (Pool | Pinned | Calendar)
-- Shows unscheduled tasks at top for assignment
+- Available as third tab in daily planner (Inbox | Pinned | Calendar)
+- Shows inbox tasks at top for assignment
 - Month grid displays scheduled tasks as colored cards
-- Drag tasks from pool to calendar dates or click task then click date
+- Drag tasks from inbox to calendar dates or click task then click date
 - Tasks can be rescheduled by dragging between dates
 - Visual feedback during assignment mode
 
@@ -141,7 +141,7 @@ Horizontal scrollable sidebar for pinned tasks.
 - Improved time formatting to show proper units instead of all minutes
 - Enhanced date parsing to prevent serialization/deserialization bugs
 
-### TaskPoolSidebar (`components/planner/TaskPoolSidebar.tsx`)
+### TaskInboxSidebar (`components/planner/TaskInboxSidebar.tsx`)
 Sidebar component for managing reusable task templates.
 
 **Key Features:**
@@ -289,8 +289,8 @@ These now use Math.floor for upcoming dates and Math.ceil for overdue.
 
 ### Phase 1 Implementation (Task Assignment System)
 - **TaskAssignmentCalendar**: Added date-specific task display in calendar cells
-- **TaskPoolSidebar**: Fixed styling issues for light/dark mode compatibility
-- **Combined Pool Logic**: Implemented merging of general and date-specific pool tasks
+- **TaskInboxSidebar**: Fixed styling issues for light/dark mode compatibility
+- **Combined Inbox Logic**: Implemented merging of general and date-specific inbox tasks
 - **Data Persistence**: Added full localStorage support for date-specific tasks
 - **UI/UX Improvements**: Enhanced visual styling and user interaction patterns
 

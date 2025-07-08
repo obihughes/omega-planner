@@ -27,7 +27,7 @@ export interface TaskFormModalProps {
   onDelete?: (taskId: string) => void;
   onPinTask?: (task: Task) => void;
   pinnedTasks?: PinnedTask[];
-  onMoveToPool?: (taskId: string) => void;
+  onMoveToInbox?: (taskId: string) => void;
   initialDayOffset?: number;
   initialStartHour?: number;
   // TASK_COLORS is already imported globally from @/lib/constants
@@ -41,16 +41,11 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
   onDelete,
   onPinTask,
   pinnedTasks = [],
-  onMoveToPool,
+  onMoveToInbox,
   initialDayOffset = 0,
   initialStartHour = 9,
 }) => {
-  console.log('🐛 [TaskFormModal] Rendered with:', {
-    isOpen,
-    taskToEdit,
-    initialDayOffset,
-    initialStartHour
-  });
+
 
   const isNewTask = !taskToEdit;
   const [taskName, setTaskName] = useState("");
@@ -121,9 +116,9 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
     }
   };
 
-  const handleMoveToPool = () => {
-    if (taskToEdit && onMoveToPool) {
-      onMoveToPool(taskToEdit.id);
+  const handleMoveToInbox = () => {
+    if (taskToEdit && onMoveToInbox) {
+      onMoveToInbox(taskToEdit.id);
       onClose(); 
     }
   };
@@ -255,13 +250,13 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
                 <PinIcon className="w-4 h-4" /> Pinned
               </div>
             )}
-            {onMoveToPool && (
+            {onMoveToInbox && (
                 <button
                 type="button"
                 className="flex items-center justify-center gap-1.5 flex-1 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                onClick={handleMoveToPool}
+                onClick={handleMoveToInbox}
                 >
-                <FolderPlus className="w-4 h-4" /> Pool
+                <FolderPlus className="w-4 h-4" /> Inbox
                 </button>
             )}
           </div>

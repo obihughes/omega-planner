@@ -73,10 +73,10 @@ This directory contains all components related to the daily planning functionali
 
 #### TaskPoolSidebar
 **File**: `TaskPoolSidebar.tsx`
-**Purpose**: Unscheduled tasks management
+**Purpose**: Inbox tasks management
 
 **Features:**
-- List of unscheduled tasks
+- List of inbox tasks
 - Add new pool tasks
 - Drag to timeline or calendar
 - Bulk operations (clear pool)

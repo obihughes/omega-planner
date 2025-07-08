@@ -1,7 +1,7 @@
 export { default as DailyPlanner } from './DailyPlanner';
 export { TaskCard } from './TaskCard'; 
-export { TaskPoolSidebar } from './TaskPoolSidebar';
+export { TaskInboxSidebar } from './TaskInboxSidebar';
 export { PinnedTasksSidebar } from './PinnedTasksSidebar';
 export { TaskAssignmentCalendar } from './TaskAssignmentCalendar';
-export { default as UnscheduledTasksView } from './UnscheduledTasksView';
+export { default as TaskInboxView } from './TaskInboxView';
 export { default as WeeklyView } from './WeeklyView'; 

@@ -33,8 +33,8 @@ export interface Task {
   isNew?: boolean;
   
   /** 
-   * Pool date in YYYY-MM-DD format for unscheduled tasks.
-   * When set, indicates this task is in the pool for a specific date
+   * Inbox date in YYYY-MM-DD format for unscheduled tasks.
+   * When set, indicates this task is in the inbox for a specific date
    */
   poolDate?: string;
 

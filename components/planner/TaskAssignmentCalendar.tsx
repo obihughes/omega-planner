@@ -117,23 +117,12 @@ export function TaskAssignmentCalendar({
   };
 
   const handleDateDoubleClick = (date: Date) => {
-    console.log('🐛 [TaskAssignmentCalendar] Double-click detected on date:', date);
-    console.log('🐛 [TaskAssignmentCalendar] assigningTask:', assigningTask);
-    console.log('🐛 [TaskAssignmentCalendar] createQuickTask function:', createQuickTask);
-    console.log('🐛 [TaskAssignmentCalendar] typeof createQuickTask:', typeof createQuickTask);
-    
     if (assigningTask) {
-      console.log('🐛 [TaskAssignmentCalendar] Skipping task creation - assignment mode active');
       return; // Don't create tasks during assignment mode
     }
     
-    try {
-      // Use the createQuickTask function designed for monthly view
-      createQuickTask(date);
-      console.log('🐛 [TaskAssignmentCalendar] createQuickTask() called successfully');
-    } catch (error) {
-      console.error('🐛 [TaskAssignmentCalendar] Error calling createQuickTask:', error);
-    }
+    // Use the createQuickTask function designed for monthly view
+    createQuickTask(date);
   };
 
   const handleTaskAssignClick = (task: Task) => {
@@ -219,9 +208,16 @@ export function TaskAssignmentCalendar({
       <div className="flex-1 overflow-auto p-4">
         {/* Pool Tasks Section */}
         <div className="mb-6">
-          <h3 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wide">
-            Unscheduled Tasks ({poolTasks.length})
-          </h3>
+          <div className="flex items-baseline justify-between mb-3">
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              Inbox Tasks ({poolTasks.length})
+            </h3>
+            {poolTasks.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Drag a task to the calendar to schedule it.
+              </p>
+            )}
+          </div>
           
           {poolTasks.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-4">
@@ -416,11 +412,11 @@ export function TaskAssignmentCalendar({
           </div>
           
           <div className="card-enhanced p-4 bg-card/60 backdrop-blur-sm">
-            <h4 className="text-sm font-medium text-foreground mb-2">Unscheduled</h4>
+            <h4 className="text-sm font-medium text-foreground mb-2">Inbox</h4>
             <div className="text-xl font-bold text-primary">
               {poolTasks.length}
             </div>
-            <div className="text-xs text-muted-foreground">Tasks in pool</div>
+            <div className="text-xs text-muted-foreground">Tasks in inbox</div>
           </div>
         </div>
       </div>

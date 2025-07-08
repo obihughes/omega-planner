@@ -56,9 +56,9 @@ export default function WeeklyView({}: WeeklyViewProps) {
   const weekDates = getWeekDates(weekOffset);
   const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-  // Get tasks for the week - separate scheduled and unscheduled
+  // Get tasks for the week - separate scheduled and inbox
   const weekTasks = useMemo(() => {
-    const weekTasksMap = new Map<string, { scheduled: Task[], unscheduled: Task[] }>();
+    const weekTasksMap = new Map<string, { scheduled: Task[], inbox: Task[] }>();
     
     weekDates.forEach(date => {
       const dateKey = getDateKey(date);
@@ -67,14 +67,14 @@ export default function WeeklyView({}: WeeklyViewProps) {
       
       // Separate scheduled tasks (have specific times) from unscheduled (pool tasks)
       const scheduledTasks = dayTasks.filter(task => !task.poolDate && task.startHour !== undefined);
-      const unscheduledTasks = poolTasks;
+      const inboxTasks = poolTasks;
       
       // Sort scheduled tasks by start time
       scheduledTasks.sort((a, b) => (a.startHour || 0) - (b.startHour || 0));
       
       weekTasksMap.set(dateKey, {
         scheduled: scheduledTasks,
-        unscheduled: unscheduledTasks
+        inbox: inboxTasks
       });
     });
     
@@ -129,7 +129,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
     let completedTasks = 0;
 
     weekTasks.forEach(dayData => {
-      [...dayData.scheduled, ...dayData.unscheduled].forEach(task => {
+      [...dayData.scheduled, ...dayData.inbox].forEach(task => {
         totalTasks++;
         if (task.completed) completedTasks++;
       });
@@ -209,7 +209,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
         <div className="grid grid-cols-7 gap-4 h-full">
           {weekDates.map((date, index) => {
             const dateKey = getDateKey(date);
-            const dayData = weekTasks.get(dateKey) || { scheduled: [], unscheduled: [] };
+            const dayData = weekTasks.get(dateKey) || { scheduled: [], inbox: [] };
             const dayName = dayNames[index];
             const isCurrentDay = isToday(date);
             const isPastDay = isPast(date);
@@ -236,12 +236,12 @@ export default function WeeklyView({}: WeeklyViewProps) {
 
                 {/* Day Tasks Container */}
                 <div className="flex-1 flex flex-col min-h-0">
-                  {dayData.scheduled.length === 0 && dayData.unscheduled.length === 0 ? (
+                  {dayData.scheduled.length === 0 && dayData.inbox.length === 0 ? (
                     <div className="flex-1"></div>
                   ) : (
                     <div className="flex-1 flex flex-col gap-2 overflow-y-auto">
-                      {/* Show unscheduled tasks first */}
-                      {dayData.unscheduled.map((task) => (
+                                {/* Show inbox tasks first */}
+          {dayData.inbox.map((task) => (
                         <div
                           key={task.id}
                           className={`
@@ -263,7 +263,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
                             {/* "No time" text */}
                             <div className="flex items-center gap-1.5 text-sm text-foreground/70 mt-1">
                                 <CalendarOff className="w-4 h-4" />
-                                <span>Unscheduled</span>
+                                <span>Inbox</span>
                             </div>
                           </div>
 
@@ -274,7 +274,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
                         </div>
                       ))}
 
-                      {/* Show scheduled tasks after unscheduled ones */}
+                      {/* Show scheduled tasks after inbox ones */}
                       {dayData.scheduled.map((task) => (
                         <div
                           key={task.id}
