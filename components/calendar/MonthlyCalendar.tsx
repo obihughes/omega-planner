@@ -277,39 +277,40 @@ export function MonthlyCalendar({
                 {day.date.getDate()}
               </div>
               
-              {/* Periods */}
-              {day.periods.length > 0 && (
-                <div className="mb-2 space-y-1">
-                  {day.periods.slice(0, 2).map(period => {
-                    const isStart = day.date.toDateString() === period.startDate.toDateString();
-                    const isEnd = day.date.toDateString() === period.endDate.toDateString();
-                    
-                    return (
-                      <div
-                        key={period.id}
-                        className="h-4 rounded-sm text-xs text-white font-medium flex items-center px-1 cursor-pointer hover:opacity-80 transition-opacity"
-                        style={{ backgroundColor: period.color }}
-                        onClick={(e) => handlePeriodClick(period, e)}
-                        title={`${period.title} (${period.startDate.toLocaleDateString()} - ${period.endDate.toLocaleDateString()})`}
-                      >
-                        {isStart && (
-                          <span className="truncate text-[10px]">
-                            {period.title}
-                          </span>
-                        )}
-                        {!isStart && !isEnd && (
-                          <div className="w-full h-full" />
-                        )}
-                      </div>
-                    );
-                  })}
-                  {day.periods.length > 2 && (
-                    <div className="text-xs text-muted-foreground">
-                      +{day.periods.length - 2} more
-                    </div>
-                  )}
-                </div>
-              )}
+                             {/* Periods */}
+               {day.periods.length > 0 && (
+                 <div className="mb-2 space-y-0.5">
+                   {day.periods.slice(0, 3).map(period => {
+                     const isStart = day.date.toDateString() === period.startDate.toDateString();
+                     const isEnd = day.date.toDateString() === period.endDate.toDateString();
+                     
+                     return (
+                       <div
+                         key={period.id}
+                         className="h-2 rounded-full cursor-pointer hover:h-3 transition-all duration-200 relative group"
+                         style={{
+                           backgroundColor: period.color + '30',
+                           borderLeft: isStart ? `2px solid ${period.color}` : 'none',
+                           borderRight: isEnd ? `2px solid ${period.color}` : 'none'
+                         }}
+                         onClick={(e) => handlePeriodClick(period, e)}
+                         title={`${period.title} (${period.startDate.toLocaleDateString()} - ${period.endDate.toLocaleDateString()})`}
+                       >
+                         {isStart && (
+                           <div className="absolute left-0 top-2 opacity-0 group-hover:opacity-100 bg-popover text-popover-foreground text-[9px] px-1 py-0.5 rounded shadow-md border z-10 whitespace-nowrap transition-opacity">
+                             {period.title}
+                           </div>
+                         )}
+                       </div>
+                     );
+                   })}
+                   {day.periods.length > 3 && (
+                     <div className="text-xs text-muted-foreground text-center">
+                       +{day.periods.length - 3}
+                     </div>
+                   )}
+                 </div>
+               )}
               
               {/* Events */}
               <div className="space-y-1">

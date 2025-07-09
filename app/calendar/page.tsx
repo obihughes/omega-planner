@@ -26,7 +26,7 @@ export default function CalendarPage() {
   } = useCalendarData();
 
   const [showSettings, setShowSettings] = useState(false);
-  const [currentView, setCurrentView] = useState<CalendarView>('monthly');
+  const [currentView, setCurrentView] = useState<CalendarView>('yearly');
 
   const handleEventAdd = (eventData: Omit<CalendarEvent, 'id'>) => {
     addEvent(eventData);
