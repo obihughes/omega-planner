@@ -162,19 +162,24 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="col-span-2">
             <label htmlFor={`startHourInput-${taskToEdit?.id || 'new'}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Start Time
             </label>
             <select
               id={`startHourInput-${taskToEdit?.id || 'new'}`}
-              value={startHour}
-              onChange={(e) => setStartHour(parseFloat(e.target.value))}
+              value={Math.floor(startHour)}
+              onChange={(e) => {
+                const newHour = parseInt(e.target.value, 10);
+                const minutePart = startHour % 1;
+                setStartHour(newHour + minutePart);
+              }}
               className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
             >
-              {Array.from({ length: TIMELINE_END_HOUR - TIMELINE_START_HOUR }, (_, i) => {
+              {Array.from({ length: TIMELINE_END_HOUR - TIMELINE_START_HOUR + 1 }, (_, i) => {
                 const hourVal = TIMELINE_START_HOUR + i;
+                if (hourVal > TIMELINE_END_HOUR) return null;
                 return (
                   <option key={hourVal} value={hourVal}>
                     {formatTime(hourVal)}
@@ -183,7 +188,28 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
               })}
             </select>
           </div>
-
+          <div>
+            <label htmlFor={`startMinuteInput-${taskToEdit?.id || 'new'}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Minute
+            </label>
+            <select
+              id={`startMinuteInput-${taskToEdit?.id || 'new'}`}
+              value={Math.round((startHour % 1) * 60)}
+              onChange={(e) => {
+                const newMinute = parseInt(e.target.value, 10);
+                const hourPart = Math.floor(startHour);
+                setStartHour(hourPart + newMinute / 60);
+              }}
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+            >
+              <option value={0}>00</option>
+              <option value={15}>15</option>
+              <option value={30}>30</option>
+              <option value={45}>45</option>
+            </select>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
           <div>
             <label htmlFor={`durationInput-${taskToEdit?.id || 'new'}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Duration

@@ -143,6 +143,9 @@ const PIXELS_PER_HOUR = 142;
    - Use left/right handles
    - Minimum duration: 15 minutes
 
+5. **Scheduling Inbox/Unscheduled Tasks**
+   - Drag tasks from the "Inbox" section (in monthly view) or "Unscheduled" tasks (in daily view) directly onto the calendar to assign them a specific time.
+
 ## Best Practices
 1. Always check for task conflicts before placement
 2. Use the provided color palette for consistency

@@ -2,11 +2,13 @@
 
 import React, { useState } from 'react';
 import { AppLayout } from '@/components/ui/AppLayout';
-import { YearCalendar } from '@/components/calendar/YearCalendar';
+import { YearCalendar, MonthlyCalendar } from '@/components/calendar';
 import { useCalendarData } from '@/hooks/useCalendarData';
 import { CalendarEvent, CalendarPeriod } from '@/types/calendar';
-import { Settings, Download, RefreshCw, Trash2 } from 'lucide-react';
+import { Settings, Download, RefreshCw, Trash2, Calendar, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+
+type CalendarView = 'yearly' | 'monthly';
 
 export default function CalendarPage() {
   const {
@@ -24,6 +26,7 @@ export default function CalendarPage() {
   } = useCalendarData();
 
   const [showSettings, setShowSettings] = useState(false);
+  const [currentView, setCurrentView] = useState<CalendarView>('monthly');
 
   const handleEventAdd = (eventData: Omit<CalendarEvent, 'id'>) => {
     addEvent(eventData);
@@ -58,19 +61,60 @@ export default function CalendarPage() {
 
   return (
     <AppLayout>
-      
       <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* Header with View Switcher */}
+        <div className="mb-6 bg-card border border-border rounded-lg shadow-sm overflow-hidden p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-foreground">Calendar</h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant={currentView === 'monthly' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setCurrentView('monthly')}
+                className="flex items-center gap-2"
+              >
+                <Calendar className="w-4 h-4" />
+                Monthly
+              </Button>
+              <Button
+                variant={currentView === 'yearly' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setCurrentView('yearly')}
+                className="flex items-center gap-2"
+              >
+                <CalendarDays className="w-4 h-4" />
+                Yearly
+              </Button>
+            </div>
+          </div>
+        </div>
+
         {/* Calendar Component */}
-        <YearCalendar
-          data={data}
-          onEventAdd={handleEventAdd}
-          onPeriodAdd={handlePeriodAdd}
-          onEventEdit={handleEventEdit}
-          onPeriodEdit={handlePeriodEdit}
-          onEventDelete={deleteEvent}
-          onPeriodDelete={deletePeriod}
-          className="bg-background"
-        />
+        {currentView === 'monthly' ? (
+          <MonthlyCalendar
+            data={data}
+            onEventAdd={handleEventAdd}
+            onPeriodAdd={handlePeriodAdd}
+            onEventEdit={handleEventEdit}
+            onPeriodEdit={handlePeriodEdit}
+            onEventDelete={deleteEvent}
+            onPeriodDelete={deletePeriod}
+            className="bg-background"
+          />
+        ) : (
+          <YearCalendar
+            data={data}
+            onEventAdd={handleEventAdd}
+            onPeriodAdd={handlePeriodAdd}
+            onEventEdit={handleEventEdit}
+            onPeriodEdit={handlePeriodEdit}
+            onEventDelete={deleteEvent}
+            onPeriodDelete={deletePeriod}
+            className="bg-background"
+          />
+        )}
 
         {/* Settings Section */}
         <div className="mt-12 pt-8 border-t">
