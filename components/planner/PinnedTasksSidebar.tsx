@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PinnedTask, Task } from '../../types/planner';
-import { PinOff, Eye as EyeIcon, CalendarDays, Edit3, Trash2, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { PinOff, Eye as EyeIcon, CalendarDays, Edit3, Trash2, RefreshCw, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { formatTime } from '@/utils/formatters';
-import { Button } from "@/components/ui";
+import { Button, Input } from "@/components/ui";
 
 interface PinnedTasksSidebarProps {
   pinnedTasks: PinnedTask[];
@@ -29,6 +29,7 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
   const [scrollPosition, setScrollPosition] = React.useState(0);
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
   const viewModalRef = React.useRef<HTMLDivElement>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -161,9 +162,28 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
     return taskDueDate.getTime() < new Date().getTime();
   });
 
+  const filteredPinnedTasks = pinnedTasks.filter(task => 
+    task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (task.notes && task.notes.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
   return (
     <>
       <div className="flex flex-col flex-grow overflow-hidden">
+        {/* Search Input */}
+        <div className="px-2 pt-2 pb-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search pinned tasks..."
+              className="w-full pl-9 pr-3 py-2 text-sm bg-input border border-border rounded-md focus:ring-1 focus:ring-ring focus:border-ring"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+
         {/* Navigation arrows */}
         {pinnedTasks.length > 0 && (
           <div className="absolute top-1/2 -translate-y-1/2 left-1 right-1 flex justify-between pointer-events-none z-10">
@@ -197,52 +217,40 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
           className="p-2 flex space-x-3 overflow-x-auto overflow-y-hidden flex-grow scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
           onScroll={handleScroll}
         >
-          {pinnedTasks.length === 0 ? (
-            <p className="text-muted-foreground text-sm text-center pt-4 w-full">No tasks pinned yet.</p> 
+          {filteredPinnedTasks.length === 0 ? (
+            <p className="text-muted-foreground text-sm text-center py-4 w-full">No pinned tasks found.</p>
           ) : (
-            pinnedTasks.map(pinnedTask => {
-              // Ensure we have a proper Date object, handling potential serialization issues
-              const dueDateObj = pinnedTask.dueDate instanceof Date ? pinnedTask.dueDate : new Date(pinnedTask.dueDate);
-              const { text: timeRemainingText, isOverdue } = formatTimeRemaining(dueDateObj);
+            filteredPinnedTasks
+              .sort((a, b) => {
+                // Sort by due date, then by name
+                const dateA = a.dueDate instanceof Date ? a.dueDate : new Date(a.dueDate);
+                const dateB = b.dueDate instanceof Date ? b.dueDate : new Date(b.dueDate);
+                if (dateA.getTime() !== dateB.getTime()) {
+                  return dateA.getTime() - dateB.getTime();
+                }
+                return a.name.localeCompare(b.name);
+              })
+              .map(task => {
+                const timeRemaining = formatTimeRemaining(task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate));
+                const isOverdue = timeRemaining.isOverdue;
 
-              return (
-                <div 
-                  key={pinnedTask.pinnedId} 
-                  className="relative p-3 rounded-lg bg-card border border-border/50 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-24"
-                >
-                  <div className="flex items-start justify-between gap-3 h-full">
-                    <div className="flex items-start gap-3 flex-1 min-w-0">
-                      {/* Color status dot */}
-                      <div 
-                        className={`w-3 h-3 rounded-full flex-shrink-0 mt-1 ${
-                          isOverdue ? 'bg-red-500' : 'bg-blue-500'
-                        }`}
-                      />
-                      
-                      <div className="flex-1 min-w-0">
-                        {/* Task name */}
-                        <p className="font-medium text-sm text-foreground truncate leading-tight mb-2">
-                          {pinnedTask.name}
+                return (
+                  <div
+                    key={task.pinnedId}
+                    className={`relative p-3 rounded-lg bg-card/60 backdrop-blur-sm border border-border/50 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-20 ${isOverdue ? 'bg-red-500/10 border-red-500/20' : ''}`}
+                  >
+                    <div className="flex items-start justify-between gap-3 h-full">
+                      <div className="flex flex-col flex-1 min-w-0">
+                        <p className="font-medium text-sm text-foreground truncate leading-tight mb-1">
+                          {task.name || "Untitled Pinned Task"}
                         </p>
-                        
-                        {/* Due date */}
-                        <div className="flex items-center gap-1 mb-1">
-                          <CalendarDays className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                          <span className="text-xs text-muted-foreground truncate">{formatDateTimeForPinnedTask(dueDateObj)}</span>
-                        </div>
-                        
-                        {/* Time remaining */}
-                        <div className="text-xs">
-                          <span 
-                            className={`font-medium ${
-                              isOverdue ? 'text-red-500' : 'text-blue-500'
-                            }`}
-                          >
-                            {formatCompactTimeRemaining(timeRemainingText)}
-                          </span>
+                        <div className={`text-xs ${isOverdue ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`}>
+                          <div className="flex items-center gap-1">
+                            <CalendarDays className="w-3 h-3 flex-shrink-0" />
+                            <span>{formatCompactTimeRemaining(timeRemaining.text)}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
                     
                     {/* Action buttons - stacked vertically */}
                     <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -251,7 +259,7 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
                         className="h-6 w-6 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setViewingPinnedTaskNotes(pinnedTask);
+                          setViewingPinnedTaskNotes(task);
                         }}
                         title="View Notes"
                       >
@@ -262,7 +270,7 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
                         className="h-6 w-6 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                         onClick={(e) => {
                           e.stopPropagation();
-                          openEditModal(pinnedTask as Task, { isPinned: true });
+                          openEditModal(task as Task, { isPinned: true });
                         }}
                         title="Edit Task"
                       >
@@ -273,7 +281,7 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
                         className="h-6 w-6 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                         onClick={(e) => {
                           e.stopPropagation();
-                          onUnpinTask(pinnedTask.pinnedId);
+                          onUnpinTask(task.pinnedId);
                         }}
                         title="Unpin task"
                       >
