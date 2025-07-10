@@ -209,19 +209,70 @@ Modal for creating and editing calendar periods.
 
 ## Documents Components
 
-### CanvasTextEditor (`components/documents/CanvasTextEditor.tsx`)
-High-performance text editor component.
+### Documents (`components/documents/Documents.tsx`)
+Main document management interface with tab system and controls.
 
 **Key Features:**
-- Performance optimizations for large documents
-- Rich text editing capabilities
-- Auto-save functionality
+- **Tab-Based Document Management**: Open multiple documents as tabs with close functionality
+- **Archive System**: Move documents to archive instead of permanent deletion
+- **Clean UI Layout**: Reorganized button layout with logical grouping
+- **Responsive Design**: Buttons stay in place regardless of content width
+- **Smart Controls**: Context-sensitive editing tools (Text, Move, Star, Archive)
+
+**Recent Improvements:**
+- Fixed tab close functionality - tabs can now be properly closed
+- Renamed "Trash" to "Archive" for clearer terminology
+- Reorganized button layout to prevent horizontal scrolling
+- Added visual separators between button groups
+- Implemented proper tab state management with `openDocuments` tracking
+
+**Button Layout:**
+```
+[Doc Tabs...] | [Text] [Move] | [★] [Archive] | [🔍] [+] [Archive View]
+```
+
+### CanvasTextEditor (`components/documents/CanvasTextEditor.tsx`)
+Advanced free-form text canvas with absolute positioning.
+
+**Key Features:**
+- **Free-Form Text Positioning**: Click anywhere to place text blocks
+- **Simple Two-Step Workflow**: Click "Text" button → Click location → Type
+- **Drag Mode**: Move text blocks with visual grid feedback
+- **Horizontal Width Constraints**: Prevents page expansion while typing
+- **Text Wrapping**: Long text wraps properly within viewport bounds
+- **Grid Snapping**: Text positions snap to grid for consistent alignment
+
+**Interaction Model:**
+1. **Add Text**: Click "Text" button (in header), then click canvas location
+2. **Edit Text**: Single-click existing text blocks to activate editing
+3. **Move Text**: Enable "Move" mode, then drag text blocks to new positions
+4. **Keyboard Navigation**: Tab/Enter work normally, Escape cancels/deselects
+
+**Technical Improvements:**
+- Fixed horizontal page expansion issue during typing
+- Added proper text wrapping with `word-wrap: break-word`
+- Constrained text blocks to viewport width: `maxWidth: 'calc(100vw - 100px)'`
+- Maintained vertical scrolling while preventing horizontal overflow
+- Optimized canvas sizing to use container width instead of content-based expansion
 
 ### DocumentEditor (`components/documents/DocumentEditor.tsx`)
-Document management interface.
+Individual document editing container with auto-save.
 
-### TextBlock (`components/documents/TextBlock.tsx`)
-Individual text block component for the canvas editor.
+**Key Features:**
+- Wraps CanvasTextEditor with document-specific functionality
+- Auto-save with 2-second debounce after changes
+- Clean minimal footer with last saved timestamp
+- Proper container constraints to prevent layout issues
+
+### Document Storage System (`hooks/useDocuments.ts`)
+Persistent document management with localStorage.
+
+**Key Features:**
+- Full CRUD operations for documents
+- Archive/restore functionality instead of permanent deletion
+- Auto-selection of last opened document
+- Star/favorite system for important documents
+- Automatic timestamps for created/updated dates
 
 ## Primitives Components
 
@@ -235,7 +286,46 @@ Custom time selection component.
 
 ## Recent Updates
 
-### Pinned Tasks Time Display Fix (Latest)
+### Text Canvas UI Overhaul (Latest)
+**Issue**: Multiple UX problems with the text canvas:
+- Horizontal page expansion while typing
+- Confusing button layout and terminology  
+- Non-functional tab close buttons
+- Multiple "trash" icons causing confusion
+
+**Resolution**:
+1. **Fixed Horizontal Width Expansion**: 
+   - Modified canvas sizing to use container width instead of content-based expansion
+   - Added text wrapping constraints: `maxWidth: 'calc(100vw - 100px)'` and `word-wrap: break-word`
+   - Applied `min-w-0` flexbox constraints to prevent layout breaking
+
+2. **Reorganized Button Layout**:
+   - Grouped buttons logically: Text tools | Document actions | Global tools
+   - Added visual separators between groups
+   - Shortened button labels for space efficiency
+   - Made controls section `flex-shrink-0` to prevent squashing
+
+3. **Fixed Tab Management**:
+   - Implemented proper `openDocuments` state tracking
+   - Tab close buttons now actually remove documents from tabs
+   - Auto-open new documents when created or selected
+   - Smart tab switching when closing active document
+
+4. **Improved Terminology**:
+   - Renamed "Trash" to "Archive" throughout interface
+   - Changed "Move to trash" to "Archive document" 
+   - Updated titles and messaging for clarity
+
+**Files Modified**:
+- `components/documents/CanvasTextEditor.tsx` - Fixed width expansion, added text wrapping
+- `components/documents/DocumentEditor.tsx` - Added container constraints
+- `components/documents/Documents.tsx` - Complete UI reorganization, tab management
+- `components/documents/README.md` - Updated documentation
+- `docs/components.md` - Enhanced component documentation
+
+**Result**: Clean, professional text editing interface with predictable behavior and no layout issues.
+
+### Pinned Tasks Time Display Fix
 **Issue**: Pinned tasks were displaying incorrect times and showing everything as minutes instead of converting to hours/days.
 
 **Resolution**:

@@ -24,7 +24,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   }, [isNavigationCollapsed]);
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-screen bg-background">
       {/* Sidebar Navigation */}
       <Navigation 
         isCollapsed={isNavigationCollapsed}
@@ -36,7 +36,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         "flex-1 transition-all duration-300 ease-in-out",
         isNavigationCollapsed ? "ml-16" : "ml-48"
       )}>
-        <div className="min-h-screen">
+        <div className="h-full">
           {children}
         </div>
       </main>
