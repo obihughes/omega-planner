@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Button } from "@/components/ui";
-import { Pin, CopyPlus, Trash2, Calendar, Clock, Edit3, PinOff, Scissors, X } from 'lucide-react';
+import { Pin, Eye, Trash2, Calendar, Clock, Edit3, PinOff, Scissors, X, Plus } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
@@ -674,6 +674,24 @@ export default function DailyPlanner() {
               <div className="h-28 p-2">
                 <div className="flex gap-3 h-full overflow-x-auto overflow-y-hidden">
                   
+                  {/* Add to Pool Button */}
+                  <div className="flex items-center justify-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const today = new Date();
+                        const currentViewDate = new Date(today);
+                        currentViewDate.setDate(today.getDate() + topDayOffset);
+                        createPoolTaskForDate(currentViewDate);
+                      }}
+                      className="flex-shrink-0 w-12 h-20 bg-green-100 dark:bg-green-900/40 border-2 border-dashed border-green-300 dark:border-green-700 rounded-lg hover:bg-green-150 dark:hover:bg-green-900/60 hover:border-green-400 dark:hover:border-green-600 transition-all duration-150 flex flex-col items-center justify-center gap-1 text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300"
+                      title="Add Task to Pool"
+                    >
+                      <Plus className="w-5 h-5" />
+                      <span className="text-xs font-medium">Add</span>
+                    </button>
+                  </div>
+                  
                   {/* Task Pool Tasks */}
                   {currentDayPoolTasks.map((task) => (
                     <div
@@ -682,7 +700,7 @@ export default function DailyPlanner() {
                       onDragStart={(e) => {
                         e.dataTransfer.setData('text/plain', JSON.stringify({ ...task, source: 'pool' }));
                       }}
-                      className="relative p-3 rounded-lg bg-transparent border border-border/50 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-20 cursor-grab active:cursor-grabbing"
+                      className="relative p-3 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-20 cursor-grab active:cursor-grabbing"
                     >
                       <div className="flex items-start justify-between gap-3 h-full">
                         <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -700,10 +718,10 @@ export default function DailyPlanner() {
                           <button
                             type="button"
                             className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); startCopy(task); }}
-                            title="Copy Task"
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); openViewNotesModal(task); }}
+                            title="View Notes"
                           >
-                            <CopyPlus className="w-2.5 h-2.5" />
+                            <Eye className="w-2.5 h-2.5" />
                           </button>
                           <button
                             type="button"
