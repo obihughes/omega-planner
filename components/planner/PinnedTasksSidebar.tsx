@@ -237,9 +237,9 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
                 return (
                   <div
                     key={task.pinnedId}
-                    className={`relative p-3 rounded-lg bg-card/60 backdrop-blur-sm border border-border/50 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-20 ${isOverdue ? 'bg-red-500/10 border-red-500/20' : ''}`}
+                    className={`relative p-2 rounded-lg bg-card/60 backdrop-blur-sm border border-border/50 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-16 ${isOverdue ? 'bg-red-500/10 border-red-500/20' : ''}`}
                   >
-                    <div className="flex items-start justify-between gap-3 h-full">
+                    <div className="flex items-start justify-between gap-2 h-full">
                       <div className="flex flex-col flex-1 min-w-0">
                         <p className="font-medium text-sm text-foreground truncate leading-tight mb-1">
                           {task.name || "Untitled Pinned Task"}
@@ -253,39 +253,39 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
                       </div>
                     
                     {/* Action buttons - stacked vertically */}
-                    <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute top-0.5 right-0.5 flex flex-col gap-0 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         type="button"
-                        className="h-6 w-6 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                        className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                         onClick={(e) => {
                           e.stopPropagation();
                           setViewingPinnedTaskNotes(task);
                         }}
                         title="View Notes"
                       >
-                        <EyeIcon className="w-3 h-3" />
+                        <EyeIcon className="w-2.5 h-2.5" />
                       </button>
                       <button
                         type="button"
-                        className="h-6 w-6 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                        className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                         onClick={(e) => {
                           e.stopPropagation();
                           openEditModal(task as Task, { isPinned: true });
                         }}
                         title="Edit Task"
                       >
-                        <Edit3 className="w-3 h-3" />
+                        <Edit3 className="w-2.5 h-2.5" />
                       </button>
                       <button
                         type="button"
-                        className="h-6 w-6 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                        className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                         onClick={(e) => {
                           e.stopPropagation();
                           onUnpinTask(task.pinnedId);
                         }}
                         title="Unpin task"
                       >
-                        <PinOff className="w-3 h-3" />
+                        <PinOff className="w-2.5 h-2.5" />
                       </button>
                     </div>
                   </div>

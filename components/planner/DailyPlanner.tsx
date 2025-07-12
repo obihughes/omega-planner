@@ -671,7 +671,7 @@ export default function DailyPlanner() {
           <>
             {/* Unified Task Pool and Pinned Tasks View */}
             <div className="mb-4 bg-card border border-border rounded-lg shadow-sm overflow-hidden">
-              <div className="h-28 p-2">
+              <div className="h-20 p-2">
                 <div className="flex gap-3 h-full overflow-x-auto overflow-y-hidden">
                   
                   {/* Add to Pool Button */}
@@ -684,10 +684,10 @@ export default function DailyPlanner() {
                         currentViewDate.setDate(today.getDate() + topDayOffset);
                         createPoolTaskForDate(currentViewDate);
                       }}
-                      className="flex-shrink-0 w-12 h-20 bg-green-100 dark:bg-green-900/40 border-2 border-dashed border-green-300 dark:border-green-700 rounded-lg hover:bg-green-150 dark:hover:bg-green-900/60 hover:border-green-400 dark:hover:border-green-600 transition-all duration-150 flex flex-col items-center justify-center gap-1 text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300"
+                      className="flex-shrink-0 w-12 h-16 bg-green-100 dark:bg-green-900/40 border-2 border-dashed border-green-300 dark:border-green-700 rounded-lg hover:bg-green-150 dark:hover:bg-green-900/60 hover:border-green-400 dark:hover:border-green-600 transition-all duration-150 flex flex-col items-center justify-center gap-1 text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300"
                       title="Add Task to Pool"
                     >
-                      <Plus className="w-5 h-5" />
+                      <Plus className="w-4 h-4" />
                       <span className="text-xs font-medium">Add</span>
                     </button>
                   </div>
@@ -700,19 +700,19 @@ export default function DailyPlanner() {
                       onDragStart={(e) => {
                         e.dataTransfer.setData('text/plain', JSON.stringify({ ...task, source: 'pool' }));
                       }}
-                      className="relative p-3 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-20 cursor-grab active:cursor-grabbing"
+                      className="relative p-2 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-16 cursor-grab active:cursor-grabbing"
                     >
-                      <div className="flex items-start justify-between gap-3 h-full">
-                        <div className="flex items-start gap-3 flex-1 min-w-0">
-                          <div className="flex flex-col flex-1 min-w-0">
-                            <p className="font-medium text-sm text-foreground truncate leading-tight mb-2">
-                              {task.name || "Untitled Task"}
-                            </p>
-                            <div className="text-xs text-muted-foreground">
-                              <span>Unscheduled</span>
+                                              <div className="flex items-start justify-between gap-2 h-full">
+                          <div className="flex items-start gap-2 flex-1 min-w-0">
+                            <div className="flex flex-col flex-1 min-w-0">
+                              <p className="font-medium text-sm text-foreground truncate leading-tight mb-1">
+                                {task.name || "Untitled Task"}
+                              </p>
+                              <div className="text-xs text-muted-foreground">
+                                <span>Unscheduled</span>
+                              </div>
                             </div>
                           </div>
-                        </div>
                         {/* Action buttons */}
                         <div className="absolute top-1 right-1 flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
@@ -768,10 +768,10 @@ export default function DailyPlanner() {
                       return (
                         <div
                           key={`pinned-${task.id}`}
-                          className="relative p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-20"
+                          className="relative p-2 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-16"
                         >
-                          <div className="flex items-start justify-between gap-3 h-full">
-                            <div className="flex items-start gap-3 flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2 h-full">
+                            <div className="flex items-start gap-2 flex-1 min-w-0">
                               <div className="flex flex-col flex-1 min-w-0">
                                 <p className="font-medium text-sm text-foreground truncate leading-tight mb-1">
                                   {task.name || "Untitled Task"}
