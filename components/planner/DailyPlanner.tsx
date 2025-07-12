@@ -717,7 +717,7 @@ export default function DailyPlanner() {
                         <div className="absolute top-1 right-2 flex flex-col gap-0 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             type="button"
-                            className="h-4 w-4 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                            className="h-4.5 w-4 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); openViewNotesModal(task); }}
                             title="View Notes"
                           >
@@ -725,7 +725,7 @@ export default function DailyPlanner() {
                           </button>
                           <button
                             type="button"
-                            className="h-4 w-4 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                            className="h-4.5 w-4 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEditModal(task, { isFromPool: true }); }}
                             title="Edit Task"
                           >
@@ -733,7 +733,7 @@ export default function DailyPlanner() {
                           </button>
                           <button
                             type="button"
-                            className="h-4 w-4 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                            className="h-4.5 w-4 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                             onClick={(e) => { 
                               e.preventDefault(); 
                               e.stopPropagation(); 
@@ -785,7 +785,7 @@ export default function DailyPlanner() {
                             <div className="absolute top-1 right-2 flex flex-col gap-0 opacity-0 group-hover:opacity-100 transition-opacity">
                               <button
                                 type="button"
-                                className="h-4 w-4 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                                className="h-4.5 w-4 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); openViewNotesModal(task); }}
                                 title="View Notes"
                               >
@@ -793,7 +793,7 @@ export default function DailyPlanner() {
                               </button>
                               <button
                                 type="button"
-                                className="h-4 w-4 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                                className="h-4.5 w-4 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEditModal(task); }}
                                 title="Edit Task"
                               >
@@ -801,7 +801,7 @@ export default function DailyPlanner() {
                               </button>
                               <button
                                 type="button"
-                                className="h-4 w-4 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                                className="h-4.5 w-4 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleUnpinTask(task.pinnedId); }}
                                 title="Unpin Task"
                               >
