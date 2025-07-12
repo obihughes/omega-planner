@@ -99,7 +99,7 @@ function TaskItemComponent({ id, task, taskIndex, totalTasks, onStatusChange, on
       ref={setNodeRef}
       style={style}
       className={cn(
-        "bg-card border rounded-lg p-3 hover:shadow-sm transition-all duration-200 group flex items-start gap-3",
+        "bg-card border p-3 hover:shadow-sm transition-all duration-200 group flex items-start gap-3 font-['Inter',sans-serif]",
         task.status === 'completed' && "opacity-75",
         isOverdue && "border-red-200 dark:border-red-800"
       )}
@@ -112,7 +112,7 @@ function TaskItemComponent({ id, task, taskIndex, totalTasks, onStatusChange, on
       {/* Original Content */}
       <div className="flex-1 flex items-start space-x-3">
          {/* Task Number */}
-         <div className="mt-0.5 text-xs text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
+         <div className="mt-0.5 text-xs text-muted-foreground font-mono bg-muted px-2 py-1">
           {taskIndex}/{totalTasks}
         </div>
         
@@ -132,14 +132,14 @@ function TaskItemComponent({ id, task, taskIndex, totalTasks, onStatusChange, on
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <h4 className={cn(
-                "font-medium text-foreground",
+                "font-medium text-foreground font-['Inter',sans-serif]",
                 task.status === 'completed' && "line-through text-muted-foreground"
               )}>
                 {task.title}
               </h4>
               
               {task.description && (
-                <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                <p className="text-sm text-muted-foreground mt-1 line-clamp-2 font-['Inter',sans-serif]">
                   {task.description}
                 </p>
               )}
@@ -150,7 +150,7 @@ function TaskItemComponent({ id, task, taskIndex, totalTasks, onStatusChange, on
                   {task.tags.map((tag, index) => (
                     <span
                       key={index}
-                      className="px-2 py-1 bg-secondary text-secondary-foreground text-xs rounded-full"
+                      className="px-2 py-1 bg-secondary text-secondary-foreground text-xs font-['Inter',sans-serif]"
                     >
                       {tag}
                     </span>
@@ -159,7 +159,7 @@ function TaskItemComponent({ id, task, taskIndex, totalTasks, onStatusChange, on
               )}
 
               {/* Meta Information */}
-              <div className="flex items-center space-x-4 mt-2 text-xs text-muted-foreground">
+              <div className="flex items-center space-x-4 mt-2 text-xs text-muted-foreground font-['Inter',sans-serif]">
                 {/* Completion Date for Completed Tasks */}
                 {task.status === 'completed' && task.completedAt && (
                   <div className="flex items-center space-x-1 text-green-600">
