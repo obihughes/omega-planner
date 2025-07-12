@@ -191,21 +191,13 @@ function ProjectCardComponent({
       <div className="flex items-start justify-between mb-6">
         <div className="min-w-0 flex-1">
           <h3 className={cn(
-            "text-xl font-semibold group-hover:text-primary transition-colors truncate mb-2",
-            "font-['Inter',sans-serif] tracking-tight", // Larger text with Inter font
+            "text-xl font-semibold group-hover:text-primary transition-colors truncate mb-2 text-center",
+            "font-['Inter',sans-serif] tracking-tight", // Larger text with Inter font, centered
             isArchived ? "text-muted-foreground" : "text-foreground"
           )}>
             {project.name}
             {isArchived && <span className="ml-2 text-sm opacity-70">(Archived)</span>}
           </h3>
-          <div className="flex items-center space-x-2">
-            <span className={cn(
-              "px-3 py-1 text-sm font-medium border", 
-              getStatusColor(project.status)
-            )}>
-              {project.status.replace('-', ' ')}
-            </span>
-          </div>
         </div>
         
         <div className="flex items-center space-x-1">
@@ -276,14 +268,57 @@ function ProjectCardComponent({
         </div>
       </div>
 
-      {/* Progress Section */}
+      {/* Progress Section - Now with Green Circle Indicator */}
       <div className="mb-6">
-        {renderProgressCircles()}
+        {totalTasks === 0 ? (
+          <div className="flex items-center justify-center py-4 bg-muted/10 border border-dashed border-muted-foreground/20">
+            <div className="flex items-center space-x-2 text-muted-foreground text-sm">
+              <Plus className="w-4 h-4" />
+              <span>Click to add tasks</span>
+            </div>
+          </div>
+        ) : (
+          <div className="py-4">
+            {/* Empty space for main content area */}
+          </div>
+        )}
       </div>
+
+      {/* Task Progress Circles - Above Bottom Line, Left Side */}
+      {totalTasks > 0 && (
+        <div className="flex items-center space-x-3 mb-3">
+          <span className="text-sm font-medium text-muted-foreground flex-shrink-0">
+            {completedTasks}/{totalTasks}
+          </span>
+          <div className="flex flex-wrap gap-1.5 items-center">
+            {Array.from({ length: Math.min(totalTasks, 12) }, (_, i) => {
+              const isCompleted = i < completedTasks;
+              return (
+                <div
+                  key={i}
+                  className={cn(
+                    "w-2 h-2 rounded-full transition-all duration-200 flex-shrink-0",
+                    isCompleted ? "bg-green-500" : "bg-muted-foreground/30"
+                  )}
+                />
+              );
+            })}
+            {totalTasks > 12 && (
+              <span className="text-sm text-muted-foreground ml-1 whitespace-nowrap font-medium">+{totalTasks - 12}</span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Consolidated Status Line at Bottom */}
       <div className="flex items-center justify-between text-sm text-muted-foreground pt-4 border-t border-border/30">
         <div className="flex items-center space-x-4">
+          <span className={cn(
+            "px-2 py-1 text-xs font-medium border rounded-full", 
+            getStatusColor(project.status)
+          )}>
+            {project.status.replace('-', ' ')}
+          </span>
           <span className="font-medium">
             {project.progress}% complete
           </span>
