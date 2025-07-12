@@ -13,7 +13,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('navCollapsed') === 'true';
     }
-    return false;
+    return true; // Default to collapsed
   });
 
   // Persist collapsed state to localStorage
