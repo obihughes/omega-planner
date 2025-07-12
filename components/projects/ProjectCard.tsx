@@ -127,9 +127,9 @@ function ProjectCardComponent({
   const renderProgressCircles = () => {
     if (totalTasks === 0) {
       return (
-        <div className="flex items-center justify-center py-3 bg-muted/20 rounded-lg">
-          <div className="flex items-center space-x-2 text-muted-foreground text-xs">
-            <Plus className="w-3.5 h-3.5" />
+        <div className="flex items-center justify-center py-4 bg-muted/10 border border-dashed border-muted-foreground/20">
+          <div className="flex items-center space-x-2 text-muted-foreground text-sm">
+            <Plus className="w-4 h-4" />
             <span>Click to add tasks</span>
           </div>
         </div>
@@ -141,8 +141,8 @@ function ProjectCardComponent({
     const showEllipsis = totalTasks > maxCircles;
 
     return (
-      <div className="flex items-center space-x-3">
-        <span className="text-xs font-medium text-muted-foreground flex-shrink-0">
+      <div className="flex items-center space-x-3 py-3">
+        <span className="text-sm font-medium text-muted-foreground flex-shrink-0">
           {completedTasks}/{totalTasks}
         </span>
         <div className="flex flex-wrap gap-1.5 items-center">
@@ -159,7 +159,7 @@ function ProjectCardComponent({
             );
           })}
           {showEllipsis && (
-            <span className="text-xs text-muted-foreground ml-0.5 whitespace-nowrap font-medium">+{totalTasks - maxCircles}</span>
+            <span className="text-sm text-muted-foreground ml-1 whitespace-nowrap font-medium">+{totalTasks - maxCircles}</span>
           )}
         </div>
       </div>
@@ -169,14 +169,18 @@ function ProjectCardComponent({
   return (
     <div 
       ref={setNodeRef}
-      style={style}
+      style={{
+        ...style,
+        backgroundColor: project.color + '08', // Very light tint of project color
+        borderColor: project.color + '20', // Subtle border with project color
+      }}
       className={cn(
-        "card-enhanced p-5 cursor-pointer group relative overflow-hidden",
-        "bg-gradient-to-br from-card/80 to-card/60 backdrop-blur-sm",
-        "border border-border/50 rounded-xl shadow-sm",
-        "hover:shadow-lg hover:border-primary/40 hover:bg-gradient-to-br hover:from-card/90 hover:to-card/70",
-        "transition-all duration-300 ease-out transform hover:scale-[1.02]",
-        isDragging && "rotate-2 scale-105 shadow-2xl ring-2 ring-primary/50",
+        "p-6 cursor-pointer group relative overflow-hidden",
+        "bg-card border-2 shadow-sm",
+        "hover:shadow-md hover:border-opacity-40",
+        "transition-all duration-200 ease-out",
+        "font-['Inter',sans-serif]", // Use Inter font like text canvas
+        isDragging && "rotate-1 scale-105 shadow-xl ring-2 ring-primary/30",
         isArchived && "opacity-60 bg-muted/20 hover:bg-muted/30"
       )}
       onClick={handleCardClick}
@@ -184,41 +188,30 @@ function ProjectCardComponent({
       {...attributes}
     >
       {/* Header */}
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center space-x-4 min-w-0 flex-1">
-          <div 
-            className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ 
-              backgroundColor: project.color + '1A', 
-            }}
-          >
-            <div className="w-5 h-5" style={{ color: project.color }}>
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19.4 4.925H4.6c-.718 0-1.3.582-1.3 1.3v11.55c0 .718.582 1.3 1.3 1.3h14.8c.718 0 1.3-.582 1.3-1.3V6.225c0-.718-.582-1.3-1.3-1.3z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path><path d="M3.3 9.7h17.4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path></svg>
-            </div>
-          </div>
-          <div className="min-w-0 flex-1">
-            <h3 className={cn(
-              "font-semibold group-hover:text-primary transition-colors truncate",
-              isArchived ? "text-muted-foreground" : "text-foreground"
+      <div className="flex items-start justify-between mb-6">
+        <div className="min-w-0 flex-1">
+          <h3 className={cn(
+            "text-xl font-semibold group-hover:text-primary transition-colors truncate mb-2",
+            "font-['Inter',sans-serif] tracking-tight", // Larger text with Inter font
+            isArchived ? "text-muted-foreground" : "text-foreground"
+          )}>
+            {project.name}
+            {isArchived && <span className="ml-2 text-sm opacity-70">(Archived)</span>}
+          </h3>
+          <div className="flex items-center space-x-2">
+            <span className={cn(
+              "px-3 py-1 text-sm font-medium border", 
+              getStatusColor(project.status)
             )}>
-              {project.name}
-              {isArchived && <span className="ml-2 text-xs opacity-70">(Archived)</span>}
-            </h3>
-            <div className="flex items-center space-x-2 mt-1">
-              <span className={cn(
-                "px-2 py-0.5 rounded-full text-xs font-medium border", 
-                getStatusColor(project.status)
-              )}>
-                {project.status.replace('-', ' ')}
-              </span>
-            </div>
+              {project.status.replace('-', ' ')}
+            </span>
           </div>
         </div>
         
         <div className="flex items-center space-x-1">
           {!isArchived && (
             <div 
-              className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing p-1 rounded-md hover:bg-accent transition-opacity flex-shrink-0"
+              className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing p-2 rounded-md hover:bg-accent transition-opacity flex-shrink-0"
               {...listeners}
               title="Drag to reorder"
             >
@@ -228,7 +221,7 @@ function ProjectCardComponent({
           <Popover>
             <PopoverTrigger asChild>
               <button
-                className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-accent transition-all flex-shrink-0"
+                className="opacity-0 group-hover:opacity-100 p-2 rounded-md hover:bg-accent transition-all flex-shrink-0"
                 title="More options"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -283,23 +276,26 @@ function ProjectCardComponent({
         </div>
       </div>
 
-      <div className="space-y-3">
+      {/* Progress Section */}
+      <div className="mb-6">
         {renderProgressCircles()}
+      </div>
 
-        <div className="flex items-center justify-between">
-          <div className="flex-1"></div>
-          <div className="flex items-center space-x-2 ml-auto">
-            <span className="flex items-center space-x-1.5 bg-muted/30 text-muted-foreground px-2 py-1 rounded-md text-xs font-medium">
-              <span>{project.progress}%</span>
-              <span className="opacity-80">complete</span>
+      {/* Consolidated Status Line at Bottom */}
+      <div className="flex items-center justify-between text-sm text-muted-foreground pt-4 border-t border-border/30">
+        <div className="flex items-center space-x-4">
+          <span className="font-medium">
+            {project.progress}% complete
+          </span>
+          {timeRemaining && (
+            <span className={cn(
+              "flex items-center space-x-1",
+              timeRemaining.isOverdue ? "text-red-600" : "text-muted-foreground"
+            )}>
+              <Clock className="w-3 h-3" />
+              <span>{timeRemaining.text}</span>
             </span>
-            {timeRemaining && (
-              <span className="flex items-center space-x-1.5 px-2 py-1 rounded-md text-xs font-medium bg-muted/30 text-muted-foreground">
-                <Clock className="w-3 h-3" />
-                <span>{timeRemaining.text}</span>
-              </span>
-            )}
-          </div>
+          )}
         </div>
       </div>
     </div>
@@ -312,6 +308,7 @@ export const ProjectCard = memo(ProjectCardComponent, (prevProps, nextProps) => 
     prevProps.project.name === nextProps.project.name &&
     prevProps.project.status === nextProps.project.status &&
     prevProps.project.progress === nextProps.project.progress &&
+    prevProps.project.color === nextProps.project.color &&
     prevProps.project.updatedAt === nextProps.project.updatedAt &&
     prevProps.project.tasks?.length === nextProps.project.tasks?.length
   );
