@@ -620,7 +620,7 @@ export default function DailyPlanner() {
         )}
 
         {/* Page View Mode Navigation */}
-        <div className="mb-4 bg-card border border-border rounded-lg shadow-sm overflow-hidden p-4">
+        <div className="mb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-semibold text-foreground">Daily Planner</h2>
@@ -672,7 +672,7 @@ export default function DailyPlanner() {
             {/* Unified Task Pool and Pinned Tasks View */}
             <div className="mb-4 bg-card border border-border rounded-lg shadow-sm overflow-hidden">
               <div className="h-20 p-2">
-                <div className="flex gap-3 h-full overflow-x-auto overflow-y-hidden">
+                <div className="flex gap-3 h-full overflow-x-auto overflow-y-hidden scrollbar-hide">
                   
                   {/* Add to Pool Button */}
                   <div className="flex items-center justify-center">
@@ -693,6 +693,63 @@ export default function DailyPlanner() {
                   </div>
                   
                   {/* Task Pool Tasks */}
+                  {/* General Pool Tasks */}
+                  {generalPoolTasks.map((task) => (
+                    <div
+                      key={`pool-${task.id}`}
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('text/plain', JSON.stringify({ ...task, source: 'pool' }));
+                      }}
+                      className="relative p-2 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-16 cursor-grab active:cursor-grabbing"
+                    >
+                                              <div className="flex items-start justify-between gap-2 h-full">
+                          <div className="flex items-start gap-2 flex-1 min-w-0">
+                            <div className="flex flex-col flex-1 min-w-0">
+                              <p className="font-medium text-sm text-foreground truncate leading-tight mb-1">
+                                {task.name || "Untitled Task"}
+                              </p>
+                              <div className="text-xs text-muted-foreground">
+                                <span>Unscheduled</span>
+                              </div>
+                            </div>
+                          </div>
+                        {/* Action buttons */}
+                        <div className="absolute top-0.5 right-2 flex flex-col gap-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            type="button"
+                            className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); openViewNotesModal(task); }}
+                            title="View Notes"
+                          >
+                            <Eye className="w-2 h-2" />
+                          </button>
+                          <button
+                            type="button"
+                            className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEditModal(task, { isFromPool: true }); }}
+                            title="Edit Task"
+                          >
+                            <Edit3 className="w-2 h-2" />
+                          </button>
+                          <button
+                            type="button"
+                            className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                            onClick={(e) => { 
+                              e.preventDefault(); 
+                              e.stopPropagation(); 
+                              handleDeletePoolTask(task.id);
+                            }}
+                            title="Delete Task"
+                          >
+                            <Trash2 className="w-2 h-2" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Current Day Pool Tasks */}
                   {currentDayPoolTasks.map((task) => (
                     <div
                       key={`pool-${task.id}`}
