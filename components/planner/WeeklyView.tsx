@@ -11,7 +11,9 @@ import {
   Calendar,
   Clock,
   MoreVertical,
-  CalendarOff
+  CalendarOff,
+  CheckCircle2,
+  Circle
 } from 'lucide-react';
 import { Task } from '@/types';
 import { useDailyPlanner } from '@/hooks/useDailyPlannerState';
@@ -28,6 +30,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
     tasksByDate,
     getPoolTasksForDate,
     openEditModal,
+    handleTaskCompletionToggle,
   } = useDailyPlanner();
 
   // State for week navigation
@@ -88,11 +91,9 @@ export default function WeeklyView({}: WeeklyViewProps) {
 
   // Get week range string
   const getWeekRangeString = () => {
-    const startDate = weekDates[0];
-    const endDate = weekDates[6];
-    const startStr = startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    const endStr = endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    return `${startStr} - ${endStr}`;
+    const firstDay = weekDates[0];
+    const lastDay = weekDates[6];
+    return `${firstDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${lastDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
   };
 
   // Get relative week label
@@ -103,72 +104,120 @@ export default function WeeklyView({}: WeeklyViewProps) {
     return null;
   };
 
-  // Create new task for specific day (use context-aware function)
+  // Handle task creation
   const handleCreateTask = (date: Date) => {
-    // Create a temp task and open edit modal directly
-    const newTask = {
-      id: `task-${Date.now()}`,
-      name: 'New Task',
-      startHour: 0,
-      duration: 1,
-      baseDate: getDateKey(date),
-      color: '',
-      notes: '',
-      completed: false,
-      poolDate: getDateKey(date),
-      isNew: true,
-      isFromPool: true
-    };
+    const dateKey = getDateKey(date);
+    const dayOffset = Math.floor((date.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
     
-    openEditModal(newTask, { isNew: true, isFromPool: true });
+    openEditModal(undefined, {
+      isFromPool: false,
+      initialDayOffset: dayOffset,
+      initialStartHour: 9,
+      isNew: true
+    });
   };
 
-  // Calculate simple task statistics for the week
+  // Get week statistics
   const getWeekStats = () => {
-    let totalTasks = 0;
-    let completedTasks = 0;
-
+    let total = 0;
+    let completed = 0;
+    
     weekTasks.forEach(dayData => {
-      [...dayData.scheduled, ...dayData.inbox].forEach(task => {
-        totalTasks++;
-        if (task.completed) completedTasks++;
-      });
+      const allTasks = [...dayData.scheduled, ...dayData.inbox];
+      total += allTasks.length;
+      completed += allTasks.filter(task => task.completed).length;
     });
-
+    
     return {
-      total: totalTasks,
-      completed: completedTasks,
-      completionRate: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+      total,
+      completed,
+      completionRate: total > 0 ? Math.round((completed / total) * 100) : 0
     };
   };
 
   const weekStats = getWeekStats();
 
-  // Check if date is today
+  // Helper functions
   const isToday = (date: Date) => {
     const today = new Date();
     return date.toDateString() === today.toDateString();
   };
 
-  // Check if date is in the past
   const isPast = (date: Date) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const compareDate = new Date(date);
-    compareDate.setHours(0, 0, 0, 0);
-    return compareDate < today;
+    return date < today;
   };
+
+  const TaskItem = ({ task, isScheduled }: { task: Task; isScheduled: boolean }) => (
+    <div
+      className={cn(
+        "group relative flex items-center gap-3 p-3 rounded-lg transition-all duration-200",
+        "hover:bg-accent/50 hover:shadow-sm cursor-pointer",
+        isScheduled 
+          ? "bg-card border border-border/40 shadow-sm" 
+          : "bg-muted/30 border border-dashed border-muted-foreground/30",
+        task.completed && "opacity-60"
+      )}
+      onClick={() => openEditModal(task, { isFromPool: false })}
+    >
+      {/* Completion Status */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          handleTaskCompletionToggle(task.id);
+        }}
+        className="text-muted-foreground hover:text-foreground transition-colors"
+      >
+        {task.completed ? (
+          <CheckCircle2 className="w-4 h-4 text-green-600" />
+        ) : (
+          <Circle className="w-4 h-4" />
+        )}
+      </button>
+
+      {/* Task Content */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className={cn(
+            "font-medium text-sm truncate",
+            task.completed && "line-through text-muted-foreground"
+          )}>
+            {task.name}
+          </span>
+          {!isScheduled && (
+            <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+              Inbox
+            </span>
+          )}
+        </div>
+        
+        {/* Time and Duration */}
+        <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+          {isScheduled && task.startHour !== undefined && (
+            <div className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              <span>{formatTime(task.startHour)}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-1">
+            <span>{formatDuration(task.duration)}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="h-full flex flex-col bg-background">
-      {/* Header */}
-      <div className="px-6 py-4 border-b border-border bg-card">
+      {/* Compact Header */}
+      <div className="px-6 py-3 border-b border-border bg-card/50">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <h2 className="text-xl font-semibold text-foreground">Weekly View</h2>
+          <div className="flex items-center gap-4">
+            <h2 className="text-lg font-semibold text-foreground">Weekly View</h2>
             
             {/* Week Navigation */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <Button variant="ghost" size="sm" onClick={goToPreviousWeek}>
                 <ChevronLeft className="w-4 h-4" />
               </Button>
@@ -179,148 +228,116 @@ export default function WeeklyView({}: WeeklyViewProps) {
                 <ChevronRight className="w-4 h-4" />
               </Button>
               {getRelativeWeekLabel() && (
-                <span className="text-xs text-muted-foreground px-2 py-1 bg-muted rounded-md ml-2">
+                <span className="text-xs text-muted-foreground px-2 py-1 bg-muted rounded-md">
                   {getRelativeWeekLabel()}
                 </span>
               )}
             </div>
           </div>
 
-          {/* Stats */}
-          <div className="flex items-center gap-6 text-sm">
-            <div className="text-center">
-              <div className="font-semibold text-lg text-foreground">{weekStats.total}</div>
-              <div className="text-xs text-muted-foreground">Tasks</div>
+          {/* Compact Stats */}
+          <div className="flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-1">
+              <span className="font-medium">{weekStats.total}</span>
+              <span className="text-muted-foreground">tasks</span>
             </div>
-            <div className="text-center">
-              <div className="font-semibold text-lg text-green-600">{weekStats.completed}</div>
-              <div className="text-xs text-muted-foreground">Done</div>
+            <div className="flex items-center gap-1">
+              <span className="font-medium text-green-600">{weekStats.completed}</span>
+              <span className="text-muted-foreground">done</span>
             </div>
-            <div className="text-center">
-              <div className="font-semibold text-lg text-blue-600">{weekStats.completionRate}%</div>
-              <div className="text-xs text-muted-foreground">Complete</div>
+            <div className="flex items-center gap-1">
+              <span className="font-medium text-blue-600">{weekStats.completionRate}%</span>
+              <span className="text-muted-foreground">complete</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Week Grid */}
-      <div className="flex-1 p-6 overflow-hidden">
-        <div className="grid grid-cols-7 gap-4 h-full">
+      {/* Horizontal Week Layout */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-6 space-y-2 max-w-7xl mx-auto">
           {weekDates.map((date, index) => {
             const dateKey = getDateKey(date);
             const dayData = weekTasks.get(dateKey) || { scheduled: [], inbox: [] };
             const dayName = dayNames[index];
             const isCurrentDay = isToday(date);
             const isPastDay = isPast(date);
+            const allTasks = [...dayData.scheduled, ...dayData.inbox];
+            const completedTasks = allTasks.filter(task => task.completed).length;
 
             return (
-              <div 
-                key={dateKey} 
-                className="flex flex-col h-full relative group"
-              >
-                {/* Day Header */}
-                <div className={`p-4 rounded-lg border mb-4 text-center ${
-                  isCurrentDay 
-                    ? 'bg-primary text-primary-foreground border-primary shadow-sm' 
-                    : isPastDay
-                      ? 'bg-muted/30 text-muted-foreground border-muted'
-                      : 'bg-card text-foreground border-border'
-                }`}>
-                  <div className="text-xs font-medium opacity-80 mb-1">{dayName}</div>
-                  <div className="text-2xl font-bold">{date.getDate()}</div>
-                  <div className="text-xs opacity-60 mt-1">
-                    {date.toLocaleDateString('en-US', { month: 'short' })}
-                  </div>
-                </div>
-
-                {/* Day Tasks Container */}
-                <div className="flex-1 flex flex-col min-h-0">
-                  {dayData.scheduled.length === 0 && dayData.inbox.length === 0 ? (
-                    <div className="flex-1"></div>
-                  ) : (
-                    <div className="flex-1 flex flex-col gap-2 overflow-y-auto">
-                                {/* Show inbox tasks first */}
-          {dayData.inbox.map((task) => (
-                        <div
-                          key={task.id}
-                          className={`
-                            relative px-2 pt-2 pb-1 rounded-md transition-all duration-200 hover:shadow-sm group
-                            min-h-[80px] flex flex-row justify-between items-start
-                            bg-muted/30 border border-dashed border-muted-foreground/30 hover:border-muted-foreground/50
-                            ${task.completed ? 'opacity-60' : ''}
-                          `}
-                        >
-                          {/* Left side: Name and "No time" */}
-                          <div className="flex flex-col mr-2">
-                            {/* Task Name */}
-                            <div className={`text-base font-semibold leading-tight line-clamp-2 ${
-                              task.completed ? 'line-through text-muted-foreground' : 'text-foreground'
-                            }`}>
-                              {task.name}
-                            </div>
-                            
-                            {/* "No time" text */}
-                            <div className="flex items-center gap-1.5 text-sm text-foreground/70 mt-1">
-                                <CalendarOff className="w-4 h-4" />
-                                <span>Inbox</span>
-                            </div>
-                          </div>
-
-                          {/* Right side: Duration */}
-                          <div className="text-sm font-semibold text-foreground/70 flex-shrink-0">
-                            {formatDuration(task.duration)}
-                          </div>
-                        </div>
-                      ))}
-
-                      {/* Show scheduled tasks after inbox ones */}
-                      {dayData.scheduled.map((task) => (
-                        <div
-                          key={task.id}
-                          className={`
-                            relative px-2 pt-2 pb-1 rounded-md transition-all duration-200 hover:shadow-sm group
-                            min-h-[80px] flex flex-row justify-between items-start
-                            ${task.color} border border-border/40 hover:ring-1 hover:ring-border/60
-                            ${task.completed ? 'opacity-60' : ''}
-                          `}
-                        >
-                          {/* Left side: Name and Start Time */}
-                          <div className="flex flex-col mr-2">
-                            {/* Task Name */}
-                            <div className={`text-base font-semibold leading-tight line-clamp-2 ${
-                              task.completed ? 'line-through text-muted-foreground' : ''
-                            }`}>
-                              {task.name}
-                            </div>
-                            
-                            {/* Start Time */}
-                            {task.startHour && !task.poolDate && (
-                                <div className="flex items-center gap-1.5 text-sm opacity-80 mt-1">
-                                    <Clock className="w-4 h-4" />
-                                    <span>{formatTime(task.startHour)}</span>
-                                </div>
-                            )}
-                          </div>
-
-                          {/* Right side: Duration */}
-                          <div className="text-sm font-semibold opacity-80 flex-shrink-0">
-                            {formatDuration(task.duration)}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                              <div 
+                  key={dateKey} 
+                  className={cn(
+                    "group relative rounded-xl border transition-all duration-200",
+                    "hover:shadow-md hover:border-border/60 hover:-translate-y-0.5",
+                    isCurrentDay 
+                      ? "bg-primary/5 border-primary/20 shadow-sm" 
+                      : isPastDay
+                        ? "bg-muted/20 border-muted/40"
+                        : "bg-card border-border/40"
                   )}
-                </div>
-                
-                {/* Hidden popup add button - appears on hover */}
-                <button
-                  onClick={() => handleCreateTask(date)}
-                  className="absolute top-2 right-2 w-8 h-8 bg-primary hover:bg-primary/90 rounded-full flex items-center justify-center text-primary-foreground opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-10"
-                  title="Add Task"
                 >
-                  <Plus className="w-4 h-4" />
-                </button>
+                <div className="flex items-start gap-6 p-5">
+                  {/* Day Header - Compact */}
+                                      <div className="flex-shrink-0 w-24 text-center">
+                      <div className={cn(
+                        "text-xs font-medium mb-1 uppercase tracking-wide",
+                        isCurrentDay ? "text-primary" : "text-muted-foreground"
+                      )}>
+                        {dayName}
+                      </div>
+                      <div className={cn(
+                        "text-2xl font-bold mb-1",
+                        isCurrentDay ? "text-primary" : "text-foreground"
+                      )}>
+                        {date.getDate()}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {date.toLocaleDateString('en-US', { month: 'short' })}
+                      </div>
+                    </div>
+
+                  {/* Tasks Container - Horizontal Flow */}
+                  <div className="flex-1 min-w-0">
+                    {allTasks.length === 0 ? (
+                      <div className="text-center py-6 text-muted-foreground">
+                        <div className="text-sm">No tasks scheduled</div>
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {/* Scheduled Tasks */}
+                        {dayData.scheduled.map((task) => (
+                          <TaskItem key={task.id} task={task} isScheduled={true} />
+                        ))}
+                        
+                        {/* Inbox Tasks */}
+                        {dayData.inbox.map((task) => (
+                          <TaskItem key={task.id} task={task} isScheduled={false} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                                      {/* Day Stats & Actions */}
+                    <div className="flex-shrink-0 flex items-center gap-4">
+                      {allTasks.length > 0 && (
+                        <div className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded">
+                          {completedTasks}/{allTasks.length}
+                        </div>
+                      )}
+                      
+                      {/* Add Task Button */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleCreateTask(date)}
+                        className="opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-primary/10"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                </div>
               </div>
             );
           })}
