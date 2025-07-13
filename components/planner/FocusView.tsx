@@ -119,6 +119,7 @@ export default function FocusView() {
   const [focusHistory, setFocusHistory] = useState<FocusSession[]>([]);
   const [currentSessionStart, setCurrentSessionStart] = useState<Date | null>(null);
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
+  const [currentTimeForUpdates, setCurrentTimeForUpdates] = useState(new Date());
 
   const todayIncompleteTasks = useMemo(() => {
     const today = new Date();
@@ -146,13 +147,7 @@ export default function FocusView() {
     const today = new Date();
     const currentTime = today.getHours() + today.getMinutes() / 60;
     
-    // If user has manually selected a task, use that
-    if (currentTaskId) {
-      const task = todayIncompleteTasks.find(t => t.id === currentTaskId);
-      if (task) return task;
-    }
-    
-    // Find the task that should be happening now
+    // Find the task that should be happening now based on time
     const scheduledTasks = todayIncompleteTasks.filter(task => task.startHour !== undefined);
     
     // Find current task (task that started before or at current time and hasn't ended yet)
@@ -163,7 +158,33 @@ export default function FocusView() {
     });
     
     if (currentScheduledTask) {
+      // If we have a manually selected task but it's not the current scheduled task, clear the manual selection
+      if (currentTaskId && currentTaskId !== currentScheduledTask.id) {
+        setCurrentTaskId(null);
+      }
       return currentScheduledTask;
+    }
+    
+    // If user has manually selected a task and no current scheduled task, check if it's still valid
+    if (currentTaskId) {
+      const task = todayIncompleteTasks.find(t => t.id === currentTaskId);
+      if (task && !task.completed) {
+        // Check if the manually selected task is still reasonable (not too far in the past)
+        if (task.startHour !== undefined) {
+          const taskEnd = task.startHour + task.duration;
+          // If the task ended more than 1 hour ago, clear the manual selection
+          if (taskEnd < currentTime - 1) {
+            setCurrentTaskId(null);
+          } else {
+            return task;
+          }
+        } else {
+          return task; // Unscheduled task is still valid
+        }
+      } else {
+        // Task is completed or doesn't exist, clear manual selection
+        setCurrentTaskId(null);
+      }
     }
     
     // If no current scheduled task, find the next upcoming task
@@ -177,7 +198,7 @@ export default function FocusView() {
     
     // Fallback to first incomplete task
     return todayIncompleteTasks[0] || null;
-  }, [currentTaskId, todayIncompleteTasks]);
+  }, [currentTaskId, todayIncompleteTasks, currentTimeForUpdates]);
 
   // Get the next task (the one after the current task)
   const nextTask = useMemo(() => {
@@ -186,7 +207,7 @@ export default function FocusView() {
     const today = new Date();
     const currentTime = today.getHours() + today.getMinutes() / 60;
     
-    // Get today's scheduled tasks
+    // Get today's scheduled tasks excluding the current task
     const scheduledTasks = todayIncompleteTasks.filter(task => 
       task.startHour !== undefined && !task.completed && task.id !== currentTask.id
     );
@@ -208,7 +229,7 @@ export default function FocusView() {
       .sort((a, b) => a.startHour! - b.startHour!);
     
     return upcomingTasks.length > 0 ? upcomingTasks[0] : null;
-  }, [currentTask, todayIncompleteTasks]);
+  }, [currentTask, todayIncompleteTasks, currentTimeForUpdates]);
 
   // Load focus history and session state on mount
   useEffect(() => {
@@ -389,6 +410,15 @@ export default function FocusView() {
   }, [focusHistory]);
 
   const todaysFocusTime = todaysSessions.reduce((total, session) => total + session.duration, 0);
+
+  // Update current time every 30 seconds for real-time task switching
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTimeForUpdates(new Date());
+    }, 30000); // Update every 30 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="min-h-screen p-6 bg-background flex items-center justify-center">
