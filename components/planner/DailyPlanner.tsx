@@ -32,6 +32,7 @@ import { ViewTaskNotesModal } from './ViewTaskNotesModal';
 import { getCalendarDateForColumn, getDateKey, dateFromDateKey } from '../../utils/dateUtils';
 import { resolveCollisionsForResize, resolveCollisionsForDrag } from '../../utils/taskUtils';
 import WeeklyView from './WeeklyView';
+import FocusView from './FocusView';
 import { useModalManager } from '../../hooks/useModalManager';
 
 type TimelinePeriod = 'night' | 'morning' | 'afternoon' | 'evening';
@@ -117,7 +118,7 @@ export default function DailyPlanner() {
 
 
   const [currentTimeForMarker, setCurrentTimeForMarker] = useState(new Date());
-  const [viewMode, setViewMode] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const [viewMode, setViewMode] = useState<'daily' | 'weekly' | 'monthly' | 'focus'>('daily');
 
   useEffect(() => {
       const timerId = setInterval(() => setCurrentTimeForMarker(new Date()), 60000);
@@ -626,6 +627,15 @@ export default function DailyPlanner() {
             </div>
             <div className="flex items-center gap-2">
               <Button
+                variant={viewMode === 'focus' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('focus')}
+                className="flex items-center gap-2"
+              >
+                <Clock className="w-4 h-4" />
+                Focus
+              </Button>
+              <Button
                 variant={viewMode === 'daily' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('daily')}
@@ -905,6 +915,11 @@ export default function DailyPlanner() {
           <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
             <WeeklyView />
           </div>
+        )}
+
+        {/* Focus View */}
+        {viewMode === 'focus' && (
+          <FocusView />
         )}
 
         {/* Monthly View */}
