@@ -133,7 +133,7 @@ function TaskItemComponent({ id, task, taskIndex, totalTasks, onStatusChange, on
             <div className="flex-1">
               <div className="flex items-start space-x-6">
                 <h4 className={cn(
-                  "font-medium text-foreground font-['Inter',sans-serif] w-48 flex-shrink-0",
+                  "font-medium text-foreground font-['Inter',sans-serif] w-64 flex-shrink-0",
                   task.status === 'completed' && "line-through text-muted-foreground"
                 )}>
                   {task.title}
