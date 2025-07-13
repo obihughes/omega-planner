@@ -662,19 +662,13 @@ export default function DailyPlanner() {
             {/* Unified Task Pool and Pinned Tasks View */}
             <div className="mb-4 bg-card border border-border rounded-lg shadow-sm overflow-hidden">
               {/* Collapsible Header */}
-              <div className="flex items-center justify-between p-3 border-b border-border/50 bg-muted/20">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-medium text-foreground">Task Pool & Pinned</h3>
-                  <span className="text-xs text-muted-foreground">
-                    ({currentDayPoolTasks.length + pinnedTasks.length})
-                  </span>
-                </div>
+              <div className="flex items-center justify-end px-3 py-2 border-b border-border/50 bg-muted/20">
                 <button
                   onClick={() => setIsTaskPoolOpen(!isTaskPoolOpen)}
-                  className="p-1 rounded hover:bg-accent transition-colors"
+                  className="p-1 rounded hover:bg-accent transition-colors ml-auto"
                   title={isTaskPoolOpen ? "Collapse" : "Expand"}
                 >
-                  <ChevronDown className={cn("w-4 h-4 transition-transform", !isTaskPoolOpen && "rotate-180")} />
+                  <ChevronDown className={cn("w-4 h-4 transition-transform", isTaskPoolOpen && "rotate-180")} />
                 </button>
               </div>
               
