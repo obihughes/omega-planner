@@ -131,18 +131,20 @@ function TaskItemComponent({ id, task, taskIndex, totalTasks, onStatusChange, on
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <h4 className={cn(
-                "font-medium text-foreground font-['Inter',sans-serif]",
-                task.status === 'completed' && "line-through text-muted-foreground"
-              )}>
-                {task.title}
-              </h4>
-              
-              {task.description && (
-                <p className="text-sm text-muted-foreground mt-1 line-clamp-2 font-['Inter',sans-serif]">
-                  {task.description}
-                </p>
-              )}
+              <div className="flex items-start space-x-6">
+                <h4 className={cn(
+                  "font-medium text-foreground font-['Inter',sans-serif] w-48 flex-shrink-0",
+                  task.status === 'completed' && "line-through text-muted-foreground"
+                )}>
+                  {task.title}
+                </h4>
+                
+                {task.description && (
+                  <p className="text-sm text-muted-foreground font-['Inter',sans-serif] line-clamp-1 flex-1 min-w-0">
+                    {task.description}
+                  </p>
+                )}
+              </div>
 
               {/* Tags */}
               {task.tags && task.tags.length > 0 && (

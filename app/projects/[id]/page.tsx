@@ -30,6 +30,7 @@ import {
   Clock,
   Calendar,
   Edit,
+  MoreVertical,
 } from 'lucide-react';
 
 interface ProjectDetailPageProps {
@@ -239,46 +240,66 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
           </button>
           
           <div className="flex-1">
-            <div className="flex items-start justify-between">
-              <h1 className="text-3xl font-semibold text-foreground font-['Inter',sans-serif] tracking-tight text-center">
+            {/* Centered Project Name */}
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-3xl font-semibold text-foreground font-['Inter',sans-serif] tracking-tight text-center flex-1">
                 {project.name}
               </h1>
               <button
                 onClick={handleEditProject}
-                className="p-2 hover:bg-accent transition-colors flex items-center space-x-2 text-muted-foreground hover:text-foreground"
+                className="p-2 hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
                 title="Edit project"
               >
-                <Edit className="w-4 h-4" />
-                <span className="hidden sm:inline text-sm">Edit</span>
+                <MoreVertical className="w-4 h-4" />
               </button>
             </div>
             
-            {/* Task Progress Circles - Similar to card design */}
-            <div className="flex items-center justify-center space-x-3 my-6">
-              <span className="text-sm font-medium text-muted-foreground flex-shrink-0">
-                {completedTasks}/{totalTasks}
-              </span>
-              <div className="flex flex-wrap gap-1.5 items-center">
-                {Array.from({ length: Math.min(totalTasks, 12) }, (_, i) => {
-                  const isCompleted = i < completedTasks;
-                  return (
-                    <div
-                      key={i}
-                      className={`w-2 h-2 rounded-full transition-all duration-200 flex-shrink-0 ${
-                        isCompleted ? "bg-green-500" : "bg-muted-foreground/30"
-                      }`}
-                    />
-                  );
-                })}
-                {totalTasks > 12 && (
-                  <span className="text-sm text-muted-foreground ml-1 whitespace-nowrap font-medium">+{totalTasks - 12}</span>
-                )}
+            {/* Single Line: Add Task + Progress Circles + Status Info */}
+            <div className="flex items-center justify-between py-4 border-t border-border/30">
+              {/* Quick Add Task Input */}
+              <div className="relative flex-1 max-w-md">
+                <Plus className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  value={newTaskTitle}
+                  onChange={(e) => setNewTaskTitle(e.target.value)}
+                  placeholder="Type task name and press Enter..."
+                  className="w-full pl-10 pr-4 py-2 bg-background border border-input focus:outline-none focus:ring-2 focus:ring-ring font-['Inter',sans-serif] text-sm"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && newTaskTitle.trim()) {
+                      handleAddTask();
+                    } else if (e.key === 'Escape') {
+                      setNewTaskTitle('');
+                    }
+                  }}
+                />
               </div>
-            </div>
 
-            {/* Status Line - Similar to card design */}
-            <div className="flex items-center justify-between text-sm text-muted-foreground pt-4 border-t border-border/30">
-              <div className="flex items-center space-x-4">
+              {/* Task Progress Circles */}
+              <div className="flex items-center space-x-3 mx-6">
+                <span className="text-sm font-medium text-muted-foreground flex-shrink-0">
+                  {completedTasks}/{totalTasks}
+                </span>
+                <div className="flex flex-wrap gap-1.5 items-center">
+                  {Array.from({ length: Math.min(totalTasks, 12) }, (_, i) => {
+                    const isCompleted = i < completedTasks;
+                    return (
+                      <div
+                        key={i}
+                        className={`w-2 h-2 rounded-full transition-all duration-200 flex-shrink-0 ${
+                          isCompleted ? "bg-green-500" : "bg-muted-foreground/30"
+                        }`}
+                      />
+                    );
+                  })}
+                  {totalTasks > 12 && (
+                    <span className="text-sm text-muted-foreground ml-1 whitespace-nowrap font-medium">+{totalTasks - 12}</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Status Info + Actions */}
+              <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                 <span className="font-medium">
                   {project.progress}% complete
                 </span>
@@ -291,62 +312,31 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
                     </span>
                   );
                 })()}
-                <span className={`px-2 py-1 text-xs font-medium border rounded-full ml-auto ${
-                  project.status === 'completed' ? 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/50 dark:text-green-300 dark:border-green-700' :
-                  project.status === 'active' ? 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-700' :
-                  project.status === 'on-hold' ? 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/50 dark:text-yellow-300 dark:border-yellow-700' :
-                  project.status === 'planning' ? 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/50 dark:text-purple-300 dark:border-purple-700' :
-                  project.status === 'cancelled' ? 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/50 dark:text-red-300 dark:border-red-700' :
-                  'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/50 dark:text-gray-300 dark:border-gray-700'
-                }`}>
-                  {project.status.replace('-', ' ')}
-                </span>
+                <button
+                  onClick={() => {
+                    setEditingTask(null);
+                    setIsTaskModalOpen(true);
+                  }}
+                  className="px-3 py-1.5 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center space-x-1 text-xs"
+                  title="Create detailed task"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>New Task</span>
+                </button>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as ProjectTask['status'] | 'all')}
+                  className="px-2 py-1.5 bg-background border border-input focus:outline-none focus:ring-2 focus:ring-ring font-['Inter',sans-serif] text-xs"
+                >
+                  <option value="all">All Status</option>
+                  <option value="todo">To Do</option>
+                  <option value="in-progress">In Progress</option>
+                  <option value="blocked">Blocked</option>
+                  <option value="completed">Completed</option>
+                </select>
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Quick Add Task Input and Filters */}
-        <div className="flex items-center space-x-3 mb-6">
-           <div className="relative flex-1">
-             <Plus className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-             <input
-              type="text"
-              value={newTaskTitle}
-              onChange={(e) => setNewTaskTitle(e.target.value)}
-              placeholder="Type task name and press Enter to add..."
-              className="w-full pl-10 pr-4 py-2 bg-background border border-input focus:outline-none focus:ring-2 focus:ring-ring font-['Inter',sans-serif]"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && newTaskTitle.trim()) {
-                  handleAddTask();
-                } else if (e.key === 'Escape') {
-                  setNewTaskTitle('');
-                }
-              }}
-            />
-          </div>
-          <button
-            onClick={() => {
-              setEditingTask(null);
-              setIsTaskModalOpen(true);
-            }}
-            className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center space-x-2"
-            title="Create detailed task"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">New Task</span>
-          </button>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as ProjectTask['status'] | 'all')}
-            className="px-3 py-2 bg-background border border-input focus:outline-none focus:ring-2 focus:ring-ring font-['Inter',sans-serif]"
-          >
-            <option value="all">All Status</option>
-            <option value="todo">To Do</option>
-            <option value="in-progress">In Progress</option>
-            <option value="blocked">Blocked</option>
-            <option value="completed">Completed</option>
-          </select>
         </div>
 
         {/* Tasks List */}

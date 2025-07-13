@@ -313,12 +313,6 @@ function ProjectCardComponent({
       {/* Consolidated Status Line at Bottom */}
       <div className="flex items-center justify-between text-sm text-muted-foreground pt-4 border-t border-border/30">
         <div className="flex items-center space-x-4">
-          <span className={cn(
-            "px-2 py-1 text-xs font-medium border rounded-full", 
-            getStatusColor(project.status)
-          )}>
-            {project.status.replace('-', ' ')}
-          </span>
           <span className="font-medium">
             {project.progress}% complete
           </span>
