@@ -118,7 +118,7 @@ export default function DailyPlanner() {
 
 
   const [currentTimeForMarker, setCurrentTimeForMarker] = useState(new Date());
-  const [viewMode, setViewMode] = useState<'daily' | 'weekly' | 'monthly' | 'focus'>('daily');
+  const [viewMode, setViewMode] = useState<'daily' | 'weekly' | 'monthly' | 'focus'>('focus');
 
   useEffect(() => {
       const timerId = setInterval(() => setCurrentTimeForMarker(new Date()), 60000);

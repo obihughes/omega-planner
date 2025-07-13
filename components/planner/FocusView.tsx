@@ -1,166 +1,324 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { cn } from '@/lib/utils';
 import { 
   Play, 
   Pause, 
   Square, 
-  SkipForward, 
   Clock, 
   CheckCircle2,
-  Circle,
   Eye,
   Edit3,
   Timer,
-  Coffee,
-  Focus,
-  Calendar
+  ChevronRight,
+  History,
+  Target,
+  Settings,
 } from 'lucide-react';
 import { Task } from '@/types';
 import { useDailyPlanner } from '@/hooks/useDailyPlannerState';
 import { formatTime } from '@/utils/formatters';
 import { getDateKey } from '@/utils/dateUtils';
-import { TASK_COLORS } from '@/lib/constants';
-
-interface FocusViewProps {}
 
 interface FocusSession {
+  id: string;
+  taskName: string;
   taskId: string;
   startTime: Date;
+  endTime: Date;
   duration: number; // in minutes
-  type: 'work' | 'break';
-  isActive: boolean;
+  completed: boolean;
 }
 
-export default function FocusView({}: FocusViewProps) {
+// Focus history storage utilities
+const FOCUS_HISTORY_KEY = 'focus-session-history';
+const FOCUS_SESSION_STATE_KEY = 'focus-session-state';
+
+const saveFocusHistory = (sessions: FocusSession[]) => {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(FOCUS_HISTORY_KEY, JSON.stringify(sessions));
+  } catch (err) {
+    console.error('❌ [FocusView] Failed to save focus history:', err);
+  }
+};
+
+const loadFocusHistory = (): FocusSession[] => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const stored = localStorage.getItem(FOCUS_HISTORY_KEY);
+    const sessions = stored ? JSON.parse(stored) : [];
+    return sessions;
+  } catch (err) {
+    console.error('❌ [FocusView] Failed to load focus history:', err);
+    return [];
+  }
+};
+
+const saveFocusSessionState = (sessionState: {
+  timeRemaining: number;
+  isRunning: boolean;
+  workDuration: number;
+  currentTaskId?: string;
+  sessionStartTime?: string;
+  lastUpdateTime: number;
+}) => {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(FOCUS_SESSION_STATE_KEY, JSON.stringify(sessionState));
+  } catch (err) {
+    console.error('❌ [FocusView] Failed to save session state:', err);
+  }
+};
+
+const loadFocusSessionState = () => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = localStorage.getItem(FOCUS_SESSION_STATE_KEY);
+    const state = stored ? JSON.parse(stored) : null;
+    return state;
+  } catch (err) {
+    console.error('❌ [FocusView] Failed to load session state:', err);
+    return null;
+  }
+};
+
+const clearFocusSessionState = () => {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(FOCUS_SESSION_STATE_KEY);
+  } catch (err) {
+    console.error('❌ [FocusView] Failed to clear session state:', err);
+  }
+};
+
+export default function FocusView() {
   const {
     tasksByDate,
+    topDayOffset,
     pinnedTasks,
-    generalPoolTasks,
     currentDayPoolTasks,
     openEditModal,
     openViewNotesModal,
     handleTaskCompletionToggle,
   } = useDailyPlanner();
 
-  // Focus session state
-  const [currentSession, setCurrentSession] = useState<FocusSession | null>(null);
-  const [timeRemaining, setTimeRemaining] = useState(0); // in seconds
+  const [timeRemaining, setTimeRemaining] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [sessionType, setSessionType] = useState<'work' | 'break'>('work');
-  const [workDuration, setWorkDuration] = useState(25); // Pomodoro default
-  const [breakDuration, setBreakDuration] = useState(5);
-  const [completedSessions, setCompletedSessions] = useState(0);
+  const [workDuration, setWorkDuration] = useState(25);
+  const [focusHistory, setFocusHistory] = useState<FocusSession[]>([]);
+  const [currentSessionStart, setCurrentSessionStart] = useState<Date | null>(null);
+  const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
 
-  // Get today's tasks
-  const todayTasks = useMemo(() => {
+  const todayIncompleteTasks = useMemo(() => {
     const today = new Date();
     const todayKey = getDateKey(today);
     const scheduledTasks = tasksByDate.get(todayKey) || [];
     
-    // Combine scheduled tasks, pinned tasks, and today's pool tasks
     const allTasks = [
       ...scheduledTasks,
-      ...pinnedTasks.filter(task => !scheduledTasks.some(st => st.id === task.id)),
-      ...currentDayPoolTasks.filter(task => 
+      ...pinnedTasks.filter((task: any) => !scheduledTasks.some(st => st.id === task.id)),
+      ...currentDayPoolTasks.filter((task: any) => 
         !scheduledTasks.some(st => st.id === task.id) &&
-        !pinnedTasks.some(pt => pt.id === task.id)
+        !pinnedTasks.some((pt: any) => pt.id === task.id)
       )
     ];
 
-    // Sort by priority: incomplete tasks first, then by start time
-    return allTasks.sort((a, b) => {
-      if (a.completed !== b.completed) {
-        return a.completed ? 1 : -1;
-      }
-      if (a.startHour !== undefined && b.startHour !== undefined) {
-        return a.startHour - b.startHour;
-      }
-      return 0;
-    });
+    const incompleteTasks = allTasks
+      .filter(task => !task.completed)
+      .sort((a, b) => (a.startHour || 24) - (b.startHour || 24));
+
+    return incompleteTasks;
   }, [tasksByDate, pinnedTasks, currentDayPoolTasks]);
+
+  // Get current task
+  const currentTask = useMemo(() => {
+    if (!currentTaskId) {
+      const firstTask = todayIncompleteTasks[0] || null;
+      return firstTask;
+    }
+    
+    const task = todayIncompleteTasks.find(t => t.id === currentTaskId);
+    return task || null;
+  }, [currentTaskId, todayIncompleteTasks]);
+
+  // Get the next task (just the immediate next one)
+  const nextTask = useMemo(() => {
+    const today = new Date();
+    const currentTime = today.getHours() + today.getMinutes() / 60;
+    
+    // Get today's tasks
+    const todayTasks = tasksByDate.get(getDateKey(today)) || [];
+    
+    // Find upcoming tasks (not completed and starts after current time)
+    const upcomingTasks = todayTasks
+      .filter(task => !task.completed && task.startHour > currentTime)
+      .sort((a, b) => a.startHour - b.startHour);
+    
+    return upcomingTasks.length > 0 ? upcomingTasks[0] : null;
+  }, [tasksByDate]);
+
+  // Load focus history and session state on mount
+  useEffect(() => {
+    const savedHistory = loadFocusHistory();
+    setFocusHistory(savedHistory);
+    
+    // Defer session restoration until task data is loaded
+    if (todayIncompleteTasks.length === 0) {
+      return; 
+    }
+
+    const savedState = loadFocusSessionState();
+    
+    if (savedState && savedState.currentTaskId) {
+      // Find the task that was being focused on
+      const restoredTask = todayIncompleteTasks.find(t => t.id === savedState.currentTaskId);
+
+      if (!restoredTask) {
+        clearFocusSessionState();
+        return;
+      }
+      
+      setCurrentTaskId(savedState.currentTaskId);
+      
+      const now = Date.now();
+      const timeSinceLastUpdate = now - savedState.lastUpdateTime;
+      const secondsElapsed = Math.floor(timeSinceLastUpdate / 1000);
+      
+      // If the session was running, calculate how much time has passed
+      if (savedState.isRunning) {
+        const adjustedTimeRemaining = Math.max(0, savedState.timeRemaining - secondsElapsed);
+        
+        setTimeRemaining(adjustedTimeRemaining);
+        setIsRunning(adjustedTimeRemaining > 0);
+        setWorkDuration(savedState.workDuration);
+        
+        if (savedState.sessionStartTime) {
+          setCurrentSessionStart(new Date(savedState.sessionStartTime));
+        }
+        
+        // If time ran out while away, finish the session
+        if (adjustedTimeRemaining <= 0) {
+          clearFocusSessionState();
+        }
+      } else {
+        // Session was paused
+        setTimeRemaining(savedState.timeRemaining);
+        setIsRunning(false);
+        setWorkDuration(savedState.workDuration);
+        
+        if (savedState.sessionStartTime) {
+          setCurrentSessionStart(new Date(savedState.sessionStartTime));
+        }
+      }
+    }
+  }, [todayIncompleteTasks]);
+
+  // Save session state whenever it changes
+  useEffect(() => {
+    if (currentTask && (isRunning || timeRemaining > 0)) {
+      const sessionState = {
+        timeRemaining,
+        isRunning,
+        workDuration,
+        currentTaskId: currentTask.id,
+        sessionStartTime: currentSessionStart?.toISOString(),
+        lastUpdateTime: Date.now()
+      };
+      
+      saveFocusSessionState(sessionState);
+    }
+  }, [timeRemaining, isRunning, workDuration, currentTask, currentSessionStart]);
+
+  // Finish session callback
+  const finishSession = useCallback(() => {
+    if (!currentTask || !currentSessionStart) {
+      return;
+    }
+
+    const sessionEnd = new Date();
+    const actualDuration = Math.round((sessionEnd.getTime() - currentSessionStart.getTime()) / (1000 * 60));
+    
+    const newSession: FocusSession = {
+      id: `${currentTask.id}-${Date.now()}`,
+      taskName: currentTask.name,
+      taskId: currentTask.id,
+      startTime: currentSessionStart,
+      endTime: sessionEnd,
+      duration: actualDuration,
+      completed: true
+    };
+    
+    const updatedHistory = [...focusHistory, newSession];
+    setFocusHistory(updatedHistory);
+    saveFocusHistory(updatedHistory);
+    
+    // Reset session state
+    setIsRunning(false);
+    setTimeRemaining(0);
+    setCurrentSessionStart(null);
+    clearFocusSessionState();
+  }, [currentTask, currentSessionStart, focusHistory]);
 
   // Timer effect
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    if (!isRunning || timeRemaining <= 0) return;
     
-    if (isRunning && timeRemaining > 0) {
-      interval = setInterval(() => {
-        setTimeRemaining(prev => {
-          if (prev <= 1) {
-            setIsRunning(false);
-            handleSessionComplete();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
+    const interval = setInterval(() => {
+      setTimeRemaining(prev => {
+        const newTime = prev - 1;
+        
+        if (newTime <= 0) {
+          finishSession();
+          return 0;
+        }
+        return newTime;
+      });
+    }, 1000);
 
-    return () => clearInterval(interval);
-  }, [isRunning, timeRemaining]);
+    return () => {
+      clearInterval(interval);
+    };
+  }, [isRunning, timeRemaining, finishSession]);
 
-  const handleSessionComplete = () => {
-    if (sessionType === 'work') {
-      setCompletedSessions(prev => prev + 1);
-      // Auto-start break after work session
-      startBreakSession();
-    } else {
-      // Break completed, ready for next work session
-      setSessionType('work');
-      setTimeRemaining(workDuration * 60);
-    }
-  };
-
-  const startWorkSession = (task?: Task) => {
-    if (task) {
-      setSelectedTask(task);
-    }
-    setSessionType('work');
+  const startSession = () => {
     setTimeRemaining(workDuration * 60);
-    setCurrentSession({
-      taskId: task?.id || selectedTask?.id || '',
-      startTime: new Date(),
-      duration: workDuration,
-      type: 'work',
-      isActive: true
-    });
     setIsRunning(true);
-  };
-
-  const startBreakSession = () => {
-    setSessionType('break');
-    setTimeRemaining(breakDuration * 60);
-    setCurrentSession({
-      taskId: '',
-      startTime: new Date(),
-      duration: breakDuration,
-      type: 'break',
-      isActive: true
-    });
-    setIsRunning(true);
+    setCurrentSessionStart(new Date());
   };
 
   const pauseSession = () => {
     setIsRunning(false);
   };
-
+  
   const resumeSession = () => {
     setIsRunning(true);
   };
-
+  
   const stopSession = () => {
     setIsRunning(false);
-    setCurrentSession(null);
     setTimeRemaining(0);
+    setCurrentSessionStart(null);
+    clearFocusSessionState();
   };
 
-  const skipSession = () => {
-    setIsRunning(false);
-    handleSessionComplete();
+  const selectTask = (task: Task) => {
+    setCurrentTaskId(task.id);
+    
+    // If there's an active session, stop it first
+    if (isRunning || timeRemaining > 0) {
+      stopSession();
+    }
   };
 
   const formatTimeRemaining = (seconds: number) => {
@@ -169,350 +327,313 @@ export default function FocusView({}: FocusViewProps) {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const getNextTask = () => {
-    return todayTasks.find(task => !task.completed);
+  const formatDuration = (hours: number) => {
+    const mins = hours * 60;
+    return `${mins}m`;
   };
 
-  const currentTime = new Date();
-  const currentHour = currentTime.getHours() + currentTime.getMinutes() / 60;
+  // Get today's focus sessions
+  const todaysSessions = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    
+    const sessions = focusHistory.filter(session => 
+      session.startTime >= today && session.startTime < tomorrow
+    );
+    
+    return sessions;
+  }, [focusHistory]);
+
+  const todaysFocusTime = todaysSessions.reduce((total, session) => total + session.duration, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800 p-6">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <Focus className="w-8 h-8 text-blue-600" />
-            <h1 className="text-3xl font-bold text-foreground">Focus Mode</h1>
-          </div>
-          <p className="text-muted-foreground">
-            Distraction-free environment for deep work
-          </p>
-        </div>
+    <div className="min-h-screen p-6 bg-background flex items-center justify-center">
+      <div className="w-full max-w-4xl">
+        {/* Main Focus Card */}
+        <Card className="mb-8 relative">
+          <CardContent className="p-12">
+            {currentTask ? (
+              <div className="text-center">
+                {/* Task Actions - Corner Buttons */}
+                <div className="absolute top-4 right-4 flex items-center gap-2">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        className="text-muted-foreground hover:text-foreground"
+                        title="Focus Settings"
+                      >
+                        <Settings className="w-4 h-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Focus Settings</DialogTitle>
+                      </DialogHeader>
+                      <div className="pt-4">
+                        <label className="block text-sm font-medium mb-3">Session Duration (minutes)</label>
+                        <div className="grid grid-cols-4 gap-2">
+                          {[15, 25, 45, 60].map(duration => (
+                             <Button
+                               key={duration}
+                               variant={workDuration === duration ? "default" : "outline"}
+                               size="sm"
+                               onClick={() => setWorkDuration(duration)}
+                               className="text-xs"
+                             >
+                               {duration}m
+                             </Button>
+                          ))}
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
 
-        {/* Main Focus Area */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 mb-8">
-          {/* Timer Display */}
-          <div className="text-center mb-8">
-            <div className={cn(
-              "text-8xl font-mono font-bold mb-4",
-              sessionType === 'work' ? "text-blue-600" : "text-green-600"
-            )}>
-              {formatTimeRemaining(timeRemaining)}
-            </div>
-            
-            <div className="flex items-center justify-center gap-2 mb-6">
-              <div className={cn(
-                "px-4 py-2 rounded-full text-sm font-medium",
-                sessionType === 'work' 
-                  ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-                  : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-              )}>
-                {sessionType === 'work' ? (
-                  <>
-                    <Clock className="w-4 h-4 inline mr-1" />
-                    Work Session
-                  </>
-                ) : (
-                  <>
-                    <Coffee className="w-4 h-4 inline mr-1" />
-                    Break Time
-                  </>
-                )}
-              </div>
-              
-              {completedSessions > 0 && (
-                <div className="px-3 py-1 bg-muted rounded-full text-sm text-muted-foreground">
-                  {completedSessions} completed
-                </div>
-              )}
-            </div>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                       <Button 
+                          variant="ghost" 
+                          size="icon"
+                          className="text-muted-foreground hover:text-foreground"
+                          title="View History"
+                        >
+                          <History className="w-4 h-4" />
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                           <DialogTitle>Today's Focus History</DialogTitle>
+                        </DialogHeader>
+                        <div className="pt-4">
+                          <div className="flex items-center justify-between mb-4 p-3 bg-muted/50 rounded-lg">
+                            <span className="text-sm font-medium">Total Focus Time</span>
+                            <span className="text-lg font-bold text-primary">
+                              {Math.floor(todaysFocusTime / 60)}h {todaysFocusTime % 60}m
+                            </span>
+                          </div>
+                          <div className="space-y-2 max-h-64 overflow-y-auto">
+                            {todaysSessions.length > 0 ? (
+                              todaysSessions.slice().reverse().map((session) => (
+                                <div key={session.id} className="flex items-center justify-between text-xs p-2 bg-muted/50 rounded">
+                                  <span className="text-muted-foreground truncate flex-1 mr-2">
+                                    {session.taskName}
+                                  </span>
+                                  <div className="flex items-center gap-2 text-muted-foreground">
+                                    <span className="font-medium">{session.duration}m</span>
+                                    <span className="text-xs">
+                                      {new Date(session.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="text-center py-8 text-muted-foreground text-sm">
+                                No focus sessions completed today.
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                    </DialogContent>
+                  </Dialog>
 
-            {/* Timer Controls */}
-            <div className="flex items-center justify-center gap-4">
-              {!isRunning && timeRemaining === 0 && (
-                <>
-                  <Button
-                    onClick={() => startWorkSession()}
-                    size="lg"
-                    className="flex items-center gap-2 px-8"
-                  >
-                    <Play className="w-5 h-5" />
-                    Start Work
-                  </Button>
-                  <Button
-                    onClick={startBreakSession}
-                    variant="outline"
-                    size="lg"
-                    className="flex items-center gap-2"
-                  >
-                    <Coffee className="w-5 h-5" />
-                    Start Break
-                  </Button>
-                </>
-              )}
-              
-              {timeRemaining > 0 && (
-                <>
-                  <Button
-                    onClick={isRunning ? pauseSession : resumeSession}
-                    size="lg"
-                    variant={isRunning ? "outline" : "default"}
-                    className="flex items-center gap-2 px-8"
-                  >
-                    {isRunning ? (
-                      <>
-                        <Pause className="w-5 h-5" />
-                        Pause
-                      </>
-                    ) : (
-                      <>
-                        <Play className="w-5 h-5" />
-                        Resume
-                      </>
-                    )}
-                  </Button>
-                  
-                  <Button
-                    onClick={stopSession}
-                    variant="outline"
-                    size="lg"
-                    className="flex items-center gap-2"
-                  >
-                    <Square className="w-5 h-5" />
-                    Stop
-                  </Button>
-                  
-                  <Button
-                    onClick={skipSession}
-                    variant="ghost"
-                    size="lg"
-                    className="flex items-center gap-2"
-                  >
-                    <SkipForward className="w-5 h-5" />
-                    Skip
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Current Task Display */}
-          {selectedTask && (
-            <div className="bg-muted/30 rounded-xl p-6 mb-6">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <button
-                      onClick={() => handleTaskCompletionToggle(selectedTask.id)}
-                      className="hover:scale-110 transition-transform"
-                    >
-                      {selectedTask.completed ? (
-                        <CheckCircle2 className="w-6 h-6 text-green-500" />
-                      ) : (
-                        <Circle className="w-6 h-6 text-gray-400" />
-                      )}
-                    </button>
-                    <h3 className={cn(
-                      "text-xl font-semibold",
-                      selectedTask.completed && "line-through text-muted-foreground"
-                    )}>
-                      {selectedTask.name}
-                    </h3>
-                  </div>
-                  
-                  {selectedTask.notes && (
-                    <p className="text-muted-foreground mb-4">
-                      {selectedTask.notes}
-                    </p>
-                  )}
-                  
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    {selectedTask.startHour !== undefined && (
-                      <span>
-                        <Clock className="w-4 h-4 inline mr-1" />
-                        {formatTime(selectedTask.startHour)} - {formatTime(selectedTask.startHour + selectedTask.duration)}
-                      </span>
-                    )}
-                    <span>
-                      <Timer className="w-4 h-4 inline mr-1" />
-                      {selectedTask.duration}h estimated
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openViewNotesModal(selectedTask)}
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      openViewNotesModal(currentTask);
+                    }}
+                    className="text-muted-foreground hover:text-foreground"
+                    title="View Notes"
                   >
                     <Eye className="w-4 h-4" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openEditModal(selectedTask)}
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      openEditModal(currentTask, { isFromPool: false });
+                    }}
+                    className="text-muted-foreground hover:text-foreground"
+                    title="Edit Task"
                   >
                     <Edit3 className="w-4 h-4" />
                   </Button>
                 </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Task Selection */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Today's Tasks */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Calendar className="w-5 h-5" />
-              Today's Tasks
-            </h3>
-            
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {todayTasks.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">
-                  No tasks for today
-                </p>
-              ) : (
-                todayTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className={cn(
-                      "p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md",
-                      selectedTask?.id === task.id 
-                        ? "border-blue-500 bg-blue-50 dark:bg-blue-950" 
-                        : "border-border hover:border-muted-foreground",
-                      task.completed && "opacity-60"
+                
+                {/* Task Name - Most Prominent */}
+                <div className="mb-8">
+                  <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-4 leading-tight">
+                    {currentTask.name}
+                  </h1>
+                  
+                  {/* Minimal task details */}
+                  <div className="flex items-center justify-center gap-4 text-muted-foreground">
+                    {currentTask.startHour !== undefined && (
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-4 h-4" /> 
+                        {formatTime(currentTask.startHour)}
+                      </span>
                     )}
-                    onClick={() => setSelectedTask(task)}
-                  >
-                    <div className="flex items-start gap-3">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleTaskCompletionToggle(task.id);
-                        }}
-                        className="mt-0.5 hover:scale-110 transition-transform"
-                      >
-                        {task.completed ? (
-                          <CheckCircle2 className="w-5 h-5 text-green-500" />
-                        ) : (
-                          <Circle className="w-5 h-5 text-gray-400" />
-                        )}
-                      </button>
-                      
-                      <div className="flex-1 min-w-0">
-                        <h4 className={cn(
-                          "font-medium truncate",
-                          task.completed && "line-through text-muted-foreground"
-                        )}>
-                          {task.name}
-                        </h4>
-                        
-                        <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
-                          {task.startHour !== undefined && (
-                            <span>
-                              <Clock className="w-3 h-3 inline mr-1" />
-                              {formatTime(task.startHour)}
-                            </span>
-                          )}
-                          <span>
-                            <Timer className="w-3 h-3 inline mr-1" />
-                            {task.duration}h
-                          </span>
-                        </div>
-                      </div>
-                      
-                      {selectedTask?.id === task.id && (
-                        <Button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            startWorkSession(task);
-                          }}
-                          size="sm"
-                          className="flex items-center gap-1"
-                        >
-                          <Play className="w-3 h-3" />
-                          Focus
-                        </Button>
-                      )}
-                    </div>
+                    <span className="flex items-center gap-1">
+                      <Timer className="w-4 h-4" /> 
+                      {currentTask.duration}h
+                    </span>
                   </div>
-                ))
-              )}
-            </div>
-          </div>
+                </div>
+                
+                {/* Timer Controls and Progress */}
+                <div className="mb-8">
+                  {/* Progress Bar */}
+                  {(isRunning || timeRemaining > 0) && (
+                    <div className="mb-6">
+                      <div className="w-full bg-secondary h-3 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-primary transition-all duration-1000 ease-linear"
+                          style={{ 
+                            width: `${((workDuration * 60 - timeRemaining) / (workDuration * 60)) * 100}%` 
+                          }}
+                        />
+                      </div>
+                      <div className="text-center mt-2 text-sm text-muted-foreground">
+                        {Math.round(((workDuration * 60 - timeRemaining) / (workDuration * 60)) * 100)}% complete
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Timer Controls */}
+                  <div className="flex items-center justify-center gap-4">
+                    {!isRunning && timeRemaining === 0 && (
+                      <Button 
+                        onClick={startSession}
+                        size="lg"
+                        className="px-8 py-4 text-lg"
+                      >
+                        <Play className="w-5 h-5 mr-2" />
+                        Start Focus ({workDuration}m)
+                      </Button>
+                    )}
+                    
+                    {!isRunning && timeRemaining > 0 && (
+                      <Button 
+                        onClick={resumeSession}
+                        size="lg"
+                        className="px-8 py-4 text-lg"
+                      >
+                        <Play className="w-5 h-5 mr-2" />
+                        Resume ({formatTimeRemaining(timeRemaining)})
+                      </Button>
+                    )}
+                    
+                    {isRunning && (
+                      <Button 
+                        onClick={pauseSession}
+                        size="lg"
+                        variant="secondary"
+                        className="px-8 py-4 text-lg"
+                      >
+                        <Pause className="w-5 h-5 mr-2" />
+                        Pause ({formatTimeRemaining(timeRemaining)})
+                      </Button>
+                    )}
+                    
+                    {(isRunning || timeRemaining > 0) && (
+                      <Button 
+                        onClick={stopSession}
+                        size="lg"
+                        variant="destructive"
+                        className="px-8 py-4 text-lg"
+                      >
+                        <Square className="w-5 h-5 mr-2" />
+                        Stop
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Task Completion */}
+                <div className="flex items-center justify-center">
+                  <Button
+                    onClick={() => {
+                      handleTaskCompletionToggle(currentTask.id);
+                    }}
+                    variant="outline"
+                    className="flex items-center gap-2 text-lg px-6 py-3"
+                  >
+                    <CheckCircle2 className="w-5 h-5" />
+                    Mark Complete
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-16">
+                <Target className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                <h2 className="text-3xl font-bold mb-4">No Tasks Available</h2>
+                <p className="text-muted-foreground text-lg">
+                  Add some tasks to your daily planner to start focusing!
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-          {/* Session Settings */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Timer className="w-5 h-5" />
-              Session Settings
-            </h3>
+        {/* Next Task Section - Clean and Minimal */}
+        {nextTask && (
+          <div className="bg-card border rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium text-muted-foreground">Next Task</h3>
+              <div className="flex items-center gap-1">
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openViewNotesModal(nextTask);
+                  }}
+                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                  title="View Notes"
+                >
+                  <Eye className="w-3 h-3" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openEditModal(nextTask, { isFromPool: false });
+                  }}
+                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                  title="Edit Task"
+                >
+                  <Edit3 className="w-3 h-3" />
+                </Button>
+              </div>
+            </div>
             
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Work Duration (minutes)
-                </label>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setWorkDuration(Math.max(5, workDuration - 5))}
-                  >
-                    -
-                  </Button>
-                  <span className="w-16 text-center font-mono">{workDuration}</span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setWorkDuration(Math.min(120, workDuration + 5))}
-                  >
-                    +
-                  </Button>
+            <div className="space-y-2">
+              <h4 className="font-medium text-foreground">{nextTask.name}</h4>
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  <span>{formatTime(nextTask.startHour)}</span>
                 </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Break Duration (minutes)
-                </label>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setBreakDuration(Math.max(1, breakDuration - 1))}
-                  >
-                    -
-                  </Button>
-                  <span className="w-16 text-center font-mono">{breakDuration}</span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setBreakDuration(Math.min(30, breakDuration + 1))}
-                  >
-                    +
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="pt-4 border-t">
-                <div className="text-sm text-muted-foreground">
-                  <p className="mb-2">
-                    <strong>Sessions completed:</strong> {completedSessions}
-                  </p>
-                  <p>
-                    <strong>Next task:</strong> {getNextTask()?.name || 'None'}
-                  </p>
+                <div className="flex items-center gap-1">
+                  <span>{formatDuration(nextTask.duration)}</span>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
+
+
       </div>
     </div>
   );
