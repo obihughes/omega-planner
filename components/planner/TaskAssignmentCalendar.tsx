@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Task, PinnedTask } from '@/types/planner';
-import { ChevronLeft, ChevronRight, Clock, Calendar as CalendarIcon, Edit3, ArrowLeft, Pin } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Calendar as CalendarIcon, Edit3, ArrowLeft, Pin, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatDuration } from '@/utils/formatters';
@@ -24,6 +24,7 @@ interface TaskAssignmentCalendarProps {
   getPoolTasksForDate: (dateKey: string) => Task[];
   createQuickTask: (date: Date) => void;
   openEditModal: (task?: Task, options?: { isFromPool?: boolean; initialDayOffset?: number; initialStartHour?: number; isNew?: boolean }) => void;
+  createPoolTask: () => void;
 }
 
 export function TaskAssignmentCalendar({
@@ -40,7 +41,8 @@ export function TaskAssignmentCalendar({
   onClearPool,
   getPoolTasksForDate,
   createQuickTask,
-  openEditModal
+  openEditModal,
+  createPoolTask
 }: TaskAssignmentCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [assigningTask, setAssigningTask] = useState<Task | null>(null);
@@ -208,56 +210,89 @@ export function TaskAssignmentCalendar({
       <div className="flex-1 overflow-auto p-4">
         {/* Pool Tasks Section */}
         <div className="mb-6">
-          <div className="flex items-baseline justify-between mb-3">
-            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+          <div className="flex items-baseline justify-between mb-4">
+            <h3 className="text-lg font-semibold text-foreground">
               Inbox Tasks ({poolTasks.length})
             </h3>
-            {poolTasks.length > 0 && (
-              <p className="text-xs text-muted-foreground">
-                Drag a task to the calendar to schedule it.
-              </p>
-            )}
+            <div className="flex items-center gap-3">
+              {poolTasks.length > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Drag a task to the calendar to schedule it.
+                </p>
+              )}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => createPoolTask()}
+                className="flex items-center gap-2 hover:bg-primary/10 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Add Task
+              </Button>
+            </div>
           </div>
           
-          {poolTasks.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-4">
+          {poolTasks.length > 0 ? (
+            <div className="flex flex-wrap gap-3 mb-4">
               {poolTasks.map(task => (
                 <div
                   key={task.id}
                   draggable
                   onDragStart={(e) => handleDragStart(e, task, true)}
                   className={cn(
-                    "p-2 rounded-lg text-xs cursor-pointer transition-all shadow-sm border group",
-                    "w-32 h-16 flex flex-col justify-between",
+                    "group relative p-3 rounded-xl text-sm cursor-pointer transition-all duration-200 shadow-sm border-2 hover:shadow-md",
+                    "w-40 h-20 flex flex-col justify-between bg-gradient-to-br from-background to-muted/20",
                     assigningTask?.id === task.id 
-                      ? "ring-2 ring-primary bg-primary/10" 
-                      : "hover:scale-[1.02]",
-                    task.color ? task.color : "bg-card"
+                      ? "ring-2 ring-primary/50 bg-primary/5 border-primary/30 shadow-md scale-[1.02]" 
+                      : "border-border/40 hover:border-border/60 hover:scale-[1.02]",
+                    task.color ? task.color : "bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900"
                   )}
                   onClick={() => handleTaskAssignClick(task)}
                 >
                   <div className="flex items-start justify-between min-h-0">
-                    <span className="font-medium text-xs line-clamp-2 flex-1 mr-1">
+                    <span className="font-medium text-sm line-clamp-2 flex-1 mr-2 text-foreground/90">
                       {task.name}
                     </span>
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100 flex-shrink-0"
+                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 hover:bg-accent/50"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleTaskClick(task, false);
                       }}
+                      title="Edit task"
                     >
                       <Edit3 className="w-3 h-3" />
                     </Button>
                   </div>
-                  <div className="flex items-center text-muted-foreground mt-auto">
-                    <Clock className="w-2 h-2 mr-1 flex-shrink-0" />
-                    <span className="text-xs">{formatDuration(task.duration)}</span>
+                  <div className="flex items-center justify-between text-muted-foreground/70 mt-auto">
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-3 h-3 flex-shrink-0" />
+                      <span className="text-xs font-medium">{formatDuration(task.duration)}</span>
+                    </div>
+                    <div className="w-2 h-2 rounded-full bg-primary/40 opacity-60"></div>
                   </div>
                 </div>
               ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 px-4 bg-muted/20 rounded-xl border-2 border-dashed border-border/40">
+              <div className="w-12 h-12 rounded-full bg-muted/40 flex items-center justify-center mb-3">
+                <Clock className="w-6 h-6 text-muted-foreground/60" />
+              </div>
+              <h4 className="text-sm font-medium text-foreground mb-1">No inbox tasks yet</h4>
+              <p className="text-xs text-muted-foreground text-center mb-4">
+                Create tasks to organize your work and drag them to the calendar when you're ready to schedule them.
+              </p>
+              <Button
+                size="sm"
+                onClick={() => openEditModal(undefined, { isNew: true, isFromPool: true })}
+                className="flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Create Your First Task
+              </Button>
             </div>
           )}
         </div>

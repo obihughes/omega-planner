@@ -31,7 +31,6 @@ import { EditTaskModal } from './EditTaskModal';
 import { ViewTaskNotesModal } from './ViewTaskNotesModal';
 import { getCalendarDateForColumn, getDateKey, dateFromDateKey } from '../../utils/dateUtils';
 import { resolveCollisionsForResize, resolveCollisionsForDrag } from '../../utils/taskUtils';
-import TaskInboxView from './TaskInboxView';
 import WeeklyView from './WeeklyView';
 import { useModalManager } from '../../hooks/useModalManager';
 
@@ -118,7 +117,7 @@ export default function DailyPlanner() {
 
 
   const [currentTimeForMarker, setCurrentTimeForMarker] = useState(new Date());
-  const [viewMode, setViewMode] = useState<'daily' | 'inbox' | 'weekly' | 'monthly'>('daily');
+  const [viewMode, setViewMode] = useState<'daily' | 'weekly' | 'monthly'>('daily');
 
   useEffect(() => {
       const timerId = setInterval(() => setCurrentTimeForMarker(new Date()), 60000);
@@ -653,15 +652,6 @@ export default function DailyPlanner() {
                 <Calendar className="w-4 h-4" />
                 Monthly
               </Button>
-              <Button
-                variant={viewMode === 'inbox' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('inbox')}
-                className="flex items-center gap-2"
-              >
-                <Clock className="w-4 h-4" />
-                Inbox
-              </Button>
             </div>
           </div>
         </div>
@@ -916,25 +906,6 @@ export default function DailyPlanner() {
           </>
         )}
 
-        {/* Inbox View */}
-        {viewMode === 'inbox' && (
-          <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
-            <TaskInboxView 
-              poolTasks={generalPoolTasks}
-              pinnedTasks={pinnedTasks}
-              getPoolTasksForDate={getPoolTasksForDate}
-              getCombinedPoolTasks={getCombinedPoolTasks}
-              addPoolTask={addPoolTask}
-              removePoolTask={removePoolTask}
-              removePoolTaskForDate={removePoolTaskForDate}
-              createPoolTask={createPoolTask}
-              createPoolTaskForDate={createPoolTaskForDate}
-              openEditModal={openEditModal}
-              openViewNotesModal={openViewNotesModal}
-            />
-          </div>
-        )}
-
         {/* Weekly View */}
         {viewMode === 'weekly' && (
           <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
@@ -960,6 +931,7 @@ export default function DailyPlanner() {
               getPoolTasksForDate={getPoolTasksForDate}
               createQuickTask={createQuickTask}
               openEditModal={openEditModal}
+              createPoolTask={createPoolTask}
             />
           </div>
         )}

@@ -9,9 +9,10 @@ This directory contains all components related to the daily planning functionali
 **Purpose**: Main orchestrating component with page-level view mode navigation
 
 **Features:**
-- **Page-Level View Modes**: Toggle between Daily View and Monthly View
+- **Page-Level View Modes**: Toggle between Daily View, Weekly View, and Monthly View
   - Daily View: Timeline-based planning with Pool/Pinned sidebar
-  - Monthly View: Full-page calendar for task assignment
+  - Weekly View: Weekly overview of scheduled and inbox tasks
+  - Monthly View: Full-page calendar for task assignment and inbox management
 - Timeline visualization across 4 periods (night, morning, afternoon, evening)
 - Dual-day view with independent navigation
 - Task management (create, edit, delete, move, resize)
@@ -24,27 +25,34 @@ This directory contains all components related to the daily planning functionali
    - Timeline sections for detailed time-based planning
    - Task collision detection and resolution
    
-2. **Monthly View**:
+2. **Weekly View**:
+   - Weekly overview showing scheduled and inbox tasks
+   - Separate sections for scheduled tasks and inbox tasks per day
+   
+3. **Monthly View**:
    - Full TaskAssignmentCalendar component
    - Visual month grid for task assignment
+   - Inbox tasks management with "Add Task" functionality
    - Pool tasks integration for scheduling
 
 ### TaskAssignmentCalendar
 **File**: `TaskAssignmentCalendar.tsx`
-**Purpose**: Calendar view for assigning pool tasks to specific dates
+**Purpose**: Calendar view for assigning pool tasks to specific dates and managing inbox tasks
 
 **Features:**
 - Projects-calendar visual styling (month grid, 130px cells)
-- Pool tasks display section at top
+- Inbox tasks display section at top with "Add Task" button
 - Drag & drop from pool to calendar dates
 - Click-to-assign workflow (click task then click date)
 - Task rescheduling between dates
 - Monthly navigation and summary statistics
+- Direct inbox task creation functionality
 
 **Integration:**
 - Used within DailyPlanner's Monthly View mode
 - Shares task data and operations with daily timeline
 - Maintains consistent styling with projects calendar
+- Provides primary interface for inbox task management
 
 ### Timeline Components
 
@@ -114,17 +122,21 @@ All components use the `useDailyPlannerState` hook for:
 
 ```
 DailyPlanner
-├── View Mode Navigation (Daily | Monthly)
+├── View Mode Navigation (Daily | Weekly | Monthly)
 ├── Daily View
 │   ├── Pool/Pinned Sidebar Tabs
 │   └── Timeline Sections (Top Day + Bottom Day)
+├── Weekly View
+│   └── Weekly Overview with Scheduled & Inbox Tasks
 └── Monthly View
-    └── TaskAssignmentCalendar (Full Page)
+    └── TaskAssignmentCalendar (Full Page + Inbox Management)
 ```
 
 ## Usage Patterns
 
 1. **Daily Planning**: Use Daily View for detailed time-based task scheduling
-2. **Task Assignment**: Use Monthly View to assign pool tasks to specific dates
-3. **Task Management**: Edit tasks through modals accessible from both views
-4. **Workflow**: Move tasks from Pool → Calendar (Monthly) → Timeline (Daily) 
+2. **Weekly Overview**: Use Weekly View to see scheduled and inbox tasks across the week
+3. **Task Assignment**: Use Monthly View to assign pool tasks to specific dates
+4. **Inbox Management**: Use Monthly View to create and manage inbox tasks
+5. **Task Management**: Edit tasks through modals accessible from all views
+6. **Workflow**: Create tasks in Inbox (Monthly) → Assign to dates (Monthly) → Schedule times (Daily) 
