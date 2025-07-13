@@ -149,10 +149,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                        }
                      }}
                      style={{ pointerEvents: 'auto' }}>
-                  <div className="text-sm font-medium opacity-90 leading-tight">
-                    {formatTime(task.startHour)} - {formatTime(endTime)}
-                  </div>
-                  <div className="text-xs font-semibold mt-1 opacity-90 leading-tight">
+                  <div className="text-xs font-semibold opacity-90 leading-tight">
                     {formatDuration(task.duration)}
                   </div>
                 </div>

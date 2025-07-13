@@ -684,7 +684,7 @@ export default function DailyPlanner() {
                         currentViewDate.setDate(today.getDate() + topDayOffset);
                         createPoolTaskForDate(currentViewDate);
                       }}
-                      className="flex-shrink-0 w-12 h-16 bg-green-100 dark:bg-green-900/40 border-2 border-dashed border-green-300 dark:border-green-700 rounded-lg hover:bg-green-150 dark:hover:bg-green-900/60 hover:border-green-400 dark:hover:border-green-600 transition-all duration-150 flex flex-col items-center justify-center gap-1 text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300"
+                      className="flex-shrink-0 w-12 h-16 bg-muted/30 border border-dashed border-muted-foreground/30 rounded-lg hover:bg-muted/50 hover:border-muted-foreground/50 transition-all duration-150 flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-foreground"
                       title="Add Task to Pool"
                     >
                       <Plus className="w-4 h-4" />
@@ -706,12 +706,9 @@ export default function DailyPlanner() {
                                               <div className="flex items-start justify-between gap-2 h-full">
                           <div className="flex items-start gap-2 flex-1 min-w-0">
                             <div className="flex flex-col flex-1 min-w-0">
-                              <p className="font-medium text-sm text-foreground truncate leading-tight mb-1">
+                              <p className="font-medium text-sm text-foreground truncate leading-tight">
                                 {task.name || "Untitled Task"}
                               </p>
-                              <div className="text-xs text-muted-foreground">
-                                <span>Unscheduled</span>
-                              </div>
                             </div>
                           </div>
                         {/* Action buttons */}
@@ -762,12 +759,9 @@ export default function DailyPlanner() {
                                               <div className="flex items-start justify-between gap-2 h-full">
                           <div className="flex items-start gap-2 flex-1 min-w-0">
                             <div className="flex flex-col flex-1 min-w-0">
-                              <p className="font-medium text-sm text-foreground truncate leading-tight mb-1">
+                              <p className="font-medium text-sm text-foreground truncate leading-tight">
                                 {task.name || "Untitled Task"}
                               </p>
-                              <div className="text-xs text-muted-foreground">
-                                <span>Unscheduled</span>
-                              </div>
                             </div>
                           </div>
                         {/* Action buttons */}
