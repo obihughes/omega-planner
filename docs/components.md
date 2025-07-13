@@ -31,9 +31,12 @@ The main daily planning interface with timeline views and task management.
 
 **View Mode Navigation:**
 - Located above the sidebar area
-- Two buttons: "Daily View" (default) and "Monthly View"
+- Four buttons: "Focus", "Daily" (default), "Weekly", and "Monthly"
 - Completely switches the page layout and functionality
-- Daily View shows timeline + sidebar, Monthly View shows full calendar
+- Focus: Minimal focus session interface for deep work
+- Daily: Timeline + sidebar for detailed time-based planning
+- Weekly: Weekly overview of scheduled and inbox tasks
+- Monthly: Full calendar for task assignment and scheduling
 
 **Daily View Components:**
 - Inbox/Pinned task sidebar with tabs
