@@ -152,8 +152,9 @@ export default function WeeklyView({}: WeeklyViewProps) {
   const TaskItem = ({ task, isScheduled }: { task: Task; isScheduled: boolean }) => (
     <div
       className={cn(
-        "group relative flex items-center gap-3 p-3 rounded-lg transition-all duration-200",
-        "hover:bg-accent/50 hover:shadow-sm cursor-pointer",
+        "group relative flex items-center gap-2 p-2 rounded-lg transition-all duration-200",
+        "hover:bg-accent/50 hover:shadow-sm cursor-pointer flex-shrink-0",
+        "min-w-[200px] max-w-[280px]",
         isScheduled 
           ? "bg-card border border-border/40 shadow-sm" 
           : "bg-muted/30 border border-dashed border-muted-foreground/30",
@@ -167,7 +168,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
           e.stopPropagation();
           handleTaskCompletionToggle(task.id);
         }}
-        className="text-muted-foreground hover:text-foreground transition-colors"
+        className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
       >
         {task.completed ? (
           <CheckCircle2 className="w-4 h-4 text-green-600" />
@@ -186,23 +187,21 @@ export default function WeeklyView({}: WeeklyViewProps) {
             {task.name}
           </span>
           {!isScheduled && (
-            <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+            <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded flex-shrink-0">
               Inbox
             </span>
           )}
         </div>
         
-        {/* Time and Duration */}
-        <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+        {/* Time and Duration - Compact */}
+        <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
           {isScheduled && task.startHour !== undefined && (
-            <div className="flex items-center gap-1">
+            <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
-              <span>{formatTime(task.startHour)}</span>
-            </div>
+              {formatTime(task.startHour)}
+            </span>
           )}
-          <div className="flex items-center gap-1">
-            <span>{formatDuration(task.duration)}</span>
-          </div>
+          <span>{formatDuration(task.duration)}</span>
         </div>
       </div>
     </div>
@@ -255,7 +254,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
 
       {/* Horizontal Week Layout */}
       <div className="flex-1 overflow-y-auto">
-        <div className="p-6 space-y-2 max-w-7xl mx-auto">
+        <div className="p-4 space-y-1 max-w-7xl mx-auto">
           {weekDates.map((date, index) => {
             const dateKey = getDateKey(date);
             const dayData = weekTasks.get(dateKey) || { scheduled: [], inbox: [] };
@@ -269,8 +268,8 @@ export default function WeeklyView({}: WeeklyViewProps) {
                               <div 
                   key={dateKey} 
                   className={cn(
-                    "group relative rounded-xl border transition-all duration-200",
-                    "hover:shadow-md hover:border-border/60 hover:-translate-y-0.5",
+                    "group relative rounded-lg border transition-all duration-200",
+                    "hover:shadow-md hover:border-border/60",
                     isCurrentDay 
                       ? "bg-primary/5 border-primary/20 shadow-sm" 
                       : isPastDay
@@ -278,34 +277,34 @@ export default function WeeklyView({}: WeeklyViewProps) {
                         : "bg-card border-border/40"
                   )}
                 >
-                <div className="flex items-start gap-6 p-5">
-                  {/* Day Header - Compact */}
-                                      <div className="flex-shrink-0 w-24 text-center">
-                      <div className={cn(
-                        "text-xs font-medium mb-1 uppercase tracking-wide",
-                        isCurrentDay ? "text-primary" : "text-muted-foreground"
-                      )}>
-                        {dayName}
-                      </div>
-                      <div className={cn(
-                        "text-2xl font-bold mb-1",
-                        isCurrentDay ? "text-primary" : "text-foreground"
-                      )}>
-                        {date.getDate()}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {date.toLocaleDateString('en-US', { month: 'short' })}
-                      </div>
+                <div className="flex items-center gap-6 p-4">
+                                    {/* Day Header - Compact Single Line */}
+                  <div className="flex-shrink-0 w-20 text-center">
+                    <div className={cn(
+                      "text-xs font-medium uppercase tracking-wide",
+                      isCurrentDay ? "text-primary" : "text-muted-foreground"
+                    )}>
+                      {dayName}
                     </div>
+                    <div className={cn(
+                      "text-xl font-bold",
+                      isCurrentDay ? "text-primary" : "text-foreground"
+                    )}>
+                      {date.getDate()}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {date.toLocaleDateString('en-US', { month: 'short' })}
+                    </div>
+                  </div>
 
-                  {/* Tasks Container - Horizontal Flow */}
+                  {/* Tasks Container - Horizontal Side-by-Side */}
                   <div className="flex-1 min-w-0">
                     {allTasks.length === 0 ? (
-                      <div className="text-center py-6 text-muted-foreground">
+                      <div className="flex items-center justify-center py-2 text-muted-foreground">
                         <div className="text-sm">No tasks scheduled</div>
                       </div>
                     ) : (
-                      <div className="space-y-1.5">
+                      <div className="flex items-center gap-2 overflow-x-auto">
                         {/* Scheduled Tasks */}
                         {dayData.scheduled.map((task) => (
                           <TaskItem key={task.id} task={task} isScheduled={true} />
