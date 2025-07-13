@@ -141,32 +141,74 @@ export default function FocusView() {
     return incompleteTasks;
   }, [tasksByDate, pinnedTasks, currentDayPoolTasks]);
 
-  // Get current task
+  // Get current task (the one that should be happening now)
   const currentTask = useMemo(() => {
-    if (!currentTaskId) {
-      const firstTask = todayIncompleteTasks[0] || null;
-      return firstTask;
-    }
-    
-    const task = todayIncompleteTasks.find(t => t.id === currentTaskId);
-    return task || null;
-  }, [currentTaskId, todayIncompleteTasks]);
-
-  // Get the next task (just the immediate next one)
-  const nextTask = useMemo(() => {
     const today = new Date();
     const currentTime = today.getHours() + today.getMinutes() / 60;
     
-    // Get today's tasks
-    const todayTasks = tasksByDate.get(getDateKey(today)) || [];
+    // If user has manually selected a task, use that
+    if (currentTaskId) {
+      const task = todayIncompleteTasks.find(t => t.id === currentTaskId);
+      if (task) return task;
+    }
     
-    // Find upcoming tasks (not completed and starts after current time)
-    const upcomingTasks = todayTasks
-      .filter(task => !task.completed && task.startHour > currentTime)
-      .sort((a, b) => a.startHour - b.startHour);
+    // Find the task that should be happening now
+    const scheduledTasks = todayIncompleteTasks.filter(task => task.startHour !== undefined);
+    
+    // Find current task (task that started before or at current time and hasn't ended yet)
+    const currentScheduledTask = scheduledTasks.find(task => {
+      const taskStart = task.startHour!;
+      const taskEnd = taskStart + task.duration;
+      return taskStart <= currentTime && currentTime < taskEnd && !task.completed;
+    });
+    
+    if (currentScheduledTask) {
+      return currentScheduledTask;
+    }
+    
+    // If no current scheduled task, find the next upcoming task
+    const upcomingTasks = scheduledTasks
+      .filter(task => !task.completed && task.startHour! > currentTime)
+      .sort((a, b) => a.startHour! - b.startHour!);
+    
+    if (upcomingTasks.length > 0) {
+      return upcomingTasks[0];
+    }
+    
+    // Fallback to first incomplete task
+    return todayIncompleteTasks[0] || null;
+  }, [currentTaskId, todayIncompleteTasks]);
+
+  // Get the next task (the one after the current task)
+  const nextTask = useMemo(() => {
+    if (!currentTask) return null;
+    
+    const today = new Date();
+    const currentTime = today.getHours() + today.getMinutes() / 60;
+    
+    // Get today's scheduled tasks
+    const scheduledTasks = todayIncompleteTasks.filter(task => 
+      task.startHour !== undefined && !task.completed && task.id !== currentTask.id
+    );
+    
+    // If current task is scheduled, find the next scheduled task after it
+    if (currentTask.startHour !== undefined) {
+      const nextScheduledTask = scheduledTasks
+        .filter(task => task.startHour! > currentTask.startHour!)
+        .sort((a, b) => a.startHour! - b.startHour!)[0];
+      
+      if (nextScheduledTask) {
+        return nextScheduledTask;
+      }
+    }
+    
+    // Otherwise, find the next task after current time
+    const upcomingTasks = scheduledTasks
+      .filter(task => task.startHour! > currentTime)
+      .sort((a, b) => a.startHour! - b.startHour!);
     
     return upcomingTasks.length > 0 ? upcomingTasks[0] : null;
-  }, [tasksByDate]);
+  }, [currentTask, todayIncompleteTasks]);
 
   // Load focus history and session state on mount
   useEffect(() => {
@@ -472,6 +514,30 @@ export default function FocusView() {
                   <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-4 leading-tight">
                     {currentTask.name}
                   </h1>
+                  
+                  {/* Task Status and Time Context */}
+                  <div className="mb-4 text-sm text-muted-foreground">
+                    {(() => {
+                      const now = new Date();
+                      const currentTime = now.getHours() + now.getMinutes() / 60;
+                      const currentTimeStr = formatTime(currentTime);
+                      
+                      if (currentTask.startHour !== undefined) {
+                        const taskStart = currentTask.startHour;
+                        const taskEnd = taskStart + currentTask.duration;
+                        
+                        if (currentTime >= taskStart && currentTime < taskEnd) {
+                          return `🔴 Current Task (${currentTimeStr}) • Ends at ${formatTime(taskEnd)}`;
+                        } else if (currentTime < taskStart) {
+                          return `⏰ Upcoming Task • Starts at ${formatTime(taskStart)}`;
+                        } else {
+                          return `⏳ Past Task • Was ${formatTime(taskStart)} - ${formatTime(taskEnd)}`;
+                        }
+                      } else {
+                        return `📝 Unscheduled Task • Current time: ${currentTimeStr}`;
+                      }
+                    })()}
+                  </div>
                   
                   {/* Minimal task details */}
                   <div className="flex items-center justify-center gap-4 text-muted-foreground">
