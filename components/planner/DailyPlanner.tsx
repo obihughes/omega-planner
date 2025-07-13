@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Button } from "@/components/ui";
-import { Pin, Eye, Trash2, Calendar, Clock, Edit3, PinOff, Scissors, X, Plus } from 'lucide-react';
+import { Pin, Eye, Trash2, Calendar, Clock, Edit3, PinOff, Scissors, X, Plus, ChevronDown } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
@@ -671,8 +671,27 @@ export default function DailyPlanner() {
           <>
             {/* Unified Task Pool and Pinned Tasks View */}
             <div className="mb-4 bg-card border border-border rounded-lg shadow-sm overflow-hidden">
-              <div className="h-20 p-2">
-                <div className="flex gap-3 h-full overflow-x-auto overflow-y-hidden scrollbar-hide">
+              {/* Collapsible Header */}
+              <div className="flex items-center justify-between p-3 border-b border-border/50 bg-muted/20">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-medium text-foreground">Task Pool & Pinned</h3>
+                  <span className="text-xs text-muted-foreground">
+                    ({generalPoolTasks.length + currentDayPoolTasks.length + pinnedTasks.length})
+                  </span>
+                </div>
+                <button
+                  onClick={() => setIsTaskPoolOpen(!isTaskPoolOpen)}
+                  className="p-1 rounded hover:bg-accent transition-colors"
+                  title={isTaskPoolOpen ? "Collapse" : "Expand"}
+                >
+                  <ChevronDown className={cn("w-4 h-4 transition-transform", !isTaskPoolOpen && "rotate-180")} />
+                </button>
+              </div>
+              
+              {/* Collapsible Content */}
+              {isTaskPoolOpen && (
+                <div className="h-20 p-2">
+                  <div className="flex gap-3 h-full overflow-x-auto overflow-y-hidden scrollbar-hide">
                   
                   {/* Add to Pool Button */}
                   <div className="flex items-center justify-center">
@@ -882,6 +901,7 @@ export default function DailyPlanner() {
                   )}
                 </div>
               </div>
+              )}
             </div>
 
             <div className="space-y-6" ref={timelineScrollRef}>
