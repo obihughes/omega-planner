@@ -17,6 +17,8 @@ import { Button } from '@/components/ui/button';
 import { EventModal } from './EventModal';
 import { PeriodModal } from './PeriodModal';
 import { cn } from '@/lib/utils';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -629,32 +631,68 @@ export function YearCalendar({
             } : {};
             
             return (
-              <div
-                key={date.toISOString()}
-                data-date={date.toISOString()}
-                className={cn(`
-                  relative h-8 flex items-center justify-center text-xs rounded-md border transition-all duration-200`,
-                  isPast 
-                    ? 'text-muted-foreground/50 cursor-default border-border/30 bg-background/50' 
-                    : 'text-foreground cursor-pointer border-border/50 bg-background shadow-sm',
-                  dayInfo.isToday && 'bg-primary text-primary-foreground font-semibold border-primary shadow-md',
-                  selectedDate && isSameDay(date, selectedDate) && 'bg-accent border-accent-foreground/20',
-                  isHovered && 'bg-accent ring-2 ring-accent-foreground/50 ring-offset-1 ring-offset-background'
-                )}
-                style={eventBorderStyle}
-                onClick={() => !isPast && handleDateClick(date)}
-                onDoubleClick={() => !isPast && handleDateDoubleClick(date)}
-                onMouseDown={(e) => !isPast && handleDateMouseDown(e, date)}
-                onMouseUp={handleDateMouseUp}
-                onMouseLeave={handleDateMouseUp}
-                onMouseMove={dragMode && !isPast ? (e) => handleDragMove(e, date) : undefined}
-              >
-                {renderPeriodHighlight(dayInfo.periodPositions)}
-                <span className={cn("relative z-20 font-bold select-none", inter.className)}>
-                  {date.getDate()}
-                </span>
-                {renderSmallEventIndicators(dayInfo.events)}
-              </div>
+              <HoverCard>
+                <HoverCardTrigger asChild>
+                  <div
+                    key={date.toISOString()}
+                    data-date={date.toISOString()}
+                    className={cn(`
+                      relative h-8 flex items-center justify-center text-xs rounded-md border transition-all duration-200`,
+                      isPast 
+                        ? 'text-muted-foreground/50 cursor-default border-border/30 bg-background/50' 
+                        : 'text-foreground cursor-pointer border-border/50 bg-background shadow-sm',
+                      dayInfo.isToday && 'bg-primary text-primary-foreground font-semibold border-primary shadow-md ring-2 ring-primary/70 ring-offset-1 ring-offset-background animate-pulse',
+                      selectedDate && isSameDay(date, selectedDate) && 'bg-accent border-accent-foreground/20',
+                      isHovered && 'bg-accent ring-2 ring-accent-foreground/50 ring-offset-1 ring-offset-background'
+                    )}
+                    style={eventBorderStyle}
+                    onClick={() => !isPast && handleDateClick(date)}
+                    onDoubleClick={() => !isPast && handleDateDoubleClick(date)}
+                    onMouseDown={(e) => !isPast && handleDateMouseDown(e, date)}
+                    onMouseUp={handleDateMouseUp}
+                    onMouseLeave={handleDateMouseUp}
+                    onMouseMove={dragMode && !isPast ? (e) => handleDragMove(e, date) : undefined}
+                  >
+                    {renderPeriodHighlight(dayInfo.periodPositions)}
+                    <span className={cn("relative z-20 font-bold select-none", inter.className)}>
+                      {date.getDate()}
+                    </span>
+                    {renderSmallEventIndicators(dayInfo.events)}
+                  </div>
+                </HoverCardTrigger>
+                <HoverCardContent className="w-64 p-3">
+                  <div className="text-sm font-semibold mb-2">
+                    {date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                  </div>
+                  <div className="space-y-2">
+                    {dayInfo.events.length > 0 && (
+                      <div>
+                        <h4 className="text-xs font-bold uppercase text-muted-foreground mb-1">Events</h4>
+                        {dayInfo.events.map(event => (
+                          <div key={event.id} className="flex items-center gap-2 text-xs">
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: event.color }} />
+                            <span>{event.title}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {dayInfo.periods.length > 0 && (
+                      <div>
+                        <h4 className="text-xs font-bold uppercase text-muted-foreground mb-1">Periods</h4>
+                        {dayInfo.periods.map(period => (
+                          <div key={period.id} className="flex items-center gap-2 text-xs">
+                            <div className="w-2 h-1 rounded-full" style={{ backgroundColor: period.color }} />
+                            <span>{period.title}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {dayInfo.events.length === 0 && dayInfo.periods.length === 0 && (
+                      <p className="text-xs text-muted-foreground">No events or periods.</p>
+                    )}
+                  </div>
+                </HoverCardContent>
+              </HoverCard>
             );
           })}
         </div>
