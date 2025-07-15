@@ -317,6 +317,18 @@ export function YearCalendar({
     [data.events, currentYear]
   );
 
+  // Scroll to current month on mount
+  useEffect(() => {
+    const currentMonth = new Date().getMonth();
+    const currentMonthElement = document.getElementById(`month-${currentMonth}`);
+    if (currentMonthElement) {
+      currentMonthElement.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+      });
+    }
+  }, []);
+
   const navigateYear = (direction: 'prev' | 'next') => {
     setIsLoading(true);
     setTimeout(() => {
@@ -573,7 +585,7 @@ export function YearCalendar({
     const monthPeriods = getPeriodSegmentsForMonth(data.periods, currentYear, month);
     
     return (
-      <div key={month}>
+      <div key={month} id={`month-${month}`}>
         {/* Month Header */}
         <div className="mb-3">
           <h3 className="text-lg font-semibold text-center text-foreground">
@@ -773,7 +785,7 @@ export function YearCalendar({
       
       {/* 12-Month Grid */}
       <div className={cn(
-        "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-10 transition-opacity pt-14 mt-6",
+        "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-x-8 gap-y-10 transition-opacity pt-14 mt-6",
         {
           'cursor-crosshair': eraserMode,
           'opacity-50 pointer-events-none': isLoading
