@@ -305,6 +305,7 @@ export function YearCalendar({
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const longPressTriggered = useRef(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
   
   // Drag state for periods
   const [dragMode, setDragMode] = useState<'move' | 'resize-start' | 'resize-end' | null>(null);
@@ -581,8 +582,12 @@ export function YearCalendar({
 
   const renderMonth = (month: number) => {
     const monthDates = getMonthDates(currentYear, month);
-    const monthEvents = eventsByMonth[month] || [];
-    const monthPeriods = getPeriodSegmentsForMonth(data.periods, currentYear, month);
+    
+    const monthEvents = (eventsByMonth[month] || []).slice().sort((a, b) => a.date.getTime() - b.date.getTime());
+    
+    const monthPeriods = getPeriodSegmentsForMonth(data.periods, currentYear, month)
+      .slice()
+      .sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
     
     return (
       <div key={month} id={`month-${month}`}>
@@ -615,6 +620,10 @@ export function YearCalendar({
               return <div key={date.toISOString()} className="h-8" />;
             }
 
+            const isHovered = hoveredItemId && 
+              (dayInfo.events.some(e => e.id === hoveredItemId) || 
+               dayInfo.periods.some(p => p.id === hoveredItemId));
+
             const eventBorderStyle = dayInfo.events.length > 0 ? {
               boxShadow: `0 0 0 2px ${dayInfo.events[0].color} inset`,
             } : {};
@@ -623,15 +632,15 @@ export function YearCalendar({
               <div
                 key={date.toISOString()}
                 data-date={date.toISOString()}
-                className={`
-                  relative h-8 flex items-center justify-center text-xs rounded-md border transition-all duration-200
-                  ${isPast 
+                className={cn(`
+                  relative h-8 flex items-center justify-center text-xs rounded-md border transition-all duration-200`,
+                  isPast 
                     ? 'text-muted-foreground/50 cursor-default border-border/30 bg-background/50' 
-                    : 'text-foreground cursor-pointer border-border/50 bg-background shadow-sm'
-                  }
-                  ${dayInfo.isToday ? 'bg-primary text-primary-foreground font-semibold border-primary shadow-md' : ''}
-                  ${selectedDate && date.toDateString() === selectedDate.toDateString() ? 'bg-accent border-accent-foreground/20' : ''}
-                `}
+                    : 'text-foreground cursor-pointer border-border/50 bg-background shadow-sm',
+                  dayInfo.isToday && 'bg-primary text-primary-foreground font-semibold border-primary shadow-md',
+                  selectedDate && isSameDay(date, selectedDate) && 'bg-accent border-accent-foreground/20',
+                  isHovered && 'bg-accent ring-2 ring-accent-foreground/50 ring-offset-1 ring-offset-background'
+                )}
                 style={eventBorderStyle}
                 onClick={() => !isPast && handleDateClick(date)}
                 onDoubleClick={() => !isPast && handleDateDoubleClick(date)}
@@ -661,6 +670,8 @@ export function YearCalendar({
                   eraserMode ? 'hover:bg-red-100 hover:text-red-800 dark:hover:bg-red-900 dark:hover:text-red-200' : ''
                 }`}
                 onClick={(e) => handleEventClick(event, e)}
+                onMouseEnter={() => setHoveredItemId(event.id)}
+                onMouseLeave={() => setHoveredItemId(null)}
               >
                 <div 
                   className="w-2 h-2 rounded-full flex-shrink-0"
@@ -685,6 +696,8 @@ export function YearCalendar({
                   eraserMode ? 'hover:bg-red-100 hover:text-red-800 dark:hover:bg-red-900 dark:hover:text-red-200' : ''
                 }`}
                 onClick={(e) => handlePeriodClick(period, e)}
+                onMouseEnter={() => setHoveredItemId(period.id)}
+                onMouseLeave={() => setHoveredItemId(null)}
                 onMouseDown={(e) => {
                   if (eraserMode) return; // Disable drag in eraser mode
                   e.stopPropagation(); // Prevent date-level mouse down
