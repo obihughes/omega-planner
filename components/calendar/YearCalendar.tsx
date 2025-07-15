@@ -19,6 +19,7 @@ import { PeriodModal } from './PeriodModal';
 import { cn } from '@/lib/utils';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { getContrastColor } from '@/utils/colorUtils';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -385,6 +386,57 @@ export function YearCalendar({
     }
   };
 
+  const handlePeriodMouseDown = (e: React.MouseEvent, date: Date, period: CalendarPeriod) => {
+    e.stopPropagation();
+    longPressTriggered.current = false;
+    
+    const rect = (e.target as HTMLElement).getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const width = rect.width;
+    const leftThird = width / 3;
+    const rightThird = (width * 2) / 3;
+    
+    // Determine drag mode based on click position and date position within period
+    const isStartDate = isSameDay(date, period.startDate);
+    const isEndDate = isSameDay(date, period.endDate);
+    const isSingleDay = isStartDate && isEndDate;
+    
+    let dragMode: 'move' | 'resize-start' | 'resize-end' = 'move';
+    
+    if (isSingleDay) {
+      // Single day period - always move
+      dragMode = 'move';
+    } else if (isStartDate) {
+      // On start date - left third resizes start, rest moves
+      dragMode = clickX < leftThird ? 'resize-start' : 'move';
+    } else if (isEndDate) {
+      // On end date - right third resizes end, rest moves
+      dragMode = clickX > rightThird ? 'resize-end' : 'move';
+    } else {
+      // Middle date - left third extends start, right third extends end, middle moves
+      if (clickX < leftThird) {
+        dragMode = 'resize-start';
+      } else if (clickX > rightThird) {
+        dragMode = 'resize-end';
+      } else {
+        dragMode = 'move';
+      }
+    }
+    
+    // Start drag with determined mode
+    setDragMode(dragMode);
+    setDraggedPeriod(period);
+    setDragStartDay(date);
+    
+    const timer = setTimeout(() => {
+      longPressTriggered.current = true;
+      // Show period details on long press
+      setViewingPeriod(period);
+      setDetailsModalOpen(true);
+    }, 500);
+    setLongPressTimer(timer);
+  };
+
   const handleEventClick = (event: CalendarEvent, e: React.MouseEvent) => {
     e.stopPropagation();
     if (eraserMode) {
@@ -426,24 +478,40 @@ export function YearCalendar({
     const diffTime = date.getTime() - dragStartDay.getTime();
     const diffDays = Math.round(diffTime / (24 * 60 * 60 * 1000));
 
+    // Don't update if no actual change
+    if (diffDays === 0) return;
+
     if (dragMode === 'move') {
         const newStartDate = new Date(draggedPeriod.startDate);
         newStartDate.setDate(newStartDate.getDate() + diffDays);
         const newEndDate = new Date(draggedPeriod.endDate);
         newEndDate.setDate(newEndDate.getDate() + diffDays);
         
-        onPeriodEdit({ ...draggedPeriod, startDate: newStartDate, endDate: newEndDate });
+        // Validate dates
+        if (newStartDate.getTime() !== draggedPeriod.startDate.getTime() || 
+            newEndDate.getTime() !== draggedPeriod.endDate.getTime()) {
+          onPeriodEdit({ ...draggedPeriod, startDate: newStartDate, endDate: newEndDate });
+          setDragStartDay(date); // Update reference point for smoother dragging
+        }
     } else if (dragMode === 'resize-start') {
         const newStartDate = new Date(draggedPeriod.startDate);
         newStartDate.setDate(newStartDate.getDate() + diffDays);
-        if (newStartDate <= draggedPeriod.endDate) {
+        
+        // Ensure start doesn't go past end (leave at least 1 day)
+        if (newStartDate < draggedPeriod.endDate && 
+            newStartDate.getTime() !== draggedPeriod.startDate.getTime()) {
             onPeriodEdit({ ...draggedPeriod, startDate: newStartDate });
+            setDragStartDay(date);
         }
     } else if (dragMode === 'resize-end') {
         const newEndDate = new Date(draggedPeriod.endDate);
         newEndDate.setDate(newEndDate.getDate() + diffDays);
-        if (newEndDate >= draggedPeriod.startDate) {
+        
+        // Ensure end doesn't go before start (leave at least 1 day)
+        if (newEndDate > draggedPeriod.startDate && 
+            newEndDate.getTime() !== draggedPeriod.endDate.getTime()) {
             onPeriodEdit({ ...draggedPeriod, endDate: newEndDate });
+            setDragStartDay(date);
         }
     }
   };
@@ -460,12 +528,18 @@ export function YearCalendar({
       document.body.style.userSelect = 'none';
       
       const handleMouseUp = () => handleDragEnd();
+      const handleEscape = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') handleDragEnd();
+      };
+      
       document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('keydown', handleEscape);
       
       return () => {
         document.body.style.cursor = 'default';
         document.body.style.userSelect = 'auto';
         document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('keydown', handleEscape);
       };
     }
   }, [dragMode]);
@@ -511,75 +585,101 @@ export function YearCalendar({
     }
   };
 
-  const renderPeriodHighlight = (periodPositions: PeriodPosition[]) => {
-    return periodPositions.map((pos) => {
-      const { period, isStart, isEnd, row } = pos;
-      
-      const highlightClasses = cn(
-        'absolute h-1.5 w-full',
-        {
-          'rounded-md': isStart && isEnd, // Single day
-          'rounded-l-md': isStart && !isEnd,
-          'rounded-r-md': !isStart && isEnd,
-        }
-      );
+  const renderEventCircles = (events: CalendarEvent[]) => {
+    if (events.length === 0) return null;
 
+    if (events.length === 1) {
+      // Single event - square in top right corner
       return (
-        <div
-          key={period.id}
-          className={highlightClasses}
-          style={{ 
-            backgroundColor: period.color, 
-            opacity: 0.8, 
-            bottom: `${(row * 6) + 3}px`, // Stacked from the bottom
-            zIndex: 1,
-          }}
-          onClick={(e) => handlePeriodClick(period, e)}
-          onMouseDown={(e) => {
-            e.stopPropagation(); // Prevent date-level mouse down
-            handleDragStart(e, period, 'move');
-          }}
-          title={period.title}
-        >
-          <div 
-            className="absolute left-0 top-0 bottom-0 w-1/4 cursor-ew-resize"
-            onMouseDown={(e) => {
-              e.stopPropagation();
-              handleDragStart(e, period, 'resize-start');
-            }}
-          />
-          <div 
-            className="absolute right-0 top-0 bottom-0 w-1/4 cursor-ew-resize"
-            onMouseDown={(e) => {
-              e.stopPropagation();
-              handleDragStart(e, period, 'resize-end');
-            }}
+        <div className="absolute top-0.5 right-0.5 z-20">
+          <div
+            className="w-2 h-2 border border-white/30 shadow-sm"
+            style={{ backgroundColor: events[0].color }}
+            title={events[0].title}
           />
         </div>
       );
-    });
+    } else if (events.length === 2) {
+      // Two events - two squares in top corners
+      return (
+        <>
+          <div className="absolute top-0.5 left-0.5 z-20">
+            <div
+              className="w-1.5 h-1.5 border border-white/30 shadow-sm"
+              style={{ backgroundColor: events[0].color }}
+              title={events[0].title}
+            />
+          </div>
+          <div className="absolute top-0.5 right-0.5 z-20">
+            <div
+              className="w-1.5 h-1.5 border border-white/30 shadow-sm"
+              style={{ backgroundColor: events[1].color }}
+              title={events[1].title}
+            />
+          </div>
+        </>
+      );
+    } else if (events.length === 3) {
+      // Three events - top corners and top center
+      return (
+        <>
+          <div className="absolute top-0.5 left-0.5 z-20">
+            <div
+              className="w-1.5 h-1.5 border border-white/30 shadow-sm"
+              style={{ backgroundColor: events[0].color }}
+              title={events[0].title}
+            />
+          </div>
+          <div className="absolute top-0.5 left-1/2 transform -translate-x-1/2 z-20">
+            <div
+              className="w-1.5 h-1.5 border border-white/30 shadow-sm"
+              style={{ backgroundColor: events[1].color }}
+              title={events[1].title}
+            />
+          </div>
+          <div className="absolute top-0.5 right-0.5 z-20">
+            <div
+              className="w-1.5 h-1.5 border border-white/30 shadow-sm"
+              style={{ backgroundColor: events[2].color }}
+              title={events[2].title}
+            />
+          </div>
+        </>
+      );
+    } else {
+      // Four or more events - top edge squares with overflow indicator
+      return (
+        <>
+          <div className="absolute top-0.5 left-0.5 z-20">
+            <div
+              className="w-1.5 h-1.5 border border-white/30 shadow-sm"
+              style={{ backgroundColor: events[0].color }}
+              title={events[0].title}
+            />
+          </div>
+          <div className="absolute top-0.5 left-1/2 transform -translate-x-1/2 z-20">
+            <div
+              className="w-1.5 h-1.5 border border-white/30 shadow-sm"
+              style={{ backgroundColor: events[1].color }}
+              title={events[1].title}
+            />
+          </div>
+          <div className="absolute top-0.5 right-0.5 z-20">
+            <div
+              className="w-1.5 h-1.5 border border-white/30 shadow-sm bg-muted-foreground flex items-center justify-center"
+              title={`${events.length - 2} more events`}
+            >
+              <div className="w-0.5 h-0.5 bg-white" />
+            </div>
+          </div>
+        </>
+      );
+    }
   };
 
   const renderSmallEventIndicators = (events: CalendarEvent[]) => {
-    if (events.length <= 1) return null; 
-
-    return (
-      <div className="absolute top-1 left-1 right-1 flex justify-center gap-0.5 z-20">
-        {events.slice(0, 3).map((event, index) => (
-          <div
-            key={event.id}
-            className="w-1.5 h-1.5 rounded-full"
-            style={{ backgroundColor: event.color }}
-            title={event.title}
-          />
-        ))}
-        {events.length > 3 && (
-          <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground flex items-center justify-center text-[8px] text-muted-foreground font-bold">
-            +
-          </div>
-        )}
-      </div>
-    );
+    // This function is now deprecated in favor of renderEventCircles
+    return null;
   };
 
   const renderMonth = (month: number) => {
@@ -626,10 +726,50 @@ export function YearCalendar({
               (dayInfo.events.some(e => e.id === hoveredItemId) || 
                dayInfo.periods.some(p => p.id === hoveredItemId));
 
-            const eventBorderStyle = dayInfo.events.length > 0 ? {
-              boxShadow: `0 0 0 2px ${dayInfo.events[0].color} inset`,
-            } : {};
+            // Remove the old border-style event indicator - replaced with color circles
             
+            const periodStyle: React.CSSProperties = {};
+            let periodClasses = '';
+
+            if (dayInfo.periods.length === 1) {
+              const period = dayInfo.periods[0];
+              const baseColor = period.color;
+              const opacity = isPast ? 0.3 : 0.7; // More transparent for past dates
+              
+              // Convert hex to rgba for transparency
+              const hexToRgba = (hex: string, alpha: number) => {
+                const r = parseInt(hex.slice(1, 3), 16);
+                const g = parseInt(hex.slice(3, 5), 16);
+                const b = parseInt(hex.slice(5, 7), 16);
+                return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+              };
+              
+              periodStyle.backgroundColor = hexToRgba(baseColor, opacity);
+              periodStyle.color = getContrastColor(baseColor);
+
+            } else if (dayInfo.periods.length >= 2) {
+              const p1 = dayInfo.periods[0];
+              const p2 = dayInfo.periods[1];
+              const opacity = isPast ? 0.3 : 0.7;
+              
+              const hexToRgba = (hex: string, alpha: number) => {
+                const r = parseInt(hex.slice(1, 3), 16);
+                const g = parseInt(hex.slice(3, 5), 16);
+                const b = parseInt(hex.slice(5, 7), 16);
+                return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+              };
+              
+              // Horizontal split: top half p1, bottom half p2
+              periodStyle.background = `linear-gradient(to bottom, ${hexToRgba(p1.color, opacity)} 50%, ${hexToRgba(p2.color, opacity)} 50%)`;
+              periodStyle.color = '#fff';
+              periodStyle.textShadow = '0 1px 2px rgba(0,0,0,0.7)';
+            }
+
+            // Removed hasEventIndicator - no longer needed with new circle system
+            
+            // Visual feedback for drag mode
+            const isDragTarget = dragMode && draggedPeriod && dayInfo.periods.some(p => p.id === draggedPeriod.id);
+
             return (
               <HoverCard>
                 <HoverCardTrigger asChild>
@@ -637,27 +777,31 @@ export function YearCalendar({
                     key={date.toISOString()}
                     data-date={date.toISOString()}
                     className={cn(`
-                      relative h-8 flex items-center justify-center text-xs rounded-md border transition-all duration-200`,
+                      relative h-8 flex items-center justify-center text-xs border transition-all duration-200`,
                       isPast 
-                        ? 'text-muted-foreground/50 cursor-default border-border/30 bg-background/50' 
-                        : 'text-foreground cursor-pointer border-border/50 bg-background shadow-sm',
+                        ? 'text-muted-foreground/50 cursor-default border-border/30' 
+                        : 'text-foreground cursor-pointer border-border/50 shadow-sm',
+                      !periodStyle.backgroundColor && !isPast && 'bg-background',
                       dayInfo.isToday && 'bg-primary text-primary-foreground font-semibold border-primary shadow-md ring-2 ring-primary/70 ring-offset-1 ring-offset-background animate-pulse',
-                      selectedDate && isSameDay(date, selectedDate) && 'bg-accent border-accent-foreground/20',
-                      isHovered && 'bg-accent ring-2 ring-accent-foreground/50 ring-offset-1 ring-offset-background'
+                      selectedDate && isSameDay(date, selectedDate) && !periodStyle.backgroundColor && 'bg-accent border-accent-foreground/20',
+                      isHovered && !periodStyle.backgroundColor && 'bg-accent ring-2 ring-accent-foreground/50 ring-offset-1 ring-offset-background',
+                      isHovered && periodStyle.backgroundColor && 'ring-2 ring-yellow-400 ring-offset-1 ring-offset-background shadow-lg', // Enhanced highlighting for periods
+                      isDragTarget && 'ring-2 ring-blue-400 shadow-lg scale-105', // Visual feedback for drag
+                      dragMode && dayInfo.periods.length > 0 && 'cursor-grabbing',
+                      !dragMode && dayInfo.periods.length > 0 && !isPast && 'hover:shadow-md hover:scale-105 cursor-grab' // Indicate draggable
                     )}
-                    style={eventBorderStyle}
+                    style={{ ...periodStyle }}
                     onClick={() => !isPast && handleDateClick(date)}
                     onDoubleClick={() => !isPast && handleDateDoubleClick(date)}
-                    onMouseDown={(e) => !isPast && handleDateMouseDown(e, date)}
+                    onMouseDown={(e) => !isPast && dayInfo.periods.length > 0 ? handlePeriodMouseDown(e, date, dayInfo.periods[0]) : handleDateMouseDown(e, date)}
                     onMouseUp={handleDateMouseUp}
                     onMouseLeave={handleDateMouseUp}
                     onMouseMove={dragMode && !isPast ? (e) => handleDragMove(e, date) : undefined}
                   >
-                    {renderPeriodHighlight(dayInfo.periodPositions)}
                     <span className={cn("relative z-20 font-bold select-none", inter.className)}>
                       {date.getDate()}
                     </span>
-                    {renderSmallEventIndicators(dayInfo.events)}
+                    {renderEventCircles(dayInfo.events)}
                   </div>
                 </HoverCardTrigger>
                 <HoverCardContent className="w-64 p-3">
@@ -699,63 +843,82 @@ export function YearCalendar({
 
         {/* Events and Periods List */}
         {(monthEvents.length > 0 || monthPeriods.length > 0) && (
-          <div className="flex flex-wrap gap-x-3 gap-y-1">
-            {/* Events */}
-            {monthEvents.map(event => (
-              <div 
-                key={event.id} 
-                className={`group flex items-center gap-1.5 text-xs px-1.5 py-0.5 rounded hover:bg-accent/50 cursor-pointer transition-colors ${
-                  eraserMode ? 'hover:bg-red-100 hover:text-red-800 dark:hover:bg-red-900 dark:hover:text-red-200' : ''
-                }`}
-                onClick={(e) => handleEventClick(event, e)}
-                onMouseEnter={() => setHoveredItemId(event.id)}
-                onMouseLeave={() => setHoveredItemId(null)}
-              >
-                <div 
-                  className="w-2 h-2 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: event.color }}
-                />
-                <span className="text-foreground truncate flex-1 font-bold" title={event.title}>
-                  {event.title}
-                </span>
-                {eraserMode ? (
-                  <X className="w-3 h-3 text-red-500" />
-                ) : (
-                  <Edit2 className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100" />
-                )}
+          <div className={cn("mt-3 space-y-2", inter.className)}>
+            {/* Events Section */}
+            {monthEvents.length > 0 && (
+              <div>
+                <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Events</h4>
+                <div className="flex flex-wrap gap-x-2 gap-y-1">
+                  {monthEvents.map(event => (
+                    <div 
+                      key={event.id} 
+                      className={`group flex items-center gap-1.5 text-xs px-2 py-1 rounded-md border border-transparent hover:border-accent hover:bg-accent/30 cursor-pointer transition-all duration-200 ${
+                        eraserMode ? 'hover:border-red-200 hover:bg-red-50 dark:hover:border-red-800 dark:hover:bg-red-900/20' : ''
+                      }`}
+                      onClick={(e) => handleEventClick(event, e)}
+                      onMouseEnter={() => setHoveredItemId(event.id)}
+                      onMouseLeave={() => setHoveredItemId(null)}
+                    >
+                      <div 
+                        className="w-2 h-2 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: event.color }}
+                      />
+                      <div className="flex items-center gap-1 flex-1 min-w-0">
+                        <span className="text-foreground truncate font-medium" title={event.title}>
+                          {event.title}
+                        </span>
+                        <span className="text-muted-foreground/60 text-[10px] font-normal whitespace-nowrap">
+                          {event.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </span>
+                      </div>
+                      {eraserMode ? (
+                        <X className="w-3 h-3 text-red-500" />
+                      ) : (
+                        <Edit2 className="w-3 h-3 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+            )}
 
-            {/* Periods */}
-            {monthPeriods.map(period => (
-              <div 
-                key={period.id} 
-                className={`group flex items-center gap-1.5 text-xs px-1.5 py-0.5 rounded hover:bg-accent/50 cursor-pointer transition-colors ${
-                  eraserMode ? 'hover:bg-red-100 hover:text-red-800 dark:hover:bg-red-900 dark:hover:text-red-200' : ''
-                }`}
-                onClick={(e) => handlePeriodClick(period, e)}
-                onMouseEnter={() => setHoveredItemId(period.id)}
-                onMouseLeave={() => setHoveredItemId(null)}
-                onMouseDown={(e) => {
-                  if (eraserMode) return; // Disable drag in eraser mode
-                  e.stopPropagation(); // Prevent date-level mouse down
-                  handleDragStart(e, period, 'move');
-                }}
-              >
-                <div 
-                  className="w-4 h-1 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: period.color }}
-                />
-                <span className="text-foreground truncate flex-1 font-bold" title={period.title}>
-                  {period.title}
-                </span>
-                {eraserMode ? (
-                  <X className="w-3 h-3 text-red-500" />
-                ) : (
-                  <Edit2 className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100" />
-                )}
+            {/* Periods Section */}
+            {monthPeriods.length > 0 && (
+              <div>
+                <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Periods</h4>
+                <div className="flex flex-wrap gap-x-2 gap-y-1">
+                  {monthPeriods.map(period => (
+                    <div 
+                      key={period.id} 
+                      className={`group flex items-center gap-1.5 text-xs px-2 py-1 rounded-md border border-transparent hover:border-accent hover:bg-accent/30 cursor-pointer transition-all duration-200 ${
+                        eraserMode ? 'hover:border-red-200 hover:bg-red-50 dark:hover:border-red-800 dark:hover:bg-red-900/20' : ''
+                      }`}
+                      onClick={(e) => handlePeriodClick(period, e)}
+                      onMouseEnter={() => setHoveredItemId(period.id)}
+                      onMouseLeave={() => setHoveredItemId(null)}
+                      onMouseDown={(e) => {
+                        if (eraserMode) return; // Disable drag in eraser mode
+                        e.stopPropagation(); // Prevent date-level mouse down
+                        handleDragStart(e, period, 'move');
+                      }}
+                    >
+                      <div 
+                        className="w-4 h-1.5 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: period.color }}
+                      />
+                      <span className="text-foreground truncate flex-1 font-medium" title={period.title}>
+                        {period.title}
+                      </span>
+                      {eraserMode ? (
+                        <X className="w-3 h-3 text-red-500" />
+                      ) : (
+                        <Edit2 className="w-3 h-3 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+            )}
           </div>
         )}
       </div>
