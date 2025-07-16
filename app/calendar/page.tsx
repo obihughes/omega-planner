@@ -7,6 +7,7 @@ import { useCalendarData } from '@/hooks/useCalendarData';
 import { CalendarEvent, CalendarPeriod } from '@/types/calendar';
 import { Settings, Download, RefreshCw, Trash2, Calendar, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useCalendarView } from '@/app/context/CalendarViewContext';
 
 type CalendarView = 'yearly' | 'monthly';
 
@@ -26,7 +27,7 @@ export default function CalendarPage() {
   } = useCalendarData();
 
   const [showSettings, setShowSettings] = useState(false);
-  const [currentView, setCurrentView] = useState<CalendarView>('yearly');
+  const { viewMode: currentView, setViewMode: setCurrentView } = useCalendarView();
 
   const handleEventAdd = (eventData: Omit<CalendarEvent, 'id'>) => {
     addEvent(eventData);
@@ -62,32 +63,13 @@ export default function CalendarPage() {
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* Header with View Switcher */}
+        {/* Header */}
         <div className="mb-6 bg-card border border-border rounded-lg shadow-sm overflow-hidden p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-foreground">Calendar</h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant={currentView === 'monthly' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setCurrentView('monthly')}
-                className="flex items-center gap-2"
-              >
-                <Calendar className="w-4 h-4" />
-                Monthly
-              </Button>
-              <Button
-                variant={currentView === 'yearly' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setCurrentView('yearly')}
-                className="flex items-center gap-2"
-              >
-                <CalendarDays className="w-4 h-4" />
-                Yearly
-              </Button>
-            </div>
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-bold text-foreground">Calendar</h1>
+            <span className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded-full">
+              {currentView === 'monthly' ? 'Monthly View' : 'Yearly View'}
+            </span>
           </div>
         </div>
 

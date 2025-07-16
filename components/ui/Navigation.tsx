@@ -3,9 +3,13 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Calendar, CalendarDays, FolderKanban, Sun, Moon, FileText, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
+import { Calendar, CalendarDays, FolderKanban, Sun, Moon, FileText, ChevronLeft, ChevronRight, Clock, Archive, Trash2 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
+import { useViewMode } from '@/app/context/ViewModeContext';
+import { useProjectsView } from '@/app/context/ProjectsViewContext';
+import { useCalendarView } from '@/app/context/CalendarViewContext';
+import { useDocumentsView } from '@/app/context/DocumentsViewContext';
 
 interface NavigationProps {
   isCollapsed?: boolean;
@@ -16,6 +20,10 @@ export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse 
   const [internalIsCollapsed, setInternalIsCollapsed] = useState(false);
   const pathname = usePathname();
   const { theme, toggleTheme, mounted } = useTheme();
+  const { viewMode: plannerViewMode, setViewMode: setPlannerViewMode } = useViewMode();
+  const { viewMode: projectsViewMode, setViewMode: setProjectsViewMode } = useProjectsView();
+  const { viewMode: calendarViewMode, setViewMode: setCalendarViewMode } = useCalendarView();
+  const { viewMode: documentsViewMode, setViewMode: setDocumentsViewMode } = useDocumentsView();
 
   // Use external state if provided, otherwise use internal state
   const isCollapsed = externalIsCollapsed !== undefined ? externalIsCollapsed : internalIsCollapsed;
@@ -30,25 +38,44 @@ export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse 
       href: '/',
       label: 'Daily Planner',
       icon: Calendar,
-      active: pathname === '/' || pathname === '/inbox'
+      active: pathname === '/' || pathname === '/inbox',
+      subViews: [
+        { key: 'focus', label: 'Focus', icon: Clock, active: plannerViewMode === 'focus' },
+        { key: 'daily', label: 'Daily', icon: Calendar, active: plannerViewMode === 'daily' },
+        { key: 'weekly', label: 'Weekly', icon: CalendarDays, active: plannerViewMode === 'weekly' },
+        { key: 'monthly', label: 'Monthly', icon: CalendarDays, active: plannerViewMode === 'monthly' }
+      ]
     },
     {
       href: '/projects',
       label: 'Projects',
       icon: FolderKanban,
-      active: pathname === '/projects'
+      active: pathname === '/projects' || pathname.startsWith('/projects/'),
+      subViews: [
+        { key: 'active', label: 'Active', icon: FolderKanban, active: projectsViewMode === 'active' },
+        { key: 'archived', label: 'Archived', icon: Archive, active: projectsViewMode === 'archived' },
+        { key: 'calendar', label: 'Calendar', icon: Calendar, active: projectsViewMode === 'calendar' }
+      ]
     },
     {
       href: '/calendar',
       label: 'Calendar',
       icon: CalendarDays,
-      active: pathname === '/calendar'
+      active: pathname === '/calendar',
+      subViews: [
+        { key: 'monthly', label: 'Monthly', icon: Calendar, active: calendarViewMode === 'monthly' },
+        { key: 'yearly', label: 'Yearly', icon: CalendarDays, active: calendarViewMode === 'yearly' }
+      ]
     },
     {
       href: '/documents',
       label: 'Text Canvas',
       icon: FileText,
-      active: pathname === '/documents'
+      active: pathname === '/documents',
+      subViews: [
+        { key: 'documents', label: 'Documents', icon: FileText, active: documentsViewMode === 'documents' },
+        { key: 'archive', label: 'Archive', icon: Trash2, active: documentsViewMode === 'archive' }
+      ]
     }
   ];
 
@@ -59,7 +86,7 @@ export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse 
   return (
     <nav className={cn(
       "h-screen bg-card/98 backdrop-blur-md border-r border-border/40 fixed left-0 top-0 z-50 shadow-xl flex flex-col transition-all duration-300 ease-in-out",
-      isCollapsed ? "w-16" : "w-48"
+      isCollapsed ? "w-16" : "w-64"
     )}>
       {/* Logo/Brand Section */}
       <div className="p-4 border-b border-border/40 relative">
@@ -92,54 +119,100 @@ export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse 
       </div>
 
       {/* Navigation Links */}
-      <div className="flex-1 px-3 py-4">
+      <div className="flex-1 px-2 py-3 overflow-y-auto">
         <div className="space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "w-full rounded-lg flex items-center text-sm font-medium transition-all duration-200 group relative",
-                  isCollapsed ? "px-2 py-2.5 justify-center" : "px-3 py-2.5 space-x-3",
-                  item.active
-                    ? "text-primary-foreground bg-gradient-to-r from-primary to-primary/90 shadow-md"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/80 hover:shadow-sm"
+              <div key={item.href}>
+                <Link
+                  href={item.href}
+                  className={cn(
+                    "w-full rounded-lg flex items-center text-sm font-medium transition-all duration-200 group relative",
+                    isCollapsed ? "px-2 py-2 justify-center" : "px-3 py-2 space-x-3",
+                    item.active
+                      ? "text-primary-foreground bg-gradient-to-r from-primary to-primary/90 shadow-md"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/80 hover:shadow-sm"
+                  )}
+                  title={isCollapsed ? item.label : undefined}
+                >
+                  <Icon className={cn(
+                    "transition-all duration-200",
+                    isCollapsed ? "w-5 h-5" : "w-5 h-5",
+                    item.active ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground group-hover:scale-110"
+                  )} />
+                  {!isCollapsed && (
+                    <span className="font-medium">{item.label}</span>
+                  )}
+                  {item.active && (
+                    <div className="absolute inset-0 rounded-lg ring-2 ring-primary/20 ring-inset" />
+                  )}
+                </Link>
+                
+                {/* Sub-Views - Always shown */}
+                {item.subViews && (
+                  <div className={cn("mt-1", isCollapsed ? "space-y-1" : "pl-4 space-y-1")}>
+                    {item.subViews.map((subView) => {
+                      const SubIcon = subView.icon;
+                      return (
+                        <button 
+                          key={subView.key}
+                          onClick={() => {
+                            if (item.href === '/') {
+                              setPlannerViewMode(subView.key as any);
+                            } else if (item.href === '/projects') {
+                              setProjectsViewMode(subView.key as any);
+                            } else if (item.href === '/calendar') {
+                              setCalendarViewMode(subView.key as any);
+                            } else if (item.href === '/documents') {
+                              setDocumentsViewMode(subView.key as any);
+                            }
+                          }} 
+                          className={cn(
+                            "rounded-lg flex items-center font-medium transition-all duration-200",
+                            isCollapsed 
+                              ? "w-full px-2 py-2 justify-center" 
+                              : "w-full px-3 py-1.5 text-xs",
+                            subView.active 
+                              ? 'text-primary bg-primary/10' 
+                              : 'text-muted-foreground hover:text-foreground hover:bg-secondary/80'
+                          )}
+                          title={isCollapsed ? subView.label : undefined}
+                        >
+                          {isCollapsed ? (
+                            <SubIcon className="w-4 h-4" />
+                          ) : (
+                            <>
+                              <SubIcon className="w-4 h-4 mr-2" />
+                              {subView.label}
+                            </>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 )}
-                title={isCollapsed ? item.label : undefined}
-              >
-                <Icon className={cn(
-                  "w-5 h-5 transition-all duration-200",
-                  item.active ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground group-hover:scale-110"
-                )} />
-                {!isCollapsed && (
-                  <span className="font-medium">{item.label}</span>
-                )}
-                {item.active && (
-                  <div className="absolute inset-0 rounded-lg ring-2 ring-primary/20 ring-inset" />
-                )}
-              </Link>
+              </div>
             );
           })}
         </div>
       </div>
 
       {/* Theme Toggle */}
-      <div className="p-3 border-t border-border/40">
+      <div className="p-2 border-t border-border/40">
         <button
           onClick={toggleTheme}
           className={cn(
             "w-full rounded-lg flex items-center text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/80 hover:shadow-sm transition-all duration-200 group",
-            isCollapsed ? "px-2 py-2.5 justify-center" : "px-3 py-2.5 space-x-3"
+            isCollapsed ? "px-2 py-2 justify-center" : "px-3 py-2 space-x-3"
           )}
           aria-label="Toggle theme"
           title={isCollapsed ? (theme === 'dark' ? 'Light Mode' : 'Dark Mode') : undefined}
         >
           {theme === 'dark' ? (
-            <Sun className="w-5 h-5 group-hover:text-foreground group-hover:scale-110 transition-all duration-200" />
+            <Sun className={cn("group-hover:text-foreground group-hover:scale-110 transition-all duration-200", isCollapsed ? "w-5 h-5" : "w-5 h-5")} />
           ) : (
-            <Moon className="w-5 h-5 group-hover:text-foreground group-hover:scale-110 transition-all duration-200" />
+            <Moon className={cn("group-hover:text-foreground group-hover:scale-110 transition-all duration-200", isCollapsed ? "w-5 h-5" : "w-5 h-5")} />
           )}
           {!isCollapsed && (
             <span className="font-medium">

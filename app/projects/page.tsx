@@ -7,6 +7,7 @@ import { Project } from '@/types';
 import { ProjectCard } from '@/components/projects/ProjectCard';
 import { ProjectsCalendar } from '@/components/projects/ProjectsCalendar';
 import { AppLayout } from '@/components/ui/AppLayout';
+import { useProjectsView } from '@/app/context/ProjectsViewContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -109,7 +110,7 @@ export default function ProjectsPage() {
   const [sortBy, setSortBy] = useState<'name' | 'progress' | 'updated' | 'order'>('order');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [activeView, setActiveView] = useState<'active' | 'archived' | 'calendar'>('active');
+  const { viewMode: activeView, setViewMode: setActiveView } = useProjectsView();
   
   // Project form modal state
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
@@ -293,27 +294,22 @@ export default function ProjectsPage() {
   return (
     <AppLayout>
       <div className="container mx-auto px-6 py-6">
-        <Tabs value={activeView} onValueChange={(value: string) => setActiveView(value as 'active' | 'archived' | 'calendar')}>
-          <div className="flex items-center justify-between mb-6">
-            <TabsList className="grid w-fit grid-cols-3 bg-card/50 backdrop-blur-sm border border-border/50">
-              <TabsTrigger value="active" className="flex items-center space-x-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm">
-                <span>Active</span>
-                <span className="bg-muted text-muted-foreground data-[state=active]:bg-primary-foreground/20 data-[state=active]:text-primary-foreground px-1.5 py-0.5 rounded-full text-xs font-medium">
-                  {activeProjects.length}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-bold text-foreground">Projects</h1>
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              {activeView === 'active' && (
+                <span className="bg-muted px-2 py-1 rounded-full text-xs font-medium">
+                  {activeProjects.length} Active
                 </span>
-              </TabsTrigger>
-              <TabsTrigger value="archived" className="flex items-center space-x-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm">
-                <Archive className="w-4 h-4" />
-                <span>Archived</span>
-                <span className="bg-muted text-muted-foreground data-[state=active]:bg-primary-foreground/20 data-[state=active]:text-primary-foreground px-1.5 py-0.5 rounded-full text-xs font-medium">
-                  {archivedProjects.length}
+              )}
+              {activeView === 'archived' && (
+                <span className="bg-muted px-2 py-1 rounded-full text-xs font-medium">
+                  {archivedProjects.length} Archived
                 </span>
-              </TabsTrigger>
-              <TabsTrigger value="calendar" className="flex items-center space-x-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-sm">
-                <Calendar className="w-4 h-4" />
-                <span>Project Calendar</span>
-              </TabsTrigger>
-            </TabsList>
+              )}
+            </div>
+          </div>
 
             <div className="flex items-center space-x-2">
               <div className="relative">
@@ -395,104 +391,110 @@ export default function ProjectsPage() {
             </div>
           </div>
 
-          <TabsContent value="active">
-            {activeProjects.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="text-muted-foreground mb-4">
-                  {searchTerm || statusFilter !== 'all' ? 'No projects match your filters' : 'No active projects yet'}
+          {/* Active Projects View */}
+          {activeView === 'active' && (
+            <>
+              {activeProjects.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-muted-foreground mb-4">
+                    {searchTerm || statusFilter !== 'all' ? 'No projects match your filters' : 'No active projects yet'}
+                  </div>
+                  {!searchTerm && statusFilter === 'all' && (
+                    <button
+                      onClick={handleCreateProject}
+                      className="btn-primary px-6 py-3 rounded-lg inline-flex items-center space-x-2 font-medium"
+                    >
+                      <Plus className="w-5 h-5" />
+                      <span>Create Your First Project</span>
+                    </button>
+                  )}
                 </div>
-                {!searchTerm && statusFilter === 'all' && (
-                  <button
-                    onClick={handleCreateProject}
-                    className="btn-primary px-6 py-3 rounded-lg inline-flex items-center space-x-2 font-medium"
-                  >
-                    <Plus className="w-5 h-5" />
-                    <span>Create Your First Project</span>
-                  </button>
-                )}
-              </div>
-            ) : (
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext 
-                  items={activeProjects.map(p => p.id)} 
-                  strategy={verticalListSortingStrategy}
+              ) : (
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragStart={handleDragStart}
+                  onDragEnd={handleDragEnd}
                 >
-                  <div className={
-                    viewMode === 'grid' 
-                      ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
-                      : "space-y-4"
-                  }>
-                    {activeProjects.map((project) => (
-                      <SortableProjectCard
-                        key={project.id}
-                        project={project}
+                  <SortableContext 
+                    items={activeProjects.map(p => p.id)} 
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className={
+                      viewMode === 'grid' 
+                        ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
+                        : "space-y-4"
+                    }>
+                      {activeProjects.map((project) => (
+                        <SortableProjectCard
+                          key={project.id}
+                          project={project}
+                          onEdit={handleEditProject}
+                          onDelete={handleDeleteProject}
+                          onClick={handleProjectClick}
+                          isArchived={false}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                  
+                  <DragOverlay>
+                    {activeProject ? (
+                      <ProjectCard
+                        project={activeProject}
                         onEdit={handleEditProject}
                         onDelete={handleDeleteProject}
                         onClick={handleProjectClick}
-                        isArchived={false}
+                        dragOverlayStyle={{ 
+                          transform: 'rotate(5deg)',
+                          boxShadow: '0 10px 25px rgba(0,0,0,0.15)' 
+                        }}
                       />
-                    ))}
-                  </div>
-                </SortableContext>
-                
-                <DragOverlay>
-                  {activeProject ? (
+                    ) : null}
+                  </DragOverlay>
+                </DndContext>
+              )}
+            </>
+          )}
+
+          {/* Archived Projects View */}
+          {activeView === 'archived' && (
+            <>
+              {archivedProjects.length === 0 ? (
+                <div className="text-center py-12">
+                  <Archive className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <div className="text-muted-foreground mb-2">No archived projects</div>
+                  <p className="text-sm text-muted-foreground">
+                    When you archive projects, they'll appear here. You can restore them anytime.
+                  </p>
+                </div>
+              ) : (
+                <div className={
+                  viewMode === 'grid' 
+                    ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
+                    : "space-y-4"
+                }>
+                  {archivedProjects.map((project) => (
                     <ProjectCard
-                      project={activeProject}
+                      key={project.id}
+                      project={project}
                       onEdit={handleEditProject}
                       onDelete={handleDeleteProject}
+                      onRestore={handleRestoreProject}
+                      onPermanentlyDelete={handlePermanentlyDeleteProject}
                       onClick={handleProjectClick}
-                      dragOverlayStyle={{ 
-                        transform: 'rotate(5deg)',
-                        boxShadow: '0 10px 25px rgba(0,0,0,0.15)' 
-                      }}
+                      isArchived={true}
                     />
-                  ) : null}
-                </DragOverlay>
-              </DndContext>
-            )}
-          </TabsContent>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
 
-          <TabsContent value="archived">
-            {archivedProjects.length === 0 ? (
-              <div className="text-center py-12">
-                <Archive className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <div className="text-muted-foreground mb-2">No archived projects</div>
-                <p className="text-sm text-muted-foreground">
-                  When you archive projects, they'll appear here. You can restore them anytime.
-                </p>
-              </div>
-            ) : (
-              <div className={
-                viewMode === 'grid' 
-                  ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
-                  : "space-y-4"
-              }>
-                {archivedProjects.map((project) => (
-                  <ProjectCard
-                    key={project.id}
-                    project={project}
-                    onEdit={handleEditProject}
-                    onDelete={handleDeleteProject}
-                    onRestore={handleRestoreProject}
-                    onPermanentlyDelete={handlePermanentlyDeleteProject}
-                    onClick={handleProjectClick}
-                    isArchived={true}
-                  />
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="calendar">
+          {/* Projects Calendar View */}
+          {activeView === 'calendar' && (
             <ProjectsCalendar projects={projects} />
-          </TabsContent>
-        </Tabs>
+          )}
       </div>
 
       {/* Project Form Modal */}

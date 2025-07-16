@@ -4,6 +4,10 @@ import "@/app/globals.css";
 import { Lexend } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { ViewModeProvider } from "@/app/context/ViewModeContext";
+import { ProjectsViewProvider } from "@/app/context/ProjectsViewContext";
+import { CalendarViewProvider } from "@/app/context/CalendarViewContext";
+import { DocumentsViewProvider } from "@/app/context/DocumentsViewContext";
 
 const lexend = Lexend({ subsets: ["latin"] });
 
@@ -24,11 +28,19 @@ export default function RootLayout({
           enableSystem={true}
           disableTransitionOnChange={false}
         >
-          <ErrorBoundary>
-            <div className="min-h-screen bg-background text-foreground">
-              {children}
-            </div>
-          </ErrorBoundary>
+          <ViewModeProvider>
+            <ProjectsViewProvider>
+              <CalendarViewProvider>
+                <DocumentsViewProvider>
+                  <ErrorBoundary>
+                    <div className="min-h-screen bg-background text-foreground">
+                      {children}
+                    </div>
+                  </ErrorBoundary>
+                </DocumentsViewProvider>
+              </CalendarViewProvider>
+            </ProjectsViewProvider>
+          </ViewModeProvider>
         </ThemeProvider>
       </body>
     </html>

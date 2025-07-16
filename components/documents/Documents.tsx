@@ -7,6 +7,7 @@ import { useDocuments } from '@/hooks/useDocuments';
 import { Plus, X, Star, Search, FileText, Save, Move, Trash2, Type } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useDocumentsView } from '@/app/context/DocumentsViewContext';
 
 export default function Documents() {
   const {
@@ -29,10 +30,12 @@ export default function Documents() {
   const [showSearch, setShowSearch] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
-  const [showTrash, setShowTrash] = useState(false);
+  const { viewMode, setViewMode } = useDocumentsView();
   const [dragMode, setDragMode] = useState(false);
   const [isAddingText, setIsAddingText] = useState(false);
   const [openDocuments, setOpenDocuments] = useState<string[]>([]);
+
+  const showTrash = viewMode === 'archive';
 
   // Auto-open new documents when created
   useEffect(() => {
@@ -306,7 +309,7 @@ export default function Documents() {
             <Button
               variant={showTrash ? "default" : "ghost"}
               size="sm"
-              onClick={() => setShowTrash(!showTrash)}
+              onClick={() => setViewMode(showTrash ? 'documents' : 'archive')}
               className="h-7 px-2 text-xs"
               title={showTrash ? "Show documents" : "Show archived documents"}
             >

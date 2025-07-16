@@ -237,7 +237,7 @@ export const PinnedTasksSidebar: React.FC<PinnedTasksSidebarProps> = ({
                 return (
                   <div
                     key={task.pinnedId}
-                    className={`relative p-2 rounded-lg bg-card/60 backdrop-blur-sm border border-border/50 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-16 ${isOverdue ? 'bg-red-500/10 border-red-500/20' : ''}`}
+                    className={`relative p-2 bg-card/60 backdrop-blur-sm border border-border/50 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-16 ${isOverdue ? 'bg-red-500/10 border-red-500/20' : ''}`}
                   >
                     <div className="flex items-start justify-between gap-2 h-full">
                       <div className="flex flex-col flex-1 min-w-0">

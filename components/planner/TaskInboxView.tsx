@@ -150,7 +150,7 @@ function TaskList({ tasks, onEdit, onDelete, onViewNotes }: TaskListProps) {
         {tasks.map((task) => (
           <div
             key={task.id}
-            className="relative p-4 rounded-lg bg-card border border-border/40 hover:border-border transition-all duration-200 hover:shadow-sm group"
+            className="relative p-4 bg-card border border-border/40 hover:border-border transition-all duration-200 hover:shadow-sm group"
           >
             {/* Color indicator dot - only show if task has a color */}
             {task.color && (

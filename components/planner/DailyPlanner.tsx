@@ -34,10 +34,12 @@ import { resolveCollisionsForResize, resolveCollisionsForDrag } from '../../util
 import WeeklyView from './WeeklyView';
 import FocusView from './FocusView';
 import { useModalManager } from '../../hooks/useModalManager';
+import { useViewMode } from '@/app/context/ViewModeContext';
 
 type TimelinePeriod = 'night' | 'morning' | 'afternoon' | 'evening';
 
 export default function DailyPlanner() {
+  const { viewMode } = useViewMode();
   const {
     tasksByDate,
     poolTasks: combinedPoolTasks,
@@ -118,7 +120,6 @@ export default function DailyPlanner() {
 
 
   const [currentTimeForMarker, setCurrentTimeForMarker] = useState(new Date());
-  const [viewMode, setViewMode] = useState<'daily' | 'weekly' | 'monthly' | 'focus'>('daily');
 
   useEffect(() => {
       const timerId = setInterval(() => setCurrentTimeForMarker(new Date()), 60000);
@@ -619,69 +620,13 @@ export default function DailyPlanner() {
           <ViewTaskNotesModal task={viewingTaskNotes} onClose={closeViewNotesModal} onEdit={openEditModal} />
         )}
 
-        {/* Page View Mode Navigation */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold text-foreground">Daily Planner</h2>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant={viewMode === 'focus' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('focus')}
-                className="flex items-center gap-2"
-              >
-                <Clock className="w-4 h-4" />
-                Focus
-              </Button>
-              <Button
-                variant={viewMode === 'daily' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('daily')}
-                className="flex items-center gap-2"
-              >
-                <Calendar className="w-4 h-4" />
-                Daily
-              </Button>
-              <Button
-                variant={viewMode === 'weekly' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('weekly')}
-                className="flex items-center gap-2"
-              >
-                <Calendar className="w-4 h-4" />
-                Weekly
-              </Button>
-              <Button
-                variant={viewMode === 'monthly' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('monthly')}
-                className="flex items-center gap-2"
-              >
-                <Calendar className="w-4 h-4" />
-                Monthly
-              </Button>
-            </div>
-          </div>
-        </div>
+
 
         {/* Conditional Content Based on View Mode */}
         {viewMode === 'daily' && (
           <>
             {/* Unified Task Pool and Pinned Tasks View */}
-            <div className="mb-4 bg-card border border-border rounded-lg shadow-sm overflow-hidden">
-              {/* Collapsible Header */}
-              <div className="flex items-center justify-end px-3 py-2 border-b border-border/50 bg-muted/20">
-                <button
-                  onClick={() => setIsTaskPoolOpen(!isTaskPoolOpen)}
-                  className="p-1 rounded hover:bg-accent transition-colors ml-auto"
-                  title={isTaskPoolOpen ? "Collapse" : "Expand"}
-                >
-                  <ChevronDown className={cn("w-4 h-4 transition-transform", isTaskPoolOpen && "rotate-180")} />
-                </button>
-              </div>
-              
+            <div className="mb-4 bg-card border border-border shadow-sm overflow-hidden">
               {/* Collapsible Content */}
               {isTaskPoolOpen && (
                 <div className="h-20 p-2">
@@ -715,7 +660,7 @@ export default function DailyPlanner() {
                       onDragStart={(e) => {
                         e.dataTransfer.setData('text/plain', JSON.stringify({ ...task, source: 'pool' }));
                       }}
-                      className="relative p-2 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-16 cursor-grab active:cursor-grabbing"
+                      className="relative p-2 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-16 cursor-grab active:cursor-grabbing"
                     >
                                               <div className="flex items-start justify-between gap-2 h-full">
                           <div className="flex items-start gap-2 flex-1 min-w-0">
@@ -780,7 +725,7 @@ export default function DailyPlanner() {
                       return (
                         <div
                           key={`pinned-${task.id}`}
-                          className="relative p-2 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-16"
+                          className="relative p-2 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-16"
                         >
                           <div className="flex items-start justify-between gap-2 h-full">
                             <div className="flex items-start gap-2 flex-1 min-w-0">
@@ -841,8 +786,34 @@ export default function DailyPlanner() {
                       </button>
                     </div>
                   )}
+
+                  {/* Collapse Button - positioned at the far right */}
+                  <div className="ml-auto flex items-center">
+                    <button
+                      onClick={() => setIsTaskPoolOpen(!isTaskPoolOpen)}
+                      className="p-1 rounded hover:bg-accent transition-colors"
+                      title={isTaskPoolOpen ? "Collapse" : "Expand"}
+                    >
+                      <ChevronDown className={cn("w-4 h-4 transition-transform", isTaskPoolOpen && "rotate-180")} />
+                    </button>
+                  </div>
                 </div>
               </div>
+              )}
+
+              {/* Show collapse button when collapsed */}
+              {!isTaskPoolOpen && (
+                <div className="p-2">
+                  <div className="flex justify-end">
+                    <button
+                      onClick={() => setIsTaskPoolOpen(!isTaskPoolOpen)}
+                      className="p-1 rounded hover:bg-accent transition-colors"
+                      title={isTaskPoolOpen ? "Collapse" : "Expand"}
+                    >
+                      <ChevronDown className={cn("w-4 h-4 transition-transform", isTaskPoolOpen && "rotate-180")} />
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
 
