@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   Calendar, CalendarDays, FolderKanban, Sun, Moon, FileText, ChevronLeft, ChevronRight, 
   Clock, Archive, Trash2, CalendarCheck, CalendarRange, Folder, Files 
@@ -22,6 +22,7 @@ interface NavigationProps {
 export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse }: NavigationProps = {}) {
   const [internalIsCollapsed, setInternalIsCollapsed] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
   const { theme, toggleTheme, mounted } = useTheme();
   const { viewMode: plannerViewMode, setViewMode: setPlannerViewMode } = useViewMode();
   const { viewMode: projectsViewMode, setViewMode: setProjectsViewMode } = useProjectsView();
@@ -123,9 +124,11 @@ export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse 
 
       {/* Navigation Links */}
       <div className="flex-1 px-2 py-3 overflow-y-auto">
-        <div className="space-y-1">
+        <div className="space-y-2">
           {navItems.map((item) => {
             const Icon = item.icon;
+            const showSubViews = true;
+
             return (
               <div key={item.href}>
                 <Link
@@ -140,8 +143,7 @@ export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse 
                   title={isCollapsed ? item.label : undefined}
                 >
                   <Icon className={cn(
-                    "transition-all duration-200",
-                    isCollapsed ? "w-6 h-6" : "w-5 h-5",
+                    "transition-all duration-200 w-5 h-5",
                     item.active ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground"
                   )} />
                   {!isCollapsed && (
@@ -150,10 +152,12 @@ export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse 
                 </Link>
                 
                 {/* Sub-Views */}
-                {(!isCollapsed || item.active) && item.subViews && (
+                {showSubViews && item.subViews && (
                   <div className={cn(
-                    "mt-1", 
-                    isCollapsed ? "space-y-1 border-l border-border ml-4 pl-3" : "pl-5 space-y-1 border-l border-border ml-4"
+                    "mt-1 space-y-1",
+                    isCollapsed 
+                      ? "border-l border-border/70 ml-4 pl-3" 
+                      : "relative pl-5 before:absolute before:left-6 before:top-0 before:h-full before:w-px before:bg-border/70"
                   )}>
                     {item.subViews.map((subView) => {
                       const SubIcon = subView.icon;
@@ -161,6 +165,10 @@ export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse 
                         <button 
                           key={subView.key}
                           onClick={() => {
+                            // Navigate to the parent page and set the view mode
+                            router.push(item.href);
+                            
+                            // Set the appropriate view mode
                             if (item.href === '/') {
                               setPlannerViewMode(subView.key as any);
                             } else if (item.href === '/projects') {
@@ -172,10 +180,10 @@ export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse 
                             }
                           }} 
                           className={cn(
-                            "flex items-center font-medium transition-all duration-200",
+                            "flex items-center font-medium transition-all duration-200 w-full",
                             isCollapsed 
-                              ? "w-full pl-2 pr-2 py-2 justify-start" 
-                              : "w-full px-3 py-1.5 text-xs",
+                              ? "pl-2 py-1.5 justify-start" 
+                              : "px-4 py-1.5 text-xs",
                             subView.active 
                               ? 'text-foreground font-semibold' 
                               : 'text-muted-foreground hover:text-foreground'
@@ -183,7 +191,7 @@ export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse 
                           title={isCollapsed ? subView.label : undefined}
                         >
                           {isCollapsed ? (
-                            <SubIcon className="w-5 h-5" />
+                            <SubIcon className="w-4 h-4 text-muted-foreground/80 group-hover:text-foreground" />
                           ) : (
                             <>
                               <SubIcon className="w-4 h-4 mr-2" />
@@ -213,9 +221,9 @@ export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse 
           title={isCollapsed ? (theme === 'dark' ? 'Light Mode' : 'Dark Mode') : undefined}
         >
           {theme === 'dark' ? (
-            <Sun className={cn("group-hover:text-foreground transition-all duration-200", isCollapsed ? "w-6 h-6" : "w-5 h-5")} />
+            <Sun className={cn("group-hover:text-foreground transition-all duration-200 w-5 h-5")} />
           ) : (
-            <Moon className={cn("group-hover:text-foreground transition-all duration-200", isCollapsed ? "w-6 h-6" : "w-5 h-5")} />
+            <Moon className={cn("group-hover:text-foreground transition-all duration-200 w-5 h-5")} />
           )}
           {!isCollapsed && (
             <span className="font-medium">
