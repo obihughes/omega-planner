@@ -3,7 +3,10 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Calendar, CalendarDays, FolderKanban, Sun, Moon, FileText, ChevronLeft, ChevronRight, Clock, Archive, Trash2 } from 'lucide-react';
+import { 
+  Calendar, CalendarDays, FolderKanban, Sun, Moon, FileText, ChevronLeft, ChevronRight, 
+  Clock, Archive, Trash2, CalendarCheck, CalendarRange, Folder, Files 
+} from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
 import { useViewMode } from '@/app/context/ViewModeContext';
@@ -41,9 +44,9 @@ export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse 
       active: pathname === '/' || pathname === '/inbox',
       subViews: [
         { key: 'focus', label: 'Focus', icon: Clock, active: plannerViewMode === 'focus' },
-        { key: 'daily', label: 'Daily', icon: Calendar, active: plannerViewMode === 'daily' },
+        { key: 'daily', label: 'Daily', icon: CalendarCheck, active: plannerViewMode === 'daily' },
         { key: 'weekly', label: 'Weekly', icon: CalendarDays, active: plannerViewMode === 'weekly' },
-        { key: 'monthly', label: 'Monthly', icon: CalendarDays, active: plannerViewMode === 'monthly' }
+        { key: 'monthly', label: 'Monthly', icon: CalendarRange, active: plannerViewMode === 'monthly' }
       ]
     },
     {
@@ -52,7 +55,7 @@ export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse 
       icon: FolderKanban,
       active: pathname === '/projects' || pathname.startsWith('/projects/'),
       subViews: [
-        { key: 'active', label: 'Active', icon: FolderKanban, active: projectsViewMode === 'active' },
+        { key: 'active', label: 'Active', icon: Folder, active: projectsViewMode === 'active' },
         { key: 'archived', label: 'Archived', icon: Archive, active: projectsViewMode === 'archived' },
         { key: 'calendar', label: 'Calendar', icon: Calendar, active: projectsViewMode === 'calendar' }
       ]
@@ -73,7 +76,7 @@ export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse 
       icon: FileText,
       active: pathname === '/documents',
       subViews: [
-        { key: 'documents', label: 'Documents', icon: FileText, active: documentsViewMode === 'documents' },
+        { key: 'documents', label: 'Documents', icon: Files, active: documentsViewMode === 'documents' },
         { key: 'archive', label: 'Archive', icon: Trash2, active: documentsViewMode === 'archive' }
       ]
     }
@@ -86,20 +89,20 @@ export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse 
   return (
     <nav className={cn(
       "h-screen bg-card/98 backdrop-blur-md border-r border-border/40 fixed left-0 top-0 z-50 shadow-xl flex flex-col transition-all duration-300 ease-in-out",
-      isCollapsed ? "w-16" : "w-64"
+      isCollapsed ? "w-20" : "w-40"
     )}>
       {/* Logo/Brand Section */}
       <div className="p-4 border-b border-border/40 relative">
         {!isCollapsed ? (
           <div className="flex items-center justify-center">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary/80 rounded-lg flex items-center justify-center shadow-lg">
+            <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
               <span className="text-lg font-bold text-primary-foreground">Ω</span>
             </div>
           </div>
         ) : (
           <div className="flex justify-center">
-            <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary/80 rounded-lg flex items-center justify-center shadow-lg">
-              <span className="text-sm font-bold text-primary-foreground">Ω</span>
+            <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
+              <span className="text-lg font-bold text-primary-foreground">Ω</span>
             </div>
           </div>
         )}
@@ -128,30 +131,30 @@ export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse 
                 <Link
                   href={item.href}
                   className={cn(
-                    "w-full rounded-lg flex items-center text-sm font-medium transition-all duration-200 group relative",
-                    isCollapsed ? "px-2 py-2 justify-center" : "px-3 py-2 space-x-3",
+                    "w-full flex items-center text-sm font-medium transition-all duration-200 group relative",
+                    isCollapsed ? "p-3 justify-center" : "px-4 py-2 space-x-3",
                     item.active
-                      ? "text-primary-foreground bg-gradient-to-r from-primary to-primary/90 shadow-md"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/80 hover:shadow-sm"
+                      ? "text-primary-foreground bg-primary/90"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/80"
                   )}
                   title={isCollapsed ? item.label : undefined}
                 >
                   <Icon className={cn(
                     "transition-all duration-200",
-                    isCollapsed ? "w-5 h-5" : "w-5 h-5",
-                    item.active ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground group-hover:scale-110"
+                    isCollapsed ? "w-6 h-6" : "w-5 h-5",
+                    item.active ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground"
                   )} />
                   {!isCollapsed && (
                     <span className="font-medium">{item.label}</span>
                   )}
-                  {item.active && (
-                    <div className="absolute inset-0 rounded-lg ring-2 ring-primary/20 ring-inset" />
-                  )}
                 </Link>
                 
-                {/* Sub-Views - Always shown */}
-                {item.subViews && (
-                  <div className={cn("mt-1", isCollapsed ? "space-y-1" : "pl-4 space-y-1")}>
+                {/* Sub-Views */}
+                {(!isCollapsed || item.active) && item.subViews && (
+                  <div className={cn(
+                    "mt-1", 
+                    isCollapsed ? "space-y-1 border-l border-border ml-4 pl-3" : "pl-5 space-y-1 border-l border-border ml-4"
+                  )}>
                     {item.subViews.map((subView) => {
                       const SubIcon = subView.icon;
                       return (
@@ -169,18 +172,18 @@ export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse 
                             }
                           }} 
                           className={cn(
-                            "rounded-lg flex items-center font-medium transition-all duration-200",
+                            "flex items-center font-medium transition-all duration-200",
                             isCollapsed 
-                              ? "w-full px-2 py-2 justify-center" 
+                              ? "w-full pl-2 pr-2 py-2 justify-start" 
                               : "w-full px-3 py-1.5 text-xs",
                             subView.active 
-                              ? 'text-primary bg-primary/10' 
-                              : 'text-muted-foreground hover:text-foreground hover:bg-secondary/80'
+                              ? 'text-foreground font-semibold' 
+                              : 'text-muted-foreground hover:text-foreground'
                           )}
                           title={isCollapsed ? subView.label : undefined}
                         >
                           {isCollapsed ? (
-                            <SubIcon className="w-4 h-4" />
+                            <SubIcon className="w-5 h-5" />
                           ) : (
                             <>
                               <SubIcon className="w-4 h-4 mr-2" />
@@ -203,16 +206,16 @@ export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse 
         <button
           onClick={toggleTheme}
           className={cn(
-            "w-full rounded-lg flex items-center text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/80 hover:shadow-sm transition-all duration-200 group",
-            isCollapsed ? "px-2 py-2 justify-center" : "px-3 py-2 space-x-3"
+            "w-full flex items-center text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-all duration-200 group",
+            isCollapsed ? "p-3 justify-center" : "px-4 py-2 space-x-3"
           )}
           aria-label="Toggle theme"
           title={isCollapsed ? (theme === 'dark' ? 'Light Mode' : 'Dark Mode') : undefined}
         >
           {theme === 'dark' ? (
-            <Sun className={cn("group-hover:text-foreground group-hover:scale-110 transition-all duration-200", isCollapsed ? "w-5 h-5" : "w-5 h-5")} />
+            <Sun className={cn("group-hover:text-foreground transition-all duration-200", isCollapsed ? "w-6 h-6" : "w-5 h-5")} />
           ) : (
-            <Moon className={cn("group-hover:text-foreground group-hover:scale-110 transition-all duration-200", isCollapsed ? "w-5 h-5" : "w-5 h-5")} />
+            <Moon className={cn("group-hover:text-foreground transition-all duration-200", isCollapsed ? "w-6 h-6" : "w-5 h-5")} />
           )}
           {!isCollapsed && (
             <span className="font-medium">
