@@ -135,19 +135,21 @@ export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse 
                   href={item.href}
                   className={cn(
                     "w-full flex items-center text-sm font-medium transition-all duration-200 group relative",
-                    isCollapsed ? "p-3 justify-center" : "px-4 py-2 space-x-3",
+                    isCollapsed ? "p-4 justify-center" : "px-4 py-3 space-x-4",
                     item.active
-                      ? "text-primary-foreground bg-primary/90"
+                      ? "bg-muted"
                       : "text-muted-foreground hover:text-foreground hover:bg-secondary/80"
                   )}
                   title={isCollapsed ? item.label : undefined}
                 >
                   <Icon className={cn(
-                    "transition-all duration-200 w-5 h-5",
-                    item.active ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground"
+                    "transition-all duration-200 w-6 h-6",
+                    item.active 
+                      ? "text-foreground" 
+                      : "text-muted-foreground group-hover:text-foreground"
                   )} />
                   {!isCollapsed && (
-                    <span className="font-medium">{item.label}</span>
+                    <span className="font-semibold">{item.label}</span>
                   )}
                 </Link>
                 
@@ -191,7 +193,7 @@ export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse 
                           title={isCollapsed ? subView.label : undefined}
                         >
                           {isCollapsed ? (
-                            <SubIcon className="w-4 h-4 text-muted-foreground/80 group-hover:text-foreground" />
+                            <SubIcon className="w-4 h-4 group-hover:text-foreground" />
                           ) : (
                             <>
                               <SubIcon className="w-4 h-4 mr-2" />
@@ -207,30 +209,6 @@ export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse 
             );
           })}
         </div>
-      </div>
-
-      {/* Theme Toggle */}
-      <div className="p-2 border-t border-border/40">
-        <button
-          onClick={toggleTheme}
-          className={cn(
-            "w-full flex items-center text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-all duration-200 group",
-            isCollapsed ? "p-3 justify-center" : "px-4 py-2 space-x-3"
-          )}
-          aria-label="Toggle theme"
-          title={isCollapsed ? (theme === 'dark' ? 'Light Mode' : 'Dark Mode') : undefined}
-        >
-          {theme === 'dark' ? (
-            <Sun className={cn("group-hover:text-foreground transition-all duration-200 w-5 h-5")} />
-          ) : (
-            <Moon className={cn("group-hover:text-foreground transition-all duration-200 w-5 h-5")} />
-          )}
-          {!isCollapsed && (
-            <span className="font-medium">
-              {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-            </span>
-          )}
-        </button>
       </div>
     </nav>
   );
