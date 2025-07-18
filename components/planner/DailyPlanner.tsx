@@ -6,7 +6,7 @@ import { Pin, Eye, Trash2, Calendar, Clock, Edit3, PinOff, Scissors, X, Plus, Ch
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
-import { formatTime } from '@/utils/formatters';
+import { formatTime, formatDuration } from '@/utils/formatters';
 import { Task } from '../../types/planner';
 import { TaskInboxSidebar } from './TaskInboxSidebar';
 import { PinnedTasksSidebar } from './PinnedTasksSidebar';
@@ -895,25 +895,119 @@ export default function DailyPlanner() {
 
         {/* Monthly View */}
         {viewMode === 'monthly' && (
-          <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
-            <TaskAssignmentCalendar
-              poolTasks={generalPoolTasks}
-              scheduledTasks={tasksByDate}
-              pinnedTasks={pinnedTasks}
-              onAssignTask={handleAssignTask}
-              onUnassignTask={handleUnassignTask}
-              onRescheduleTask={handleRescheduleTask}
-              onCreatePoolTask={addPoolTaskForDate}
-              onAddTask={handleAddTask}
-              onUpdateTask={handleUpdateTask}
-              onAddPoolTaskForDate={addPoolTaskForDate}
-              onClearPool={clearPool}
-              getPoolTasksForDate={getPoolTasksForDate}
-              createQuickTask={createQuickTask}
-              openEditModal={openEditModal}
-              createPoolTask={createPoolTask}
-            />
-          </div>
+          <>
+            {/* Inbox Tasks Section - Compact */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => createPoolTask()}
+                  className="flex items-center gap-2 hover:bg-primary/10 transition-all duration-200 font-medium font-inter border-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Task
+                </Button>
+                {generalPoolTasks.length > 0 && (
+                  <p className="text-sm text-muted-foreground font-medium font-inter">
+                    Drag tasks to calendar to schedule ({generalPoolTasks.length})
+                  </p>
+                )}
+              </div>
+              
+              {generalPoolTasks.length > 0 ? (
+                <div className="flex flex-wrap gap-4 mb-6">
+                  {generalPoolTasks.map(task => (
+                    <div
+                      key={task.id}
+                      draggable
+                      onDragStart={(e) => {
+                        const dragData = {
+                          task,
+                          isFromPool: true,
+                          type: 'task-assignment'
+                        };
+                        e.dataTransfer.setData('text/plain', JSON.stringify(dragData));
+                        e.dataTransfer.effectAllowed = 'move';
+                      }}
+                      className={cn(
+                        "group relative p-4 text-sm cursor-pointer transition-all duration-300 shadow-sm border-2 hover:shadow-lg",
+                        "w-44 h-24 flex flex-col justify-between bg-gradient-to-br from-background to-muted/30",
+                        "border-border/50 hover:border-primary/30 hover:scale-[1.03] hover:-translate-y-1",
+                        task.color ? task.color : "bg-gradient-to-br from-background to-muted/20"
+                      )}
+                      onClick={() => openEditModal(task, { isFromPool: true })}
+                    >
+                      <div className="flex items-start justify-between min-h-0">
+                        <span className="font-semibold text-sm line-clamp-2 flex-1 mr-2 text-foreground font-inter tracking-tight">
+                          {task.name}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-all duration-200 flex-shrink-0 hover:bg-accent/50"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditModal(task, { isFromPool: true });
+                          }}
+                          title="Edit task"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                      <div className="flex items-center justify-between text-muted-foreground/80 mt-auto">
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="w-3 h-3 flex-shrink-0" />
+                          <span className="text-xs font-semibold font-mono">{formatDuration(task.duration)}</span>
+                        </div>
+                        <div className="w-2 h-2 bg-primary/50"></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 px-6 bg-muted/20 border-2 border-dashed border-border/40">
+                  <div className="text-center">
+                    <Calendar className="w-10 h-10 mx-auto mb-4 text-muted-foreground/60" />
+                    <h4 className="text-base font-bold text-foreground mb-2 font-inter tracking-tight">No tasks in inbox</h4>
+                    <p className="text-sm text-muted-foreground mb-4 font-inter">
+                      Create a task to get started with scheduling
+                    </p>
+                    <Button
+                      size="sm"
+                      onClick={() => createPoolTask()}
+                      className="flex items-center gap-2 font-semibold font-inter border-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Your First Task
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Calendar Container - Darker/More Transparent */}
+            <div className="bg-background/20 border border-border/20 shadow-lg overflow-hidden backdrop-blur-lg">
+              <TaskAssignmentCalendar
+                poolTasks={generalPoolTasks}
+                scheduledTasks={tasksByDate}
+                pinnedTasks={pinnedTasks}
+                onAssignTask={handleAssignTask}
+                onUnassignTask={handleUnassignTask}
+                onRescheduleTask={handleRescheduleTask}
+                onCreatePoolTask={addPoolTaskForDate}
+                onAddTask={handleAddTask}
+                onUpdateTask={handleUpdateTask}
+                onAddPoolTaskForDate={addPoolTaskForDate}
+                onClearPool={clearPool}
+                getPoolTasksForDate={getPoolTasksForDate}
+                createQuickTask={createQuickTask}
+                openEditModal={openEditModal}
+                createPoolTask={createPoolTask}
+                hideInboxSection={true}
+              />
+            </div>
+          </>
         )}
 
 

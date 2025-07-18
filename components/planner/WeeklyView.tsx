@@ -3,27 +3,25 @@
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-
 import { 
   ChevronLeft, 
   ChevronRight, 
-  Plus, 
-  Calendar,
-  Clock,
-  MoreVertical,
-  CalendarOff,
-  CheckCircle2,
-  Circle
+  Plus,
+  Calendar
 } from 'lucide-react';
 import { Task } from '@/types';
 import { useDailyPlanner } from '@/hooks/useDailyPlannerState';
-import { formatTime, formatDuration } from '@/utils/formatters';
-import { getDateKey, dateFromDateKey } from '@/utils/dateUtils';
-import { TASK_COLORS, DEFAULT_TASK_COLOR_INDEX } from '@/lib/constants';
+import { formatTime } from '@/utils/formatters';
+import { getDateKey } from '@/utils/dateUtils';
+import WeeklyTaskCard from './WeeklyTaskCard';
 
-interface WeeklyViewProps {
-  // Removed editTask prop - weekly view will no longer have edit functionality
-}
+interface WeeklyViewProps {}
+
+const TIMELINE_WIDTH_PER_HOUR = 60; // pixels per hour
+const TIMELINE_START_HOUR = 0; // 12 AM
+const TIMELINE_END_HOUR = 24; // 12 AM next day
+const TOTAL_TIMELINE_WIDTH = TIMELINE_WIDTH_PER_HOUR * 24;
+const DAY_ROW_HEIGHT = 120; // height of each day row
 
 export default function WeeklyView({}: WeeklyViewProps) {
   const {
@@ -34,7 +32,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
   } = useDailyPlanner();
 
   // State for week navigation
-  const [weekOffset, setWeekOffset] = useState(0); // 0 = current week, -1 = last week, +1 = next week
+  const [weekOffset, setWeekOffset] = useState(0);
 
   // Calculate week dates
   const getWeekDates = (offset: number) => {
@@ -43,7 +41,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
     
     // Get to Monday of the current week
     const dayOfWeek = today.getDay();
-    const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Sunday = 0, Monday = 1
+    const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
     startOfWeek.setDate(today.getDate() + daysToMonday + (offset * 7));
     
     const weekDates = [];
@@ -57,9 +55,9 @@ export default function WeeklyView({}: WeeklyViewProps) {
   };
 
   const weekDates = getWeekDates(weekOffset);
-  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-  // Get tasks for the week - separate scheduled and inbox
+  // Get tasks for the week
   const weekTasks = useMemo(() => {
     const weekTasksMap = new Map<string, { scheduled: Task[], inbox: Task[] }>();
     
@@ -105,14 +103,13 @@ export default function WeeklyView({}: WeeklyViewProps) {
   };
 
   // Handle task creation
-  const handleCreateTask = (date: Date) => {
-    const dateKey = getDateKey(date);
+  const handleCreateTask = (date: Date, hour?: number) => {
     const dayOffset = Math.floor((date.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
     
     openEditModal(undefined, {
       isFromPool: false,
       initialDayOffset: dayOffset,
-      initialStartHour: 9,
+      initialStartHour: hour || 9,
       isNew: true
     });
   };
@@ -149,197 +146,225 @@ export default function WeeklyView({}: WeeklyViewProps) {
     return date < today;
   };
 
-  const TaskItem = ({ task, isScheduled }: { task: Task; isScheduled: boolean }) => (
-    <div
-      className={cn(
-        "group relative flex items-center gap-2 p-2 rounded-lg transition-all duration-200",
-        "hover:bg-accent/50 hover:shadow-sm cursor-pointer flex-shrink-0",
-        "min-w-[200px] max-w-[280px]",
-        isScheduled 
-          ? "bg-card border border-border/40 shadow-sm" 
-          : "bg-muted/30 border border-dashed border-muted-foreground/30",
-        task.completed && "opacity-60"
-      )}
-      onClick={() => openEditModal(task, { isFromPool: false })}
-    >
-      {/* Completion Status */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          handleTaskCompletionToggle(task.id);
-        }}
-        className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
-      >
-        {task.completed ? (
-          <CheckCircle2 className="w-4 h-4 text-green-600" />
-        ) : (
-          <Circle className="w-4 h-4" />
-        )}
-      </button>
+  // Calculate task position and size for horizontal layout
+  const getTaskStyle = (task: Task) => {
+    const startHour = task.startHour || 0;
+    const duration = task.duration || 1;
+    
+    const left = startHour * TIMELINE_WIDTH_PER_HOUR;
+    const width = Math.max(duration * TIMELINE_WIDTH_PER_HOUR, 60); // Minimum 60px width
+    
+    return {
+      left: `${left}px`,
+      width: `${width}px`,
+    };
+  };
 
-      {/* Task Content */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className={cn(
-            "font-medium text-sm truncate",
-            task.completed && "line-through text-muted-foreground"
-          )}>
-            {task.name}
-          </span>
-          {!isScheduled && (
-            <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded flex-shrink-0">
-              Inbox
-            </span>
-          )}
-        </div>
-        
-        {/* Time and Duration - Compact */}
-        <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
-          {isScheduled && task.startHour !== undefined && (
-            <span className="flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              {formatTime(task.startHour)}
-            </span>
-          )}
-          <span>{formatDuration(task.duration)}</span>
+  // Render time grid at the top
+  const renderTimeGrid = () => {
+    const hours = Array.from({ length: 24 }, (_, i) => i);
+    
+    return (
+      <div className="sticky top-16 z-20 bg-card/95 backdrop-blur-sm border-b border-border/30">
+        <div className="flex">
+          {/* Day labels column */}
+          <div className="w-32 flex-shrink-0 border-r border-border/30 p-2 bg-card/95">
+            <div className="text-sm font-medium text-muted-foreground">Time</div>
+          </div>
+          
+          {/* Time labels */}
+          <div className="flex" style={{ width: `${TOTAL_TIMELINE_WIDTH}px` }}>
+            {hours.map((hour) => (
+              <div
+                key={hour}
+                className="flex items-center justify-center text-xs text-muted-foreground font-mono border-l border-border/20"
+                style={{ width: `${TIMELINE_WIDTH_PER_HOUR}px`, height: '40px' }}
+              >
+                <span>{formatTime(hour)}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
+
+  // Render day row
+  const renderDayRow = (date: Date, index: number) => {
+    const dateKey = getDateKey(date);
+    const dayData = weekTasks.get(dateKey) || { scheduled: [], inbox: [] };
+    const isCurrentDay = isToday(date);
+    const isPastDay = isPast(date);
+    const allTasks = [...dayData.scheduled, ...dayData.inbox];
+    
+    return (
+      <div key={dateKey} className="flex border-b border-border/20 last:border-b-0">
+        {/* Day header */}
+        <div className={cn(
+          "w-32 flex-shrink-0 border-r border-border/30 p-3 flex flex-col justify-center",
+          isCurrentDay && "bg-primary/5 border-primary/20"
+        )}>
+          <div className={cn(
+            "text-sm font-medium",
+            isCurrentDay ? "text-primary" : "text-muted-foreground"
+          )}>
+            {dayNames[index]}
+          </div>
+          <div className={cn(
+            "text-xl font-bold",
+            isCurrentDay ? "text-primary" : "text-foreground"
+          )}>
+            {date.getDate()}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {date.toLocaleDateString('en-US', { month: 'short' })}
+          </div>
+          {allTasks.length > 0 && (
+            <div className="text-xs text-muted-foreground mt-1">
+              {allTasks.filter(t => t.completed).length}/{allTasks.length}
+            </div>
+          )}
+        </div>
+
+        {/* Timeline row */}
+        <div 
+          className="relative"
+          style={{ width: `${TOTAL_TIMELINE_WIDTH}px`, height: `${DAY_ROW_HEIGHT}px` }}
+        >
+          {/* Hour grid lines */}
+          {Array.from({ length: 24 }, (_, i) => (
+            <div
+              key={i}
+              className="absolute top-0 bottom-0 border-l border-border/10"
+              style={{ left: `${i * TIMELINE_WIDTH_PER_HOUR}px` }}
+            />
+          ))}
+
+          {/* Current time indicator */}
+          {isCurrentDay && (() => {
+            const now = new Date();
+            const currentHour = now.getHours() + now.getMinutes() / 60;
+            const currentTimeLeft = currentHour * TIMELINE_WIDTH_PER_HOUR;
+            
+            return (
+              <div
+                className="absolute top-0 bottom-0 z-20 border-l-2 border-red-500"
+                style={{ left: `${currentTimeLeft}px` }}
+              >
+                <div className="w-2 h-2 bg-red-500 rounded-full -mt-1 -ml-1" />
+              </div>
+            );
+          })()}
+
+          {/* Scheduled tasks */}
+          {dayData.scheduled.map((task) => (
+            <div
+              key={task.id}
+              className="absolute top-2 z-10"
+              style={{
+                ...getTaskStyle(task),
+                height: '50px'
+              }}
+            >
+              <WeeklyTaskCard
+                task={task}
+                height={50}
+                onTaskClick={(task) => openEditModal(task, { isFromPool: false })}
+                onToggleComplete={handleTaskCompletionToggle}
+                className="!left-0 !right-0"
+              />
+            </div>
+          ))}
+
+          {/* Inbox tasks at bottom */}
+          {dayData.inbox.length > 0 && (
+            <div className="absolute bottom-2 left-2 flex gap-1 z-10 max-w-full overflow-x-auto">
+              {dayData.inbox.slice(0, 4).map((task, idx) => (
+                <div key={task.id} className="relative flex-shrink-0" style={{ width: '120px', height: '35px' }}>
+                  <WeeklyTaskCard
+                    task={task}
+                    height={35}
+                    onTaskClick={(task) => openEditModal(task, { isFromPool: true })}
+                    onToggleComplete={handleTaskCompletionToggle}
+                    className="opacity-70 !left-0 !right-0"
+                  />
+                </div>
+              ))}
+              {dayData.inbox.length > 4 && (
+                <div className="flex items-center text-xs text-muted-foreground px-2 bg-muted rounded">
+                  +{dayData.inbox.length - 4}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Add task click area */}
+          <div
+            className="absolute inset-0 z-5"
+            onClick={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const x = e.clientX - rect.left;
+              const hour = Math.floor(x / TIMELINE_WIDTH_PER_HOUR);
+              handleCreateTask(date, hour);
+            }}
+          />
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="h-full flex flex-col bg-background">
-      {/* Compact Header */}
-      <div className="px-6 py-3 border-b border-border bg-card/50">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-border bg-card/50 sticky top-0 z-30">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h2 className="text-lg font-semibold text-foreground">Weekly View</h2>
+            <h2 className="text-xl font-semibold text-foreground">Weekly View</h2>
             
             {/* Week Navigation */}
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="sm" onClick={goToPreviousWeek}>
                 <ChevronLeft className="w-4 h-4" />
               </Button>
-              <Button variant="ghost" onClick={goToCurrentWeek} className="min-w-48 font-medium text-sm">
+              <Button variant="ghost" onClick={goToCurrentWeek} className="min-w-60 font-medium">
                 {getWeekRangeString()}
               </Button>
               <Button variant="ghost" size="sm" onClick={goToNextWeek}>
                 <ChevronRight className="w-4 h-4" />
               </Button>
               {getRelativeWeekLabel() && (
-                <span className="text-xs text-muted-foreground px-2 py-1 bg-muted rounded-md">
+                <span className="text-sm text-muted-foreground px-3 py-1 bg-muted rounded-md">
                   {getRelativeWeekLabel()}
                 </span>
               )}
             </div>
           </div>
 
-          {/* Compact Stats */}
-          <div className="flex items-center gap-4 text-sm">
-            <div className="flex items-center gap-1">
-              <span className="font-medium">{weekStats.total}</span>
-              <span className="text-muted-foreground">tasks</span>
+          {/* Stats */}
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-muted-foreground">
+              <span className="font-semibold text-foreground">{weekStats.total}</span> tasks
             </div>
-            <div className="flex items-center gap-1">
-              <span className="font-medium text-green-600">{weekStats.completed}</span>
-              <span className="text-muted-foreground">done</span>
+            <div className="text-sm text-muted-foreground">
+              <span className="font-semibold text-foreground">{weekStats.completed}</span> done
             </div>
-            <div className="flex items-center gap-1">
-              <span className="font-medium text-blue-600">{weekStats.completionRate}%</span>
-              <span className="text-muted-foreground">complete</span>
+            <div className="text-sm text-muted-foreground">
+              <span className="font-semibold text-foreground">{weekStats.completionRate}%</span> complete
             </div>
           </div>
         </div>
       </div>
 
-      {/* Horizontal Week Layout */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="p-4 space-y-1 max-w-7xl mx-auto">
-          {weekDates.map((date, index) => {
-            const dateKey = getDateKey(date);
-            const dayData = weekTasks.get(dateKey) || { scheduled: [], inbox: [] };
-            const dayName = dayNames[index];
-            const isCurrentDay = isToday(date);
-            const isPastDay = isPast(date);
-            const allTasks = [...dayData.scheduled, ...dayData.inbox];
-            const completedTasks = allTasks.filter(task => task.completed).length;
-
-            return (
-                              <div 
-                  key={dateKey} 
-                  className={cn(
-                    "group relative rounded-lg border transition-all duration-200",
-                    "hover:shadow-md hover:border-border/60",
-                    isCurrentDay 
-                      ? "bg-primary/5 border-primary/20 shadow-sm" 
-                      : isPastDay
-                        ? "bg-muted/20 border-muted/40"
-                        : "bg-card border-border/40"
-                  )}
-                >
-                <div className="flex items-center gap-6 p-4">
-                                    {/* Day Header - Compact Single Line */}
-                  <div className="flex-shrink-0 w-20 text-center">
-                    <div className={cn(
-                      "text-xs font-medium uppercase tracking-wide",
-                      isCurrentDay ? "text-primary" : "text-muted-foreground"
-                    )}>
-                      {dayName}
-                    </div>
-                    <div className={cn(
-                      "text-xl font-bold",
-                      isCurrentDay ? "text-primary" : "text-foreground"
-                    )}>
-                      {date.getDate()}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {date.toLocaleDateString('en-US', { month: 'short' })}
-                    </div>
-                  </div>
-
-                  {/* Tasks Container - Horizontal Side-by-Side */}
-                  <div className="flex-1 min-w-0">
-                    {allTasks.length === 0 ? (
-                      <div className="flex items-center justify-center py-2 text-muted-foreground">
-                        <div className="text-sm">No tasks scheduled</div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 overflow-x-auto">
-                        {/* Scheduled Tasks */}
-                        {dayData.scheduled.map((task) => (
-                          <TaskItem key={task.id} task={task} isScheduled={true} />
-                        ))}
-                        
-                        {/* Inbox Tasks */}
-                        {dayData.inbox.map((task) => (
-                          <TaskItem key={task.id} task={task} isScheduled={false} />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                                      {/* Day Stats & Actions */}
-                    <div className="flex-shrink-0 flex items-center gap-4">
-                      {allTasks.length > 0 && (
-                        <div className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded">
-                          {completedTasks}/{allTasks.length}
-                        </div>
-                      )}
-                      
-                      {/* Add Task Button */}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleCreateTask(date)}
-                        className="opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-primary/10"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </div>
-                </div>
-              </div>
-            );
-          })}
+      {/* Main content */}
+      <div className="flex-1 overflow-auto">
+        <div className="min-h-full">
+          {/* Time grid header */}
+          {renderTimeGrid()}
+          
+          {/* Day rows */}
+          <div className="divide-y divide-border/20">
+            {weekDates.map((date, index) => renderDayRow(date, index))}
+          </div>
         </div>
       </div>
     </div>
