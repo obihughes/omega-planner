@@ -17,11 +17,36 @@ import WeeklyTaskCard from './WeeklyTaskCard';
 
 interface WeeklyViewProps {}
 
-const TIMELINE_WIDTH_PER_HOUR = 60; // pixels per hour
-const TIMELINE_START_HOUR = 0; // 12 AM
-const TIMELINE_END_HOUR = 24; // 12 AM next day
-const TOTAL_TIMELINE_WIDTH = TIMELINE_WIDTH_PER_HOUR * 24;
-const DAY_ROW_HEIGHT = 120; // height of each day row
+const TIMELINE_WIDTH_PER_HOUR = 80; // Increased from 60 for better space utilization
+const TIMELINE_START_HOUR = 6; // Start at 6 AM instead of midnight
+const TIMELINE_END_HOUR = 24; // End at midnight (18 hours total: 6am-12am)
+const TOTAL_TIMELINE_WIDTH = TIMELINE_WIDTH_PER_HOUR * (TIMELINE_END_HOUR - TIMELINE_START_HOUR);
+const DAY_ROW_HEIGHT = 100; // Adjusted for a tighter layout
+
+// Helper function to resolve task collisions and assign lanes
+const resolveCollisions = (tasks: Task[]) => {
+  if (!tasks || tasks.length === 0) return [];
+  
+  const sortedTasks = [...tasks].sort((a, b) => a.startHour - b.startHour);
+  const lanes: Task[][] = [];
+
+  sortedTasks.forEach(task => {
+    let placed = false;
+    for (let i = 0; i < lanes.length; i++) {
+      const lastTaskInLane = lanes[i][lanes[i].length - 1];
+      if (task.startHour >= lastTaskInLane.startHour + lastTaskInLane.duration) {
+        lanes[i].push(task);
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) {
+      lanes.push([task]);
+    }
+  });
+
+  return lanes.flatMap((lane, index) => lane.map(task => ({ ...task, lane: index })));
+};
 
 export default function WeeklyView({}: WeeklyViewProps) {
   const {
@@ -148,27 +173,29 @@ export default function WeeklyView({}: WeeklyViewProps) {
 
   // Calculate task position and size for horizontal layout
   const getTaskStyle = (task: Task) => {
-    const startHour = task.startHour || 0;
+    const startHour = task.startHour || 6;
     const duration = task.duration || 1;
     
-    const left = startHour * TIMELINE_WIDTH_PER_HOUR;
-    const width = Math.max(duration * TIMELINE_WIDTH_PER_HOUR, 60); // Minimum 60px width
+    // Adjust for the new start time (6am = position 0)
+    const adjustedStartHour = Math.max(0, startHour - TIMELINE_START_HOUR);
+    const left = adjustedStartHour * TIMELINE_WIDTH_PER_HOUR;
+    const width = Math.max(duration * TIMELINE_WIDTH_PER_HOUR - 8, 80); // Minimum 80px width, with 8px margin
     
     return {
-      left: `${left}px`,
+      left: `${left + 4}px`, // 4px margin from grid line
       width: `${width}px`,
     };
   };
 
   // Render time grid at the top
   const renderTimeGrid = () => {
-    const hours = Array.from({ length: 24 }, (_, i) => i);
+    const hours = Array.from({ length: TIMELINE_END_HOUR - TIMELINE_START_HOUR }, (_, i) => TIMELINE_START_HOUR + i);
     
     return (
-      <div className="sticky top-16 z-20 bg-card/95 backdrop-blur-sm border-b border-border/30">
+      <div className="sticky top-0 z-20 bg-card/95 backdrop-blur-sm border-b border-border/30">
         <div className="flex">
           {/* Day labels column */}
-          <div className="w-32 flex-shrink-0 border-r border-border/30 p-2 bg-card/95">
+          <div className="w-32 flex-shrink-0 border-r border-border/30 p-3 bg-card/95">
             <div className="text-sm font-medium text-muted-foreground">Time</div>
           </div>
           
@@ -178,7 +205,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
               <div
                 key={hour}
                 className="flex items-center justify-center text-xs text-muted-foreground font-mono border-l border-border/20"
-                style={{ width: `${TIMELINE_WIDTH_PER_HOUR}px`, height: '40px' }}
+                style={{ width: `${TIMELINE_WIDTH_PER_HOUR}px`, height: '48px' }}
               >
                 <span>{formatTime(hour)}</span>
               </div>
@@ -196,7 +223,11 @@ export default function WeeklyView({}: WeeklyViewProps) {
     const isCurrentDay = isToday(date);
     const isPastDay = isPast(date);
     const allTasks = [...dayData.scheduled, ...dayData.inbox];
+    const positionedTasks = resolveCollisions(dayData.scheduled);
     
+    const laneCount = Math.max(1, ...positionedTasks.map(t => t.lane || 0)) + 1;
+    const dynamicRowHeight = Math.max(DAY_ROW_HEIGHT, laneCount * 40 + 20); // Base height + lanes + padding
+
     return (
       <div key={dateKey} className="flex border-b border-border/20 last:border-b-0">
         {/* Day header */}
@@ -226,13 +257,13 @@ export default function WeeklyView({}: WeeklyViewProps) {
           )}
         </div>
 
-        {/* Timeline row */}
+        {/* Timeline row - RELATIVE POSITIONING IS KEY */}
         <div 
-          className="relative"
-          style={{ width: `${TOTAL_TIMELINE_WIDTH}px`, height: `${DAY_ROW_HEIGHT}px` }}
+          className="relative overflow-hidden"
+          style={{ width: `${TOTAL_TIMELINE_WIDTH}px`, height: `${dynamicRowHeight}px` }}
         >
           {/* Hour grid lines */}
-          {Array.from({ length: 24 }, (_, i) => (
+          {Array.from({ length: TIMELINE_END_HOUR - TIMELINE_START_HOUR + 1 }, (_, i) => (
             <div
               key={i}
               className="absolute top-0 bottom-0 border-l border-border/10"
@@ -244,68 +275,83 @@ export default function WeeklyView({}: WeeklyViewProps) {
           {isCurrentDay && (() => {
             const now = new Date();
             const currentHour = now.getHours() + now.getMinutes() / 60;
-            const currentTimeLeft = currentHour * TIMELINE_WIDTH_PER_HOUR;
+            
+            // Only show indicator if current time is within our timeline (6am-12am)
+            if (currentHour >= TIMELINE_START_HOUR && currentHour <= TIMELINE_END_HOUR) {
+              const adjustedCurrentHour = currentHour - TIMELINE_START_HOUR;
+              const currentTimeLeft = adjustedCurrentHour * TIMELINE_WIDTH_PER_HOUR;
+              
+              return (
+                <div
+                  className="absolute top-0 bottom-0 z-30 border-l-2 border-red-500"
+                  style={{ left: `${currentTimeLeft}px` }}
+                >
+                  <div className="w-2 h-2 bg-red-500 rounded-full -mt-1 -ml-1" />
+                </div>
+              );
+            }
+            return null;
+          })()}
+
+          {/* Scheduled tasks - positioned with collision detection */}
+          {positionedTasks.map((task, taskIndex) => {
+            const taskStyle = getTaskStyle(task);
+            const laneHeight = 32; // Tighter task height
+            const laneGap = 3;
+            const taskTop = 10 + (task.lane || 0) * (laneHeight + laneGap);
             
             return (
               <div
-                className="absolute top-0 bottom-0 z-20 border-l-2 border-red-500"
-                style={{ left: `${currentTimeLeft}px` }}
+                key={task.id}
+                className="absolute z-20"
+                style={{
+                  left: taskStyle.left,
+                  width: taskStyle.width,
+                  top: `${taskTop}px`,
+                  height: `${laneHeight}px`
+                }}
               >
-                <div className="w-2 h-2 bg-red-500 rounded-full -mt-1 -ml-1" />
+                <WeeklyTaskCard
+                  task={task}
+                  height={laneHeight}
+                  onTaskClick={(task) => openEditModal(task, { isFromPool: false })}
+                  onToggleComplete={handleTaskCompletionToggle}
+                />
               </div>
             );
-          })()}
+          })}
 
-          {/* Scheduled tasks */}
-          {dayData.scheduled.map((task) => (
-            <div
-              key={task.id}
-              className="absolute top-2 z-10"
-              style={{
-                ...getTaskStyle(task),
-                height: '50px'
-              }}
-            >
-              <WeeklyTaskCard
-                task={task}
-                height={50}
-                onTaskClick={(task) => openEditModal(task, { isFromPool: false })}
-                onToggleComplete={handleTaskCompletionToggle}
-                className="!left-0 !right-0"
-              />
-            </div>
-          ))}
-
-          {/* Inbox tasks at bottom */}
+          {/* Inbox tasks at bottom of this day row */}
           {dayData.inbox.length > 0 && (
-            <div className="absolute bottom-2 left-2 flex gap-1 z-10 max-w-full overflow-x-auto">
-              {dayData.inbox.slice(0, 4).map((task, idx) => (
-                <div key={task.id} className="relative flex-shrink-0" style={{ width: '120px', height: '35px' }}>
+            <div className="absolute bottom-1 left-2 right-2 flex gap-1 z-10 overflow-hidden">
+              {dayData.inbox.slice(0, 8).map((task, idx) => (
+                <div key={task.id} className="flex-shrink-0" style={{ width: '80px', height: '24px' }}>
                   <WeeklyTaskCard
                     task={task}
-                    height={35}
+                    height={24}
                     onTaskClick={(task) => openEditModal(task, { isFromPool: true })}
                     onToggleComplete={handleTaskCompletionToggle}
-                    className="opacity-70 !left-0 !right-0"
+                    className="opacity-80 border-dashed text-xs shadow-none"
                   />
                 </div>
               ))}
-              {dayData.inbox.length > 4 && (
-                <div className="flex items-center text-xs text-muted-foreground px-2 bg-muted rounded">
-                  +{dayData.inbox.length - 4}
+              {dayData.inbox.length > 8 && (
+                <div className="flex items-center text-xs text-muted-foreground px-1 bg-muted/50 rounded text-center min-w-[30px]">
+                  +{dayData.inbox.length - 8}
                 </div>
               )}
             </div>
           )}
 
-          {/* Add task click area */}
+          {/* Add task click area - only covers this day's timeline */}
           <div
             className="absolute inset-0 z-5"
             onClick={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               const x = e.clientX - rect.left;
-              const hour = Math.floor(x / TIMELINE_WIDTH_PER_HOUR);
-              handleCreateTask(date, hour);
+              const hourOffset = Math.floor(x / TIMELINE_WIDTH_PER_HOUR);
+              const actualHour = TIMELINE_START_HOUR + hourOffset;
+              handleCreateTask(date, actualHour);
             }}
           />
         </div>
@@ -356,8 +402,8 @@ export default function WeeklyView({}: WeeklyViewProps) {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 overflow-auto">
-        <div className="min-h-full">
+      <div className="flex-1 overflow-hidden">
+        <div className="h-full overflow-auto">
           {/* Time grid header */}
           {renderTimeGrid()}
           

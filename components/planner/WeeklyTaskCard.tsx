@@ -24,25 +24,30 @@ export default function WeeklyTaskCard({
   const isCompleted = task.completed;
   const isScheduled = task.startHour !== undefined;
   
+  const getColorFromClass = (colorClass: string) => {
+    const match = colorClass?.match(/bg-(\w+)-/);
+    return match ? match[1] : 'blue';
+  };
+  
+  const taskColor = getColorFromClass(task.color);
+  
   return (
     <div
       className={cn(
-        "group cursor-pointer transition-all duration-200 rounded-sm",
-        "bg-card border-l-4 shadow-sm hover:shadow-md",
-        "hover:z-10 hover:scale-[1.02] hover:-translate-y-0.5",
-        "flex items-center px-2 py-1 h-full",
+        "group cursor-pointer transition-all duration-200 rounded-md overflow-hidden",
+        "bg-card border shadow-sm hover:shadow-md",
+        "flex items-center p-2 h-full",
         isCompleted && "opacity-60",
         className
       )}
       style={{ 
-        borderLeftColor: task.color ? task.color.match(/bg-(\w+)-/)?.[1] ? `var(--${task.color.match(/bg-(\w+)-/)?.[1]}-500)` : '#3b82f6' : '#3b82f6'
+        borderLeftWidth: '4px',
+        borderLeftColor: `rgb(var(--${taskColor}-500) / 1)` || '#3b82f6'
       }}
       onClick={() => onTaskClick(task)}
     >
-      {/* Main content - horizontal layout */}
-      <div className="flex items-center justify-between w-full min-w-0 gap-2">
-        {/* Left section - completion toggle and task name */}
-        <div className="flex items-center gap-2 min-w-0 flex-1">
+      <div className="flex items-center justify-between w-full gap-2">
+        <div className="flex items-center gap-2 flex-grow min-w-0">
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -50,48 +55,18 @@ export default function WeeklyTaskCard({
             }}
             className="flex-shrink-0"
           >
-            {isCompleted ? (
-              <CheckCircle2 className="w-3 h-3 text-green-600" />
-            ) : (
-              <Circle className="w-3 h-3 text-muted-foreground" />
-            )}
+            {isCompleted ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <Circle className="w-4 h-4 text-muted-foreground/60" />}
           </button>
-          
-          <div className="min-w-0 flex-1">
-            <span className={cn(
-              "text-xs font-semibold leading-tight text-foreground",
-              "truncate block",
-              "font-['Inter','system-ui',sans-serif]",
-              isCompleted && "line-through text-muted-foreground"
-            )}>
-              {task.name}
-            </span>
-          </div>
+          <span className="text-sm font-medium truncate">{task.name}</span>
         </div>
-
-        {/* Right section - time and duration info */}
+        
         <div className="flex items-center gap-2 flex-shrink-0">
           {isScheduled && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Clock className="w-3 h-3" />
-              <span className="font-mono">{formatTime(task.startHour!)}</span>
-            </div>
+            <span className="text-xs font-mono text-muted-foreground">{formatTime(task.startHour!)}</span>
           )}
-          
-          <span className="text-xs font-medium text-muted-foreground">
-            {formatDuration(task.duration)}
-          </span>
-          
-          {!isScheduled && (
-            <span className="text-xs px-1.5 py-0.5 bg-muted text-muted-foreground font-medium rounded">
-              Inbox
-            </span>
-          )}
+          <span className="text-xs font-semibold text-muted-foreground bg-muted/50 px-2 py-1 rounded-md">{formatDuration(task.duration)}</span>
         </div>
       </div>
-
-      {/* Subtle gradient overlay for depth */}
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-background/5 pointer-events-none rounded-sm" />
     </div>
   );
 } 
