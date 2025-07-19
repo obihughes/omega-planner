@@ -1026,12 +1026,7 @@ export default function DailyPlanner() {
                 scheduledTasks={tasksByDate}
                 pinnedTasks={pinnedTasks}
                 onAssignTask={handleAssignTask}
-                onUnassignTask={(task) => {
-                  // Move task back to general pool when unassigning
-                  handleUnassignTask(task);
-                  // Add to general pool
-                  addPoolTask(task);
-                }}
+                onUnassignTask={handleUnassignTask}
                 onRescheduleTask={handleRescheduleTask}
                 onCreatePoolTask={addPoolTaskForDate}
                 onAddTask={handleAddTask}

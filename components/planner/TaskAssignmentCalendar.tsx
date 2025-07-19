@@ -157,6 +157,7 @@ export function TaskAssignmentCalendar({
     
     try {
       const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+      
       if (data.type === 'task-assignment' && data.task) {
         const { task, isFromPool } = data;
         
@@ -419,20 +420,20 @@ export function TaskAssignmentCalendar({
                     <div
                       key={task.id}
                       draggable
-                      onDragStart={(e) => handleDragStart(e, task, !task.startHour)}
-                      onClick={(e) => { e.stopPropagation(); handleTaskClick(task, !!task.startHour); }}
+                      onDragStart={(e) => handleDragStart(e, task, task.startHour === undefined)}
+                      onClick={(e) => { e.stopPropagation(); handleTaskClick(task, task.startHour !== undefined); }}
                       className={cn(
                         "p-1.5 rounded-md text-xs leading-tight font-medium truncate cursor-grab active:cursor-grabbing flex items-center gap-1.5 transition-all duration-150 hover:shadow-sm",
                         "border border-border/30 hover:border-border/50",
                         task.color ? task.color : "bg-muted",
-                        !task.startHour && "opacity-70 border-dashed",
-                        task.startHour && "hover:scale-[1.02] hover:-translate-y-0.5"
+                        task.startHour === undefined && "opacity-70 border-dashed",
+                        task.startHour !== undefined && "hover:scale-[1.02] hover:-translate-y-0.5"
                       )}
-                      title={task.startHour ? "Drag to reschedule or drag to inbox to unschedule" : "Drag to schedule"}
+                      title={task.startHour !== undefined ? "Drag to reschedule or drag to inbox to unschedule" : "Drag to schedule"}
                     >
                       {'dueDate' in task && <Pin className="w-3 h-3 flex-shrink-0" />}
                       <span className="truncate">{task.name}</span>
-                      {task.startHour && (
+                      {task.startHour !== undefined && (
                         <div className="flex items-center gap-1 ml-auto">
                           <Clock className="w-2.5 h-2.5 text-muted-foreground" />
                           <span className="text-xs text-muted-foreground font-mono">
