@@ -899,86 +899,119 @@ export default function DailyPlanner() {
             {/* Inbox Tasks Section - Compact */}
             <div className="mb-6">
               <div className="flex items-center justify-between mb-4">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => createPoolTask()}
-                  className="flex items-center gap-2 hover:bg-primary/10 transition-all duration-200 font-medium font-inter border-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Task
-                </Button>
+                <div className="flex items-center gap-4">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => createPoolTask()}
+                    className="flex items-center gap-2 hover:bg-primary/10 transition-all duration-200 font-medium"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Task
+                  </Button>
+                  {generalPoolTasks.length > 0 && (
+                    <p className="text-sm text-muted-foreground font-medium">
+                      Drag tasks to calendar to schedule ({generalPoolTasks.length})
+                    </p>
+                  )}
+                </div>
                 {generalPoolTasks.length > 0 && (
-                  <p className="text-sm text-muted-foreground font-medium font-inter">
-                    Drag tasks to calendar to schedule ({generalPoolTasks.length})
-                  </p>
+                  <div className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-md">
+                    Drag tasks back here to unschedule
+                  </div>
                 )}
               </div>
               
               {generalPoolTasks.length > 0 ? (
-                <div className="flex flex-wrap gap-4 mb-6">
-                  {generalPoolTasks.map(task => (
-                    <div
-                      key={task.id}
-                      draggable
-                      onDragStart={(e) => {
-                        const dragData = {
-                          task,
-                          isFromPool: true,
-                          type: 'task-assignment'
-                        };
-                        e.dataTransfer.setData('text/plain', JSON.stringify(dragData));
-                        e.dataTransfer.effectAllowed = 'move';
-                      }}
-                      className={cn(
-                        "group relative p-4 text-sm cursor-pointer transition-all duration-300 shadow-sm border-2 hover:shadow-lg",
-                        "w-44 h-24 flex flex-col justify-between bg-gradient-to-br from-background to-muted/30",
-                        "border-border/50 hover:border-primary/30 hover:scale-[1.03] hover:-translate-y-1",
-                        task.color ? task.color : "bg-gradient-to-br from-background to-muted/20"
-                      )}
-                      onClick={() => openEditModal(task, { isFromPool: true })}
-                    >
-                      <div className="flex items-start justify-between min-h-0">
-                        <span className="font-semibold text-sm line-clamp-2 flex-1 mr-2 text-foreground font-inter tracking-tight">
-                          {task.name}
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-all duration-200 flex-shrink-0 hover:bg-accent/50"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openEditModal(task, { isFromPool: true });
-                          }}
-                          title="Edit task"
-                        >
-                          <Edit3 className="w-3 h-3" />
-                        </Button>
-                      </div>
-                      <div className="flex items-center justify-between text-muted-foreground/80 mt-auto">
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="w-3 h-3 flex-shrink-0" />
-                          <span className="text-xs font-semibold font-mono">{formatDuration(task.duration)}</span>
+                <div className="bg-card/50 border border-border/30 rounded-lg p-3">
+                  <div className="flex flex-wrap gap-2">
+                    {generalPoolTasks.map(task => (
+                      <div
+                        key={task.id}
+                        draggable
+                        onDragStart={(e) => {
+                          const dragData = {
+                            task,
+                            isFromPool: true,
+                            type: 'task-assignment'
+                          };
+                          e.dataTransfer.setData('text/plain', JSON.stringify(dragData));
+                          e.dataTransfer.effectAllowed = 'move';
+                        }}
+                        className="relative p-2 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-16 cursor-grab active:cursor-grabbing rounded-md"
+                      >
+                        <div className="flex items-start justify-between gap-2 h-full">
+                          <div className="flex items-start gap-2 flex-1 min-w-0">
+                            <div className="flex flex-col flex-1 min-w-0">
+                              <p className="font-medium text-sm text-foreground truncate leading-tight mb-1">
+                                {task.name || "Untitled Task"}
+                              </p>
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-3 h-3 text-muted-foreground" />
+                                <span className="text-xs text-muted-foreground font-mono">
+                                  {formatDuration(task.duration)}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          {/* Action buttons */}
+                          <div className="absolute top-0.5 right-1 flex flex-col gap-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              type="button"
+                              className="h-4 w-4 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                              onClick={(e) => { 
+                                e.preventDefault(); 
+                                e.stopPropagation(); 
+                                openViewNotesModal(task); 
+                              }}
+                              title="View Notes"
+                            >
+                              <Eye className="w-2 h-2" />
+                            </button>
+                            <button
+                              type="button"
+                              className="h-4 w-4 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                              onClick={(e) => { 
+                                e.preventDefault(); 
+                                e.stopPropagation(); 
+                                openEditModal(task, { isFromPool: true }); 
+                              }}
+                              title="Edit Task"
+                            >
+                              <Edit3 className="w-2 h-2" />
+                            </button>
+                            <button
+                              type="button"
+                              className="h-4 w-4 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                              onClick={(e) => { 
+                                e.preventDefault(); 
+                                e.stopPropagation(); 
+                                handleDeletePoolTask(task.id);
+                              }}
+                              title="Delete Task"
+                            >
+                              <Trash2 className="w-2 h-2" />
+                            </button>
+                          </div>
                         </div>
-                        <div className="w-2 h-2 bg-primary/50"></div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-12 px-6 bg-muted/20 border-2 border-dashed border-border/40">
+                <div className="flex flex-col items-center justify-center py-8 px-6 bg-muted/20 border-2 border-dashed border-border/40 rounded-lg">
                   <div className="text-center">
-                    <Calendar className="w-10 h-10 mx-auto mb-4 text-muted-foreground/60" />
-                    <h4 className="text-base font-bold text-foreground mb-2 font-inter tracking-tight">No tasks in inbox</h4>
-                    <p className="text-sm text-muted-foreground mb-4 font-inter">
+                    <Calendar className="w-8 h-8 mx-auto mb-3 text-muted-foreground/60" />
+                    <h4 className="text-sm font-semibold text-foreground mb-2">No tasks in inbox</h4>
+                    <p className="text-xs text-muted-foreground mb-3">
                       Create a task to get started with scheduling
                     </p>
                     <Button
                       size="sm"
                       onClick={() => createPoolTask()}
-                      className="flex items-center gap-2 font-semibold font-inter border-2"
+                      className="flex items-center gap-2 text-xs"
                     >
-                      <Plus className="w-4 h-4" />
+                      <Plus className="w-3 h-3" />
                       Add Your First Task
                     </Button>
                   </div>
@@ -986,14 +1019,19 @@ export default function DailyPlanner() {
               )}
             </div>
 
-            {/* Calendar Container - Darker/More Transparent */}
-            <div className="bg-background/20 border border-border/20 shadow-lg overflow-hidden backdrop-blur-lg">
+            {/* Calendar Container */}
+            <div className="bg-background/20 border border-border/20 shadow-lg overflow-hidden backdrop-blur-lg rounded-lg">
               <TaskAssignmentCalendar
                 poolTasks={generalPoolTasks}
                 scheduledTasks={tasksByDate}
                 pinnedTasks={pinnedTasks}
                 onAssignTask={handleAssignTask}
-                onUnassignTask={handleUnassignTask}
+                onUnassignTask={(task) => {
+                  // Move task back to general pool when unassigning
+                  handleUnassignTask(task);
+                  // Add to general pool
+                  addPoolTask(task);
+                }}
                 onRescheduleTask={handleRescheduleTask}
                 onCreatePoolTask={addPoolTaskForDate}
                 onAddTask={handleAddTask}

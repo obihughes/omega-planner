@@ -5,7 +5,7 @@ import { Task, PinnedTask } from '@/types/planner';
 import { ChevronLeft, ChevronRight, Clock, Calendar as CalendarIcon, Edit3, ArrowLeft, Pin, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { formatDuration } from '@/utils/formatters';
+import { formatDuration, formatTime } from '@/utils/formatters';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 
@@ -152,7 +152,7 @@ export function TaskAssignmentCalendar({
     e.dataTransfer.dropEffect = 'move';
   };
 
-  const handleDrop = (e: React.DragEvent, targetDate: Date) => {
+  const handleDrop = (e: React.DragEvent, targetDate: Date | null = null) => {
     e.preventDefault();
     
     try {
@@ -160,12 +160,21 @@ export function TaskAssignmentCalendar({
       if (data.type === 'task-assignment' && data.task) {
         const { task, isFromPool } = data;
         
-        if (isFromPool) {
-          // Assign from pool to date
-          onAssignTask(task, targetDate, 9);
+        if (targetDate) {
+          // Dropping on a calendar date
+          if (isFromPool) {
+            // Assign from pool to date
+            onAssignTask(task, targetDate, 9);
+          } else {
+            // Reschedule existing task
+            onRescheduleTask(task, targetDate);
+          }
         } else {
-          // Reschedule existing task
-          onRescheduleTask(task, targetDate);
+          // Dropping on inbox area to unschedule
+          if (!isFromPool && task.startHour !== undefined) {
+            // Unschedule the task - move it back to pool
+            onUnassignTask(task);
+          }
         }
       }
     } catch (error) {
@@ -212,7 +221,11 @@ export function TaskAssignmentCalendar({
       <div className="flex-1 overflow-auto p-4">
         {/* Pool Tasks Section */}
         {!hideInboxSection && (
-          <div className="mb-6">
+          <div 
+            className="mb-6"
+            onDragOver={handleDragOver}
+            onDrop={(e) => handleDrop(e, null)}
+          >
             <div className="flex items-baseline justify-between mb-4">
               <h3 className="text-lg font-semibold text-foreground">
                 Inbox Tasks ({poolTasks.length})
@@ -223,6 +236,9 @@ export function TaskAssignmentCalendar({
                     Drag a task to the calendar to schedule it.
                   </p>
                 )}
+                <div className="text-xs text-muted-foreground bg-orange-500/10 px-2 py-1 rounded-md border border-orange-500/20">
+                  Drag scheduled tasks here to unschedule
+                </div>
                 <Button
                   size="sm"
                   variant="outline"
@@ -236,7 +252,11 @@ export function TaskAssignmentCalendar({
             </div>
             
             {poolTasks.length > 0 ? (
-              <div className="flex flex-wrap gap-3 mb-4">
+              <div 
+                className="flex flex-wrap gap-3 mb-4 min-h-[5rem] p-3 rounded-lg border-2 border-dashed border-green-500/30 bg-green-500/5 hover:border-green-500/50 hover:bg-green-500/10 transition-all duration-200"
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, null)}
+              >
                 {poolTasks.map(task => (
                   <div
                     key={task.id}
@@ -280,7 +300,11 @@ export function TaskAssignmentCalendar({
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-8 px-4 bg-muted/20 rounded-xl border-2 border-dashed border-border/40">
+              <div 
+                className="flex flex-col items-center justify-center py-8 px-4 bg-muted/20 rounded-xl border-2 border-dashed border-border/40 min-h-[8rem] hover:border-green-500/50 hover:bg-green-500/5 transition-all duration-200"
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, null)}
+              >
                 <div className="w-12 h-12 rounded-full bg-muted/40 flex items-center justify-center mb-3">
                   <Clock className="w-6 h-6 text-muted-foreground/60" />
                 </div>
@@ -288,6 +312,9 @@ export function TaskAssignmentCalendar({
                 <p className="text-xs text-muted-foreground text-center mb-4">
                   Create tasks to organize your work and drag them to the calendar when you're ready to schedule them.
                 </p>
+                <div className="text-xs text-green-600 bg-green-500/10 px-2 py-1 rounded-md mb-4 border border-green-500/20">
+                  ↑ Drop scheduled tasks here to unschedule them
+                </div>
                 <Button
                   size="sm"
                   onClick={() => openEditModal(undefined, { isNew: true, isFromPool: true })}
@@ -395,19 +422,29 @@ export function TaskAssignmentCalendar({
                       onDragStart={(e) => handleDragStart(e, task, !task.startHour)}
                       onClick={(e) => { e.stopPropagation(); handleTaskClick(task, !!task.startHour); }}
                       className={cn(
-                        "p-1.5 rounded text-xs leading-tight font-medium truncate cursor-pointer flex items-center gap-1.5",
-                        "border-l-2",
+                        "p-1.5 rounded-md text-xs leading-tight font-medium truncate cursor-grab active:cursor-grabbing flex items-center gap-1.5 transition-all duration-150 hover:shadow-sm",
+                        "border border-border/30 hover:border-border/50",
                         task.color ? task.color : "bg-muted",
-                        !task.startHour && "opacity-70"
+                        !task.startHour && "opacity-70 border-dashed",
+                        task.startHour && "hover:scale-[1.02] hover:-translate-y-0.5"
                       )}
+                      title={task.startHour ? "Drag to reschedule or drag to inbox to unschedule" : "Drag to schedule"}
                     >
                       {'dueDate' in task && <Pin className="w-3 h-3 flex-shrink-0" />}
-                      <span>{task.name}</span>
+                      <span className="truncate">{task.name}</span>
+                      {task.startHour && (
+                        <div className="flex items-center gap-1 ml-auto">
+                          <Clock className="w-2.5 h-2.5 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground font-mono">
+                            {formatTime(task.startHour)}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   ))}
                   {allTasks.length > 3 && (
-                    <div className="text-xs text-muted-foreground font-medium pt-1">
-                      + {allTasks.length - 3} more
+                    <div className="text-xs text-muted-foreground font-medium pt-1 px-1">
+                      + {allTasks.length - 3} more tasks
                     </div>
                   )}
                 </div>
