@@ -24,6 +24,12 @@ import {
   MIN_TASK_DURATION as APP_MIN_TASK_DURATION
 } from '../../lib/constants';
 
+// Weekly view specific constants for more compact layout
+const WEEKLY_PIXELS_PER_HOUR = 80; // Reduced from 205 for more compact view
+const WEEKLY_TIMELINE_HEIGHT = 80; // Reduced height for each day
+const WEEKLY_TASK_HEIGHT = 50; // Compact task height
+const WEEKLY_DAY_HEADER_HEIGHT = 60; // Reduced header height
+
 interface WeeklyViewProps {}
 
 export default function WeeklyView({}: WeeklyViewProps) {
@@ -112,17 +118,17 @@ export default function WeeklyView({}: WeeklyViewProps) {
       <div className="sticky top-0 z-20 bg-card/95 backdrop-blur-sm border-b border-border/30">
         <div className="flex">
           {/* Day label spacer */}
-          <div className="w-48 flex-shrink-0 border-r border-border/30 p-3 bg-card">
-            <span className="text-sm font-medium text-muted-foreground">Time</span>
+          <div className="w-32 flex-shrink-0 border-r border-border/30 py-2 px-3 bg-card">
+            <span className="text-xs font-medium text-muted-foreground">Time</span>
           </div>
           
           {/* Time labels */}
-          <div className="flex h-12 bg-card">
+          <div className="flex h-8 bg-card">
             {hours.map((hour) => (
               <div
                 key={hour}
                 className="flex-none text-xs text-muted-foreground/60 pt-1 pl-0.5 border-l border-border/20 flex items-center justify-center"
-                style={{ width: `${APP_PIXELS_PER_HOUR}px` }}
+                style={{ width: `${WEEKLY_PIXELS_PER_HOUR}px` }}
               >
                 {formatTime(hour)}
               </div>
@@ -138,7 +144,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
   const handleTimelineDoubleClick = (e: React.MouseEvent<HTMLDivElement>, date: Date) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    const hourInBlock = x / APP_PIXELS_PER_HOUR;
+    const hourInBlock = x / WEEKLY_PIXELS_PER_HOUR;
     const snappedNewStartHour = Math.round((APP_TIMELINE_START_HOUR + hourInBlock) * 4) / 4;
     const dayOffset = getDayOffsetFromToday(date);
     
@@ -168,55 +174,55 @@ export default function WeeklyView({}: WeeklyViewProps) {
       const now = new Date();
       const currentHourFloat = now.getHours() + now.getMinutes() / 60;
       if (currentHourFloat >= APP_TIMELINE_START_HOUR && currentHourFloat < APP_TIMELINE_END_HOUR) {
-        const markerLeft = (currentHourFloat - APP_TIMELINE_START_HOUR) * APP_PIXELS_PER_HOUR;
+        const markerLeft = (currentHourFloat - APP_TIMELINE_START_HOUR) * WEEKLY_PIXELS_PER_HOUR;
         currentTimeMarker = (
           <div 
             className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-50 pointer-events-none" 
             style={{ left: `${markerLeft}px` }}
           >
-            <div className="absolute top-0 left-[-3.75px] w-0 h-0 border-l-4 border-r-4 border-t-6 border-transparent border-t-red-500" />
+            <div className="absolute top-0 left-[-3px] w-0 h-0 border-l-[3px] border-r-[3px] border-t-[4px] border-transparent border-t-red-500" />
           </div>
         );
       }
     }
 
-    const timelineWidth = APP_PIXELS_PER_HOUR * (APP_TIMELINE_END_HOUR - APP_TIMELINE_START_HOUR);
+    const timelineWidth = WEEKLY_PIXELS_PER_HOUR * (APP_TIMELINE_END_HOUR - APP_TIMELINE_START_HOUR);
 
     return (
-      <div key={dateKey} className="bg-card border border-border/30 rounded-lg shadow-sm overflow-hidden mb-4">
+      <div key={dateKey} className="bg-card border border-border/30 rounded-md shadow-sm overflow-hidden mb-2">
         {/* Day Header */}
         <div className={cn(
-          "flex items-center justify-between p-4 border-b border-border/30",
+          "flex items-center justify-between py-2 px-3 border-b border-border/30",
           isCurrentDay && "bg-primary/5 border-primary/20",
           isWeekendDay && "bg-orange-500/5"
-        )}>
-          <div className="flex items-center gap-4">
+        )} style={{ height: `${WEEKLY_DAY_HEADER_HEIGHT}px` }}>
+          <div className="flex items-center gap-3">
             <div className={cn(
               "flex flex-col",
               isCurrentDay && "text-primary"
             )}>
               <span className={cn(
-                "text-sm font-semibold uppercase tracking-wide",
+                "text-xs font-semibold uppercase tracking-wide",
                 isWeekendDay && !isCurrentDay && "text-orange-600"
               )}>
                 {dayNames[index]}
               </span>
-              <span className="text-2xl font-bold">
+              <span className="text-xl font-bold">
                 {date.getDate()}
               </span>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 {date.toLocaleDateString('en-US', { month: 'short' })}
               </span>
             </div>
             
             {/* Task stats */}
-            <div className="flex items-center gap-3">
-              <div className="text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <div className="text-xs text-muted-foreground">
                 <span className="font-semibold text-foreground">
                   {scheduledTasks.length + poolTasks.length}
                 </span> tasks
               </div>
-              <div className="text-sm text-muted-foreground">
+              <div className="text-xs text-muted-foreground">
                 <span className="font-semibold text-green-600">
                   {[...scheduledTasks, ...poolTasks].filter(t => t.completed).length}
                 </span> done
@@ -233,8 +239,9 @@ export default function WeeklyView({}: WeeklyViewProps) {
               initialStartHour: 9,
               isNew: true
             })}
+            className="h-7 px-2 text-xs"
           >
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus className="w-3 h-3 mr-1" />
             Add Task
           </Button>
         </div>
@@ -242,13 +249,13 @@ export default function WeeklyView({}: WeeklyViewProps) {
         {/* Timeline */}
         <div className="flex">
           {/* Day label column */}
-          <div className="w-48 flex-shrink-0 border-r border-border/30 p-4 flex flex-col justify-center bg-muted/20">
+          <div className="w-32 flex-shrink-0 border-r border-border/30 p-2 flex flex-col justify-start bg-muted/20">
             {poolTasks.length > 0 && (
               <div className="space-y-1">
-                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
                   Inbox ({poolTasks.length})
                 </div>
-                {poolTasks.slice(0, 3).map((task) => (
+                {poolTasks.slice(0, 2).map((task) => (
                   <div
                     key={task.id}
                     className="text-xs p-1 bg-orange-500/10 border border-orange-500/20 rounded cursor-pointer hover:bg-orange-500/20 transition-colors truncate"
@@ -257,9 +264,9 @@ export default function WeeklyView({}: WeeklyViewProps) {
                     {task.name}
                   </div>
                 ))}
-                {poolTasks.length > 3 && (
+                {poolTasks.length > 2 && (
                   <div className="text-xs text-muted-foreground">
-                    +{poolTasks.length - 3} more
+                    +{poolTasks.length - 2} more
                   </div>
                 )}
               </div>
@@ -271,8 +278,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
             className="relative bg-background"
             style={{ 
               width: `${timelineWidth}px`, 
-              height: `${TIMELINE_COLUMN_HEIGHT}px`,
-              minHeight: '120px'
+              height: `${WEEKLY_TIMELINE_HEIGHT}px`
             }}
             onDoubleClick={(e) => handleTimelineDoubleClick(e, date)}
           >
@@ -281,7 +287,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
               <div 
                 key={`grid-${i}`} 
                 className="border-l border-border/10 absolute h-full" 
-                style={{ left: `${i * APP_PIXELS_PER_HOUR}px` }} 
+                style={{ left: `${i * WEEKLY_PIXELS_PER_HOUR}px` }} 
               />
             ))}
 
@@ -295,16 +301,16 @@ export default function WeeklyView({}: WeeklyViewProps) {
                 APP_TIMELINE_END_HOUR - APP_TIMELINE_START_HOUR, 
                 (task.startHour + task.duration) - APP_TIMELINE_START_HOUR
               );
-              const renderLeft = taskStartRelative * APP_PIXELS_PER_HOUR;
-              const renderWidth = (taskEndRelative - taskStartRelative) * APP_PIXELS_PER_HOUR;
+              const renderLeft = taskStartRelative * WEEKLY_PIXELS_PER_HOUR;
+              const renderWidth = (taskEndRelative - taskStartRelative) * WEEKLY_PIXELS_PER_HOUR;
               
               if (renderWidth <= 0) return null;
               
               const taskStyle: React.CSSProperties = {
-                left: `${renderLeft}px`,
-                width: `${renderWidth}px`,
-                top: `${TASK_BASE_TOP}px`,
-                height: `${TIMELINE_COLUMN_HEIGHT - TASK_BASE_TOP - TASK_BASE_BOTTOM_PADDING}px`,
+                left: `${renderLeft + 2}px`,
+                width: `${Math.max(renderWidth - 4, 40)}px`,
+                top: `${TASK_BASE_TOP + 5}px`,
+                height: `${WEEKLY_TASK_HEIGHT}px`,
                 zIndex: 40,
               };
 
@@ -312,7 +318,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
                 <div key={task.id} className="absolute" style={taskStyle}>
                   <MemoizedTaskCard
                     task={task}
-                    height={TIMELINE_COLUMN_HEIGHT - TASK_BASE_TOP - TASK_BASE_BOTTOM_PADDING}
+                    height={WEEKLY_TASK_HEIGHT}
                     onStartEdit={(taskToEdit, options) => openEditModal(taskToEdit, options)} 
                     onCopy={startCopy} 
                     onViewNotes={openViewNotesModal}
@@ -356,27 +362,27 @@ export default function WeeklyView({}: WeeklyViewProps) {
   return (
     <div className="h-full flex flex-col bg-background">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-border bg-card/50 sticky top-0 z-30 shadow-sm">
+      <div className="px-4 py-3 border-b border-border bg-card/50 sticky top-0 z-30 shadow-sm">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-3">
-              <Calendar className="w-6 h-6 text-primary" />
-              <h2 className="text-2xl font-bold text-foreground">Weekly View</h2>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-primary" />
+              <h2 className="text-xl font-bold text-foreground">Weekly View</h2>
             </div>
             
             {/* Week Navigation */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <Button variant="ghost" size="sm" onClick={goToPreviousWeek}>
                 <ChevronLeft className="w-4 h-4" />
               </Button>
-              <Button variant="ghost" onClick={goToCurrentWeek} className="min-w-60 font-medium">
+              <Button variant="ghost" onClick={goToCurrentWeek} className="min-w-52 font-medium text-sm">
                 {getWeekRangeString()}
               </Button>
               <Button variant="ghost" size="sm" onClick={goToNextWeek}>
                 <ChevronRight className="w-4 h-4" />
               </Button>
               {getRelativeWeekLabel() && (
-                <span className="text-sm text-muted-foreground px-3 py-1 bg-muted rounded-md">
+                <span className="text-xs text-muted-foreground px-2 py-1 bg-muted rounded-md">
                   {getRelativeWeekLabel()}
                 </span>
               )}
@@ -384,14 +390,14 @@ export default function WeeklyView({}: WeeklyViewProps) {
           </div>
 
           {/* Stats */}
-          <div className="flex items-center gap-4">
-            <div className="text-sm text-muted-foreground">
+          <div className="flex items-center gap-3">
+            <div className="text-xs text-muted-foreground">
               <span className="font-semibold text-foreground">{weekStats.total}</span> tasks
             </div>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-xs text-muted-foreground">
               <span className="font-semibold text-foreground">{weekStats.completed}</span> done
             </div>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-xs text-muted-foreground">
               <span className="font-semibold text-foreground">{weekStats.completionRate}%</span> complete
             </div>
           </div>
@@ -405,7 +411,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
           {renderTimelineHeader()}
           
           {/* Day timelines */}
-          <div className="p-4 space-y-4">
+          <div className="p-2 space-y-2">
             {weekDates.map((date, index) => renderDayTimeline(date, index))}
           </div>
         </div>
