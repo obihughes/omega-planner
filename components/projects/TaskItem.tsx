@@ -1,22 +1,22 @@
 'use client';
 
-import React, { memo } from 'react';
-import { ProjectTask } from '@/types';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import React, { useState, useMemo } from 'react';
+import { ProjectTask, SubTask } from '@/types';
 import { 
-  CheckCircle2, 
   Circle, 
+  CheckCircle2, 
   Clock, 
-  AlertTriangle, 
-  Calendar,
-  MoreVertical,
-  Flag,
-  GripVertical,
-  Edit,
+  Edit, 
   Trash2,
+  GripVertical,
+  ChevronDown,
+  ChevronRight,
+  Plus,
+  Minus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface TaskItemProps {
   id: string;
@@ -26,15 +26,97 @@ interface TaskItemProps {
   onStatusChange: (taskId: string, status: ProjectTask['status']) => void;
   onEdit: (task: ProjectTask) => void;
   onDelete: (taskId: string) => void;
+  onAddSubtask?: (taskId: string, subtask: Omit<SubTask, 'id' | 'createdAt' | 'updatedAt' | 'order'>) => void;
+  onUpdateSubtask?: (taskId: string, subtaskId: string, updates: Partial<SubTask>) => void;
+  onDeleteSubtask?: (taskId: string, subtaskId: string) => void;
 }
 
-function TaskItemComponent({ id, task, taskIndex, totalTasks, onStatusChange, onEdit, onDelete }: TaskItemProps) {
+// SubTask Item Component
+interface SubTaskItemProps {
+  subtask: SubTask;
+  onStatusChange: (status: SubTask['status']) => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}
+
+function SubTaskItem({ subtask, onStatusChange, onEdit, onDelete }: SubTaskItemProps) {
+  const getStatusIcon = (status: SubTask['status']) => {
+    switch (status) {
+      case 'completed':
+        return <CheckCircle2 className="w-4 h-4 text-green-500" />;
+      case 'in-progress':
+        return <Clock className="w-4 h-4 text-blue-500" />;
+      case 'blocked':
+        return <Minus className="w-4 h-4 text-red-500" />;
+      default:
+        return <Circle className="w-4 h-4 text-muted-foreground" />;
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2 p-2 bg-muted/20 rounded-md group">
+      <button
+        onClick={() => {
+          const nextStatus = subtask.status === 'completed' ? 'todo' : 'completed';
+          onStatusChange(nextStatus);
+        }}
+        className="flex-shrink-0 hover:scale-105 transition-transform"
+      >
+        {getStatusIcon(subtask.status)}
+      </button>
+      
+      <div className="flex-1 min-w-0">
+        <span className={cn(
+          "text-sm",
+          subtask.status === 'completed' && "line-through text-muted-foreground"
+        )}>
+          {subtask.title}
+        </span>
+      </div>
+      
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={onEdit}
+          className="p-1 hover:bg-accent rounded"
+          title="Edit subtask"
+        >
+          <Edit className="w-3 h-3" />
+        </button>
+        <button
+          onClick={onDelete}
+          className="p-1 hover:bg-accent rounded text-destructive"
+          title="Delete subtask"
+        >
+          <Trash2 className="w-3 h-3" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function TaskItem({ 
+  id, 
+  task, 
+  taskIndex, 
+  totalTasks, 
+  onStatusChange, 
+  onEdit, 
+  onDelete,
+  onAddSubtask,
+  onUpdateSubtask,
+  onDeleteSubtask
+}: TaskItemProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+  const [showAddSubtask, setShowAddSubtask] = useState(false);
+  
   const {
     attributes,
     listeners,
     setNodeRef,
     transform,
     transition,
+    isDragging,
   } = useSortable({ id });
 
   const style = {
@@ -42,206 +124,237 @@ function TaskItemComponent({ id, task, taskIndex, totalTasks, onStatusChange, on
     transition,
   };
 
-  const getStatusIcon = (status: ProjectTask['status']) => {
-    switch (status) {
-      case 'completed':
-        return <CheckCircle2 className="w-5 h-5 text-green-500" />;
-      case 'in-progress':
-        return <Clock className="w-5 h-5 text-blue-500" />;
-      case 'blocked':
-        return <AlertTriangle className="w-5 h-5 text-red-500" />;
-      default:
-        return <Circle className="w-5 h-5 text-gray-400" />;
-    }
-  };
-
-  const getPriorityIcon = (priority: ProjectTask['priority']) => {
-    const colors = {
-      low: 'text-gray-400',
-      medium: 'text-blue-500',
-      high: 'text-orange-500',
-      urgent: 'text-red-500'
-    };
+  // Calculate subtask progress
+  const subtaskStats = useMemo(() => {
+    const subtasks = task.subtasks || [];
+    const completed = subtasks.filter(st => st.status === 'completed').length;
+    const total = subtasks.length;
+    const percentage = total > 0 ? (completed / total) * 100 : 0;
     
-    return <Flag className={cn("w-4 h-4", colors[priority])} />;
-  };
+    return { completed, total, percentage };
+  }, [task.subtasks]);
 
-  const getPriorityColor = (priority: ProjectTask['priority']) => {
-    switch (priority) {
-      case 'urgent':
-        return 'bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-300';
-      case 'high':
-        return 'bg-orange-100 text-orange-700 dark:bg-orange-800 dark:text-orange-300';
-      case 'medium':
-        return 'bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-300';
-      default:
-        return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
+  // Get dynamic task circle color based on subtask completion
+  const getTaskCircleColor = () => {
+    if (task.status === 'completed') return 'text-green-500';
+    if (task.status === 'blocked') return 'text-red-500';
+    if (task.status === 'in-progress') {
+      if (subtaskStats.total === 0) return 'text-blue-500';
+      if (subtaskStats.percentage >= 75) return 'text-green-400';
+      if (subtaskStats.percentage >= 50) return 'text-yellow-500';
+      if (subtaskStats.percentage >= 25) return 'text-orange-500';
+      return 'text-blue-500';
     }
+    
+    // For 'todo' status
+    if (subtaskStats.total === 0) return 'text-muted-foreground';
+    if (subtaskStats.percentage >= 75) return 'text-green-300';
+    if (subtaskStats.percentage >= 50) return 'text-yellow-400';
+    if (subtaskStats.percentage >= 25) return 'text-orange-400';
+    return 'text-muted-foreground';
   };
 
-  const getStatusColor = (status: ProjectTask['status']) => {
-    switch (status) {
+  const getStatusIcon = () => {
+    const colorClass = getTaskCircleColor();
+    
+    switch (task.status) {
       case 'completed':
-        return 'bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-300';
+        return <CheckCircle2 className={cn("w-5 h-5", colorClass)} />;
       case 'in-progress':
-        return 'bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-300';
+        return <Clock className={cn("w-5 h-5", colorClass)} />;
       case 'blocked':
-        return 'bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-300';
+        return <Minus className={cn("w-5 h-5", colorClass)} />;
       default:
-        return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
+        return <Circle className={cn("w-5 h-5", colorClass)} />;
     }
   };
 
-  const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'completed';
+  const handleAddSubtask = () => {
+    if (!newSubtaskTitle.trim() || !onAddSubtask) return;
+    
+    onAddSubtask(task.id, {
+      title: newSubtaskTitle.trim(),
+      status: 'todo'
+    });
+    
+    setNewSubtaskTitle('');
+    setShowAddSubtask(false);
+  };
+
+  const handleSubtaskStatusChange = (subtaskId: string, status: SubTask['status']) => {
+    if (!onUpdateSubtask) return;
+    onUpdateSubtask(task.id, subtaskId, { status });
+  };
+
+  const handleDeleteSubtask = (subtaskId: string) => {
+    if (!onDeleteSubtask) return;
+    onDeleteSubtask(task.id, subtaskId);
+  };
 
   return (
     <div
       ref={setNodeRef}
       style={style}
       className={cn(
-        "bg-card border p-3 hover:shadow-sm transition-all duration-200 group flex items-start gap-3 font-['Inter',sans-serif]",
-        task.status === 'completed' && "opacity-75",
-        isOverdue && "border-red-200 dark:border-red-800"
+        "border border-border/40 bg-card/60 backdrop-blur-sm p-4 group",
+        "hover:shadow-md hover:border-primary/30 transition-all duration-200",
+        "font-['Inter',sans-serif]",
+        isDragging && "opacity-50"
       )}
     >
-      {/* Drag Handle */}
-      <button {...attributes} {...listeners} className="p-1 mt-0.5 text-muted-foreground hover:text-foreground cursor-grab touch-none">
-        <GripVertical className="w-5 h-5" />
-      </button>
-
-      {/* Original Content */}
-      <div className="flex-1 flex items-start space-x-3">
-         {/* Task Number */}
-         <div className="mt-0.5 text-xs text-muted-foreground font-mono bg-muted px-2 py-1">
-          {taskIndex}/{totalTasks}
+      <div className="flex items-start gap-3">
+        {/* Drag Handle */}
+        <div 
+          className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing p-1 rounded hover:bg-accent transition-opacity flex-shrink-0 mt-0.5"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="w-4 h-4 text-muted-foreground" />
         </div>
-        
-        {/* Status Icon */}
+
+        {/* Status Toggle */}
         <button
           onClick={() => {
             const nextStatus = task.status === 'completed' ? 'todo' : 'completed';
             onStatusChange(task.id, nextStatus);
           }}
-          className="mt-0.5 hover:scale-110 transition-transform"
+          className="flex-shrink-0 hover:scale-105 transition-transform mt-0.5"
         >
-          {getStatusIcon(task.status)}
+          {getStatusIcon()}
         </button>
 
         {/* Task Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-start space-x-6">
-                <h4 className={cn(
-                  "font-medium text-foreground font-['Inter',sans-serif] w-64 flex-shrink-0",
-                  task.status === 'completed' && "line-through text-muted-foreground"
-                )}>
-                  {task.title}
-                </h4>
-                
-                {task.description && (
-                  <p className="text-sm text-muted-foreground font-['Inter',sans-serif] line-clamp-1 flex-1 min-w-0">
-                    {task.description}
-                  </p>
-                )}
-              </div>
-
-              {/* Tags */}
-              {task.tags && task.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {task.tags.map((tag, index) => (
-                    <span
-                      key={index}
-                      className="px-2 py-1 bg-secondary text-secondary-foreground text-xs font-['Inter',sans-serif]"
-                    >
-                      {tag}
-                    </span>
-                  ))}
+            <div className="flex-1 min-w-0">
+              <h4 className={cn(
+                "font-medium text-foreground mb-1 break-words leading-snug",
+                task.status === 'completed' && "line-through text-muted-foreground"
+              )}>
+                {task.title}
+              </h4>
+              
+              {task.description && (
+                <p className="text-sm text-muted-foreground break-words leading-relaxed">
+                  {task.description}
+                </p>
+              )}
+              
+              {/* Subtask Progress Indicator */}
+              {subtaskStats.total > 0 && (
+                <div className="flex items-center gap-2 mt-2">
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <span>{subtaskStats.completed}/{subtaskStats.total} subtasks</span>
+                  </div>
+                  <div className="h-1.5 w-16 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-green-500 transition-all duration-300"
+                      style={{ width: `${subtaskStats.percentage}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {Math.round(subtaskStats.percentage)}%
+                  </span>
                 </div>
               )}
-
-              {/* Meta Information */}
-              <div className="flex items-center space-x-4 mt-2 text-xs text-muted-foreground font-['Inter',sans-serif]">
-                {/* Completion Date for Completed Tasks */}
-                {task.status === 'completed' && task.completedAt && (
-                  <div className="flex items-center space-x-1 text-green-600">
-                    <CheckCircle2 className="w-3 h-3" />
-                    <span>
-                      Completed {new Date(task.completedAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                )}
-
-                {/* Due Date for Non-Completed Tasks */}
-                {task.status !== 'completed' && task.dueDate && (
-                  <div className={cn(
-                    "flex items-center space-x-1",
-                    isOverdue && "text-red-500"
-                  )}>
-                    <Calendar className="w-3 h-3" />
-                    <span>
-                      {isOverdue ? 'Overdue' : `Due ${new Date(task.dueDate).toLocaleDateString()}`}
-                    </span>
-                  </div>
-                )}
-
-                {/* Time Tracking */}
-                {task.estimatedHours && (
-                  <div className="flex items-center space-x-1">
-                    <Clock className="w-3 h-3" />
-                    <span>{task.estimatedHours}h est.</span>
-                    {task.actualHours && (
-                      <span className="text-muted-foreground">/ {task.actualHours}h actual</span>
-                    )}
-                  </div>
-                )}
-              </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+            {/* Action Buttons */}
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-4">
+              {/* Expand/Collapse Subtasks */}
+              {(task.subtasks && task.subtasks.length > 0) && (
+                <button
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="p-2 hover:bg-accent rounded-md transition-colors"
+                  title={isExpanded ? "Collapse subtasks" : "Expand subtasks"}
+                >
+                  {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                </button>
+              )}
+              
+              {/* Add Subtask */}
+              <button
+                onClick={() => setShowAddSubtask(!showAddSubtask)}
+                className="p-2 hover:bg-accent rounded-md transition-colors"
+                title="Add subtask"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+              
               <button
                 onClick={() => onEdit(task)}
-                className="p-1.5 rounded hover:bg-accent transition-colors"
+                className="p-2 hover:bg-accent rounded-md transition-colors"
                 title="Edit task"
               >
-                <Edit className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                <Edit className="w-4 h-4" />
               </button>
+              
               <button
-                onClick={() => {
-                  if (confirm(`Are you sure you want to delete "${task.title}"?`)) {
-                    onDelete(task.id);
-                  }
-                }}
-                className="p-1.5 rounded hover:bg-red-50 transition-colors"
+                onClick={() => onDelete(task.id)}
+                className="p-2 hover:bg-accent rounded-md transition-colors text-destructive"
                 title="Delete task"
               >
-                <Trash2 className="w-4 h-4 text-muted-foreground hover:text-red-500" />
+                <Trash2 className="w-4 h-4" />
               </button>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Add Subtask Input */}
+      {showAddSubtask && (
+        <div className="mt-4 ml-12 flex items-center gap-2">
+          <input
+            type="text"
+            placeholder="Enter subtask title..."
+            value={newSubtaskTitle}
+            onChange={(e) => setNewSubtaskTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleAddSubtask();
+              if (e.key === 'Escape') {
+                setShowAddSubtask(false);
+                setNewSubtaskTitle('');
+              }
+            }}
+            className="flex-1 px-3 py-2 text-sm bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
+            autoFocus
+          />
+          <button
+            onClick={handleAddSubtask}
+            disabled={!newSubtaskTitle.trim()}
+            className="px-3 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Add
+          </button>
+          <button
+            onClick={() => {
+              setShowAddSubtask(false);
+              setNewSubtaskTitle('');
+            }}
+            className="px-3 py-2 text-sm bg-muted text-muted-foreground rounded-md hover:bg-muted/80"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {/* Subtasks List */}
+      {isExpanded && task.subtasks && task.subtasks.length > 0 && (
+        <div className="mt-4 ml-12 space-y-2">
+          {task.subtasks.map((subtask) => (
+            <SubTaskItem
+              key={subtask.id}
+              subtask={subtask}
+              onStatusChange={(status) => handleSubtaskStatusChange(subtask.id, status)}
+              onEdit={() => {
+                // TODO: Implement subtask editing modal
+                console.log('Edit subtask:', subtask);
+              }}
+              onDelete={() => handleDeleteSubtask(subtask.id)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
-}
-
-// Memoize TaskItem to prevent unnecessary re-renders
-export const TaskItem = memo(TaskItemComponent, (prevProps, nextProps) => {
-  // Use a more comprehensive comparison to prevent false positives
-  const isEqual = (
-    prevProps.id === nextProps.id &&
-    prevProps.task.id === nextProps.task.id &&
-    prevProps.task.status === nextProps.task.status &&
-    prevProps.task.title === nextProps.task.title &&
-    prevProps.task.description === nextProps.task.description &&
-    prevProps.task.completedAt === nextProps.task.completedAt &&
-    prevProps.task.dueDate === nextProps.task.dueDate &&
-    prevProps.task.updatedAt === nextProps.task.updatedAt &&
-    prevProps.task.order === nextProps.task.order &&
-    prevProps.taskIndex === nextProps.taskIndex &&
-    prevProps.totalTasks === nextProps.totalTasks
-  );
-  
-  return isEqual;
-}); 
+} 

@@ -8,11 +8,8 @@ export type {
   PinnedTask 
 } from './planner';
 
-export type {
-  Project,
-  ProjectTask,
-  ProjectsStorageData
-} from './projects';
+// Export all project-related types including the new SubTask
+export type { Project, ProjectTask, SubTask, ProjectFolder, ProjectsStorageData } from './projects';
 
 export type {
   Document,

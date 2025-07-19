@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Project, ProjectTask, ProjectsStorageData } from '@/types';
+import { Project, ProjectTask, SubTask, ProjectsStorageData } from '@/types';
 
 const STORAGE_KEY = 'omega-planner-projects';
 const STORAGE_VERSION = '1.0.0';
@@ -10,6 +10,7 @@ const saveProjectsToStorage = (projects: Project[]) => {
     const data: ProjectsStorageData = {
       version: STORAGE_VERSION,
       projects: projects,
+      folders: [], // Initialize empty folders array for now
       lastUpdated: new Date().toISOString()
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -213,6 +214,95 @@ export function useProjects() {
     );
   }, []);
 
+  // Subtask management functions
+  const addSubtaskToTask = useCallback((projectId: string, taskId: string, subtaskData: Omit<SubTask, 'id' | 'createdAt' | 'updatedAt' | 'order'>) => {
+    updateProjectsState(prevProjects => 
+      prevProjects.map(project => {
+        if (project.id === projectId) {
+          const updatedTasks = project.tasks.map(task => {
+            if (task.id === taskId) {
+              const currentSubtasks = task.subtasks || [];
+              const newSubtask: SubTask = {
+                id: `subtask-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                ...subtaskData,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                order: currentSubtasks.length
+              };
+              return { 
+                ...task, 
+                subtasks: [...currentSubtasks, newSubtask],
+                updatedAt: new Date().toISOString()
+              };
+            }
+            return task;
+          });
+          return { ...project, tasks: updatedTasks, updatedAt: new Date().toISOString() };
+        }
+        return project;
+      })
+    );
+  }, []);
+
+  const updateSubtaskInTask = useCallback((projectId: string, taskId: string, subtaskId: string, updates: Partial<SubTask>) => {
+    updateProjectsState(prevProjects => 
+      prevProjects.map(project => {
+        if (project.id === projectId) {
+          const updatedTasks = project.tasks.map(task => {
+            if (task.id === taskId) {
+              const updatedSubtasks = (task.subtasks || []).map(subtask => {
+                if (subtask.id === subtaskId) {
+                  const updatedSubtask = { 
+                    ...subtask, 
+                    ...updates, 
+                    updatedAt: new Date().toISOString()
+                  };
+                  if (updates.status === 'completed' && !subtask.completedAt) {
+                    updatedSubtask.completedAt = new Date().toISOString();
+                  } else if (updates.status !== 'completed') {
+                    updatedSubtask.completedAt = undefined;
+                  }
+                  return updatedSubtask;
+                }
+                return subtask;
+              });
+              return { 
+                ...task, 
+                subtasks: updatedSubtasks,
+                updatedAt: new Date().toISOString()
+              };
+            }
+            return task;
+          });
+          return { ...project, tasks: updatedTasks, updatedAt: new Date().toISOString() };
+        }
+        return project;
+      })
+    );
+  }, []);
+
+  const deleteSubtaskFromTask = useCallback((projectId: string, taskId: string, subtaskId: string) => {
+    updateProjectsState(prevProjects => 
+      prevProjects.map(project => {
+        if (project.id === projectId) {
+          const updatedTasks = project.tasks.map(task => {
+            if (task.id === taskId) {
+              const updatedSubtasks = (task.subtasks || []).filter(subtask => subtask.id !== subtaskId);
+              return { 
+                ...task, 
+                subtasks: updatedSubtasks,
+                updatedAt: new Date().toISOString()
+              };
+            }
+            return task;
+          });
+          return { ...project, tasks: updatedTasks, updatedAt: new Date().toISOString() };
+        }
+        return project;
+      })
+    );
+  }, []);
+
   return {
     projects,
     loading,
@@ -225,6 +315,9 @@ export function useProjects() {
     addTaskToProject,
     updateTaskInProject,
     deleteTaskFromProject,
-    reorderTasksInProject
+    reorderTasksInProject,
+    addSubtaskToTask,
+    updateSubtaskInTask,
+    deleteSubtaskFromTask
   };
 } 

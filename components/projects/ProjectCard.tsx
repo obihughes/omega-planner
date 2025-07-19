@@ -7,6 +7,67 @@ import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CSS } from '@dnd-kit/utilities';
 
+// Task Indicator Component - shows dots up to 12, then numbers
+interface TaskIndicatorProps {
+  completed: number;
+  total: number;
+  className?: string;
+}
+
+function TaskIndicator({ completed, total, className }: TaskIndicatorProps) {
+  if (total === 0) {
+    return (
+      <div className={cn("text-xs text-muted-foreground", className)}>
+        No tasks
+      </div>
+    );
+  }
+
+  // If more than 12 tasks, show numbers instead of dots
+  if (total > 12) {
+    return (
+      <div className={cn("flex items-center gap-2", className)}>
+        <div className="text-xs font-medium text-foreground">
+          {completed}/{total}
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="h-2 w-8 bg-muted rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-green-500 transition-all duration-300"
+              style={{ width: `${total > 0 ? (completed / total) * 100 : 0}%` }}
+            />
+          </div>
+          <span className="text-xs text-muted-foreground">
+            {Math.round((completed / total) * 100)}%
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  // Show dots for 12 or fewer tasks
+  return (
+    <div className={cn("flex items-center gap-1", className)}>
+      <div className="flex items-center gap-0.5">
+        {Array.from({ length: total }, (_, i) => (
+          <div
+            key={i}
+            className={cn(
+              "w-1.5 h-1.5 rounded-full transition-all duration-200",
+              i < completed 
+                ? "bg-green-500" 
+                : "bg-muted border border-border"
+            )}
+          />
+        ))}
+      </div>
+      <span className="text-xs text-muted-foreground ml-1">
+        {completed}/{total}
+      </span>
+    </div>
+  );
+}
+
 interface ProjectCardProps {
   project: Project;
   onEdit: (project: Project) => void;
@@ -284,29 +345,14 @@ function ProjectCardComponent({
         )}
       </div>
 
-      {/* Task Progress Circles - Above Bottom Line, Left Side */}
+      {/* Task Progress - Above Bottom Line, Left Side */}
       {totalTasks > 0 && (
-        <div className="flex items-center space-x-3 mb-3">
-          <span className="text-sm font-medium text-muted-foreground flex-shrink-0">
-            {completedTasks}/{totalTasks}
-          </span>
-          <div className="flex flex-wrap gap-1.5 items-center">
-            {Array.from({ length: Math.min(totalTasks, 12) }, (_, i) => {
-              const isCompleted = i < completedTasks;
-              return (
-                <div
-                  key={i}
-                  className={cn(
-                    "w-2 h-2 rounded-full transition-all duration-200 flex-shrink-0",
-                    isCompleted ? "bg-green-500" : "bg-muted-foreground/30"
-                  )}
-                />
-              );
-            })}
-            {totalTasks > 12 && (
-              <span className="text-sm text-muted-foreground ml-1 whitespace-nowrap font-medium">+{totalTasks - 12}</span>
-            )}
-          </div>
+        <div className="mb-3">
+          <TaskIndicator 
+            completed={completedTasks} 
+            total={totalTasks}
+            className="justify-start"
+          />
         </div>
       )}
 

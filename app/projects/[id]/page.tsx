@@ -50,7 +50,10 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
     updateTaskInProject, 
     deleteTaskFromProject,
     reorderTasksInProject,
-    updateProject
+    updateProject,
+    addSubtaskToTask,
+    updateSubtaskInTask,
+    deleteSubtaskFromTask
   } = useProjects();
   
   const [statusFilter, setStatusFilter] = useState<ProjectTask['status'] | 'all'>('all');
@@ -360,6 +363,15 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
                   onStatusChange={handleTaskStatusChange}
                   onEdit={handleEditTask}
                   onDelete={handleDeleteTask}
+                  onAddSubtask={(taskId, subtaskData) => {
+                    if (project) addSubtaskToTask(project.id, taskId, subtaskData);
+                  }}
+                  onUpdateSubtask={(taskId, subtaskId, updates) => {
+                    if (project) updateSubtaskInTask(project.id, taskId, subtaskId, updates);
+                  }}
+                  onDeleteSubtask={(taskId, subtaskId) => {
+                    if (project) deleteSubtaskFromTask(project.id, taskId, subtaskId);
+                  }}
                 />
               ))}
             </div>
