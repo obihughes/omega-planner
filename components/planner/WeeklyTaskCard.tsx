@@ -50,15 +50,15 @@ export default function WeeklyTaskCard({
   return (
     <div
       className={cn(
-        "group cursor-pointer transition-all duration-300 rounded-xl overflow-hidden relative",
+        "group cursor-pointer transition-all duration-300 rounded-lg overflow-hidden relative",
         "bg-card/98 backdrop-blur-sm border-2 shadow-md hover:shadow-xl",
-        "flex items-center p-3 h-full",
+        "flex items-center h-full",
         isCompleted && "opacity-75",
-        !isCompleted && "hover:scale-[1.03] hover:-translate-y-1 hover:rotate-[0.5deg]",
+        !isCompleted && "hover:scale-[1.02] hover:-translate-y-0.5",
         className
       )}
       style={{ 
-        borderLeftWidth: '5px',
+        borderLeftWidth: '4px',
         borderLeftColor: colors.border,
         background: isCompleted 
           ? 'linear-gradient(135deg, rgb(var(--muted) / 0.9) 0%, rgb(var(--muted) / 0.6) 100%)'
@@ -68,82 +68,82 @@ export default function WeeklyTaskCard({
     >
       {/* Completed overlay with subtle animation */}
       {isCompleted && (
-        <div className="absolute inset-0 bg-gradient-to-br from-green-500/15 via-green-500/8 to-transparent animate-pulse" />
+        <div className="absolute inset-0 bg-gradient-to-br from-green-500/15 via-green-500/8 to-transparent" />
       )}
       
       {/* Subtle glow effect for active tasks */}
       {!isCompleted && (
         <div 
-          className="absolute inset-0 opacity-0 group-hover:opacity-30 transition-all duration-500 rounded-xl"
+          className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-all duration-300 rounded-lg"
           style={{
             background: `linear-gradient(135deg, ${colors.hover} 0%, transparent 70%)`
           }}
         />
       )}
       
-      <div className="flex items-center justify-between w-full gap-3 relative z-10">
-        <div className="flex items-center gap-3 flex-grow min-w-0">
+      <div className="flex items-center justify-between w-full gap-2 px-2 py-1 relative z-10">
+        <div className="flex items-center gap-2 flex-grow min-w-0">
           <button
             onClick={(e) => {
               e.stopPropagation();
               onToggleComplete(task.id);
             }}
             className={cn(
-              "flex-shrink-0 transition-all duration-300 hover:scale-125 active:scale-110",
+              "flex-shrink-0 transition-all duration-300 hover:scale-110",
               isCompleted 
                 ? "text-green-500 hover:text-green-400" 
-                : "text-muted-foreground/60 hover:text-green-500 hover:drop-shadow-sm"
+                : "text-muted-foreground/60 hover:text-green-500"
             )}
           >
             {isCompleted ? (
-              <CheckCircle2 className="w-5 h-5 drop-shadow-sm" />
+              <CheckCircle2 className="w-4 h-4" />
             ) : (
-              <Circle className="w-5 h-5" />
+              <Circle className="w-4 h-4" />
             )}
           </button>
           
           <span className={cn(
-            "text-sm font-semibold truncate transition-all duration-300",
+            "text-sm font-medium truncate transition-all duration-300 leading-tight",
             isCompleted 
               ? "line-through text-muted-foreground/80" 
-              : "text-foreground group-hover:text-foreground"
+              : "text-foreground"
           )}>
             {task.name}
           </span>
         </div>
         
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           {isScheduled ? (
-            <div className="flex items-center gap-1.5 bg-blue-500/15 border border-blue-500/30 px-2.5 py-1 rounded-lg shadow-sm">
-              <Clock className="w-3.5 h-3.5 text-blue-600" />
-              <span className="text-xs font-bold text-blue-700 tracking-wide">
+            <div className="flex items-center gap-1 bg-blue-500/15 border border-blue-500/30 px-1.5 py-0.5 rounded-md">
+              <Clock className="w-3 h-3 text-blue-600" />
+              <span className="text-xs font-bold text-blue-700">
                 {formatTime(task.startHour!)}
               </span>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 bg-orange-500/15 border border-orange-500/30 px-2.5 py-1 rounded-lg shadow-sm">
-              <Calendar className="w-3.5 h-3.5 text-orange-600" />
-              <span className="text-xs font-bold text-orange-700 tracking-wide">
+            <div className="flex items-center gap-1 bg-orange-500/15 border border-orange-500/30 px-1.5 py-0.5 rounded-md">
+              <Calendar className="w-3 h-3 text-orange-600" />
+              <span className="text-xs font-bold text-orange-700">
                 Inbox
               </span>
             </div>
           )}
           
           <div className={cn(
-            "flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg shadow-sm border transition-all duration-300",
+            "flex items-center gap-0.5 text-xs font-bold px-1.5 py-0.5 rounded-md border transition-all duration-300",
             isCompleted 
               ? "bg-muted/60 text-muted-foreground border-muted/60" 
-              : "bg-primary/15 text-primary border-primary/30 group-hover:bg-primary/20"
+              : "bg-primary/15 text-primary border-primary/30"
           )}>
-            <Timer className="w-3 h-3" />
-            {formatDuration(task.duration)}
+            <Timer className="w-2.5 h-2.5" />
+            <span className="text-xs">{formatDuration(task.duration)}</span>
           </div>
         </div>
       </div>
       
       {/* Animated border highlight */}
       <div 
-        className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-500 pointer-events-none"
+        className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none"
         style={{
           boxShadow: `inset 0 0 0 1px ${colors.border}40`
         }}

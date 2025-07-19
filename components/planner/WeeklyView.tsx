@@ -17,11 +17,11 @@ import WeeklyTaskCard from './WeeklyTaskCard';
 
 interface WeeklyViewProps {}
 
-const TIMELINE_WIDTH_PER_HOUR = 100; // Increased for better spacing and readability
+const TIMELINE_WIDTH_PER_HOUR = 140; // Increased significantly for better task card space
 const TIMELINE_START_HOUR = 6;
 const TIMELINE_END_HOUR = 22; // Changed to 10 PM for better focus on active hours
 const TOTAL_TIMELINE_WIDTH = TIMELINE_WIDTH_PER_HOUR * (TIMELINE_END_HOUR - TIMELINE_START_HOUR);
-const DAY_ROW_HEIGHT = 120; // Increased for better task visibility and spacing
+const DAY_ROW_HEIGHT = 80; // Reduced for more compact layout
 
 // Helper function to resolve task collisions and assign lanes
 const resolveCollisions = (tasks: Task[]) => {
@@ -184,10 +184,10 @@ export default function WeeklyView({}: WeeklyViewProps) {
     // Adjust for the new start time (6am = position 0)
     const adjustedStartHour = Math.max(0, startHour - TIMELINE_START_HOUR);
     const left = adjustedStartHour * TIMELINE_WIDTH_PER_HOUR;
-    const width = Math.max(duration * TIMELINE_WIDTH_PER_HOUR - 16, 120); // Increased minimum width and margin
+    const width = Math.max(duration * TIMELINE_WIDTH_PER_HOUR - 8, 120); // Reduced margin, increased minimum width
     
     return {
-      left: `${left + 8}px`, // 8px margin from grid line
+      left: `${left + 4}px`, // Reduced margin from grid line
       width: `${width}px`,
     };
   };
@@ -240,7 +240,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
     const positionedTasks = resolveCollisions(dayData.scheduled);
     
     const laneCount = Math.max(1, ...positionedTasks.map(t => t.lane || 0)) + 1;
-    const dynamicRowHeight = Math.max(DAY_ROW_HEIGHT, laneCount * 60 + 40); // Increased spacing for better arrangement
+    const dynamicRowHeight = Math.max(DAY_ROW_HEIGHT, laneCount * 45 + 20); // Reduced spacing for more compact arrangement
 
     return (
       <div key={dateKey} className={cn(
@@ -359,9 +359,9 @@ export default function WeeklyView({}: WeeklyViewProps) {
           {/* Scheduled tasks */}
           {positionedTasks.map((task, taskIndex) => {
             const taskStyle = getTaskStyle(task);
-            const laneHeight = 44; // Better task card height
-            const laneGap = 8;
-            const taskTop = 20 + (task.lane || 0) * (laneHeight + laneGap);
+            const laneHeight = 35; // Optimized task card height for better text visibility
+            const laneGap = 4; // Reduced gap for more compact layout
+            const taskTop = 10 + (task.lane || 0) * (laneHeight + laneGap);
             
             return (
               <div
@@ -386,18 +386,18 @@ export default function WeeklyView({}: WeeklyViewProps) {
 
           {/* Inbox tasks */}
           {dayData.inbox.length > 0 && (
-            <div className="absolute bottom-4 left-4 right-4 flex gap-2 z-10 overflow-hidden">
-              <div className="flex items-center gap-2 mr-3">
-                <div className="w-2.5 h-2.5 bg-orange-500/60 rounded-full shadow-sm" />
+            <div className="absolute bottom-2 left-4 right-4 flex gap-2 z-10 overflow-hidden">
+              <div className="flex items-center gap-2 mr-2">
+                <div className="w-2 h-2 bg-orange-500/60 rounded-full shadow-sm" />
                 <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
                   Inbox
                 </span>
               </div>
               {dayData.inbox.slice(0, 6).map((task, idx) => (
-                <div key={task.id} className="flex-shrink-0" style={{ width: '140px', height: '32px' }}>
+                <div key={task.id} className="flex-shrink-0" style={{ width: '120px', height: '26px' }}>
                   <WeeklyTaskCard
                     task={task}
-                    height={32}
+                    height={26}
                     onTaskClick={(task) => openEditModal(task, { isFromPool: true })}
                     onToggleComplete={handleTaskCompletionToggle}
                     className="opacity-75 border-dashed border-orange-500/30 text-xs shadow-sm hover:opacity-100 hover:border-orange-500/50 transition-all"
@@ -405,7 +405,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
                 </div>
               ))}
               {dayData.inbox.length > 6 && (
-                <div className="flex items-center text-xs text-muted-foreground px-3 py-1.5 bg-muted/70 rounded-lg border border-dashed border-muted min-w-[50px] justify-center font-medium">
+                <div className="flex items-center text-xs text-muted-foreground px-2 py-1 bg-muted/70 rounded-lg border border-dashed border-muted min-w-[40px] justify-center font-medium">
                   +{dayData.inbox.length - 6}
                 </div>
               )}
