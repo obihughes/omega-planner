@@ -50,6 +50,18 @@ Main component that orchestrates all planner functionality.
 ### TimelineColumn
 Renders individual timeline sections with tasks and time markers.
 
+### WeeklyView
+Displays a 7-day view of scheduled tasks in a horizontal timeline format. Features include:
+
+- **Enhanced Visual Design**: Modern gradient backgrounds, improved spacing, and better color hierarchy
+- **Smart Time Management**: Focused timeline from 6 AM to 10 PM for optimal productivity planning
+- **Day Highlighting**: Weekend days with orange accents, today with primary color accent bar
+- **Progress Visualization**: Completion dots in day headers and progress bars in stats
+- **Current Time Indicator**: Live red line with floating time badge for real-time context
+- **Task Collision Handling**: Automatic lane assignment for overlapping tasks
+- **Inbox Integration**: Separate section for unscheduled tasks with clear visual distinction
+- **Interactive Elements**: Hover effects, smooth animations, and click-to-add functionality
+
 ### TaskCard
 Individual task representation with drag/resize handles.
 

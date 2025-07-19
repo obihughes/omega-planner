@@ -6,8 +6,8 @@ import { cn } from '@/lib/utils';
 import { 
   ChevronLeft, 
   ChevronRight, 
-  Plus,
-  Calendar
+  Calendar,
+  Clock
 } from 'lucide-react';
 import { Task } from '@/types';
 import { useDailyPlanner } from '@/hooks/useDailyPlannerState';
@@ -17,11 +17,11 @@ import WeeklyTaskCard from './WeeklyTaskCard';
 
 interface WeeklyViewProps {}
 
-const TIMELINE_WIDTH_PER_HOUR = 80; // Increased from 60 for better space utilization
-const TIMELINE_START_HOUR = 6; // Start at 6 AM instead of midnight
-const TIMELINE_END_HOUR = 24; // End at midnight (18 hours total: 6am-12am)
+const TIMELINE_WIDTH_PER_HOUR = 100; // Increased for better spacing and readability
+const TIMELINE_START_HOUR = 6;
+const TIMELINE_END_HOUR = 22; // Changed to 10 PM for better focus on active hours
 const TOTAL_TIMELINE_WIDTH = TIMELINE_WIDTH_PER_HOUR * (TIMELINE_END_HOUR - TIMELINE_START_HOUR);
-const DAY_ROW_HEIGHT = 100; // Adjusted for a tighter layout
+const DAY_ROW_HEIGHT = 120; // Increased for better task visibility and spacing
 
 // Helper function to resolve task collisions and assign lanes
 const resolveCollisions = (tasks: Task[]) => {
@@ -171,6 +171,11 @@ export default function WeeklyView({}: WeeklyViewProps) {
     return date < today;
   };
 
+  const isWeekend = (date: Date) => {
+    const day = date.getDay();
+    return day === 0 || day === 6; // Sunday or Saturday
+  };
+
   // Calculate task position and size for horizontal layout
   const getTaskStyle = (task: Task) => {
     const startHour = task.startHour || 6;
@@ -179,10 +184,10 @@ export default function WeeklyView({}: WeeklyViewProps) {
     // Adjust for the new start time (6am = position 0)
     const adjustedStartHour = Math.max(0, startHour - TIMELINE_START_HOUR);
     const left = adjustedStartHour * TIMELINE_WIDTH_PER_HOUR;
-    const width = Math.max(duration * TIMELINE_WIDTH_PER_HOUR - 8, 80); // Minimum 80px width, with 8px margin
+    const width = Math.max(duration * TIMELINE_WIDTH_PER_HOUR - 16, 120); // Increased minimum width and margin
     
     return {
-      left: `${left + 4}px`, // 4px margin from grid line
+      left: `${left + 8}px`, // 8px margin from grid line
       width: `${width}px`,
     };
   };
@@ -192,22 +197,30 @@ export default function WeeklyView({}: WeeklyViewProps) {
     const hours = Array.from({ length: TIMELINE_END_HOUR - TIMELINE_START_HOUR }, (_, i) => TIMELINE_START_HOUR + i);
     
     return (
-      <div className="sticky top-0 z-20 bg-card/95 backdrop-blur-sm border-b border-border/30">
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-lg border-b border-border/50 shadow-lg">
         <div className="flex">
           {/* Day labels column */}
-          <div className="w-32 flex-shrink-0 border-r border-border/30 p-3 bg-card/95">
-            <div className="text-sm font-medium text-muted-foreground">Time</div>
+          <div className="w-44 flex-shrink-0 border-r border-border/30 p-4 bg-card/60 backdrop-blur-sm">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Time</span>
+            </div>
           </div>
           
           {/* Time labels */}
           <div className="flex" style={{ width: `${TOTAL_TIMELINE_WIDTH}px` }}>
-            {hours.map((hour) => (
+            {hours.map((hour, index) => (
               <div
                 key={hour}
-                className="flex items-center justify-center text-xs text-muted-foreground font-mono border-l border-border/20"
-                style={{ width: `${TIMELINE_WIDTH_PER_HOUR}px`, height: '48px' }}
+                className={cn(
+                  "flex items-center justify-center text-sm font-medium text-muted-foreground border-l transition-colors",
+                  index % 2 === 0 ? "border-border/30 bg-muted/10" : "border-border/15 bg-muted/5"
+                )}
+                style={{ width: `${TIMELINE_WIDTH_PER_HOUR}px`, height: '64px' }}
               >
-                <span>{formatTime(hour)}</span>
+                <span className="bg-background/90 px-3 py-1.5 rounded-full shadow-sm border border-border/20 font-medium">
+                  {formatTime(hour)}
+                </span>
               </div>
             ))}
           </div>
@@ -222,51 +235,92 @@ export default function WeeklyView({}: WeeklyViewProps) {
     const dayData = weekTasks.get(dateKey) || { scheduled: [], inbox: [] };
     const isCurrentDay = isToday(date);
     const isPastDay = isPast(date);
+    const isWeekendDay = isWeekend(date);
     const allTasks = [...dayData.scheduled, ...dayData.inbox];
     const positionedTasks = resolveCollisions(dayData.scheduled);
     
     const laneCount = Math.max(1, ...positionedTasks.map(t => t.lane || 0)) + 1;
-    const dynamicRowHeight = Math.max(DAY_ROW_HEIGHT, laneCount * 40 + 20); // Base height + lanes + padding
+    const dynamicRowHeight = Math.max(DAY_ROW_HEIGHT, laneCount * 60 + 40); // Increased spacing for better arrangement
 
     return (
-      <div key={dateKey} className="flex border-b border-border/20 last:border-b-0">
+      <div key={dateKey} className={cn(
+        "flex border-b border-border/20 last:border-b-0 transition-all duration-200 hover:bg-muted/15",
+        isCurrentDay && "bg-primary/8 shadow-sm"
+      )}>
         {/* Day header */}
         <div className={cn(
-          "w-32 flex-shrink-0 border-r border-border/30 p-3 flex flex-col justify-center",
-          isCurrentDay && "bg-primary/5 border-primary/20"
+          "w-44 flex-shrink-0 border-r border-border/30 p-5 flex flex-col justify-center relative transition-colors",
+          isCurrentDay && "bg-primary/12 border-primary/40",
+          isWeekendDay && !isCurrentDay && "bg-orange-500/8 border-orange-500/20",
+          isPastDay && "opacity-80"
         )}>
+          {isCurrentDay && (
+            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-primary rounded-r-full shadow-sm" />
+          )}
+          
           <div className={cn(
-            "text-sm font-medium",
-            isCurrentDay ? "text-primary" : "text-muted-foreground"
+            "text-sm font-bold uppercase tracking-wider mb-2",
+            isCurrentDay ? "text-primary" : isWeekendDay ? "text-orange-600" : "text-muted-foreground"
           )}>
             {dayNames[index]}
           </div>
           <div className={cn(
-            "text-xl font-bold",
+            "text-4xl font-black mb-2 leading-none",
             isCurrentDay ? "text-primary" : "text-foreground"
           )}>
             {date.getDate()}
           </div>
-          <div className="text-xs text-muted-foreground">
-            {date.toLocaleDateString('en-US', { month: 'short' })}
+          <div className="text-sm text-muted-foreground mb-3 font-medium">
+            {date.toLocaleDateString('en-US', { month: 'long' })}
           </div>
-          {allTasks.length > 0 && (
-            <div className="text-xs text-muted-foreground mt-1">
-              {allTasks.filter(t => t.completed).length}/{allTasks.length}
+          
+          {allTasks.length > 0 ? (
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "text-xs font-bold px-3 py-1.5 rounded-full border",
+                isCurrentDay 
+                  ? "bg-primary/20 text-primary border-primary/30" 
+                  : "bg-muted/80 text-muted-foreground border-muted"
+              )}>
+                {allTasks.filter(t => t.completed).length}/{allTasks.length}
+              </div>
+              <div className="flex gap-1.5">
+                {Array.from({ length: Math.min(allTasks.length, 6) }, (_, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      "w-2 h-2 rounded-full shadow-sm",
+                      allTasks[i]?.completed ? "bg-green-500" : "bg-muted-foreground/40"
+                    )}
+                  />
+                ))}
+                {allTasks.length > 6 && (
+                  <span className="text-xs text-muted-foreground ml-2 font-medium">
+                    +{allTasks.length - 6}
+                  </span>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="text-xs text-muted-foreground/70 italic font-medium">
+              No tasks – click to add
             </div>
           )}
         </div>
 
-        {/* Timeline row - RELATIVE POSITIONING IS KEY */}
+        {/* Timeline row */}
         <div 
-          className="relative overflow-hidden"
+          className="relative overflow-hidden bg-gradient-to-r from-background via-muted/8 to-background"
           style={{ width: `${TOTAL_TIMELINE_WIDTH}px`, height: `${dynamicRowHeight}px` }}
         >
           {/* Hour grid lines */}
           {Array.from({ length: TIMELINE_END_HOUR - TIMELINE_START_HOUR + 1 }, (_, i) => (
             <div
               key={i}
-              className="absolute top-0 bottom-0 border-l border-border/10"
+              className={cn(
+                "absolute top-0 bottom-0 border-l transition-opacity",
+                i % 2 === 0 ? "border-border/25" : "border-border/12"
+              )}
               style={{ left: `${i * TIMELINE_WIDTH_PER_HOUR}px` }}
             />
           ))}
@@ -276,34 +330,43 @@ export default function WeeklyView({}: WeeklyViewProps) {
             const now = new Date();
             const currentHour = now.getHours() + now.getMinutes() / 60;
             
-            // Only show indicator if current time is within our timeline (6am-12am)
             if (currentHour >= TIMELINE_START_HOUR && currentHour <= TIMELINE_END_HOUR) {
               const adjustedCurrentHour = currentHour - TIMELINE_START_HOUR;
               const currentTimeLeft = adjustedCurrentHour * TIMELINE_WIDTH_PER_HOUR;
               
               return (
-                <div
-                  className="absolute top-0 bottom-0 z-30 border-l-2 border-red-500"
-                  style={{ left: `${currentTimeLeft}px` }}
-                >
-                  <div className="w-2 h-2 bg-red-500 rounded-full -mt-1 -ml-1" />
-                </div>
+                <>
+                  <div
+                    className="absolute top-0 bottom-0 z-30 border-l-2 border-red-500 shadow-lg"
+                    style={{ left: `${currentTimeLeft}px` }}
+                  />
+                  <div
+                    className="absolute z-30 w-4 h-4 bg-red-500 rounded-full shadow-lg transform -translate-x-2 border-2 border-white"
+                    style={{ left: `${currentTimeLeft}px`, top: '12px' }}
+                  />
+                  <div
+                    className="absolute z-30 bg-red-500 text-white text-xs px-3 py-1.5 rounded-lg shadow-lg transform -translate-x-1/2 font-bold"
+                    style={{ left: `${currentTimeLeft}px`, top: '32px' }}
+                  >
+                    {formatTime(currentHour)}
+                  </div>
+                </>
               );
             }
             return null;
           })()}
 
-          {/* Scheduled tasks - positioned with collision detection */}
+          {/* Scheduled tasks */}
           {positionedTasks.map((task, taskIndex) => {
             const taskStyle = getTaskStyle(task);
-            const laneHeight = 32; // Tighter task height
-            const laneGap = 3;
-            const taskTop = 10 + (task.lane || 0) * (laneHeight + laneGap);
+            const laneHeight = 44; // Better task card height
+            const laneGap = 8;
+            const taskTop = 20 + (task.lane || 0) * (laneHeight + laneGap);
             
             return (
               <div
                 key={task.id}
-                className="absolute z-20"
+                className="absolute z-20 transition-all duration-200 hover:z-30 hover:scale-[1.02] hover:-translate-y-1"
                 style={{
                   left: taskStyle.left,
                   width: taskStyle.width,
@@ -321,31 +384,37 @@ export default function WeeklyView({}: WeeklyViewProps) {
             );
           })}
 
-          {/* Inbox tasks at bottom of this day row */}
+          {/* Inbox tasks */}
           {dayData.inbox.length > 0 && (
-            <div className="absolute bottom-1 left-2 right-2 flex gap-1 z-10 overflow-hidden">
-              {dayData.inbox.slice(0, 8).map((task, idx) => (
-                <div key={task.id} className="flex-shrink-0" style={{ width: '80px', height: '24px' }}>
+            <div className="absolute bottom-4 left-4 right-4 flex gap-2 z-10 overflow-hidden">
+              <div className="flex items-center gap-2 mr-3">
+                <div className="w-2.5 h-2.5 bg-orange-500/60 rounded-full shadow-sm" />
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+                  Inbox
+                </span>
+              </div>
+              {dayData.inbox.slice(0, 6).map((task, idx) => (
+                <div key={task.id} className="flex-shrink-0" style={{ width: '140px', height: '32px' }}>
                   <WeeklyTaskCard
                     task={task}
-                    height={24}
+                    height={32}
                     onTaskClick={(task) => openEditModal(task, { isFromPool: true })}
                     onToggleComplete={handleTaskCompletionToggle}
-                    className="opacity-80 border-dashed text-xs shadow-none"
+                    className="opacity-75 border-dashed border-orange-500/30 text-xs shadow-sm hover:opacity-100 hover:border-orange-500/50 transition-all"
                   />
                 </div>
               ))}
-              {dayData.inbox.length > 8 && (
-                <div className="flex items-center text-xs text-muted-foreground px-1 bg-muted/50 rounded text-center min-w-[30px]">
-                  +{dayData.inbox.length - 8}
+              {dayData.inbox.length > 6 && (
+                <div className="flex items-center text-xs text-muted-foreground px-3 py-1.5 bg-muted/70 rounded-lg border border-dashed border-muted min-w-[50px] justify-center font-medium">
+                  +{dayData.inbox.length - 6}
                 </div>
               )}
             </div>
           )}
 
-          {/* Add task click area - only covers this day's timeline */}
+          {/* Add task click area */}
           <div
-            className="absolute inset-0 z-5"
+            className="absolute inset-0 z-5 cursor-pointer hover:bg-muted/5 transition-colors"
             onClick={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               const x = e.clientX - rect.left;
@@ -353,6 +422,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
               const actualHour = TIMELINE_START_HOUR + hourOffset;
               handleCreateTask(date, actualHour);
             }}
+            title="Click to add a task"
           />
         </div>
       </div>
@@ -360,42 +430,81 @@ export default function WeeklyView({}: WeeklyViewProps) {
   };
 
   return (
-    <div className="h-full flex flex-col bg-background">
+    <div className="h-full flex flex-col bg-gradient-to-br from-background via-background/98 to-muted/10">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-border bg-card/50 sticky top-0 z-30">
+      <div className="px-6 py-6 border-b border-border/60 bg-card/90 backdrop-blur-xl sticky top-0 z-30 shadow-lg">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h2 className="text-xl font-semibold text-foreground">Weekly View</h2>
+          <div className="flex items-center gap-8">
+            <div className="flex items-center gap-4">
+              <Calendar className="w-7 h-7 text-primary drop-shadow-sm" />
+              <h2 className="text-3xl font-black text-foreground tracking-tight">Weekly View</h2>
+            </div>
             
             {/* Week Navigation */}
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={goToPreviousWeek}>
-                <ChevronLeft className="w-4 h-4" />
+            <div className="flex items-center gap-4">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={goToPreviousWeek} 
+                className="hover:bg-muted/70 hover:scale-105 transition-all duration-200 shadow-sm"
+              >
+                <ChevronLeft className="w-5 h-5" />
               </Button>
-              <Button variant="ghost" onClick={goToCurrentWeek} className="min-w-60 font-medium">
+              <Button 
+                variant="ghost" 
+                onClick={goToCurrentWeek} 
+                className="min-w-80 font-bold text-xl hover:bg-muted/70 transition-all duration-200 shadow-sm px-6 py-3"
+              >
                 {getWeekRangeString()}
               </Button>
-              <Button variant="ghost" size="sm" onClick={goToNextWeek}>
-                <ChevronRight className="w-4 h-4" />
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={goToNextWeek} 
+                className="hover:bg-muted/70 hover:scale-105 transition-all duration-200 shadow-sm"
+              >
+                <ChevronRight className="w-5 h-5" />
               </Button>
               {getRelativeWeekLabel() && (
-                <span className="text-sm text-muted-foreground px-3 py-1 bg-muted rounded-md">
+                <span className="text-sm font-bold text-primary px-4 py-2 bg-primary/15 rounded-xl border border-primary/30 shadow-sm">
                   {getRelativeWeekLabel()}
                 </span>
               )}
             </div>
           </div>
 
-          {/* Stats */}
-          <div className="flex items-center gap-4">
-            <div className="text-sm text-muted-foreground">
-              <span className="font-semibold text-foreground">{weekStats.total}</span> tasks
+          {/* Enhanced Stats with Progress Bars */}
+          <div className="flex items-center gap-8">
+            <div className="flex items-center gap-3">
+              <div className="w-3 h-3 bg-blue-500 rounded-full shadow-sm" />
+              <div className="flex flex-col">
+                <span className="text-sm text-muted-foreground font-medium">Total Tasks</span>
+                <span className="font-black text-xl text-foreground">{weekStats.total}</span>
+              </div>
             </div>
-            <div className="text-sm text-muted-foreground">
-              <span className="font-semibold text-foreground">{weekStats.completed}</span> done
+            
+            <div className="flex items-center gap-3">
+              <div className="w-3 h-3 bg-green-500 rounded-full shadow-sm" />
+              <div className="flex flex-col">
+                <span className="text-sm text-muted-foreground font-medium">Completed</span>
+                <span className="font-black text-xl text-foreground">{weekStats.completed}</span>
+              </div>
             </div>
-            <div className="text-sm text-muted-foreground">
-              <span className="font-semibold text-foreground">{weekStats.completionRate}%</span> complete
+            
+            <div className="flex items-center gap-3">
+              <div className="w-3 h-3 bg-primary rounded-full shadow-sm" />
+              <div className="flex flex-col">
+                <span className="text-sm text-muted-foreground font-medium">Progress</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-black text-xl text-primary">{weekStats.completionRate}%</span>
+                  <div className="w-16 h-2 bg-muted rounded-full overflow-hidden shadow-inner">
+                    <div 
+                      className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all duration-500 shadow-sm"
+                      style={{ width: `${weekStats.completionRate}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -403,12 +512,12 @@ export default function WeeklyView({}: WeeklyViewProps) {
 
       {/* Main content */}
       <div className="flex-1 overflow-hidden">
-        <div className="h-full overflow-auto">
+        <div className="h-full overflow-auto scrollbar-thin scrollbar-thumb-muted/60 scrollbar-track-transparent hover:scrollbar-thumb-muted transition-colors">
           {/* Time grid header */}
           {renderTimeGrid()}
           
           {/* Day rows */}
-          <div className="divide-y divide-border/20">
+          <div className="divide-y divide-border/25">
             {weekDates.map((date, index) => renderDayRow(date, index))}
           </div>
         </div>
