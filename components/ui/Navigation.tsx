@@ -67,8 +67,8 @@ export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse 
       icon: CalendarDays,
       active: pathname === '/calendar',
       subViews: [
-        { key: 'monthly', label: 'Monthly', icon: Calendar, active: calendarViewMode === 'monthly' },
-        { key: 'yearly', label: 'Yearly', icon: CalendarDays, active: calendarViewMode === 'yearly' }
+        { key: 'yearly', label: 'Yearly', icon: CalendarDays, active: calendarViewMode === 'yearly' },
+        { key: 'monthly', label: 'Monthly', icon: Calendar, active: calendarViewMode === 'monthly' }
       ]
     },
     {

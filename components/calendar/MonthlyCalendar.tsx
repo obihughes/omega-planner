@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { EventModal } from './EventModal';
 import { PeriodModal } from './PeriodModal';
+import { getContrastColor } from '@/utils/colorUtils';
 
 interface MonthlyCalendarProps extends CalendarProps {
   className?: string;
@@ -244,9 +245,9 @@ export function MonthlyCalendar({
       </div>
 
       {/* Calendar Grid */}
-      <div className="bg-card/60 backdrop-blur-sm rounded-xl overflow-hidden shadow-lg border border-border/50">
+      <div className="bg-card/70 backdrop-blur-md rounded-2xl overflow-hidden shadow-xl border border-border/40">
         {/* Day Headers */}
-        <div className="grid grid-cols-7 border-b border-border/50 text-center font-semibold text-muted-foreground bg-card/80">
+        <div className="grid grid-cols-7 border-b border-border/40 text-center font-semibold text-muted-foreground bg-card/90 backdrop-blur-sm">
           <div className="p-4 text-sm">Sun</div>
           <div className="p-4 text-sm">Mon</div>
           <div className="p-4 text-sm">Tue</div>
@@ -258,138 +259,152 @@ export function MonthlyCalendar({
         
         {/* Calendar Days */}
         <div className="grid grid-cols-7">
-          {calendarDays.map((day, index) => (
-            <div
-              key={index}
-              className={cn(
-                "min-h-[140px] p-3 border-r border-b border-border/50 last:border-r-0 hover:bg-accent/30 transition-colors cursor-pointer",
-                !day.isCurrentMonth && "bg-muted/20 text-muted-foreground/50",
-                day.isToday && "bg-primary/10 border-primary/20"
-              )}
-              onClick={() => handleDateClick(day.date)}
-              onDoubleClick={() => handleDateDoubleClick(day.date)}
-            >
-              <div className={cn(
-                "text-sm font-medium mb-2",
-                !day.isCurrentMonth && "text-muted-foreground",
-                day.isToday && "text-primary font-bold"
-              )}>
-                {day.date.getDate()}
-              </div>
+          {calendarDays.map((day, index) => {
+            // Calculate period styling for full cell background
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const isPast = day.date < today && !day.isToday;
+            
+            const periodStyle: React.CSSProperties = {};
+            
+            // Convert hex to rgba for transparency
+            const hexToRgba = (hex: string, alpha: number) => {
+              const r = parseInt(hex.slice(1, 3), 16);
+              const g = parseInt(hex.slice(3, 5), 16);
+              const b = parseInt(hex.slice(5, 7), 16);
+              return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            };
+
+            if (day.periods.length === 1) {
+              const period = day.periods[0];
+              const baseColor = period.color;
+              const opacity = isPast ? 0.3 : 0.7; // More transparent for past dates
               
-                             {/* Periods */}
-               {day.periods.length > 0 && (
-                 <div className="mb-2 space-y-0.5">
-                   {day.periods.slice(0, 3).map(period => {
-                     const isStart = day.date.toDateString() === period.startDate.toDateString();
-                     const isEnd = day.date.toDateString() === period.endDate.toDateString();
-                     
-                     return (
-                       <div
-                         key={period.id}
-                         className="h-2 rounded-full cursor-pointer hover:h-3 transition-all duration-200 relative group"
-                         style={{
-                           backgroundColor: period.color + '30',
-                           borderLeft: isStart ? `2px solid ${period.color}` : 'none',
-                           borderRight: isEnd ? `2px solid ${period.color}` : 'none'
-                         }}
-                         onClick={(e) => handlePeriodClick(period, e)}
-                         title={`${period.title} (${period.startDate.toLocaleDateString()} - ${period.endDate.toLocaleDateString()})`}
-                       >
-                         {isStart && (
-                           <div className="absolute left-0 top-2 opacity-0 group-hover:opacity-100 bg-popover text-popover-foreground text-[9px] px-1 py-0.5 rounded shadow-md border z-10 whitespace-nowrap transition-opacity">
-                             {period.title}
-                           </div>
-                         )}
-                       </div>
-                     );
-                   })}
-                   {day.periods.length > 3 && (
-                     <div className="text-xs text-muted-foreground text-center">
-                       +{day.periods.length - 3}
-                     </div>
-                   )}
-                 </div>
-               )}
+              periodStyle.backgroundColor = hexToRgba(baseColor, opacity);
+              periodStyle.color = getContrastColor(baseColor);
+
+            } else if (day.periods.length >= 2) {
+              const p1 = day.periods[0];
+              const p2 = day.periods[1];
+              const opacity = isPast ? 0.3 : 0.7;
               
-              {/* Events */}
-              <div className="space-y-1">
-                {day.events.slice(0, 3).map(event => (
-                  <div
-                    key={event.id}
-                    className="p-1.5 rounded-md text-xs cursor-pointer hover:scale-[1.02] transition-all shadow-sm border group"
-                    style={{ 
-                      backgroundColor: event.color + '20', 
-                      borderColor: event.color + '60',
-                      borderLeftWidth: '3px',
-                      borderLeftColor: event.color
-                    }}
-                    onClick={(e) => handleEventClick(event, e)}
-                    title={`${event.title}${event.description ? ` - ${event.description}` : ''}`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1 flex-1 min-w-0">
-                        <div 
-                          className="w-2 h-2 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: event.color }}
-                        />
-                        <span className="truncate font-medium text-xs text-foreground">
-                          {event.title}
-                        </span>
-                      </div>
-                      <Edit2 className="w-2.5 h-2.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                    {event.description && (
-                      <div className="text-xs text-muted-foreground mt-0.5 truncate">
-                        {event.description}
-                      </div>
-                    )}
-                  </div>
-                ))}
-                {day.events.length > 3 && (
-                  <div className="text-xs text-muted-foreground p-1">
-                    +{day.events.length - 3} more events
+              // Horizontal split: top half p1, bottom half p2
+              periodStyle.background = `linear-gradient(to bottom, ${hexToRgba(p1.color, opacity)} 50%, ${hexToRgba(p2.color, opacity)} 50%)`;
+              periodStyle.color = '#fff';
+              periodStyle.textShadow = '0 1px 2px rgba(0,0,0,0.7)';
+            }
+
+            return (
+              <div
+                key={index}
+                className={cn(
+                  "min-h-[140px] p-3 border-r border-b border-border/40 last:border-r-0 transition-all duration-200 cursor-pointer relative group",
+                  "hover:bg-accent/40 hover:shadow-md hover:scale-[1.02] hover:z-10",
+                  !day.isCurrentMonth && "bg-muted/20 text-muted-foreground/50",
+                  day.isToday && "bg-primary/15 border-primary/30 ring-2 ring-primary/50 ring-offset-1 ring-offset-background shadow-lg",
+                  selectedDate && day.date.toDateString() === selectedDate.toDateString() && "ring-2 ring-accent-foreground/50 ring-offset-1 ring-offset-background bg-accent/20",
+                  // Override background for periods
+                  !periodStyle.backgroundColor && !periodStyle.background && !day.isCurrentMonth && "bg-muted/20",
+                  !periodStyle.backgroundColor && !periodStyle.background && day.isCurrentMonth && "bg-background"
+                )}
+                style={periodStyle}
+                onClick={() => handleDateClick(day.date)}
+                onDoubleClick={() => handleDateDoubleClick(day.date)}
+              >
+                <div className={cn(
+                  "text-sm font-medium mb-2 transition-colors duration-200 relative z-10",
+                  !day.isCurrentMonth && !periodStyle.color && "text-muted-foreground",
+                  day.isToday && !periodStyle.color && "text-primary font-bold"
+                )}>
+                  {day.date.getDate()}
+                </div>
+                
+                {/* Period count indicator for multiple periods */}
+                {day.periods.length > 2 && (
+                  <div className="absolute top-1 right-1 text-xs bg-background/80 text-foreground px-1 py-0.5 rounded-full border z-10">
+                    +{day.periods.length - 2}
                   </div>
                 )}
+                
+                {/* Events */}
+                <div className="space-y-1 relative z-10">
+                  {day.events.slice(0, 3).map(event => (
+                    <div
+                      key={event.id}
+                      className="p-1.5 rounded-lg text-xs cursor-pointer hover:scale-[1.03] hover:shadow-lg hover:ring-2 hover:ring-offset-1 hover:ring-offset-background transition-all duration-300 border group relative"
+                      style={{ 
+                        backgroundColor: event.color + '25', 
+                        borderColor: event.color + '70',
+                        borderLeftWidth: '3px',
+                        borderLeftColor: event.color
+                      }}
+                      onClick={(e) => handleEventClick(event, e)}
+                      title={`${event.title}${event.description ? ` - ${event.description}` : ''}`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                          <div 
+                            className="w-2 h-2 rounded-full flex-shrink-0 ring-1 ring-white/20"
+                            style={{ backgroundColor: event.color }}
+                          />
+                          <span className="truncate font-medium text-xs text-foreground">
+                            {event.title}
+                          </span>
+                        </div>
+                        <Edit2 className="w-2.5 h-2.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all duration-200" />
+                      </div>
+                      {event.description && (
+                        <div className="text-xs text-muted-foreground mt-1 truncate">
+                          {event.description}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {day.events.length > 3 && (
+                    <div className="text-xs text-muted-foreground p-1 font-medium">
+                      +{day.events.length - 3} more events
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
       
       {/* Summary Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-card/60 backdrop-blur-sm rounded-xl p-5 border border-border/50">
+        <div className="bg-card/70 backdrop-blur-md rounded-2xl p-5 border border-border/40 shadow-lg hover:shadow-xl hover:ring-2 hover:ring-primary/20 hover:ring-offset-1 hover:ring-offset-background transition-all duration-300">
           <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-medium text-foreground">Events</h4>
+            <h4 className="text-sm font-semibold text-foreground">Events</h4>
             <Calendar className="w-4 h-4 text-primary" />
           </div>
           <div className="text-2xl font-bold text-primary">
             {monthStats.totalEvents}
           </div>
-          <div className="text-xs text-muted-foreground">This month</div>
+          <div className="text-xs text-muted-foreground font-medium">This month</div>
         </div>
         
-        <div className="bg-card/60 backdrop-blur-sm rounded-xl p-5 border border-border/50">
+        <div className="bg-card/70 backdrop-blur-md rounded-2xl p-5 border border-border/40 shadow-lg hover:shadow-xl hover:ring-2 hover:ring-primary/20 hover:ring-offset-1 hover:ring-offset-background transition-all duration-300">
           <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-medium text-foreground">Periods</h4>
+            <h4 className="text-sm font-semibold text-foreground">Periods</h4>
             <Clock className="w-4 h-4 text-primary" />
           </div>
           <div className="text-2xl font-bold text-primary">
             {monthStats.totalPeriods}
           </div>
-          <div className="text-xs text-muted-foreground">Active periods</div>
+          <div className="text-xs text-muted-foreground font-medium">Active periods</div>
         </div>
         
-        <div className="bg-card/60 backdrop-blur-sm rounded-xl p-5 border border-border/50">
+        <div className="bg-card/70 backdrop-blur-md rounded-2xl p-5 border border-border/40 shadow-lg hover:shadow-xl hover:ring-2 hover:ring-primary/20 hover:ring-offset-1 hover:ring-offset-background transition-all duration-300">
           <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-medium text-foreground">Active Days</h4>
+            <h4 className="text-sm font-semibold text-foreground">Active Days</h4>
             <Eye className="w-4 h-4 text-primary" />
           </div>
           <div className="text-2xl font-bold text-primary">
             {monthStats.activeDays}
           </div>
-          <div className="text-xs text-muted-foreground">Days with activity</div>
+          <div className="text-xs text-muted-foreground font-medium">Days with activity</div>
         </div>
       </div>
 

@@ -327,7 +327,6 @@ export function YearCalendar({
     const currentMonthElement = document.getElementById(`month-${currentMonth}`);
     if (currentMonthElement) {
       currentMonthElement.scrollIntoView({ 
-        behavior: 'smooth', 
         block: 'center' 
       });
     }
