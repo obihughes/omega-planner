@@ -923,7 +923,21 @@ export default function DailyPlanner() {
               </div>
               
               {generalPoolTasks.length > 0 ? (
-                <div className="bg-card/50 border border-border/30 rounded-lg p-3">
+                <div 
+                  className="bg-card/50 border border-border/30 rounded-lg p-3"
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    try {
+                      const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+                      if (data.type === 'task-assignment' && data.task && !data.isFromPool && data.task.startHour !== undefined) {
+                        handleUnassignTask(data.task);
+                      }
+                    } catch (error) {
+                      console.error('Error handling drop:', error);
+                    }
+                  }}
+                >
                   <div className="flex flex-wrap gap-2">
                     {generalPoolTasks.map(task => (
                       <div
@@ -999,13 +1013,30 @@ export default function DailyPlanner() {
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-8 px-6 bg-muted/20 border-2 border-dashed border-border/40 rounded-lg">
+                <div 
+                  className="flex flex-col items-center justify-center py-8 px-6 bg-muted/20 border-2 border-dashed border-border/40 rounded-lg hover:border-green-500/50 hover:bg-green-500/5 transition-all duration-200"
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    try {
+                      const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+                      if (data.type === 'task-assignment' && data.task && !data.isFromPool && data.task.startHour !== undefined) {
+                        handleUnassignTask(data.task);
+                      }
+                    } catch (error) {
+                      console.error('Error handling drop:', error);
+                    }
+                  }}
+                >
                   <div className="text-center">
                     <Calendar className="w-8 h-8 mx-auto mb-3 text-muted-foreground/60" />
                     <h4 className="text-sm font-semibold text-foreground mb-2">No tasks in inbox</h4>
                     <p className="text-xs text-muted-foreground mb-3">
                       Create a task to get started with scheduling
                     </p>
+                    <div className="text-xs text-green-600 bg-green-500/10 px-2 py-1 rounded-md mb-3 border border-green-500/20">
+                      Drop scheduled tasks here to unschedule them
+                    </div>
                     <Button
                       size="sm"
                       onClick={() => createPoolTask()}

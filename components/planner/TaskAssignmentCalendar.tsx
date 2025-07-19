@@ -220,6 +220,22 @@ export function TaskAssignmentCalendar({
       )}
 
       <div className="flex-1 overflow-auto p-4">
+        {/* Dedicated drop zone when inbox is hidden */}
+        {hideInboxSection && (
+          <div 
+            className="mb-4 p-4 rounded-lg border-2 border-dashed border-green-500/30 bg-green-500/5 hover:border-green-500/50 hover:bg-green-500/10 transition-all duration-200 text-center"
+            onDragOver={handleDragOver}
+            onDrop={(e) => handleDrop(e, null)}
+          >
+            <div className="text-sm text-green-600 font-medium">
+              📥 Drop scheduled tasks here to unschedule them
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              Drag tasks from the calendar to this area to move them back to your inbox
+            </div>
+          </div>
+        )}
+
         {/* Pool Tasks Section */}
         {!hideInboxSection && (
           <div 
