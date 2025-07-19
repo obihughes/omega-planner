@@ -105,13 +105,10 @@ export function useDailyPlanner() {
   const combinedPoolTasks = useMemo(() => {
     if (!isClient) return poolTasks;
     
-    // Get the currently viewed date (using topDayOffset as primary view)
-    const today = new Date();
-    const viewedDate = new Date(today);
-    viewedDate.setDate(today.getDate() + topDayOffset);
-    const viewedDateKey = viewedDate.toISOString().split('T')[0];
+    // Get the currently viewed date key (using topDayOffset as primary view)
+    const viewedDateKey = getDateKeyFromOffset(topDayOffset);
     
-    // Get pool tasks for currently viewed date
+    // Get pool tasks for the currently viewed date
     const viewedDatePoolTasks = poolTasksByDate.get(viewedDateKey) || [];
     
     // Combine general pool tasks with viewed date pool tasks
@@ -1093,7 +1090,7 @@ export function useDailyPlanner() {
       const today = new Date();
       const viewedDate = new Date(today);
       viewedDate.setDate(today.getDate() + topDayOffset);
-      const viewedDateKey = viewedDate.toISOString().split('T')[0];
+      const viewedDateKey = getDateKeyFromOffset(topDayOffset);
       const tasks = poolTasksByDate.get(viewedDateKey) || [];
       return tasks;
     }, [poolTasksByDate, isClient, topDayOffset]),

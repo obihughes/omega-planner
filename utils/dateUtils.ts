@@ -5,6 +5,8 @@
  */
 export const getDateKeyFromOffset = (dayOffset: number): string => {
   const date = new Date();
+  // Set time to noon to avoid timezone-related date shifts
+  date.setHours(12, 0, 0, 0);
   date.setDate(date.getDate() + dayOffset);
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -19,7 +21,8 @@ export const getDateKeyFromOffset = (dayOffset: number): string => {
  */
 export const dateFromDateKey = (dateKey: string): Date => {
   const [year, month, day] = dateKey.split('-').map(Number);
-  return new Date(year, month - 1, day, 0, 0, 0, 0);
+  // Set time to noon to avoid timezone-related date shifts
+  return new Date(year, month - 1, day, 12, 0, 0, 0);
 };
 
 /**
@@ -38,6 +41,7 @@ export const getTodayDateKey = (): string => {
  */
 export const addDaysToDateKey = (dateKey: string, days: number): string => {
   const date = dateFromDateKey(dateKey);
+  // dateFromDateKey already sets time to noon, so this is safe
   date.setDate(date.getDate() + days);
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -53,13 +57,17 @@ export const addDaysToDateKey = (dateKey: string, days: number): string => {
 export const getDateKey = (input: Date | string): string => {
   let date: Date;
   if (typeof input === 'string') {
-    date = new Date(input);
+    // Handle ISO strings (e.g., "2023-10-27T05:00:00.000Z") correctly
+    // by parsing and then using UTC parts to construct a new date
+    const d = new Date(input);
+    date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 12, 0, 0));
   } else {
     date = input;
   }
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  // Use UTC methods to avoid timezone shift issues
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
 
@@ -76,7 +84,8 @@ export const getDateWithoutTime = (input: string | Date): Date => {
   } else {
     date = input;
   }
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+  // Use UTC methods to create a date at midnight UTC
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
 };
 
 /**

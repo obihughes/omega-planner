@@ -53,6 +53,27 @@ Renders individual timeline sections with tasks and time markers.
 ### TaskCard
 Individual task representation with drag/resize handles.
 
+### TaskInboxSidebar
+Displays tasks from the "task pool" that are not yet scheduled.
+
+### PinnedTasksSidebar
+Shows tasks that the user has pinned for quick access.
+
+### FocusView
+A dedicated view for focusing on a single task.
+
+### WeeklyView
+Displays a 7-day view of scheduled tasks.
+
+### TaskAssignmentCalendar
+A small calendar for assigning dates to tasks.
+
+### EditTaskModal
+Modal for editing the details of a task.
+
+### ViewTaskNotesModal
+Modal for viewing the notes of a task.
+
 ## Usage
 
 ```typescript
@@ -157,3 +178,16 @@ Common issues and solutions:
 1. Task conflict: Ensure no overlapping times in same period
 2. Drag issues: Check if task is properly released
 3. Resize limits: Verify minimum/maximum duration constraints 
+
+## Key Hooks
+
+-   `useDailyPlannerState`: Manages the state for the daily planner, including tasks, pinned tasks, and UI state. It loads and saves data from `localStorage` using the `TaskStorage` utility.
+-   `useModalManager`: Handles the state for all modals in the application.
+
+## Key Utilities
+
+-   `TaskStorage`: A class that handles all interactions with `localStorage` for tasks, settings, and other planner-related data. It uses specific keys to avoid conflicts (e.g., `TASKS_KEY`, `PINS_KEY`).
+-   `dateUtils`: A set of functions for handling dates, such as getting date keys (`YYYY-MM-DD`) and formatting dates for display. All date calculations are done in UTC to avoid timezone issues.
+-   `taskUtils`: Functions for task-specific logic, such as checking for overlapping tasks.
+-   `colorUtils`: Utility for handling color conversions and manipulations.
+-   `formatters`: Functions for formatting text, such as time and duration.
