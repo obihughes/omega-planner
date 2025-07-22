@@ -36,14 +36,25 @@ export const SidebarProvider: React.FC<SidebarProviderProps> = ({
   const [sidebarWidth, setSidebarWidthState] = useState(initialWidth);
 
   useEffect(() => {
+    // Load saved width
     const savedWidth = localStorage.getItem('sidebarWidth');
     if (savedWidth) {
       setSidebarWidthState(Math.max(minWidth, Math.min(maxWidth, parseInt(savedWidth, 10))));
     }
+    
+    // Load saved collapsed state
+    const savedCollapsed = localStorage.getItem('sidebarCollapsed');
+    if (savedCollapsed !== null) {
+      setIsCollapsed(JSON.parse(savedCollapsed));
+    }
   }, [minWidth, maxWidth]);
 
   const toggleSidebar = () => {
-    setIsCollapsed(prev => !prev);
+    setIsCollapsed(prev => {
+      const newCollapsed = !prev;
+      localStorage.setItem('sidebarCollapsed', JSON.stringify(newCollapsed));
+      return newCollapsed;
+    });
   };
 
   const setSidebarWidth = (width: number) => {

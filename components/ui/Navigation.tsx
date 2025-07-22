@@ -48,29 +48,29 @@ export function Navigation() {
     if (referenceWidth <= 180) {
       mainTextSize = 'text-base';  // Increased from text-sm
       subTextSize = 'text-sm';     // Increased from text-xs
-      iconSize = 'w-5 h-5';        // Increased from w-4 h-4
-      subIconSize = 'w-4 h-4';     // Increased from w-3 h-3
+      iconSize = isCollapsed ? 'w-7 h-7' : 'w-5 h-5';        // Larger in collapsed view
+      subIconSize = isCollapsed ? 'w-4 h-4' : 'w-4 h-4';     // Smaller than main in collapsed
       logoSize = 'w-8 h-8';        // Increased from w-7 h-7
       logoTextSize = 'text-lg';    // Increased from text-base
     } else if (referenceWidth <= 220) {
       mainTextSize = 'text-lg';    // Increased from text-base
       subTextSize = 'text-base';   // Increased from text-sm
-      iconSize = 'w-6 h-6';        // Increased from w-5 h-5
-      subIconSize = 'w-5 h-5';     // Increased from w-4 h-4
+      iconSize = isCollapsed ? 'w-8 h-8' : 'w-6 h-6';        // Larger in collapsed view
+      subIconSize = isCollapsed ? 'w-5 h-5' : 'w-5 h-5';     // Smaller than main in collapsed
       logoSize = 'w-9 h-9';        // Increased from w-8 h-8
       logoTextSize = 'text-xl';    // Increased from text-lg
     } else if (referenceWidth <= 280) {
       mainTextSize = 'text-xl';    // Increased from text-lg
       subTextSize = 'text-lg';     // Increased from text-base
-      iconSize = 'w-6 h-6';        // Same size
-      subIconSize = 'w-5 h-5';     // Increased from w-4 h-4
+      iconSize = isCollapsed ? 'w-9 h-9' : 'w-6 h-6';        // Much larger in collapsed view
+      subIconSize = isCollapsed ? 'w-5 h-5' : 'w-5 h-5';     // Smaller than main in collapsed
       logoSize = 'w-10 h-10';      // Increased from w-9 h-9
       logoTextSize = 'text-2xl';   // Increased from text-xl
     } else {
       mainTextSize = 'text-2xl';   // Increased from text-xl
       subTextSize = 'text-xl';     // Increased from text-lg
-      iconSize = 'w-7 h-7';        // Increased from w-6 h-6
-      subIconSize = 'w-6 h-6';     // Increased from w-5 h-5
+      iconSize = isCollapsed ? 'w-10 h-10' : 'w-7 h-7';      // Much larger in collapsed view
+      subIconSize = isCollapsed ? 'w-6 h-6' : 'w-6 h-6';     // Smaller than main in collapsed
       logoSize = 'w-11 h-11';      // Increased from w-10 h-10
       logoTextSize = 'text-2xl';   // Increased from text-xl
     }
@@ -82,9 +82,9 @@ export function Navigation() {
       subIconSize,
       logoSize,
       logoTextSize,
-      // Padding should be smaller in collapsed mode but icons/text same size
-      mainPadding: isCollapsed ? 'p-1.5' : (referenceWidth <= 220 ? 'p-2' : 'p-2.5'),
-      subPadding: isCollapsed ? 'p-1' : (referenceWidth <= 220 ? 'p-1.5' : 'p-2')
+      // Increased padding in collapsed mode for better touch targets
+      mainPadding: isCollapsed ? 'p-3' : (referenceWidth <= 220 ? 'p-2' : 'p-2.5'),
+      subPadding: isCollapsed ? 'p-2' : (referenceWidth <= 220 ? 'p-1.5' : 'p-2')
     };
   }, [isCollapsed, sidebarWidth]);
 
@@ -228,7 +228,7 @@ export function Navigation() {
                     <div className={cn(
                       "space-y-0.5",
                       isCollapsed 
-                        ? "border-l border-border/70 ml-3 pl-1" 
+                        ? "border-l border-border/70 ml-6 pl-2" // Increased margin/padding for larger icons
                         : "relative pl-4 before:absolute before:left-4 before:top-0 before:h-full before:w-px before:bg-border/70"
                     )}>
                       {item.subViews.map((subView) => {
