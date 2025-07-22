@@ -1,45 +1,29 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Navigation } from './Navigation';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/hooks/useTheme';
 import { Button } from './button';
 import { Sun, Moon } from 'lucide-react';
+import { SidebarProvider, useSidebar } from '@/app/context/SidebarContext';
 
 interface AppLayoutProps {
   children: React.ReactNode;
 }
 
-export function AppLayout({ children }: AppLayoutProps) {
-  const [isNavigationCollapsed, setIsNavigationCollapsed] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('navCollapsed') === 'true';
-    }
-    return true; // Default to collapsed
-  });
+const AppLayoutContent: React.FC<AppLayoutProps> = ({ children }) => {
+  const { isCollapsed, sidebarWidth } = useSidebar();
   const { theme, toggleTheme } = useTheme();
-
-  // Persist collapsed state to localStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('navCollapsed', String(isNavigationCollapsed));
-    }
-  }, [isNavigationCollapsed]);
 
   return (
     <div className="flex h-screen bg-background">
-      {/* Sidebar Navigation */}
-      <Navigation 
-        isCollapsed={isNavigationCollapsed}
-        onToggleCollapse={setIsNavigationCollapsed}
-      />
+      <Navigation />
       
-      {/* Main Content Area */}
-      <main className={cn(
-        "flex-1 transition-all duration-300 ease-in-out relative",
-        isNavigationCollapsed ? "ml-20" : "ml-48"
-      )}>
+      <main 
+        className="flex-1 transition-all duration-300 ease-in-out relative"
+        style={{ marginLeft: isCollapsed ? '80px' : `${sidebarWidth}px` }}
+      >
         <div className="absolute top-4 right-4 z-50">
           <Button
             variant="ghost"
@@ -56,5 +40,13 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
       </main>
     </div>
+  );
+}
+
+export function AppLayout({ children }: AppLayoutProps) {
+  return (
+    <SidebarProvider>
+      <AppLayoutContent>{children}</AppLayoutContent>
+    </SidebarProvider>
   );
 } 

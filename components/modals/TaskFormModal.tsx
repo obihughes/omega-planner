@@ -55,6 +55,15 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
   const [color, setColor] = useState(TASK_COLORS[0]);
   const modalRef = useRef<HTMLDivElement>(null);
 
+  // Calculate end time based on start time + duration
+  const endHour = startHour + duration;
+
+  // Helper function to set end time and automatically calculate duration
+  const setEndTime = (newEndHour: number) => {
+    const newDuration = Math.max(0.25, newEndHour - startHour); // Minimum 15 minutes
+    setDuration(newDuration);
+  };
+
   useEffect(() => {
     if (taskToEdit) {
       setTaskName(taskToEdit.name);
@@ -162,6 +171,7 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
           />
         </div>
 
+        {/* Start Time */}
         <div className="grid grid-cols-3 gap-4">
           <div className="col-span-2">
             <label htmlFor={`startHourInput-${taskToEdit?.id || 'new'}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -209,6 +219,57 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
             </select>
           </div>
         </div>
+
+        {/* End Time */}
+        <div className="grid grid-cols-3 gap-4">
+          <div className="col-span-2">
+            <label htmlFor={`endHourInput-${taskToEdit?.id || 'new'}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              End Time
+            </label>
+            <select
+              id={`endHourInput-${taskToEdit?.id || 'new'}`}
+              value={Math.floor(endHour)}
+              onChange={(e) => {
+                const newHour = parseInt(e.target.value, 10);
+                const minutePart = endHour % 1;
+                setEndTime(newHour + minutePart);
+              }}
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+            >
+              {Array.from({ length: TIMELINE_END_HOUR - TIMELINE_START_HOUR + 1 }, (_, i) => {
+                const hourVal = TIMELINE_START_HOUR + i;
+                if (hourVal > TIMELINE_END_HOUR) return null;
+                return (
+                  <option key={hourVal} value={hourVal}>
+                    {formatTime(hourVal)}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+          <div>
+            <label htmlFor={`endMinuteInput-${taskToEdit?.id || 'new'}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Minute
+            </label>
+            <select
+              id={`endMinuteInput-${taskToEdit?.id || 'new'}`}
+              value={Math.round((endHour % 1) * 60)}
+              onChange={(e) => {
+                const newMinute = parseInt(e.target.value, 10);
+                const hourPart = Math.floor(endHour);
+                setEndTime(hourPart + newMinute / 60);
+              }}
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+            >
+              <option value={0}>00</option>
+              <option value={15}>15</option>
+              <option value={30}>30</option>
+              <option value={45}>45</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Duration (now calculated automatically but still shown for reference) */}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label htmlFor={`durationInput-${taskToEdit?.id || 'new'}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -229,7 +290,7 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
               }}
             >
               <div className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white cursor-pointer">
-                {DURATION_OPTIONS.find(opt => opt.value === duration)?.label}
+                {DURATION_OPTIONS.find(opt => opt.value === duration)?.label || `${duration} hour${duration !== 1 ? 's' : ''}`}
               </div>
               <div className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 max-h-48 overflow-y-auto">
                 {DURATION_OPTIONS.map((option) => (

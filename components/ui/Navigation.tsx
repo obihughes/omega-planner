@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
-  Calendar, CalendarDays, FolderKanban, Sun, Moon, FileText, ChevronLeft, ChevronRight, 
+  Calendar, CalendarDays, FolderKanban, FileText, ChevronLeft, ChevronRight, 
   Clock, Archive, Trash2, CalendarCheck, CalendarRange, Folder, Files 
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
@@ -14,13 +14,16 @@ import { useProjectsView } from '@/app/context/ProjectsViewContext';
 import { useCalendarView } from '@/app/context/CalendarViewContext';
 import { useDocumentsView } from '@/app/context/DocumentsViewContext';
 
-interface NavigationProps {
-  isCollapsed?: boolean;
-  onToggleCollapse?: (collapsed: boolean) => void;
-}
-
-export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse }: NavigationProps = {}) {
-  const [internalIsCollapsed, setInternalIsCollapsed] = useState(false);
+export function Navigation() {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sidebarWidth');
+      return saved ? parseInt(saved, 10) : 208;
+    }
+    return 208;
+  });
+  
   const pathname = usePathname();
   const router = useRouter();
   const { theme, toggleTheme, mounted } = useTheme();
@@ -28,10 +31,89 @@ export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse 
   const { viewMode: projectsViewMode, setViewMode: setProjectsViewMode } = useProjectsView();
   const { viewMode: calendarViewMode, setViewMode: setCalendarViewMode } = useCalendarView();
   const { viewMode: documentsViewMode, setViewMode: setDocumentsViewMode } = useDocumentsView();
+  
+  const isResizing = useRef(false);
+  const minWidth = 160;
+  const maxWidth = 400;
 
-  // Use external state if provided, otherwise use internal state
-  const isCollapsed = externalIsCollapsed !== undefined ? externalIsCollapsed : internalIsCollapsed;
-  const setIsCollapsed = onToggleCollapse || setInternalIsCollapsed;
+  // Calculate collapsed width as a proportion of uncollapsed width
+  const collapsedWidth = useMemo(() => {
+    // Collapsed width should be more responsive - 25-40% of uncollapsed width
+    const proportion = Math.max(60, Math.min(120, sidebarWidth * 0.35));
+    return Math.floor(proportion);
+  }, [sidebarWidth]);
+
+  // Dynamic sizing based on sidebar width - applies to BOTH collapsed and uncollapsed
+  const dynamicSizes = useMemo(() => {
+    // Use the same reference width for both modes so content is similar sized
+    const referenceWidth = sidebarWidth; // Always use uncollapsed width for sizing reference
+    
+    // Text sizing based on available width - more generous breakpoints
+    let mainTextSize, subTextSize, iconSize, subIconSize, logoSize, logoTextSize;
+    
+    if (referenceWidth <= 180) {
+      mainTextSize = 'text-sm';
+      subTextSize = 'text-xs';
+      iconSize = 'w-4 h-4';
+      subIconSize = 'w-3 h-3';
+      logoSize = 'w-7 h-7';
+      logoTextSize = 'text-base';
+    } else if (referenceWidth <= 220) {
+      mainTextSize = 'text-base';
+      subTextSize = 'text-sm';
+      iconSize = 'w-5 h-5';
+      subIconSize = 'w-4 h-4';
+      logoSize = 'w-8 h-8';
+      logoTextSize = 'text-lg';
+    } else if (referenceWidth <= 280) {
+      mainTextSize = 'text-lg';
+      subTextSize = 'text-base';
+      iconSize = 'w-5 h-5';
+      subIconSize = 'w-4 h-4';
+      logoSize = 'w-9 h-9';
+      logoTextSize = 'text-xl';
+    } else {
+      mainTextSize = 'text-xl';
+      subTextSize = 'text-lg';
+      iconSize = 'w-6 h-6';
+      subIconSize = 'w-5 h-5';
+      logoSize = 'w-10 h-10';
+      logoTextSize = 'text-2xl';
+    }
+
+    return {
+      mainTextSize,
+      subTextSize,
+      iconSize,
+      subIconSize,
+      logoSize,
+      logoTextSize,
+      // Padding should be smaller in collapsed mode but icons/text same size
+      mainPadding: isCollapsed ? 'p-1.5' : (referenceWidth <= 220 ? 'p-2' : 'p-2.5'),
+      subPadding: isCollapsed ? 'p-1' : (referenceWidth <= 220 ? 'p-1.5' : 'p-2')
+    };
+  }, [isCollapsed, sidebarWidth]);
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    isResizing.current = true;
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (isResizing.current) {
+      const newWidth = Math.max(minWidth, Math.min(maxWidth, e.clientX));
+      setSidebarWidth(newWidth);
+      localStorage.setItem('sidebarWidth', newWidth.toString());
+    }
+  }, []);
+
+  const handleMouseUp = useCallback(() => {
+    isResizing.current = false;
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', handleMouseUp);
+  }, [handleMouseMove]);
 
   if (!mounted) {
     return null; // Prevent hydration mismatch
@@ -88,128 +170,132 @@ export function Navigation({ isCollapsed: externalIsCollapsed, onToggleCollapse 
   };
 
   return (
-    <nav className={cn(
-      "h-screen bg-card/98 backdrop-blur-md border-r border-border/40 fixed left-0 top-0 z-50 shadow-xl flex flex-col transition-all duration-300 ease-in-out",
-      isCollapsed ? "w-20" : "w-40"
-    )}>
-      {/* Logo/Brand Section */}
-      <div className="p-4 border-b border-border/40 relative">
-        {!isCollapsed ? (
+    <>
+      <nav 
+        className="h-screen bg-card/98 backdrop-blur-md border-r border-border/40 fixed left-0 top-0 z-50 shadow-xl flex flex-col transition-all duration-300 ease-in-out"
+        style={{ width: isCollapsed ? collapsedWidth : sidebarWidth }}
+      >
+        {/* Logo/Brand Section */}
+        <div className={cn("border-b border-border/40 relative", dynamicSizes.mainPadding)}>
           <div className="flex items-center justify-center">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
-              <span className="text-lg font-bold text-primary-foreground">Ω</span>
+            <div className={cn(
+              "bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg rounded",
+              dynamicSizes.logoSize
+            )}>
+              <span className={cn("font-bold text-primary-foreground", dynamicSizes.logoTextSize)}>Ω</span>
             </div>
           </div>
-        ) : (
-          <div className="flex justify-center">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
-              <span className="text-lg font-bold text-primary-foreground">Ω</span>
-            </div>
-          </div>
-        )}
-        
-        {/* Toggle Button */}
-        <button
-          onClick={handleToggle}
-          className="absolute -right-3 top-1/2 transform -translate-y-1/2 w-6 h-6 bg-card border border-border rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-200 hover:bg-secondary"
-          aria-label={isCollapsed ? "Expand navigation" : "Collapse navigation"}
-        >
-          {isCollapsed ? (
-            <ChevronRight className="w-3 h-3 text-muted-foreground" />
-          ) : (
-            <ChevronLeft className="w-3 h-3 text-muted-foreground" />
-          )}
-        </button>
-      </div>
-
-      {/* Navigation Links */}
-      <div className="flex-1 px-2 py-3 overflow-y-auto">
-        <div className="space-y-2">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const showSubViews = true;
-
-            return (
-              <div key={item.href}>
-                <Link
-                  href={item.href}
-                  className={cn(
-                    "w-full flex items-center text-sm font-medium transition-all duration-200 group relative",
-                    isCollapsed ? "p-4 justify-center" : "px-4 py-3 space-x-4",
-                    item.active
-                      ? "bg-muted"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/80"
-                  )}
-                  title={isCollapsed ? item.label : undefined}
-                >
-                  <Icon className={cn(
-                    "transition-all duration-200 w-6 h-6",
-                    item.active 
-                      ? "text-foreground" 
-                      : "text-muted-foreground group-hover:text-foreground"
-                  )} />
-                  {!isCollapsed && (
-                    <span className="font-semibold">{item.label}</span>
-                  )}
-                </Link>
-                
-                {/* Sub-Views */}
-                {showSubViews && item.subViews && (
-                  <div className={cn(
-                    "mt-1 space-y-1",
-                    isCollapsed 
-                      ? "border-l border-border/70 ml-4 pl-3" 
-                      : "relative pl-5 before:absolute before:left-6 before:top-0 before:h-full before:w-px before:bg-border/70"
-                  )}>
-                    {item.subViews.map((subView) => {
-                      const SubIcon = subView.icon;
-                      return (
-                        <button 
-                          key={subView.key}
-                          onClick={() => {
-                            // Navigate to the parent page and set the view mode
-                            router.push(item.href);
-                            
-                            // Set the appropriate view mode
-                            if (item.href === '/') {
-                              setPlannerViewMode(subView.key as any);
-                            } else if (item.href === '/projects') {
-                              setProjectsViewMode(subView.key as any);
-                            } else if (item.href === '/calendar') {
-                              setCalendarViewMode(subView.key as any);
-                            } else if (item.href === '/documents') {
-                              setDocumentsViewMode(subView.key as any);
-                            }
-                          }} 
-                          className={cn(
-                            "flex items-center font-medium transition-all duration-200 w-full",
-                            isCollapsed 
-                              ? "pl-2 py-1.5 justify-start" 
-                              : "px-4 py-1.5 text-xs",
-                            subView.active 
-                              ? 'text-foreground font-semibold' 
-                              : 'text-muted-foreground hover:text-foreground'
-                          )}
-                          title={isCollapsed ? subView.label : undefined}
-                        >
-                          {isCollapsed ? (
-                            <SubIcon className="w-4 h-4 group-hover:text-foreground" />
-                          ) : (
-                            <>
-                              <SubIcon className="w-4 h-4 mr-2" />
-                              {subView.label}
-                            </>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          
+          {/* Toggle Button */}
+          <button
+            onClick={handleToggle}
+            className="absolute -right-3 top-1/2 transform -translate-y-1/2 w-6 h-6 bg-card border border-border rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-200 hover:bg-secondary"
+            aria-label={isCollapsed ? "Expand navigation" : "Collapse navigation"}
+          >
+            {isCollapsed ? (
+              <ChevronRight className="w-3 h-3 text-muted-foreground" />
+            ) : (
+              <ChevronLeft className="w-3 h-3 text-muted-foreground" />
+            )}
+          </button>
         </div>
-      </div>
-    </nav>
+
+        {/* Navigation Links */}
+        <div className="flex-1 py-1 overflow-y-auto">
+          <div className="space-y-0.5">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const showSubViews = true;
+
+              return (
+                <div key={item.href}>
+                  <Link
+                    href={item.href}
+                    className={cn(
+                      "w-full flex items-center font-normal transition-all duration-200 group relative",
+                      isCollapsed ? "justify-center" : "space-x-2",
+                      dynamicSizes.mainPadding,
+                      dynamicSizes.mainTextSize,
+                      item.active
+                        ? "bg-muted text-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/80"
+                    )}
+                    title={isCollapsed ? item.label : undefined}
+                  >
+                    <Icon className={cn(
+                      "transition-all duration-200 flex-shrink-0",
+                      dynamicSizes.iconSize,
+                      item.active 
+                        ? "text-foreground" 
+                        : "text-muted-foreground group-hover:text-foreground"
+                    )} />
+                    {!isCollapsed && (
+                      <span className="font-medium tracking-tight flex-1 truncate">{item.label}</span>
+                    )}
+                  </Link>
+                  
+                  {/* Sub-Views */}
+                  {showSubViews && item.subViews && (
+                    <div className={cn(
+                      "space-y-0.5",
+                      isCollapsed 
+                        ? "border-l border-border/70 ml-3 pl-1" 
+                        : "relative pl-4 before:absolute before:left-4 before:top-0 before:h-full before:w-px before:bg-border/70"
+                    )}>
+                      {item.subViews.map((subView) => {
+                        const SubIcon = subView.icon;
+                        return (
+                          <button 
+                            key={subView.key}
+                            onClick={() => {
+                              router.push(item.href);
+                              if (item.href === '/') {
+                                setPlannerViewMode(subView.key as any);
+                              } else if (item.href === '/projects') {
+                                setProjectsViewMode(subView.key as any);
+                              } else if (item.href === '/calendar') {
+                                setCalendarViewMode(subView.key as any);
+                              } else if (item.href === '/documents') {
+                                setDocumentsViewMode(subView.key as any);
+                              }
+                            }} 
+                            className={cn(
+                              "flex items-center font-normal transition-all duration-200 w-full text-left",
+                              isCollapsed 
+                                ? "justify-center" 
+                                : "space-x-2",
+                              dynamicSizes.subPadding,
+                              dynamicSizes.subTextSize,
+                              subView.active 
+                                ? 'text-foreground font-medium' 
+                                : 'text-muted-foreground hover:text-foreground'
+                            )}
+                            title={isCollapsed ? subView.label : undefined}
+                          >
+                            <SubIcon className={cn("flex-shrink-0", dynamicSizes.subIconSize)} />
+                            {!isCollapsed && (
+                              <span className="tracking-tight flex-1 truncate">{subView.label}</span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </nav>
+      
+      {/* Resize Handle */}
+      {!isCollapsed && (
+        <div 
+          onMouseDown={handleMouseDown}
+          className="absolute top-0 h-full w-1 cursor-col-resize z-50 hover:bg-primary/20 transition-colors"
+          style={{ left: sidebarWidth - 2 }}
+        />
+      )}
+    </>
   );
 } 

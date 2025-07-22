@@ -72,6 +72,15 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [isDurationDropdownOpen, setIsDurationDropdownOpen] = useState(false);
 
+  // Calculate end time based on start time + duration
+  const endHour = startHour + duration;
+
+  // Helper function to set end time and automatically calculate duration
+  const setEndTime = (newEndHour: number) => {
+    const newDuration = Math.max(0.25, newEndHour - startHour); // Minimum 15 minutes
+    setDuration(newDuration);
+  };
+
   const modalRef = useRef<HTMLDivElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const durationControlRef = useRef<HTMLDivElement>(null);
@@ -261,13 +270,22 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
             )}
             
             {showTimePicker && (
-              <div>
-                <label htmlFor="taskStartTime" className="block text-xs font-medium text-muted-foreground mb-1">Start Time</label>
-                <CustomTimePicker
-                  value={startHour}
-                  onChange={setStartHour}
-                />
-              </div>
+              <>
+                <div>
+                  <label htmlFor="taskStartTime" className="block text-xs font-medium text-muted-foreground mb-1">Start Time</label>
+                  <CustomTimePicker
+                    value={startHour}
+                    onChange={setStartHour}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="taskEndTime" className="block text-xs font-medium text-muted-foreground mb-1">End Time</label>
+                  <CustomTimePicker
+                    value={endHour}
+                    onChange={setEndTime}
+                  />
+                </div>
+              </>
             )}
 
             <div>
