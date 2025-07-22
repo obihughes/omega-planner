@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Navigation } from './Navigation';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/hooks/useTheme';
@@ -16,13 +16,19 @@ const AppLayoutContent: React.FC<AppLayoutProps> = ({ children }) => {
   const { isCollapsed, sidebarWidth } = useSidebar();
   const { theme, toggleTheme } = useTheme();
 
+  // Calculate collapsed width to match Navigation component
+  const collapsedWidth = useMemo(() => {
+    const proportion = Math.max(100, Math.min(180, sidebarWidth * 0.55));
+    return Math.floor(proportion);
+  }, [sidebarWidth]);
+
   return (
     <div className="flex h-screen bg-background">
       <Navigation />
       
       <main 
-        className="flex-1 transition-all duration-300 ease-in-out relative"
-        style={{ marginLeft: isCollapsed ? '80px' : `${sidebarWidth}px` }}
+        className="flex-1 relative"
+        style={{ marginLeft: isCollapsed ? `${collapsedWidth}px` : `${sidebarWidth}px` }}
       >
         <div className="absolute top-4 right-4 z-50">
           <Button

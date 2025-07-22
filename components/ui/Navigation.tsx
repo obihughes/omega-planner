@@ -13,16 +13,10 @@ import { useViewMode } from '@/app/context/ViewModeContext';
 import { useProjectsView } from '@/app/context/ProjectsViewContext';
 import { useCalendarView } from '@/app/context/CalendarViewContext';
 import { useDocumentsView } from '@/app/context/DocumentsViewContext';
+import { useSidebar } from '@/app/context/SidebarContext';
 
 export function Navigation() {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [sidebarWidth, setSidebarWidth] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('sidebarWidth');
-      return saved ? parseInt(saved, 10) : 208;
-    }
-    return 208;
-  });
+  const { isCollapsed, sidebarWidth, toggleSidebar, setSidebarWidth } = useSidebar();
   
   const pathname = usePathname();
   const router = useRouter();
@@ -38,8 +32,8 @@ export function Navigation() {
 
   // Calculate collapsed width as a proportion of uncollapsed width
   const collapsedWidth = useMemo(() => {
-    // Collapsed width should be more responsive - 25-40% of uncollapsed width
-    const proportion = Math.max(60, Math.min(120, sidebarWidth * 0.35));
+    // Increased collapsed width for better usability - 50-60% of uncollapsed width
+    const proportion = Math.max(100, Math.min(180, sidebarWidth * 0.55));
     return Math.floor(proportion);
   }, [sidebarWidth]);
 
@@ -48,37 +42,37 @@ export function Navigation() {
     // Use the same reference width for both modes so content is similar sized
     const referenceWidth = sidebarWidth; // Always use uncollapsed width for sizing reference
     
-    // Text sizing based on available width - more generous breakpoints
+    // Text sizing based on available width - more generous breakpoints for better collapsed view
     let mainTextSize, subTextSize, iconSize, subIconSize, logoSize, logoTextSize;
     
     if (referenceWidth <= 180) {
-      mainTextSize = 'text-sm';
-      subTextSize = 'text-xs';
-      iconSize = 'w-4 h-4';
-      subIconSize = 'w-3 h-3';
-      logoSize = 'w-7 h-7';
-      logoTextSize = 'text-base';
+      mainTextSize = 'text-base';  // Increased from text-sm
+      subTextSize = 'text-sm';     // Increased from text-xs
+      iconSize = 'w-5 h-5';        // Increased from w-4 h-4
+      subIconSize = 'w-4 h-4';     // Increased from w-3 h-3
+      logoSize = 'w-8 h-8';        // Increased from w-7 h-7
+      logoTextSize = 'text-lg';    // Increased from text-base
     } else if (referenceWidth <= 220) {
-      mainTextSize = 'text-base';
-      subTextSize = 'text-sm';
-      iconSize = 'w-5 h-5';
-      subIconSize = 'w-4 h-4';
-      logoSize = 'w-8 h-8';
-      logoTextSize = 'text-lg';
+      mainTextSize = 'text-lg';    // Increased from text-base
+      subTextSize = 'text-base';   // Increased from text-sm
+      iconSize = 'w-6 h-6';        // Increased from w-5 h-5
+      subIconSize = 'w-5 h-5';     // Increased from w-4 h-4
+      logoSize = 'w-9 h-9';        // Increased from w-8 h-8
+      logoTextSize = 'text-xl';    // Increased from text-lg
     } else if (referenceWidth <= 280) {
-      mainTextSize = 'text-lg';
-      subTextSize = 'text-base';
-      iconSize = 'w-5 h-5';
-      subIconSize = 'w-4 h-4';
-      logoSize = 'w-9 h-9';
-      logoTextSize = 'text-xl';
+      mainTextSize = 'text-xl';    // Increased from text-lg
+      subTextSize = 'text-lg';     // Increased from text-base
+      iconSize = 'w-6 h-6';        // Same size
+      subIconSize = 'w-5 h-5';     // Increased from w-4 h-4
+      logoSize = 'w-10 h-10';      // Increased from w-9 h-9
+      logoTextSize = 'text-2xl';   // Increased from text-xl
     } else {
-      mainTextSize = 'text-xl';
-      subTextSize = 'text-lg';
-      iconSize = 'w-6 h-6';
-      subIconSize = 'w-5 h-5';
-      logoSize = 'w-10 h-10';
-      logoTextSize = 'text-2xl';
+      mainTextSize = 'text-2xl';   // Increased from text-xl
+      subTextSize = 'text-xl';     // Increased from text-lg
+      iconSize = 'w-7 h-7';        // Increased from w-6 h-6
+      subIconSize = 'w-6 h-6';     // Increased from w-5 h-5
+      logoSize = 'w-11 h-11';      // Increased from w-10 h-10
+      logoTextSize = 'text-2xl';   // Increased from text-xl
     }
 
     return {
@@ -105,9 +99,8 @@ export function Navigation() {
     if (isResizing.current) {
       const newWidth = Math.max(minWidth, Math.min(maxWidth, e.clientX));
       setSidebarWidth(newWidth);
-      localStorage.setItem('sidebarWidth', newWidth.toString());
     }
-  }, []);
+  }, [setSidebarWidth, minWidth, maxWidth]);
 
   const handleMouseUp = useCallback(() => {
     isResizing.current = false;
@@ -165,14 +158,10 @@ export function Navigation() {
     }
   ];
 
-  const handleToggle = () => {
-    setIsCollapsed(!isCollapsed);
-  };
-
   return (
     <>
       <nav 
-        className="h-screen bg-card/98 backdrop-blur-md border-r border-border/40 fixed left-0 top-0 z-50 shadow-xl flex flex-col transition-all duration-300 ease-in-out"
+        className="h-screen bg-card/98 backdrop-blur-md border-r border-border/40 fixed left-0 top-0 z-50 shadow-xl flex flex-col"
         style={{ width: isCollapsed ? collapsedWidth : sidebarWidth }}
       >
         {/* Logo/Brand Section */}
@@ -188,7 +177,7 @@ export function Navigation() {
           
           {/* Toggle Button */}
           <button
-            onClick={handleToggle}
+            onClick={toggleSidebar}
             className="absolute -right-3 top-1/2 transform -translate-y-1/2 w-6 h-6 bg-card border border-border rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-200 hover:bg-secondary"
             aria-label={isCollapsed ? "Expand navigation" : "Collapse navigation"}
           >
