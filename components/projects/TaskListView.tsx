@@ -710,29 +710,48 @@ export function TaskListView({ className }: TaskListViewProps) {
                       const dueInfo = formatDueDate(task.dueDate);
                       
                       return (
-                        <div key={task.id} className="p-3 hover:bg-accent/30 transition-colors">
-                          <div className="flex items-start gap-3">
-                            {/* Status toggle with celebration */}
-                            <button
-                              onClick={() => handleTaskToggle(task)}
-                              className={cn(
-                                "mt-1 flex-shrink-0 hover:scale-110 transition-all duration-200 relative",
-                                celebratingTasks.has(task.id) && "animate-bounce"
-                              )}
-                            >
-                              {getStatusIcon(task.status)}
-                              
-                              {/* Celebration effect */}
-                              {celebratingTasks.has(task.id) && (
-                                <div className="absolute -inset-2 pointer-events-none">
-                                  <div className="absolute inset-0 rounded-full bg-green-400 opacity-20 animate-ping"></div>
-                                  <div className="absolute inset-1 rounded-full bg-green-300 opacity-30 animate-ping animation-delay-75"></div>
-                                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1">
-                                    <span className="text-lg animate-bounce">🎉</span>
+                                                  <div 
+                            key={task.id} 
+                            className="p-3 hover:bg-accent/30 transition-colors cursor-pointer"
+                            onClick={(e) => {
+                              // Only trigger due date editing if not clicking on other interactive elements
+                              const target = e.target as Element;
+                              if (
+                                !target.closest('button') && 
+                                !target.closest('input') && 
+                                !target.closest('textarea') &&
+                                editingTaskId !== task.id
+                              ) {
+                                startEditing(task, 'dueDate');
+                              }
+                            }}
+                            title="Click to edit due date • Double-click title to edit name"
+                          >
+                            <div className="flex items-start gap-3">
+                              {/* Status toggle with celebration */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleTaskToggle(task);
+                                }}
+                                className={cn(
+                                  "mt-1 flex-shrink-0 hover:scale-110 transition-all duration-200 relative",
+                                  celebratingTasks.has(task.id) && "animate-bounce"
+                                )}
+                              >
+                                {getStatusIcon(task.status)}
+                                
+                                {/* Celebration effect */}
+                                {celebratingTasks.has(task.id) && (
+                                  <div className="absolute -inset-2 pointer-events-none">
+                                    <div className="absolute inset-0 rounded-full bg-green-400 opacity-20 animate-ping"></div>
+                                    <div className="absolute inset-1 rounded-full bg-green-300 opacity-30 animate-ping animation-delay-75"></div>
+                                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1">
+                                      <span className="text-lg animate-bounce">🎉</span>
+                                    </div>
                                   </div>
-                                </div>
-                              )}
-                            </button>
+                                )}
+                              </button>
                             
                             {/* Task content */}
                             <div className="flex-1 min-w-0">
@@ -755,13 +774,16 @@ export function TaskListView({ className }: TaskListViewProps) {
                                   ) : (
                                     <h3 
                                       className={cn(
-                                        "font-semibold text-base cursor-pointer hover:bg-accent/20 rounded px-1 -mx-1 transition-colors leading-tight",
+                                        "font-semibold text-base cursor-pointer hover:bg-accent/20 rounded px-1 -mx-1 transition-colors leading-tight select-none",
                                         task.status === 'completed' 
                                           ? "line-through text-muted-foreground" 
                                           : "text-foreground"
                                       )}
-                                      onClick={() => startEditing(task, 'title')}
-                                      title="Click to edit title"
+                                      onDoubleClick={(e) => {
+                                        e.stopPropagation();
+                                        startEditing(task, 'title');
+                                      }}
+                                      title="Double-click to edit title"
                                     >
                                       {task.title}
                                     </h3>
@@ -786,7 +808,10 @@ export function TaskListView({ className }: TaskListViewProps) {
                                     ) : (
                                       <p 
                                         className="text-xs text-muted-foreground mt-0.5 cursor-pointer hover:bg-accent/20 rounded px-1 -mx-1 transition-colors line-clamp-2"
-                                        onClick={() => startEditing(task, 'description')}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          startEditing(task, 'description');
+                                        }}
                                         title="Click to edit description"
                                       >
                                         {task.description}
@@ -826,11 +851,7 @@ export function TaskListView({ className }: TaskListViewProps) {
                                         />
                                       </div>
                                     ) : dueInfo && (
-                                      <div 
-                                        className="flex items-center gap-1 mt-1 cursor-pointer hover:bg-accent/20 rounded px-1 -mx-1 transition-colors"
-                                        onClick={() => startEditing(task, 'dueDate')}
-                                        title="Click to edit due date"
-                                      >
+                                      <div className="flex items-center gap-1 mt-1">
                                         <Clock className="w-3 h-3 text-muted-foreground" />
                                         <span className={cn(
                                           "text-xs font-medium",
