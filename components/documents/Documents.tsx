@@ -88,18 +88,41 @@ export default function Documents() {
       e.stopPropagation();
     }
     
-    // Remove from open documents
-    setOpenDocuments(prev => prev.filter(id => id !== documentId));
-    
-    if (selectedDocument?.id === documentId) {
-      // Find next document to open from remaining open documents
-      const remainingOpen = openDocuments.filter(id => id !== documentId);
-      const openDocs = documents.filter(doc => remainingOpen.includes(doc.id));
+    // Archive the document instead of just closing it
+    const document = documents.find(doc => doc.id === documentId);
+    if (document) {
+      // Ask for confirmation before archiving
+      if (window.confirm(`Archive "${document.title || 'Untitled'}"? You can restore it from the archive later.`)) {
+        trashDocument(documentId);
+        
+        // Remove from open documents
+        setOpenDocuments(prev => prev.filter(id => id !== documentId));
+        
+        if (selectedDocument?.id === documentId) {
+          // Find next document to open from remaining open documents
+          const remainingOpen = openDocuments.filter(id => id !== documentId);
+          const openDocs = documents.filter(doc => remainingOpen.includes(doc.id));
+          
+          if (openDocs.length > 0) {
+            selectDocument(openDocs[0].id);
+          } else {
+            clearSelection();
+          }
+        }
+      }
+    } else {
+      // If document not found, just close the tab
+      setOpenDocuments(prev => prev.filter(id => id !== documentId));
       
-      if (openDocs.length > 0) {
-        selectDocument(openDocs[0].id);
-      } else {
-        clearSelection();
+      if (selectedDocument?.id === documentId) {
+        const remainingOpen = openDocuments.filter(id => id !== documentId);
+        const openDocs = documents.filter(doc => remainingOpen.includes(doc.id));
+        
+        if (openDocs.length > 0) {
+          selectDocument(openDocs[0].id);
+        } else {
+          clearSelection();
+        }
       }
     }
   };
@@ -208,15 +231,16 @@ export default function Documents() {
                     )}
                   </div>
                   
-                  {/* Close button */}
+                  {/* Archive button */}
                   <Button
                     variant="ghost"
                     size="sm"
                     className={cn(
-                      "h-4 w-4 p-0 flex-shrink-0 transition-opacity hover:bg-destructive/10",
+                      "h-4 w-4 p-0 flex-shrink-0 transition-opacity hover:bg-orange-100 dark:hover:bg-orange-900/20",
                       selectedDocument?.id === document.id ? "opacity-70 hover:opacity-100" : "opacity-0 group-hover:opacity-70"
                     )}
                     onClick={(e) => handleCloseDocument(document.id, e)}
+                    title="Archive document"
                   >
                     <X className="w-3 h-3" />
                   </Button>
