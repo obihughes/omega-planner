@@ -72,8 +72,8 @@ The TaskListView is accessible via the main navigation under Projects → Tasks,
 - Integration with the sidebar navigation structure
 - Consistent with other feature routing patterns
 
-Main navigation structure under Projects:
-- Active Projects (`/projects`)
+Main navigation structure under Task Manager:
+- Projects (`/projects`)
 - Tasks (`/projects/tasks`) 
 - Calendar View (`/projects` with calendar view)
 

@@ -301,7 +301,7 @@ export default function ProjectsPage() {
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               {activeView === 'active' && (
                 <span className="bg-muted px-2 py-1 rounded-full text-xs font-medium">
-                  {activeProjects.length} Active
+                  {activeProjects.length} Projects
                 </span>
               )}
               {activeView === 'archived' && (
@@ -333,7 +333,7 @@ export default function ProjectsPage() {
                 title={activeView === 'archived' ? "Show active projects" : "Show archived projects"}
               >
                 <Archive className="w-4 h-4" />
-                <span>{activeView === 'archived' ? "Active" : "Archive"}</span>
+                <span>{activeView === 'archived' ? "Projects" : "Archive"}</span>
               </Button>
 
               <Popover>
@@ -404,13 +404,13 @@ export default function ProjectsPage() {
             </div>
           </div>
 
-          {/* Active Projects View */}
+          {/* Projects View */}
           {activeView === 'active' && (
             <>
               {activeProjects.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="text-muted-foreground mb-4">
-                    {searchTerm || statusFilter !== 'all' ? 'No projects match your filters' : 'No active projects yet'}
+                    {searchTerm || statusFilter !== 'all' ? 'No projects match your filters' : 'No projects yet'}
                   </div>
                   {!searchTerm && statusFilter === 'all' && (
                     <button

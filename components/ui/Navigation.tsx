@@ -127,11 +127,11 @@ export function Navigation() {
     },
     {
       href: '/projects',
-      label: 'Projects',
+      label: 'Task Manager',
       icon: FolderKanban,
       active: pathname === '/projects' || pathname.startsWith('/projects/'),
       subViews: [
-        { key: 'active', label: 'Active', icon: Folder, active: projectsViewMode === 'active' },
+        { key: 'active', label: 'Projects', icon: Folder, active: projectsViewMode === 'active' },
         { key: 'tasks', label: 'Tasks', icon: ClipboardList, active: pathname === '/projects/tasks' },
         // { key: 'archived', label: 'Archived', icon: Archive, active: projectsViewMode === 'archived' }, // Moved to internal page navigation
         { key: 'calendar', label: 'Calendar', icon: Calendar, active: projectsViewMode === 'calendar' }
