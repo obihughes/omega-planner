@@ -112,12 +112,6 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
   // last sent out, which prevents the editor from wiping out the user's
   // current typing.
   useEffect(() => {
-    // This effect is now responsible for synchronizing the internal state with
-    // the external `content` prop. It will only re-initialize the blocks if
-    // the `content` prop changes to something different than what this component
-    // last sent out, which prevents the editor from wiping out the user's
-    // current typing.
-
     // If the new content is different from what we last sent, update the editor.
     // This is the primary mechanism for loading a new document's content.
     if (content !== lastPropagatedContent.current) {
@@ -130,7 +124,9 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
       if (content) {
         try {
           const parsed = JSON.parse(content);
-          if (Array.isArray(parsed)) loadedBlocks = parsed;
+          if (Array.isArray(parsed)) {
+            loadedBlocks = parsed;
+          }
         } catch (e) {
           console.warn('Fallback to legacy text parser for backward compatibility.');
           loadedBlocks = content.split('\n').map((line, i) => ({
@@ -141,6 +137,10 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
             isActive: false,
           })).filter(block => block.content.trim());
         }
+      } else {
+        // For new empty documents, initialize with an empty array
+        // This ensures we don't have stale blocks from previous documents
+        loadedBlocks = [];
       }
       
       const snappedBlocks = loadedBlocks.map(block => ({
@@ -210,6 +210,9 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
     const updatedBlocks = [...currentBlocks, newBlock];
     setTextBlocks(updatedBlocks);
     setActiveBlockId(newBlock.id);
+
+    // Save immediately when creating a new block to ensure it's preserved
+    handleContentChange(updatedBlocks);
 
     // Focus the new block
     setTimeout(() => {
@@ -303,7 +306,7 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
         return content !== '' && content !== '<br>';
       });
       handleContentChange(nonEmptyBlocks);
-    }, 300); // Reduced debounce time so first keystroke saves quicker
+    }, 150); // Reduced from 300ms to 150ms for faster saving
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

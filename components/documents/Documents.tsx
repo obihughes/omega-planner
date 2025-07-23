@@ -88,26 +88,61 @@ export default function Documents() {
       e.stopPropagation();
     }
     
-    // Archive the document instead of just closing it
     const document = documents.find(doc => doc.id === documentId);
     if (document) {
-      // Ask for confirmation before archiving
-      if (window.confirm(`Archive "${document.title || 'Untitled'}"? You can restore it from the archive later.`)) {
-        trashDocument(documentId);
+      // Check if document has unsaved changes or important content
+      const hasContent = document.content && document.content.trim().length > 0;
+      
+      if (hasContent) {
+        // Show options for documents with content
+        const choice = window.confirm(
+          `"${document.title || 'Untitled'}" contains content.\n\n` +
+          `Click OK to archive it (you can restore from Archive view later)\n` +
+          `Click Cancel to just close the tab (document will remain in your list)`
+        );
         
-        // Remove from open documents
-        setOpenDocuments(prev => prev.filter(id => id !== documentId));
-        
-        if (selectedDocument?.id === documentId) {
-          // Find next document to open from remaining open documents
-          const remainingOpen = openDocuments.filter(id => id !== documentId);
-          const openDocs = documents.filter(doc => remainingOpen.includes(doc.id));
+        if (choice) {
+          // User chose to archive
+          trashDocument(documentId);
           
-          if (openDocs.length > 0) {
-            selectDocument(openDocs[0].id);
-          } else {
-            clearSelection();
-          }
+          // Provide feedback that document was archived
+          const notification = window.document.createElement('div');
+          notification.className = 'fixed top-4 right-4 bg-blue-100 border border-blue-300 text-blue-800 px-4 py-2 rounded-lg shadow-lg z-50';
+          notification.innerHTML = `
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+              </svg>
+              "${document.title || 'Document'}" archived successfully. Find it in Archive view.
+            </div>
+          `;
+          window.document.body.appendChild(notification);
+          
+          // Remove notification after 3 seconds
+          setTimeout(() => {
+            if (notification.parentNode) {
+              notification.parentNode.removeChild(notification);
+            }
+          }, 3000);
+        }
+        // If user chose cancel, just close the tab (don't archive)
+      } else {
+        // For empty documents, just remove them completely
+        deleteDocument(documentId);
+      }
+      
+      // Remove from open documents regardless of choice
+      setOpenDocuments(prev => prev.filter(id => id !== documentId));
+      
+      if (selectedDocument?.id === documentId) {
+        // Find next document to open from remaining open documents
+        const remainingOpen = openDocuments.filter(id => id !== documentId);
+        const openDocs = documents.filter(doc => remainingOpen.includes(doc.id));
+        
+        if (openDocs.length > 0) {
+          selectDocument(openDocs[0].id);
+        } else {
+          clearSelection();
         }
       }
     } else {
@@ -331,14 +366,22 @@ export default function Documents() {
               <Plus className="w-3.5 h-3.5" />
             </Button>
             <Button
-              variant={showTrash ? "default" : "ghost"}
+              variant={viewMode === 'archive' ? 'default' : 'ghost'}
               size="sm"
-              onClick={() => setViewMode(showTrash ? 'documents' : 'archive')}
-              className="h-7 px-2 text-xs"
-              title={showTrash ? "Show documents" : "Show archived documents"}
+              onClick={() => setViewMode(viewMode === 'documents' ? 'archive' : 'documents')}
+              className="text-muted-foreground hover:text-foreground"
             >
-              <Trash2 className="w-3.5 h-3.5 mr-1" />
-              {showTrash ? "Documents" : "Archive"}
+              {viewMode === 'archive' ? (
+                <>
+                  <FileText className="w-4 h-4 mr-2" />
+                  Documents
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Archive {trashedDocuments.length > 0 && `(${trashedDocuments.length})`}
+                </>
+              )}
             </Button>
           </div>
         </div>

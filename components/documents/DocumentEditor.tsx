@@ -42,7 +42,7 @@ export default function DocumentEditor({
   }, [document]);
 
   useEffect(() => {
-    // Auto-save after 2 seconds of inactivity
+    // Auto-save after 1 second of inactivity (reduced from 2 seconds for faster saving)
     if (hasUnsavedChanges && document) {
       if (autoSaveTimerRef.current) {
         clearTimeout(autoSaveTimerRef.current);
@@ -50,7 +50,7 @@ export default function DocumentEditor({
       
       autoSaveTimerRef.current = setTimeout(() => {
         handleSave();
-      }, 2000);
+      }, 1000); // Reduced from 2000ms to 1000ms for faster auto-save
     }
 
     return () => {
@@ -58,7 +58,7 @@ export default function DocumentEditor({
         clearTimeout(autoSaveTimerRef.current);
       }
     };
-  }, [hasUnsavedChanges, content]);
+  }, [hasUnsavedChanges, content, document]); // Added document to dependencies
 
   const handleSave = async () => {
     if (!document) return;

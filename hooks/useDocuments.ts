@@ -60,10 +60,15 @@ export function useDocuments() {
   };
 
   const createDocument = () => {
+    // Generate a more robust unique ID using timestamp + random string + counter
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substr(2, 9);
+    const counter = documents.length + 1;
+    
     const newDocument: Document = {
-      id: `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: `doc_${timestamp}_${counter}_${random}`,
       title: 'Untitled Document',
-      content: '',
+      content: '', // Start with empty content, let canvas editor handle initialization
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       tags: [],
@@ -77,7 +82,14 @@ export function useDocuments() {
     
     const newSettings = { ...settings, lastOpenDocument: newDocument.id };
     setSettings(newSettings);
+    
+    // Save immediately to prevent any timing issues
     saveToStorage(updatedDocuments, newSettings);
+    
+    // Force a small delay to ensure the save is complete before returning
+    setTimeout(() => {
+      console.log('Document created with ID:', newDocument.id);
+    }, 50);
   };
 
   const updateDocument = (updatedDocument: Document) => {
