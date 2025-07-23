@@ -6,6 +6,7 @@ import { useProjects } from '@/hooks/useProjects';
 import { Project } from '@/types';
 import { ProjectCard } from '@/components/projects/ProjectCard';
 import { ProjectsCalendar } from '@/components/projects/ProjectsCalendar';
+
 import { AppLayout } from '@/components/ui/AppLayout';
 import { useProjectsView } from '@/app/context/ProjectsViewContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -308,6 +309,7 @@ export default function ProjectsPage() {
                   {archivedProjects.length} Archived
                 </span>
               )}
+
             </div>
           </div>
 
@@ -322,6 +324,17 @@ export default function ProjectsPage() {
                   className="pl-10 pr-4 py-2 w-56 rounded-lg bg-card/50 backdrop-blur-sm border border-border/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all text-sm"
                 />
               </div>
+
+              <Button
+                variant={activeView === 'archived' ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setActiveView(activeView === 'archived' ? 'active' : 'archived')}
+                className="flex items-center space-x-2 text-sm"
+                title={activeView === 'archived' ? "Show active projects" : "Show archived projects"}
+              >
+                <Archive className="w-4 h-4" />
+                <span>{activeView === 'archived' ? "Active" : "Archive"}</span>
+              </Button>
 
               <Popover>
                 <PopoverTrigger asChild>
@@ -495,6 +508,8 @@ export default function ProjectsPage() {
           {activeView === 'calendar' && (
             <ProjectsCalendar projects={projects} />
           )}
+
+
       </div>
 
       {/* Project Form Modal */}

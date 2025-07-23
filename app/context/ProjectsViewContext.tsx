@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-export type ProjectsViewMode = 'active' | 'archived' | 'calendar';
+export type ProjectsViewMode = 'active' | 'archived' | 'calendar' | 'tasks';
 
 interface ProjectsViewContextType {
   viewMode: ProjectsViewMode;

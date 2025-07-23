@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
   Calendar, CalendarDays, FolderKanban, FileText, ChevronLeft, ChevronRight, 
-  Clock, Archive, Trash2, CalendarCheck, CalendarRange, Folder, Files 
+  Clock, Archive, Trash2, CalendarCheck, CalendarRange, Folder, Files, ClipboardList 
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
@@ -121,7 +121,7 @@ export function Navigation() {
       subViews: [
         { key: 'focus', label: 'Focus', icon: Clock, active: plannerViewMode === 'focus' },
         { key: 'daily', label: 'Daily', icon: CalendarCheck, active: plannerViewMode === 'daily' },
-        { key: 'weekly', label: 'Weekly', icon: CalendarDays, active: plannerViewMode === 'weekly' },
+        // { key: 'weekly', label: 'Weekly', icon: CalendarDays, active: plannerViewMode === 'weekly' }, // Hidden until ready to work on again
         { key: 'monthly', label: 'Monthly', icon: CalendarRange, active: plannerViewMode === 'monthly' }
       ]
     },
@@ -132,7 +132,8 @@ export function Navigation() {
       active: pathname === '/projects' || pathname.startsWith('/projects/'),
       subViews: [
         { key: 'active', label: 'Active', icon: Folder, active: projectsViewMode === 'active' },
-        { key: 'archived', label: 'Archived', icon: Archive, active: projectsViewMode === 'archived' },
+        { key: 'tasks', label: 'Tasks', icon: ClipboardList, active: pathname === '/projects/tasks' },
+        // { key: 'archived', label: 'Archived', icon: Archive, active: projectsViewMode === 'archived' }, // Moved to internal page navigation
         { key: 'calendar', label: 'Calendar', icon: Calendar, active: projectsViewMode === 'calendar' }
       ]
     },
@@ -152,8 +153,8 @@ export function Navigation() {
       icon: FileText,
       active: pathname === '/documents',
       subViews: [
-        { key: 'documents', label: 'Documents', icon: Files, active: documentsViewMode === 'documents' },
-        { key: 'archive', label: 'Archive', icon: Trash2, active: documentsViewMode === 'archive' }
+        { key: 'documents', label: 'Documents', icon: Files, active: documentsViewMode === 'documents' }
+        // { key: 'archive', label: 'Archive', icon: Trash2, active: documentsViewMode === 'archive' } // Moved to internal page navigation
       ]
     }
   ];
@@ -237,14 +238,21 @@ export function Navigation() {
                           <button 
                             key={subView.key}
                             onClick={() => {
-                              router.push(item.href);
                               if (item.href === '/') {
+                                router.push(item.href);
                                 setPlannerViewMode(subView.key as any);
                               } else if (item.href === '/projects') {
-                                setProjectsViewMode(subView.key as any);
+                                if (subView.key === 'tasks') {
+                                  router.push('/projects/tasks');
+                                } else {
+                                  router.push(item.href);
+                                  setProjectsViewMode(subView.key as any);
+                                }
                               } else if (item.href === '/calendar') {
+                                router.push(item.href);
                                 setCalendarViewMode(subView.key as any);
                               } else if (item.href === '/documents') {
+                                router.push(item.href);
                                 setDocumentsViewMode(subView.key as any);
                               }
                             }} 

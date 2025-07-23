@@ -303,6 +303,37 @@ export function useProjects() {
     );
   }, []);
 
+  // Get all tasks from all active projects with project metadata
+  const getAllProjectTasks = useCallback(() => {
+    return projects
+      .filter(p => !p.isDeleted)
+      .flatMap(project => 
+        project.tasks.map(task => ({
+          ...task,
+          projectId: project.id,
+          projectName: project.name,
+          projectColor: project.color,
+          projectStatus: project.status
+        }))
+      );
+  }, [projects]);
+
+  // Get task statistics
+  const getTaskStats = useCallback(() => {
+    const allTasks = getAllProjectTasks();
+    return {
+      total: allTasks.length,
+      completed: allTasks.filter(t => t.status === 'completed').length,
+      inProgress: allTasks.filter(t => t.status === 'in-progress').length,
+      todo: allTasks.filter(t => t.status === 'todo').length,
+      blocked: allTasks.filter(t => t.status === 'blocked').length,
+      overdue: allTasks.filter(t => {
+        if (!t.dueDate) return false;
+        return new Date(t.dueDate) < new Date() && t.status !== 'completed';
+      }).length
+    };
+  }, [getAllProjectTasks]);
+
   return {
     projects,
     loading,
@@ -318,6 +349,8 @@ export function useProjects() {
     reorderTasksInProject,
     addSubtaskToTask,
     updateSubtaskInTask,
-    deleteSubtaskFromTask
+    deleteSubtaskFromTask,
+    getAllProjectTasks,
+    getTaskStats
   };
 } 
