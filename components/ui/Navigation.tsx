@@ -5,15 +5,16 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
   Calendar, CalendarDays, FolderKanban, FileText, ChevronLeft, ChevronRight, 
-  Clock, Archive, Trash2, CalendarCheck, CalendarRange, Folder, Files, ClipboardList 
+  Clock, Archive, Trash2, CalendarCheck, CalendarRange, Folder, Files, ClipboardList, Settings
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
 import { useViewMode } from '@/app/context/ViewModeContext';
 import { useProjectsView } from '@/app/context/ProjectsViewContext';
 import { useCalendarView } from '@/app/context/CalendarViewContext';
-import { useDocumentsView } from '@/app/context/DocumentsViewContext';
 import { useSidebar } from '@/app/context/SidebarContext';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 export function Navigation() {
   const { isCollapsed, sidebarWidth, toggleSidebar, setSidebarWidth } = useSidebar();
@@ -24,8 +25,9 @@ export function Navigation() {
   const { viewMode: plannerViewMode, setViewMode: setPlannerViewMode } = useViewMode();
   const { viewMode: projectsViewMode, setViewMode: setProjectsViewMode } = useProjectsView();
   const { viewMode: calendarViewMode, setViewMode: setCalendarViewMode } = useCalendarView();
-  const { viewMode: documentsViewMode, setViewMode: setDocumentsViewMode } = useDocumentsView();
   
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+
   const isResizing = useRef(false);
   const minWidth = 160;
   const maxWidth = 400;
@@ -153,8 +155,7 @@ export function Navigation() {
       icon: FileText,
       active: pathname === '/documents',
       subViews: [
-        { key: 'documents', label: 'Documents', icon: Files, active: documentsViewMode === 'documents' }
-        // { key: 'archive', label: 'Archive', icon: Trash2, active: documentsViewMode === 'archive' } // Moved to internal page navigation
+        { key: 'documents', label: 'Documents', icon: Files, active: true } // Documents view is now always active
       ]
     }
   ];
@@ -165,15 +166,19 @@ export function Navigation() {
         className="h-screen bg-card/98 backdrop-blur-md border-r border-border/40 fixed left-0 top-0 z-50 shadow-xl flex flex-col"
         style={{ width: isCollapsed ? collapsedWidth : sidebarWidth }}
       >
-        {/* Logo/Brand Section */}
+        {/* Settings Section */}
         <div className={cn("border-b border-border/40 relative", dynamicSizes.mainPadding)}>
           <div className="flex items-center justify-center">
-            <div className={cn(
-              "bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg rounded",
-              dynamicSizes.logoSize
-            )}>
-              <span className={cn("font-bold text-primary-foreground", dynamicSizes.logoTextSize)}>Ω</span>
-            </div>
+            <button
+              onClick={() => setShowSettingsModal(true)}
+              className={cn(
+                "bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg rounded hover:shadow-xl transition-all duration-200 hover:from-primary/90 hover:to-primary/70",
+                dynamicSizes.logoSize
+              )}
+              title="Settings"
+            >
+              <Settings className={cn("text-primary-foreground", dynamicSizes.logoTextSize === 'text-lg' ? 'w-4 h-4' : dynamicSizes.logoTextSize === 'text-xl' ? 'w-5 h-5' : 'w-6 h-6')} />
+            </button>
           </div>
           
           {/* Toggle Button */}
@@ -253,7 +258,7 @@ export function Navigation() {
                                 setCalendarViewMode(subView.key as any);
                               } else if (item.href === '/documents') {
                                 router.push(item.href);
-                                setDocumentsViewMode(subView.key as any);
+                                // setDocumentsViewMode(subView.key as any); // Removed as per edit hint
                               }
                             }} 
                             className={cn(
@@ -293,6 +298,130 @@ export function Navigation() {
           style={{ left: sidebarWidth - 2 }}
         />
       )}
+
+      {/* Settings Modal */}
+      <Dialog open={showSettingsModal} onOpenChange={setShowSettingsModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="w-5 h-5" />
+              Settings
+            </DialogTitle>
+            <DialogDescription>
+              Configure your preferences and app settings.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            {/* Theme Settings */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-medium">Appearance</h3>
+              <div className="space-y-4">
+                <div>
+                  <p className="font-medium mb-3">Theme</p>
+                  <div className="grid grid-cols-3 gap-3">
+                    <button
+                      onClick={() => {
+                        // Set light theme
+                        if (theme !== 'light') toggleTheme();
+                      }}
+                      className={cn(
+                        "p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-2",
+                        theme === 'light' 
+                          ? "border-primary bg-primary/5" 
+                          : "border-border hover:border-muted-foreground"
+                      )}
+                    >
+                      <div className="w-8 h-8 rounded bg-white border border-gray-200 flex items-center justify-center">
+                        <div className="w-4 h-4 rounded bg-gray-900"></div>
+                      </div>
+                      <span className="text-sm font-medium">Light</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        // Set dark theme
+                        if (theme !== 'dark') toggleTheme();
+                      }}
+                      className={cn(
+                        "p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-2",
+                        theme === 'dark' 
+                          ? "border-primary bg-primary/5" 
+                          : "border-border hover:border-muted-foreground"
+                      )}
+                    >
+                      <div className="w-8 h-8 rounded bg-gray-900 border border-gray-700 flex items-center justify-center">
+                        <div className="w-4 h-4 rounded bg-gray-100"></div>
+                      </div>
+                      <span className="text-sm font-medium">Dark</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        // Set system theme
+                        if (theme !== 'system') toggleTheme();
+                      }}
+                      className={cn(
+                        "p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-2",
+                        theme === 'system' 
+                          ? "border-primary bg-primary/5" 
+                          : "border-border hover:border-muted-foreground"
+                      )}
+                    >
+                      <div className="w-8 h-8 rounded border border-gray-300 flex items-center justify-center bg-gradient-to-r from-white via-gray-200 to-gray-900">
+                      </div>
+                      <span className="text-sm font-medium">System</span>
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Current: <span className="capitalize font-medium">{theme}</span> theme
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* App Settings */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-medium">Application</h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Auto-save documents</p>
+                    <p className="text-sm text-muted-foreground">Automatically save changes to documents</p>
+                  </div>
+                  <Button variant="outline" size="sm">
+                    Enabled
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Sidebar width</p>
+                    <p className="text-sm text-muted-foreground">Current width: {sidebarWidth}px</p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => setSidebarWidth(200)}>
+                    Reset
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* About */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-medium">About</h3>
+              <div className="text-sm text-muted-foreground">
+                <p>Omega Planner - Advanced task planning and management</p>
+                <p className="mt-1">Built with Next.js, React, and Tailwind CSS</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <Button onClick={() => setShowSettingsModal(false)}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 } 

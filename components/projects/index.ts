@@ -1,3 +1,4 @@
 export { ProjectCard } from './ProjectCard';
 export { TaskItem } from './TaskItem';
-export { TaskListView } from './TaskListView'; 
+export { TaskListView } from './TaskListView';
+export { DraggableTaskCard } from './DraggableTaskCard'; 

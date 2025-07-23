@@ -4,10 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { Document } from '@/types';
 import DocumentEditor from './DocumentEditor';
 import { useDocuments } from '@/hooks/useDocuments';
-import { Plus, X, Star, Search, FileText, Save, Move, Trash2, Type } from 'lucide-react';
+import { Plus, X, Star, Search, FileText, Save, Move, Trash2, Type, RotateCcw, Archive as ArchiveIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
-import { useDocumentsView } from '@/app/context/DocumentsViewContext';
 
 export default function Documents() {
   const {
@@ -30,12 +30,10 @@ export default function Documents() {
   const [showSearch, setShowSearch] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
-  const { viewMode, setViewMode } = useDocumentsView();
   const [dragMode, setDragMode] = useState(false);
   const [isAddingText, setIsAddingText] = useState(false);
   const [openDocuments, setOpenDocuments] = useState<string[]>([]);
-
-  const showTrash = viewMode === 'archive';
+  const [showArchiveModal, setShowArchiveModal] = useState(false);
 
   // Auto-open new documents when created
   useEffect(() => {
@@ -366,22 +364,12 @@ export default function Documents() {
               <Plus className="w-3.5 h-3.5" />
             </Button>
             <Button
-              variant={viewMode === 'archive' ? 'default' : 'ghost'}
+              onClick={() => setShowArchiveModal(true)}
               size="sm"
-              onClick={() => setViewMode(viewMode === 'documents' ? 'archive' : 'documents')}
-              className="text-muted-foreground hover:text-foreground"
+              className="h-7 w-7 p-0"
+              title="View archive"
             >
-              {viewMode === 'archive' ? (
-                <>
-                  <FileText className="w-4 h-4 mr-2" />
-                  Documents
-                </>
-              ) : (
-                <>
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Archive {trashedDocuments.length > 0 && `(${trashedDocuments.length})`}
-                </>
-              )}
+              <ArchiveIcon className="w-3.5 h-3.5" />
             </Button>
           </div>
         </div>
@@ -389,59 +377,7 @@ export default function Documents() {
 
       {/* Editor Area */}
       <div className="flex-1 overflow-hidden">
-        {showTrash ? (
-          <div className="flex-1 p-6">
-            <div className="max-w-4xl mx-auto">
-              <h2 className="text-xl font-semibold mb-4">Archived Documents</h2>
-              {trashedDocuments.length === 0 ? (
-                <div className="text-center text-muted-foreground py-12">
-                  <Trash2 className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No archived documents</p>
-                </div>
-              ) : (
-                <div className="grid gap-3">
-                  {trashedDocuments.map((document) => (
-                    <div
-                      key={document.id}
-                      className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <h3 className="font-medium">{document.title}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            Archived {new Date(document.updatedAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => restoreDocument(document.id)}
-                            className="h-7 px-2 text-xs"
-                          >
-                            Restore
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              if (window.confirm('Permanently delete this document? This cannot be undone.')) {
-                                deleteDocument(document.id);
-                              }
-                            }}
-                            className="h-7 px-2 text-xs text-destructive hover:text-destructive"
-                          >
-                            Delete
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        ) : selectedDocument ? (
+        {selectedDocument ? (
           <DocumentEditor
             document={selectedDocument}
             onSave={(doc) => {
@@ -473,6 +409,111 @@ export default function Documents() {
           </div>
         )}
       </div>
+
+      {/* Archive Modal */}
+      <Dialog open={showArchiveModal} onOpenChange={setShowArchiveModal}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ArchiveIcon className="w-5 h-5" />
+              Archive ({trashedDocuments.length})
+            </DialogTitle>
+            <DialogDescription>
+              Manage your archived documents. You can restore them to active documents or permanently delete them.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-auto">
+            {trashedDocuments.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                <ArchiveIcon className="w-12 h-12 mb-4 opacity-50" />
+                <h3 className="text-lg font-medium mb-2">No archived documents</h3>
+                <p className="text-sm text-center">
+                  Documents you archive will appear here.<br />
+                  You can restore them or delete them permanently.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {trashedDocuments.map((doc) => (
+                  <div
+                    key={doc.id}
+                    className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="font-medium truncate">
+                            {doc.title || 'Untitled Document'}
+                          </h4>
+                          {doc.isStarred && (
+                            <Star className="w-4 h-4 text-yellow-500 fill-current" />
+                          )}
+                        </div>
+                        
+                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                          {(() => {
+                            if (!doc.content) return 'Empty document';
+                            try {
+                              const parsed = JSON.parse(doc.content);
+                              if (Array.isArray(parsed)) {
+                                const textContent = parsed.map((block: any) => block.content).join(' ').trim();
+                                return textContent.length > 100 ? textContent.substring(0, 100) + '...' : textContent || 'Empty document';
+                              }
+                            } catch {
+                              const textContent = doc.content.trim();
+                              return textContent.length > 100 ? textContent.substring(0, 100) + '...' : textContent || 'Empty document';
+                            }
+                            return 'Empty document';
+                          })()}
+                        </p>
+                        
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span>Created: {new Date(doc.createdAt).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}</span>
+                          <span>Archived: {new Date(doc.updatedAt).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => restoreDocument(doc.id)}
+                          className="text-green-600 border-green-600 hover:bg-green-50"
+                        >
+                          <RotateCcw className="w-4 h-4 mr-1" />
+                          Restore
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => deleteDocument(doc.id)}
+                          className="text-red-600 border-red-600 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" />
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 
