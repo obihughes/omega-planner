@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useProjects } from '@/hooks/useProjects';
 import { Project, ProjectTask } from '@/types/projects';
 import { Button } from '@/components/ui/button';
@@ -34,12 +34,12 @@ interface TaskListViewProps {
 }
 
 export function TaskListView({ className }: TaskListViewProps) {
-  const { projects, updateTaskInProject, deleteTaskFromProject, addTaskToProject } = useProjects();
+  const { projects, updateTaskInProject, deleteTaskFromProject, addTaskToProject, createUnassignedTask } = useProjects();
   
   // Local state
   const [searchTerm, setSearchTerm] = useState('');
   const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(new Set());
-  const [groupBy, setGroupBy] = useState<'project' | 'status' | 'none'>('project');
+  const [groupBy, setGroupBy] = useState<'project' | 'status' | 'dueDate' | 'none'>('project');
   const [newTaskProjectId, setNewTaskProjectId] = useState<string>('');
   const [newTaskTitle, setNewTaskTitle] = useState('');
   
@@ -57,6 +57,20 @@ export function TaskListView({ className }: TaskListViewProps) {
   });
   const [sortBy, setSortBy] = useState<'title' | 'dueDate' | 'priority' | 'status' | 'created'>('created');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  
+  // Full task creation modal state
+  const [isFullTaskModalOpen, setIsFullTaskModalOpen] = useState(false);
+  const [fullTaskForm, setFullTaskForm] = useState({
+    title: '',
+    description: '',
+    priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent',
+    dueDate: '',
+    projectId: '',
+    estimatedHours: ''
+  });
+  
+  // Animation state for checkbox celebrations
+  const [celebratingTasks, setCelebratingTasks] = useState<Set<string>>(new Set());
 
   // Get all tasks with project info
   const allTasks = useMemo((): TaskWithProject[] => {
@@ -193,6 +207,62 @@ export function TaskListView({ className }: TaskListViewProps) {
           tasks: tasks.sort((a, b) => a.order - b.order)
         };
       });
+    } else if (groupBy === 'dueDate') {
+      // Group by due date
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const nextWeek = new Date(today);
+      nextWeek.setDate(nextWeek.getDate() + 7);
+      
+      const dueDateGroups = {
+        'overdue': { title: 'Overdue', tasks: [] as TaskWithProject[], color: '#EF4444' },
+        'today': { title: 'Due Today', tasks: [] as TaskWithProject[], color: '#F59E0B' },
+        'tomorrow': { title: 'Due Tomorrow', tasks: [] as TaskWithProject[], color: '#3B82F6' },
+        'thisWeek': { title: 'This Week', tasks: [] as TaskWithProject[], color: '#8B5CF6' },
+        'later': { title: 'Later', tasks: [] as TaskWithProject[], color: '#6B7280' },
+        'noDueDate': { title: 'No Due Date', tasks: [] as TaskWithProject[], color: '#6B7280' }
+      };
+      
+      filteredTasks.forEach(task => {
+        if (!task.dueDate) {
+          dueDateGroups.noDueDate.tasks.push(task);
+          return;
+        }
+        
+        const dueDate = new Date(task.dueDate);
+        const dueDateOnly = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+        
+        if (dueDateOnly < today && task.status !== 'completed') {
+          dueDateGroups.overdue.tasks.push(task);
+        } else if (dueDateOnly.getTime() === today.getTime()) {
+          dueDateGroups.today.tasks.push(task);
+        } else if (dueDateOnly.getTime() === tomorrow.getTime()) {
+          dueDateGroups.tomorrow.tasks.push(task);
+        } else if (dueDateOnly <= nextWeek) {
+          dueDateGroups.thisWeek.tasks.push(task);
+        } else {
+          dueDateGroups.later.tasks.push(task);
+        }
+      });
+      
+      return Object.entries(dueDateGroups)
+        .filter(([_, group]) => group.tasks.length > 0)
+        .map(([key, group]) => ({
+          id: key,
+          title: group.title,
+          color: group.color,
+          tasks: group.tasks.sort((a, b) => {
+            // Sort by due date, then by title
+            if (a.dueDate && b.dueDate) {
+              return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+            }
+            if (a.dueDate && !b.dueDate) return -1;
+            if (!a.dueDate && b.dueDate) return 1;
+            return a.title.localeCompare(b.title);
+          })
+        }));
     } else {
       // Group by status
       const statusGroups = {
@@ -236,14 +306,29 @@ export function TaskListView({ className }: TaskListViewProps) {
     setCollapsedProjects(newCollapsed);
   };
 
-  // Handle task status toggle
-  const handleTaskToggle = (task: TaskWithProject) => {
+  // Handle task status toggle with celebration
+  const handleTaskToggle = useCallback((task: TaskWithProject) => {
     const newStatus = task.status === 'completed' ? 'todo' : 'completed';
+    
+    // Add celebration animation for completion
+    if (newStatus === 'completed') {
+      setCelebratingTasks(prev => new Set([...Array.from(prev), task.id]));
+      
+      // Remove celebration after animation
+      setTimeout(() => {
+        setCelebratingTasks(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(task.id);
+          return newSet;
+        });
+      }, 1000);
+    }
+    
     updateTaskInProject(task.projectId, task.id, { 
       status: newStatus,
       completedAt: newStatus === 'completed' ? new Date().toISOString() : undefined
     });
-  };
+  }, [updateTaskInProject]);
 
   // Handle quick add task
   const handleQuickAdd = () => {
@@ -316,6 +401,44 @@ export function TaskListView({ className }: TaskListViewProps) {
 
   const hasActiveFilters = filters.priority !== 'all' || filters.dueDate !== 'all' || filters.status !== 'all';
 
+  // Full task creation handlers
+  const openFullTaskModal = () => {
+    setFullTaskForm({
+      title: '',
+      description: '',
+      priority: 'medium',
+      dueDate: '',
+      projectId: '',
+      estimatedHours: ''
+    });
+    setIsFullTaskModalOpen(true);
+  };
+
+  const closeFullTaskModal = () => {
+    setIsFullTaskModalOpen(false);
+  };
+
+  const handleFullTaskSubmit = () => {
+    if (!fullTaskForm.title.trim()) return;
+
+    const taskData = {
+      title: fullTaskForm.title.trim(),
+      description: fullTaskForm.description.trim() || undefined,
+      priority: fullTaskForm.priority,
+      dueDate: fullTaskForm.dueDate || undefined,
+      estimatedHours: fullTaskForm.estimatedHours ? parseInt(fullTaskForm.estimatedHours) : undefined,
+      status: 'todo' as const
+    };
+
+    if (fullTaskForm.projectId && fullTaskForm.projectId !== 'unassigned') {
+      addTaskToProject(fullTaskForm.projectId, taskData);
+    } else {
+      createUnassignedTask(taskData);
+    }
+
+    closeFullTaskModal();
+  };
+
   // Get status icon
   const getStatusIcon = (status: ProjectTask['status']) => {
     switch (status) {
@@ -364,6 +487,15 @@ export function TaskListView({ className }: TaskListViewProps) {
           <span className="bg-muted px-2 py-1 rounded-full text-xs font-medium text-muted-foreground">
             {completedTasks}/{totalTasks}
           </span>
+          <Button 
+            onClick={openFullTaskModal}
+            size="sm"
+            variant="outline"
+            className="flex items-center gap-1 text-xs"
+          >
+            <Plus className="w-3 h-3" />
+            <span className="hidden sm:inline">New Task</span>
+          </Button>
         </div>
         
         <div className="flex items-center gap-2">
@@ -494,12 +626,13 @@ export function TaskListView({ className }: TaskListViewProps) {
           {/* Group by selector */}
           <select
             value={groupBy}
-            onChange={(e) => setGroupBy(e.target.value as 'project' | 'status' | 'none')}
+            onChange={(e) => setGroupBy(e.target.value as 'project' | 'status' | 'dueDate' | 'none')}
             className="px-2 py-1.5 rounded-lg bg-input border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs"
           >
             <option value="none">No Grouping</option>
             <option value="project">By Project</option>
             <option value="status">By Status</option>
+            <option value="dueDate">By Due Date</option>
           </select>
         </div>
       </div>
@@ -579,12 +712,26 @@ export function TaskListView({ className }: TaskListViewProps) {
                       return (
                         <div key={task.id} className="p-3 hover:bg-accent/30 transition-colors">
                           <div className="flex items-start gap-3">
-                            {/* Status toggle */}
+                            {/* Status toggle with celebration */}
                             <button
                               onClick={() => handleTaskToggle(task)}
-                              className="mt-1 flex-shrink-0 hover:scale-110 transition-transform"
+                              className={cn(
+                                "mt-1 flex-shrink-0 hover:scale-110 transition-all duration-200 relative",
+                                celebratingTasks.has(task.id) && "animate-bounce"
+                              )}
                             >
                               {getStatusIcon(task.status)}
+                              
+                              {/* Celebration effect */}
+                              {celebratingTasks.has(task.id) && (
+                                <div className="absolute -inset-2 pointer-events-none">
+                                  <div className="absolute inset-0 rounded-full bg-green-400 opacity-20 animate-ping"></div>
+                                  <div className="absolute inset-1 rounded-full bg-green-300 opacity-30 animate-ping animation-delay-75"></div>
+                                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1">
+                                    <span className="text-lg animate-bounce">🎉</span>
+                                  </div>
+                                </div>
+                              )}
                             </button>
                             
                             {/* Task content */}
@@ -724,6 +871,123 @@ export function TaskListView({ className }: TaskListViewProps) {
           </div>
         )}
       </div>
+
+      {/* Full Task Creation Modal */}
+      {isFullTaskModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-foreground mb-4">Create New Task</h3>
+            
+            <div className="space-y-4">
+              {/* Task Title */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Task Title *
+                </label>
+                <Input
+                  type="text"
+                  value={fullTaskForm.title}
+                  onChange={(e) => setFullTaskForm(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="Enter task title..."
+                  className="w-full"
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={fullTaskForm.description}
+                  onChange={(e) => setFullTaskForm(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Add description..."
+                  rows={3}
+                  className="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+
+              {/* Project Assignment */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Project
+                </label>
+                <select
+                  value={fullTaskForm.projectId}
+                  onChange={(e) => setFullTaskForm(prev => ({ ...prev, projectId: e.target.value }))}
+                  className="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="">Unassigned</option>
+                  {projects.filter(p => !p.isDeleted && p.id !== 'unassigned').map(project => (
+                    <option key={project.id} value={project.id}>{project.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Priority and Due Date Row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">
+                    Priority
+                  </label>
+                  <select
+                    value={fullTaskForm.priority}
+                    onChange={(e) => setFullTaskForm(prev => ({ ...prev, priority: e.target.value as any }))}
+                    className="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">
+                    Due Date
+                  </label>
+                  <Input
+                    type="date"
+                    value={fullTaskForm.dueDate}
+                    onChange={(e) => setFullTaskForm(prev => ({ ...prev, dueDate: e.target.value }))}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+
+              {/* Estimated Hours */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Estimated Hours
+                </label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  value={fullTaskForm.estimatedHours}
+                  onChange={(e) => setFullTaskForm(prev => ({ ...prev, estimatedHours: e.target.value }))}
+                  placeholder="Optional"
+                  className="w-full"
+                />
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-3 mt-6">
+              <Button variant="ghost" onClick={closeFullTaskModal}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleFullTaskSubmit}
+                disabled={!fullTaskForm.title.trim()}
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                Create Task
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

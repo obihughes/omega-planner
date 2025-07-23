@@ -334,6 +334,32 @@ export function useProjects() {
     };
   }, [getAllProjectTasks]);
 
+  // Create unassigned task (no project)
+  const createUnassignedTask = useCallback((taskData: Omit<ProjectTask, 'id' | 'createdAt' | 'updatedAt' | 'order'>) => {
+    // We'll store unassigned tasks as a special "Unassigned" project
+    let unassignedProject = projects.find(p => p.id === 'unassigned');
+    
+    if (!unassignedProject) {
+      // Create the unassigned project if it doesn't exist
+      unassignedProject = {
+        id: 'unassigned',
+        name: 'Unassigned',
+        description: 'Tasks without a project',
+        status: 'active',
+        color: '#6B7280',
+        tasks: [],
+        progress: 0,
+        order: -1, // Put it first
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      updateProjectsState(prevProjects => [unassignedProject!, ...prevProjects]);
+    }
+    
+    return addTaskToProject('unassigned', taskData);
+  }, [projects, addTaskToProject]);
+
   return {
     projects,
     loading,
@@ -351,6 +377,7 @@ export function useProjects() {
     updateSubtaskInTask,
     deleteSubtaskFromTask,
     getAllProjectTasks,
-    getTaskStats
+    getTaskStats,
+    createUnassignedTask
   };
 } 
