@@ -296,113 +296,111 @@ export default function ProjectsPage() {
     <AppLayout>
       <div className="container mx-auto px-6 py-6">
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold text-foreground">Projects</h1>
+          <div className="flex items-center gap-6">
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               {activeView === 'active' && (
-                <span className="bg-muted px-2 py-1 rounded-full text-xs font-medium">
+                <span className="bg-muted px-3 py-1.5 rounded-full text-xs font-medium">
                   {activeProjects.length} Projects
                 </span>
               )}
               {activeView === 'archived' && (
-                <span className="bg-muted px-2 py-1 rounded-full text-xs font-medium">
+                <span className="bg-muted px-3 py-1.5 rounded-full text-xs font-medium">
                   {archivedProjects.length} Archived
                 </span>
               )}
-
+            </div>
+            
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search projects..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 pr-4 py-2 w-56 rounded-lg bg-card/50 backdrop-blur-sm border border-border/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all text-sm"
+              />
             </div>
           </div>
 
-            <div className="flex items-center space-x-2">
-              <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Search projects..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-56 rounded-lg bg-card/50 backdrop-blur-sm border border-border/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all text-sm"
-                />
-              </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant={activeView === 'archived' ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setActiveView(activeView === 'archived' ? 'active' : 'archived')}
+              className="flex items-center space-x-2 text-sm"
+              title={activeView === 'archived' ? "Show active projects" : "Show archived projects"}
+            >
+              <Archive className="w-4 h-4" />
+              <span>{activeView === 'archived' ? "Projects" : "Archive"}</span>
+            </Button>
 
-              <Button
-                variant={activeView === 'archived' ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setActiveView(activeView === 'archived' ? 'active' : 'archived')}
-                className="flex items-center space-x-2 text-sm"
-                title={activeView === 'archived' ? "Show active projects" : "Show archived projects"}
-              >
-                <Archive className="w-4 h-4" />
-                <span>{activeView === 'archived' ? "Projects" : "Archive"}</span>
-              </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="flex items-center space-x-2 text-sm">
+                  <span>View</span>
+                  <ChevronDown className="w-4 h-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 p-4">
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium text-sm mb-2">Status</h4>
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value as Project['status'] | 'all')}
+                      className="w-full px-3 py-2 rounded-lg bg-input border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                    >
+                      <option value="all">All Statuses</option>
+                      <option value="planning">Planning</option>
+                      <option value="active">Active</option>
+                      <option value="on-hold">On Hold</option>
+                      <option value="completed">Completed</option>
+                      <option value="cancelled">Cancelled</option>
+                    </select>
+                  </div>
 
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="flex items-center space-x-2 text-sm">
-                    <span>View</span>
-                    <ChevronDown className="w-4 h-4" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-64 p-4">
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="font-medium text-sm mb-2">Status</h4>
+                  <div>
+                    <h4 className="font-medium text-sm mb-2">Sort by</h4>
+                    <div className="flex items-center space-x-1">
                       <select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value as Project['status'] | 'all')}
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value as 'name' | 'progress' | 'updated' | 'order')}
                         className="w-full px-3 py-2 rounded-lg bg-input border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                       >
-                        <option value="all">All Statuses</option>
-                        <option value="planning">Planning</option>
-                        <option value="active">Active</option>
-                        <option value="on-hold">On Hold</option>
-                        <option value="completed">Completed</option>
-                        <option value="cancelled">Cancelled</option>
+                        <option value="order">Custom Order</option>
+                        <option value="name">Name</option>
+                        <option value="progress">Progress</option>
+                        <option value="updated">Last Updated</option>
                       </select>
-                    </div>
-
-                    <div>
-                      <h4 className="font-medium text-sm mb-2">Sort by</h4>
-                      <div className="flex items-center space-x-1">
-                        <select
-                          value={sortBy}
-                          onChange={(e) => setSortBy(e.target.value as 'name' | 'progress' | 'updated' | 'order')}
-                          className="w-full px-3 py-2 rounded-lg bg-input border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                        >
-                          <option value="order">Custom Order</option>
-                          <option value="name">Name</option>
-                          <option value="progress">Progress</option>
-                          <option value="updated">Last Updated</option>
-                        </select>
-                        <button
-                          onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                          className="p-2 border rounded-lg hover:bg-accent transition-colors"
-                        >
-                          {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h4 className="font-medium text-sm mb-2">Display</h4>
-                      <div className="flex items-center space-x-1 border rounded-lg p-1 bg-muted/50">
-                        <button onClick={() => setViewMode('grid')} className={`flex-1 p-2 rounded-md transition-colors text-sm ${viewMode === 'grid' ? 'bg-primary text-primary-foreground' : ''}`}>Grid</button>
-                        <button onClick={() => setViewMode('list')} className={`flex-1 p-2 rounded-md transition-colors text-sm ${viewMode === 'list' ? 'bg-primary text-primary-foreground' : ''}`}>List</button>
-                      </div>
+                      <button
+                        onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                        className="p-2 border rounded-lg hover:bg-accent transition-colors"
+                      >
+                        {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
+                      </button>
                     </div>
                   </div>
-                </PopoverContent>
-              </Popover>
 
-              <button
-                onClick={handleCreateProject}
-                className="btn-primary px-4 py-2 rounded-lg flex items-center space-x-2 font-medium shadow-sm hover:shadow-md transition-all"
-              >
-                <Plus className="w-4 h-4" />
-                <span>New Project</span>
-              </button>
-            </div>
+                  <div>
+                    <h4 className="font-medium text-sm mb-2">Display</h4>
+                    <div className="flex items-center space-x-1 border rounded-lg p-1 bg-muted/50">
+                      <button onClick={() => setViewMode('grid')} className={`flex-1 p-2 rounded-md transition-colors text-sm ${viewMode === 'grid' ? 'bg-primary text-primary-foreground' : ''}`}>Grid</button>
+                      <button onClick={() => setViewMode('list')} className={`flex-1 p-2 rounded-md transition-colors text-sm ${viewMode === 'list' ? 'bg-primary text-primary-foreground' : ''}`}>List</button>
+                    </div>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            <button
+              onClick={handleCreateProject}
+              className="btn-primary px-4 py-2 rounded-lg flex items-center space-x-2 font-medium shadow-sm hover:shadow-md transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              <span>New Project</span>
+            </button>
           </div>
+        </div>
 
           {/* Projects View */}
           {activeView === 'active' && (

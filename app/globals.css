@@ -284,4 +284,49 @@ h1, h2, h3, h4, h5, h6 {
   background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.8));
 }
 
+/* Exciting checkbox animations */
+@keyframes fade-in-out {
+  0% { opacity: 0; }
+  50% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes confetti-burst {
+  0% { 
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% { 
+    transform: scale(1) rotate(180deg);
+    opacity: 1;
+  }
+  100% { 
+    transform: scale(0) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes celebration-pulse {
+  0%, 100% { 
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  50% { 
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+  }
+}
+
+.animate-fade-in-out {
+  animation: fade-in-out 1s ease-in-out;
+}
+
+.animate-confetti-burst {
+  animation: confetti-burst 0.8s ease-out;
+}
+
+.animate-celebration-pulse {
+  animation: celebration-pulse 0.6s ease-in-out;
+}
+
  

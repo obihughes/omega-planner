@@ -532,13 +532,9 @@ export function TaskListView({ className }: TaskListViewProps) {
 
   return (
     <div className={cn("flex flex-col h-full", className)}>
-      {/* Compact Header */}
+      {/* Simplified Controls */}
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-light text-foreground tracking-tight">Tasks</h1>
-          <span className="bg-muted px-3 py-1.5 rounded-full text-sm font-medium text-muted-foreground/80">
-            {completedTasks} of {totalTasks}
-          </span>
+        <div className="flex items-center gap-3">
           <Button 
             onClick={openFullTaskModal}
             size="sm"
@@ -723,14 +719,14 @@ export function TaskListView({ className }: TaskListViewProps) {
       </div>
 
       {/* Task Groups */}
-      <div className="flex-1 overflow-y-auto space-y-6">
+      <div className="flex-1 overflow-y-auto space-y-8">
         {groupedTasks.map(group => (
-          <div key={group.id} className="bg-card border border-border rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
+          <div key={group.id} className="bg-card rounded-lg border border-border/30">
             {/* Group Header - Only show for grouped views */}
             {groupBy !== 'none' && (
               <button
                 onClick={() => toggleProjectCollapse(group.id)}
-                className="w-full flex items-center justify-between p-4 hover:bg-accent/30 transition-all duration-200 border-b border-border/50"
+                className="w-full flex items-center justify-between p-6 hover:bg-accent/20 transition-all duration-200"
               >
                 <div className="flex items-center gap-3">
                   {collapsedProjects.has(group.id) ? (
@@ -742,40 +738,32 @@ export function TaskListView({ className }: TaskListViewProps) {
                     className="w-4 h-4 rounded-full shadow-sm"
                     style={{ backgroundColor: group.color }}
                   />
-                  <span className="font-semibold text-xl text-foreground tracking-tight">{group.title}</span>
+                  <span className="font-medium text-lg text-foreground">{group.title}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-muted-foreground/80">
-                    {group.tasks.filter(t => t.status === 'completed').length}/{group.tasks.length}
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-muted-foreground">
+                    {group.tasks.filter(t => t.status === 'completed').length} of {group.tasks.length}
                   </span>
-                  <div className="w-12 h-2 bg-muted rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-blue-500 to-green-500 transition-all duration-300"
-                      style={{ 
-                        width: `${group.tasks.length > 0 ? (group.tasks.filter(t => t.status === 'completed').length / group.tasks.length) * 100 : 0}%` 
-                      }}
-                    />
-                  </div>
                 </div>
               </button>
             )}
 
             {/* Tasks */}
             {(groupBy === 'none' || !collapsedProjects.has(group.id)) && (
-              <div className={groupBy !== 'none' ? "border-t border-border" : ""}>
+              <div className="p-2">
                 {group.tasks.length === 0 ? (
-                  <div className="p-4 text-center text-muted-foreground text-sm">
+                  <div className="p-8 text-center text-muted-foreground text-sm">
                     No tasks found
                   </div>
                 ) : (
-                  <div className="divide-y divide-border">
+                  <div className="space-y-2">
                     {group.tasks.map(task => {
                       const dueInfo = formatDueDate(task.dueDate);
                       
                       return (
-                                                  <div 
+                        <div 
                             key={task.id} 
-                            className="p-4 hover:bg-accent/30 transition-all duration-200 cursor-pointer border-b border-border/50 last:border-b-0"
+                            className="p-4 hover:bg-accent/20 transition-colors duration-200 rounded-lg cursor-pointer"
                             onClick={(e) => {
                               // Only trigger due date editing if not clicking on other interactive elements
                               const target = e.target as Element;
@@ -790,17 +778,17 @@ export function TaskListView({ className }: TaskListViewProps) {
                             }}
                             title="Click to edit due date • Double-click title to edit name"
                           >
-                            <div className="flex items-start gap-3">
+                            <div className="flex items-center gap-4">
                               {/* Status toggle with celebration */}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleTaskToggle(task);
                                 }}
-                                className={cn(
-                                  "mt-1 flex-shrink-0 hover:scale-110 transition-all duration-200 relative",
-                                  celebratingTasks.has(task.id) && "animate-bounce"
-                                )}
+                                                              className={cn(
+                                "flex-shrink-0 hover:scale-105 transition-transform duration-200 relative",
+                                celebratingTasks.has(task.id) && "animate-bounce"
+                              )}
                               >
                                 {getStatusIcon(task.status)}
                                 

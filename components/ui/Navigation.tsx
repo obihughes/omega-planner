@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
   Calendar, CalendarDays, FolderKanban, FileText, ChevronLeft, ChevronRight, 
-  Clock, Archive, Trash2, CalendarCheck, CalendarRange, Folder, Files, ClipboardList, Settings
+  Clock, Archive, Trash2, CalendarCheck, CalendarRange, Folder, Files, ClipboardList, Settings, Timer
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
@@ -133,10 +133,10 @@ export function Navigation() {
       icon: FolderKanban,
       active: pathname === '/projects' || pathname.startsWith('/projects/'),
       subViews: [
+        { key: 'today', label: "Today's Tasks", icon: Timer, active: pathname === '/projects/today' },
+        { key: 'tasks', label: 'Tasks', icon: ClipboardList, active: pathname === '/projects/tasks' && !pathname.includes('/today') },
         { key: 'active', label: 'Projects', icon: Folder, active: projectsViewMode === 'active' },
-        { key: 'tasks', label: 'Tasks', icon: ClipboardList, active: pathname === '/projects/tasks' },
-        // { key: 'archived', label: 'Archived', icon: Archive, active: projectsViewMode === 'archived' }, // Moved to internal page navigation
-        { key: 'calendar', label: 'Calendar', icon: Calendar, active: projectsViewMode === 'calendar' }
+        { key: 'calendar', label: 'Monthly', icon: Calendar, active: projectsViewMode === 'calendar' }
       ]
     },
     {
@@ -249,6 +249,8 @@ export function Navigation() {
                               } else if (item.href === '/projects') {
                                 if (subView.key === 'tasks') {
                                   router.push('/projects/tasks');
+                                } else if (subView.key === 'today') {
+                                  router.push('/projects/today');
                                 } else {
                                   router.push(item.href);
                                   setProjectsViewMode(subView.key as any);

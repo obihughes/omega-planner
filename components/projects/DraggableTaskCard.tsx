@@ -65,66 +65,50 @@ export function DraggableTaskCard({ task, onStatusChange }: DraggableTaskCardPro
       draggable
       onDragStart={handleDragStart}
       className={cn(
-        "bg-card border border-border/60 rounded-lg p-3 cursor-grab active:cursor-grabbing",
-        "hover:shadow-md hover:border-primary/30 transition-all duration-200",
-        "group select-none"
+        "bg-card rounded-lg p-4 cursor-grab active:cursor-grabbing",
+        "hover:bg-accent/30 transition-colors duration-200",
+        "border-l-4 group select-none",
+        task.priority === 'urgent' && "border-l-red-500",
+        task.priority === 'high' && "border-l-orange-500", 
+        task.priority === 'medium' && "border-l-blue-500",
+        task.priority === 'low' && "border-l-gray-400",
+        !task.priority && "border-l-gray-200"
       )}
     >
-      <div className="flex items-start gap-2">
+      <div className="flex items-center gap-3">
         {/* Status Toggle */}
         <button
           onClick={handleStatusToggle}
-          className="flex-shrink-0 hover:scale-110 transition-transform mt-0.5"
+          className="flex-shrink-0 hover:scale-105 transition-transform"
         >
           {getStatusIcon()}
         </button>
 
         {/* Task Content */}
         <div className="flex-1 min-w-0">
-          {/* Title */}
-          <h4 className={cn(
-            "font-medium text-sm text-foreground mb-1 line-clamp-2",
-            task.status === 'completed' && "line-through text-muted-foreground"
-          )}>
-            {task.title}
-          </h4>
-
-          {/* Project indicator */}
-          <div className="flex items-center gap-1.5 mb-2">
+          {/* Title with project indicator inline */}
+          <div className="flex items-center gap-2 mb-1">
             <div 
-              className="w-2 h-2 rounded-full"
+              className="w-2 h-2 rounded-full flex-shrink-0"
               style={{ backgroundColor: task.projectColor }}
             />
-            <span className="text-xs text-muted-foreground font-medium">
-              {task.projectName}
-            </span>
+            <h4 className={cn(
+              "font-medium text-sm text-foreground line-clamp-1 flex-1",
+              task.status === 'completed' && "line-through text-muted-foreground"
+            )}>
+              {task.title}
+            </h4>
           </div>
 
-          {/* Due date */}
+          {/* Due date - only show if exists */}
           {dueInfo && (
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 text-xs">
               <Clock className="w-3 h-3 text-muted-foreground" />
               <span className={cn(
-                "text-xs font-medium",
+                "font-medium",
                 dueInfo.isOverdue ? "text-red-600" : "text-muted-foreground"
               )}>
                 {dueInfo.text}
-              </span>
-            </div>
-          )}
-
-          {/* Priority indicator */}
-          {(task.priority === 'urgent' || task.priority === 'high') && (
-            <div className="flex items-center gap-1 mt-1">
-              <div className={cn(
-                "w-2 h-2 rounded-full",
-                task.priority === 'urgent' ? "bg-red-500" : "bg-orange-500"
-              )} />
-              <span className={cn(
-                "text-xs font-medium uppercase tracking-wide",
-                task.priority === 'urgent' ? "text-red-600" : "text-orange-600"
-              )}>
-                {task.priority}
               </span>
             </div>
           )}
