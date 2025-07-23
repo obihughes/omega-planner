@@ -670,30 +670,40 @@ export function TaskListView({ className }: TaskListViewProps) {
       </div>
 
       {/* Task Groups */}
-      <div className="flex-1 overflow-y-auto space-y-4">
+      <div className="flex-1 overflow-y-auto space-y-6">
         {groupedTasks.map(group => (
-          <div key={group.id} className="bg-card border border-border rounded-lg">
+          <div key={group.id} className="bg-card border border-border rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
             {/* Group Header - Only show for grouped views */}
             {groupBy !== 'none' && (
               <button
                 onClick={() => toggleProjectCollapse(group.id)}
-                className="w-full flex items-center justify-between p-3 hover:bg-accent/50 transition-colors"
+                className="w-full flex items-center justify-between p-4 hover:bg-accent/30 transition-all duration-200 border-b border-border/50"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   {collapsedProjects.has(group.id) ? (
-                    <ChevronRight className="w-3 h-3 text-muted-foreground" />
+                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
                   ) : (
-                    <ChevronDown className="w-3 h-3 text-muted-foreground" />
+                    <ChevronDown className="w-5 h-5 text-muted-foreground" />
                   )}
                   <div 
-                    className="w-2 h-2 rounded-full"
+                    className="w-4 h-4 rounded-full shadow-sm"
                     style={{ backgroundColor: group.color }}
                   />
-                  <span className="font-medium text-sm text-foreground">{group.title}</span>
+                  <span className="font-bold text-lg text-foreground">{group.title}</span>
                 </div>
-                <span className="text-xs text-muted-foreground">
-                  {group.tasks.filter(t => t.status === 'completed').length}/{group.tasks.length}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-muted-foreground/80">
+                    {group.tasks.filter(t => t.status === 'completed').length}/{group.tasks.length}
+                  </span>
+                  <div className="w-12 h-2 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-blue-500 to-green-500 transition-all duration-300"
+                      style={{ 
+                        width: `${group.tasks.length > 0 ? (group.tasks.filter(t => t.status === 'completed').length / group.tasks.length) * 100 : 0}%` 
+                      }}
+                    />
+                  </div>
+                </div>
               </button>
             )}
 
@@ -712,7 +722,7 @@ export function TaskListView({ className }: TaskListViewProps) {
                       return (
                                                   <div 
                             key={task.id} 
-                            className="p-3 hover:bg-accent/30 transition-colors cursor-pointer"
+                            className="p-4 hover:bg-accent/30 transition-all duration-200 cursor-pointer border-b border-border/50 last:border-b-0"
                             onClick={(e) => {
                               // Only trigger due date editing if not clicking on other interactive elements
                               const target = e.target as Element;
@@ -769,14 +779,14 @@ export function TaskListView({ className }: TaskListViewProps) {
                                         if (e.key === 'Enter') saveEdit();
                                         if (e.key === 'Escape') cancelEdit();
                                       }}
-                                      className="w-full font-semibold text-base bg-transparent border-none outline-none focus:bg-accent/50 rounded px-1 -mx-1"
+                                      className="w-full font-bold text-lg bg-transparent border-none outline-none focus:bg-accent/50 rounded px-1 -mx-1"
                                     />
                                   ) : (
                                     <h3 
                                       className={cn(
-                                        "font-semibold text-base cursor-pointer hover:bg-accent/20 rounded px-1 -mx-1 transition-colors leading-tight select-none",
+                                        "font-bold text-lg cursor-pointer hover:bg-accent/20 rounded px-1 -mx-1 transition-colors leading-tight select-none",
                                         task.status === 'completed' 
-                                          ? "line-through text-muted-foreground" 
+                                          ? "line-through text-muted-foreground/70" 
                                           : "text-foreground"
                                       )}
                                       onDoubleClick={(e) => {
@@ -802,12 +812,12 @@ export function TaskListView({ className }: TaskListViewProps) {
                                           if (e.key === 'Escape') cancelEdit();
                                         }}
                                         placeholder="Add description..."
-                                        className="w-full text-xs text-muted-foreground mt-1 bg-transparent border-none outline-none focus:bg-accent/50 rounded px-1 -mx-1 resize-none"
-                                        rows={1}
+                                        className="w-full text-sm text-muted-foreground/80 mt-2 bg-transparent border-none outline-none focus:bg-accent/50 rounded px-1 -mx-1 resize-none leading-relaxed"
+                                        rows={2}
                                       />
                                     ) : (
                                       <p 
-                                        className="text-xs text-muted-foreground mt-0.5 cursor-pointer hover:bg-accent/20 rounded px-1 -mx-1 transition-colors line-clamp-2"
+                                        className="text-sm text-muted-foreground/80 mt-2 cursor-pointer hover:bg-accent/20 rounded px-1 -mx-1 transition-colors line-clamp-2 leading-relaxed"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           startEditing(task, 'description');
@@ -821,12 +831,12 @@ export function TaskListView({ className }: TaskListViewProps) {
                                   
                                   {/* Project name (when grouped by status) */}
                                   {groupBy === 'status' && (
-                                    <div className="flex items-center gap-1 mt-1">
+                                    <div className="flex items-center gap-2 mt-3">
                                       <div 
-                                        className="w-2 h-2 rounded-full"
+                                        className="w-3 h-3 rounded-full shadow-sm"
                                         style={{ backgroundColor: task.projectColor }}
                                       />
-                                      <span className="text-xs text-muted-foreground">
+                                      <span className="text-sm font-medium text-muted-foreground/90">
                                         {task.projectName}
                                       </span>
                                     </div>
@@ -835,8 +845,8 @@ export function TaskListView({ className }: TaskListViewProps) {
                                   {/* Due date - Editable and Compact */}
                                   {(dueInfo || editingTaskId === task.id && editingField === 'dueDate') && (
                                     editingTaskId === task.id && editingField === 'dueDate' ? (
-                                      <div className="flex items-center gap-1 mt-1">
-                                        <Clock className="w-3 h-3 text-muted-foreground" />
+                                      <div className="flex items-center gap-2 mt-3">
+                                        <Clock className="w-4 h-4 text-muted-foreground/70" />
                                         <input
                                           ref={editInputRef as React.RefObject<HTMLInputElement>}
                                           type="date"
@@ -847,17 +857,17 @@ export function TaskListView({ className }: TaskListViewProps) {
                                             if (e.key === 'Enter') saveEdit();
                                             if (e.key === 'Escape') cancelEdit();
                                           }}
-                                          className="text-xs bg-transparent border-none outline-none focus:bg-accent/50 rounded px-1 -mx-1"
+                                          className="text-sm font-semibold bg-accent/30 border border-border rounded-lg px-2 py-1 outline-none focus:bg-accent/50 focus:ring-2 focus:ring-primary/20"
                                         />
                                       </div>
                                     ) : dueInfo && (
-                                      <div className="flex items-center gap-1 mt-1">
-                                        <Clock className="w-3 h-3 text-muted-foreground" />
+                                      <div className="flex items-center gap-2 mt-3">
+                                        <Clock className="w-4 h-4 text-muted-foreground/70" />
                                         <span className={cn(
-                                          "text-xs font-medium",
+                                          "text-sm font-semibold",
                                           dueInfo.isOverdue 
-                                            ? "text-red-500" 
-                                            : "text-muted-foreground"
+                                            ? "text-red-500 bg-red-50 px-2 py-1 rounded-full" 
+                                            : "text-muted-foreground/90"
                                         )}>
                                           {dueInfo.text}
                                         </span>
@@ -868,10 +878,16 @@ export function TaskListView({ className }: TaskListViewProps) {
                                 
                                 {/* Priority indicator */}
                                 {task.priority === 'urgent' && (
-                                  <div className="w-2 h-2 bg-red-500 rounded-full mt-1 flex-shrink-0" />
+                                  <div className="flex items-center gap-1 mt-1 flex-shrink-0">
+                                    <div className="w-3 h-3 bg-red-500 rounded-full shadow-lg animate-pulse" />
+                                    <span className="text-xs font-bold text-red-600 uppercase tracking-wide">Urgent</span>
+                                  </div>
                                 )}
                                 {task.priority === 'high' && (
-                                  <div className="w-2 h-2 bg-orange-500 rounded-full mt-1 flex-shrink-0" />
+                                  <div className="flex items-center gap-1 mt-1 flex-shrink-0">
+                                    <div className="w-3 h-3 bg-orange-500 rounded-full shadow-md" />
+                                    <span className="text-xs font-semibold text-orange-600 uppercase tracking-wide">High</span>
+                                  </div>
                                 )}
                               </div>
                             </div>
