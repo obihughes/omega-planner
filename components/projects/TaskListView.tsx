@@ -39,7 +39,7 @@ export function TaskListView({ className }: TaskListViewProps) {
   // Local state
   const [searchTerm, setSearchTerm] = useState('');
   const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(new Set());
-  const [groupBy, setGroupBy] = useState<'project' | 'status' | 'dueDate' | 'none'>('project');
+  const [groupBy, setGroupBy] = useState<'project' | 'status' | 'dueDate' | 'dateCreated' | 'none'>('project');
   const [newTaskProjectId, setNewTaskProjectId] = useState<string>('');
   const [newTaskTitle, setNewTaskTitle] = useState('');
   
@@ -260,6 +260,58 @@ export function TaskListView({ className }: TaskListViewProps) {
             }
             if (a.dueDate && !b.dueDate) return -1;
             if (!a.dueDate && b.dueDate) return 1;
+            return a.title.localeCompare(b.title);
+                     })
+         }));
+    } else if (groupBy === 'dateCreated') {
+      // Group by date created
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const thisWeek = new Date(today);
+      thisWeek.setDate(thisWeek.getDate() - 7);
+      const thisMonth = new Date(today);
+      thisMonth.setMonth(thisMonth.getMonth() - 1);
+      
+      const dateCreatedGroups = {
+        'today': { title: 'Created Today', tasks: [] as TaskWithProject[], color: '#10B981' },
+        'yesterday': { title: 'Created Yesterday', tasks: [] as TaskWithProject[], color: '#3B82F6' },
+        'thisWeek': { title: 'This Week', tasks: [] as TaskWithProject[], color: '#8B5CF6' },
+        'thisMonth': { title: 'This Month', tasks: [] as TaskWithProject[], color: '#F59E0B' },
+        'older': { title: 'Older', tasks: [] as TaskWithProject[], color: '#6B7280' }
+      };
+      
+      filteredTasks.forEach(task => {
+        const createdDate = new Date(task.createdAt);
+        const createdDateOnly = new Date(createdDate.getFullYear(), createdDate.getMonth(), createdDate.getDate());
+        
+        if (createdDateOnly.getTime() === today.getTime()) {
+          dateCreatedGroups.today.tasks.push(task);
+        } else if (createdDateOnly.getTime() === yesterday.getTime()) {
+          dateCreatedGroups.yesterday.tasks.push(task);
+        } else if (createdDateOnly >= thisWeek) {
+          dateCreatedGroups.thisWeek.tasks.push(task);
+        } else if (createdDateOnly >= thisMonth) {
+          dateCreatedGroups.thisMonth.tasks.push(task);
+        } else {
+          dateCreatedGroups.older.tasks.push(task);
+        }
+      });
+      
+      return Object.entries(dateCreatedGroups)
+        .filter(([_, group]) => group.tasks.length > 0)
+        .map(([key, group]) => ({
+          id: key,
+          title: group.title,
+          color: group.color,
+          tasks: group.tasks.sort((a, b) => {
+            // Sort by creation date (newest first), then by title
+            const dateA = new Date(a.createdAt);
+            const dateB = new Date(b.createdAt);
+            if (dateB.getTime() !== dateA.getTime()) {
+              return dateB.getTime() - dateA.getTime();
+            }
             return a.title.localeCompare(b.title);
           })
         }));
@@ -483,17 +535,17 @@ export function TaskListView({ className }: TaskListViewProps) {
       {/* Compact Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-4">
-          <h2 className="text-xl font-semibold text-foreground">All Tasks</h2>
-          <span className="bg-muted px-2 py-1 rounded-full text-xs font-medium text-muted-foreground">
-            {completedTasks}/{totalTasks}
+          <h1 className="text-2xl font-light text-foreground tracking-tight">Tasks</h1>
+          <span className="bg-muted px-3 py-1.5 rounded-full text-sm font-medium text-muted-foreground/80">
+            {completedTasks} of {totalTasks}
           </span>
           <Button 
             onClick={openFullTaskModal}
             size="sm"
             variant="outline"
-            className="flex items-center gap-1 text-xs"
+            className="flex items-center gap-1.5 text-sm font-medium"
           >
-            <Plus className="w-3 h-3" />
+            <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">New Task</span>
           </Button>
         </div>
@@ -626,13 +678,14 @@ export function TaskListView({ className }: TaskListViewProps) {
           {/* Group by selector */}
           <select
             value={groupBy}
-            onChange={(e) => setGroupBy(e.target.value as 'project' | 'status' | 'dueDate' | 'none')}
+            onChange={(e) => setGroupBy(e.target.value as 'project' | 'status' | 'dueDate' | 'dateCreated' | 'none')}
             className="px-2 py-1.5 rounded-lg bg-input border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs"
           >
             <option value="none">No Grouping</option>
             <option value="project">By Project</option>
             <option value="status">By Status</option>
             <option value="dueDate">By Due Date</option>
+            <option value="dateCreated">By Date Created</option>
           </select>
         </div>
       </div>
@@ -689,7 +742,7 @@ export function TaskListView({ className }: TaskListViewProps) {
                     className="w-4 h-4 rounded-full shadow-sm"
                     style={{ backgroundColor: group.color }}
                   />
-                  <span className="font-bold text-lg text-foreground">{group.title}</span>
+                  <span className="font-semibold text-xl text-foreground tracking-tight">{group.title}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold text-muted-foreground/80">
@@ -779,15 +832,15 @@ export function TaskListView({ className }: TaskListViewProps) {
                                         if (e.key === 'Enter') saveEdit();
                                         if (e.key === 'Escape') cancelEdit();
                                       }}
-                                      className="w-full font-bold text-lg bg-transparent border-none outline-none focus:bg-accent/50 rounded px-1 -mx-1"
+                                      className="w-full font-medium text-base bg-transparent border-none outline-none focus:bg-accent/50 rounded px-1 -mx-1 tracking-tight"
                                     />
                                   ) : (
                                     <h3 
                                       className={cn(
-                                        "font-bold text-lg cursor-pointer hover:bg-accent/20 rounded px-1 -mx-1 transition-colors leading-tight select-none",
+                                        "font-medium text-base cursor-pointer hover:bg-accent/20 rounded px-1 -mx-1 transition-colors leading-relaxed select-none tracking-tight",
                                         task.status === 'completed' 
                                           ? "line-through text-muted-foreground/70" 
-                                          : "text-foreground"
+                                          : "text-foreground/90"
                                       )}
                                       onDoubleClick={(e) => {
                                         e.stopPropagation();
@@ -812,12 +865,12 @@ export function TaskListView({ className }: TaskListViewProps) {
                                           if (e.key === 'Escape') cancelEdit();
                                         }}
                                         placeholder="Add description..."
-                                        className="w-full text-sm text-muted-foreground/80 mt-2 bg-transparent border-none outline-none focus:bg-accent/50 rounded px-1 -mx-1 resize-none leading-relaxed"
+                                        className="w-full text-sm text-muted-foreground/70 mt-2 bg-transparent border-none outline-none focus:bg-accent/50 rounded px-1 -mx-1 resize-none leading-relaxed font-light"
                                         rows={2}
                                       />
                                     ) : (
                                       <p 
-                                        className="text-sm text-muted-foreground/80 mt-2 cursor-pointer hover:bg-accent/20 rounded px-1 -mx-1 transition-colors line-clamp-2 leading-relaxed"
+                                        className="text-sm text-muted-foreground/70 mt-2 cursor-pointer hover:bg-accent/20 rounded px-1 -mx-1 transition-colors line-clamp-2 leading-relaxed font-light"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           startEditing(task, 'description');
@@ -829,14 +882,14 @@ export function TaskListView({ className }: TaskListViewProps) {
                                     )
                                   )}
                                   
-                                  {/* Project name (when grouped by status) */}
-                                  {groupBy === 'status' && (
-                                    <div className="flex items-center gap-2 mt-3">
+                                  {/* Project name (when not grouped by project) */}
+                                  {groupBy !== 'project' && (
+                                    <div className="flex items-center gap-2 mt-1 mb-2">
                                       <div 
-                                        className="w-3 h-3 rounded-full shadow-sm"
+                                        className="w-4 h-4 rounded-full shadow-sm"
                                         style={{ backgroundColor: task.projectColor }}
                                       />
-                                      <span className="text-sm font-medium text-muted-foreground/90">
+                                      <span className="text-lg font-bold text-foreground tracking-tight">
                                         {task.projectName}
                                       </span>
                                     </div>
@@ -857,17 +910,17 @@ export function TaskListView({ className }: TaskListViewProps) {
                                             if (e.key === 'Enter') saveEdit();
                                             if (e.key === 'Escape') cancelEdit();
                                           }}
-                                          className="text-sm font-semibold bg-accent/30 border border-border rounded-lg px-2 py-1 outline-none focus:bg-accent/50 focus:ring-2 focus:ring-primary/20"
+                                          className="text-sm font-medium bg-accent/30 border border-border rounded-lg px-2 py-1 outline-none focus:bg-accent/50 focus:ring-2 focus:ring-primary/20 tracking-tight"
                                         />
                                       </div>
                                     ) : dueInfo && (
                                       <div className="flex items-center gap-2 mt-3">
                                         <Clock className="w-4 h-4 text-muted-foreground/70" />
                                         <span className={cn(
-                                          "text-sm font-semibold",
+                                          "text-sm font-medium tracking-tight",
                                           dueInfo.isOverdue 
-                                            ? "text-red-500 bg-red-50 px-2 py-1 rounded-full" 
-                                            : "text-muted-foreground/90"
+                                            ? "text-red-600 bg-red-50 px-2 py-1 rounded-full" 
+                                            : "text-muted-foreground/80"
                                         )}>
                                           {dueInfo.text}
                                         </span>
