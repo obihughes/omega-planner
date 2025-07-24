@@ -39,7 +39,7 @@ import { useViewMode } from '@/app/context/ViewModeContext';
 type TimelinePeriod = 'night' | 'morning' | 'afternoon' | 'evening';
 
 export default function DailyPlanner() {
-  const { viewMode } = useViewMode();
+  const { viewMode, setViewMode } = useViewMode();
   const {
     tasksByDate,
     poolTasks: combinedPoolTasks,
@@ -600,6 +600,23 @@ export default function DailyPlanner() {
     }
   };
 
+  const handleNavigateToDaily = useCallback((targetDate: Date) => {
+    // Calculate the day offset from today to the target date
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const target = new Date(targetDate);
+    target.setHours(0, 0, 0, 0);
+    
+    const dayOffset = Math.floor((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Set the top day offset to show the target date
+    setTopDayOffset(dayOffset);
+    
+    // Switch to daily view
+    setViewMode('daily');
+  }, [setTopDayOffset, setViewMode]);
+
   return (
     <div className="min-h-screen p-2 bg-background text-foreground transition-colors">
       <div className="w-full mx-auto">
@@ -1069,6 +1086,7 @@ export default function DailyPlanner() {
                 openEditModal={openEditModal}
                 createPoolTask={createPoolTask}
                 hideInboxSection={true}
+                onNavigateToDaily={handleNavigateToDaily}
               />
             </div>
           </>
