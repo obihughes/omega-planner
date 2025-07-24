@@ -398,7 +398,9 @@ export function TaskAssignmentCalendar({
         </div>
       )}
 
-      <div className="flex-1 overflow-auto p-4">
+      {/* Sticky Header Section */}
+      <div className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border/20 shadow-sm">
+        <div className="p-4 pb-2">
         {/* Pool Tasks Section */}
         {!hideInboxSection && (
           <div 
@@ -457,7 +459,7 @@ export function TaskAssignmentCalendar({
                       }}
                       onDragEnd={handleDragEnd}
                       className={cn(
-                        "group relative p-3 rounded-xl text-sm cursor-pointer transition-all duration-200 shadow-sm border-2 hover:shadow-md",
+                        "group relative p-3 text-sm cursor-pointer transition-all duration-200 shadow-sm border-2 hover:shadow-md",
                         "w-40 h-20 flex flex-col justify-between bg-gradient-to-br from-background to-muted/20",
                         assigningTask?.id === task.id 
                           ? "ring-2 ring-primary/50 bg-primary/5 border-primary/30 shadow-md scale-[1.02]" 
@@ -494,7 +496,7 @@ export function TaskAssignmentCalendar({
                   ))}
                 </div>
             ) : (
-                              <div 
+                <div 
                   className={cn(
                     "flex flex-col items-center justify-center py-8 px-4 bg-muted/20 rounded-xl border border-border/40 min-h-[8rem] transition-all duration-200",
                     draggedTask && "border-orange-500/50 bg-orange-500/5",
@@ -567,45 +569,61 @@ export function TaskAssignmentCalendar({
           </div>
         )}
 
-        {/* Month Navigation */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigateMonth('prev')}
-              className="flex items-center gap-2"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
+          {/* Month Navigation */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigateMonth('prev')}
+                className="flex items-center gap-2"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              
+              <h3 className="text-lg font-semibold text-foreground min-w-[200px] text-center mx-4">
+                {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </h3>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigateMonth('next')}
+                className="flex items-center gap-2"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
             
-            <h3 className="text-lg font-semibold text-foreground min-w-[200px] text-center mx-4">
-              {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-            </h3>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigateMonth('next')}
-              className="flex items-center gap-2"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="show-past-events"
+                checked={showPastEvents}
+                onCheckedChange={setShowPastEvents}
+              />
+              <Label htmlFor="show-past-events">Show Past Scheduled Events</Label>
+            </div>
           </div>
-          
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="show-past-events"
-              checked={showPastEvents}
-              onCheckedChange={setShowPastEvents}
-            />
-            <Label htmlFor="show-past-events">Show Past Scheduled Events</Label>
+
+          {/* Day Headers */}
+          <div className="grid grid-cols-7 gap-2 px-4 py-2 bg-muted/50 border-b border-border/20">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+              <div key={day} className="text-center text-sm font-semibold text-foreground py-2">
+                {day}
+              </div>
+            ))}
           </div>
         </div>
+      </div>
 
-        {/* Calendar Grid */}
-        <div className="grid grid-cols-7 grid-rows-5 gap-2">
-          {daysInCalendar.map(day => {
+      {/* Scrollable Calendar Content */}
+      <div className="flex-1 overflow-hidden">
+        <div className="p-4">
+          {/* Calendar Grid Container - Limited to 4 rows with scrollbar */}
+          <div className="h-[480px] overflow-y-auto border border-border/20 rounded-lg">
+            {/* Calendar Grid */}
+            <div className="grid grid-cols-7 gap-2 auto-rows-[120px] p-2">
+              {daysInCalendar.map(day => {
             const dateKey = day.toISOString().split('T')[0];
             const isPastDay = new Date(day) < new Date() && !isToday(day);
 
@@ -684,7 +702,7 @@ export function TaskAssignmentCalendar({
                       }}
                       onDragEnd={handleDragEnd}
                       className={cn(
-                        "p-1.5 rounded-md text-xs leading-tight font-medium truncate cursor-grab active:cursor-grabbing flex items-center gap-1.5 transition-all duration-150 hover:shadow-sm",
+                        "p-1.5 text-xs leading-tight font-medium truncate cursor-grab active:cursor-grabbing flex items-center gap-1.5 transition-all duration-150 hover:shadow-sm",
                         "border border-border/30 hover:border-border/50",
                         task.color ? task.color : "bg-muted",
                         task.startHour === undefined && "opacity-70 border-dashed",
@@ -694,14 +712,6 @@ export function TaskAssignmentCalendar({
                     >
                       {'dueDate' in task && <Pin className="w-3 h-3 flex-shrink-0" />}
                       <span className="truncate">{task.name}</span>
-                      {task.startHour !== undefined && (
-                        <div className="flex items-center gap-1 ml-auto">
-                          <Clock className="w-2.5 h-2.5 text-muted-foreground" />
-                          <span className="text-xs text-muted-foreground font-mono">
-                            {formatTime(task.startHour)}
-                          </span>
-                        </div>
-                      )}
                     </div>
                   ))}
                   {allTasks.length > 3 && (
@@ -713,58 +723,17 @@ export function TaskAssignmentCalendar({
               </div>
             );
           })}
-        </div>
+            </div>
+          </div>
 
-        {/* Navigation Hint */}
-        {onNavigateToDaily && (
-          <div className="text-center mt-4">
-            <p className="text-xs text-muted-foreground">
-              💡 <span className="font-medium">Tip:</span> Hover over any date and click the <CalendarDays className="w-3 h-3 inline mx-1" /> icon to open that day in Daily Planner
-            </p>
-          </div>
-        )}
-
-        {/* Summary Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-          <div className="card-enhanced p-4 bg-card/60 backdrop-blur-sm">
-            <h4 className="text-sm font-medium text-foreground mb-2">This Month</h4>
-            <div className="text-xl font-bold text-primary">
-              {Object.values(tasksByDate)
-                .filter(tasks => {
-                  const dateKey = Object.keys(tasksByDate).find(key => tasksByDate[key] === tasks);
-                  if (!dateKey) return false;
-                  const date = new Date(dateKey);
-                  return date.getMonth() === currentDate.getMonth() && date.getFullYear() === currentDate.getFullYear();
-                })
-                .reduce((total, tasks) => total + tasks.length, 0)
-              }
+          {/* Navigation Hint */}
+          {onNavigateToDaily && (
+            <div className="text-center mt-4">
+              <p className="text-xs text-muted-foreground">
+                💡 <span className="font-medium">Tip:</span> Hover over any date and click the <CalendarDays className="w-3 h-3 inline mx-1" /> icon to open that day in Daily Planner
+              </p>
             </div>
-            <div className="text-xs text-muted-foreground">Tasks scheduled</div>
-          </div>
-          
-          <div className="card-enhanced p-4 bg-card/60 backdrop-blur-sm">
-            <h4 className="text-sm font-medium text-foreground mb-2">Days Planned</h4>
-            <div className="text-xl font-bold text-primary">
-              {Object.keys(tasksByDate)
-                .filter(dateKey => {
-                  const date = new Date(dateKey);
-                  return date.getMonth() === currentDate.getMonth() && 
-                         date.getFullYear() === currentDate.getFullYear() &&
-                         tasksByDate[dateKey].length > 0;
-                })
-                .length
-              }
-            </div>
-            <div className="text-xs text-muted-foreground">Days with scheduled tasks</div>
-          </div>
-          
-          <div className="card-enhanced p-4 bg-card/60 backdrop-blur-sm">
-            <h4 className="text-sm font-medium text-foreground mb-2">Inbox</h4>
-            <div className="text-xl font-bold text-primary">
-              {poolTasks.length}
-            </div>
-            <div className="text-xs text-muted-foreground">Tasks in inbox</div>
-          </div>
+          )}
         </div>
       </div>
     </div>
