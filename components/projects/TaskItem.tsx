@@ -3,16 +3,18 @@
 import React, { useState, useMemo } from 'react';
 import { ProjectTask, SubTask } from '@/types';
 import { 
-  Circle, 
+  GripVertical, 
+  Plus, 
+  Trash2, 
   CheckCircle2, 
   Clock, 
-  Edit, 
-  Trash2,
-  GripVertical,
+  Minus, 
+  Circle,
+  CheckSquare2,
+  Square,
+  Edit,
   ChevronDown,
-  ChevronRight,
-  Plus,
-  Minus
+  ChevronRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSortable } from '@dnd-kit/sortable';
@@ -106,9 +108,10 @@ export function TaskItem({
   onUpdateSubtask,
   onDeleteSubtask
 }: TaskItemProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
-  const [showAddSubtask, setShowAddSubtask] = useState(false);
+  const [isExpanded, setIsExpanded] = React.useState(false);
+  const [showAddSubtask, setShowAddSubtask] = React.useState(false);
+  const [newSubtaskTitle, setNewSubtaskTitle] = React.useState('');
+  const [isAnimating, setIsAnimating] = React.useState(false);
   
   const {
     attributes,
@@ -155,17 +158,26 @@ export function TaskItem({
   };
 
   const getStatusIcon = () => {
-    const colorClass = getTaskCircleColor();
-    
-    switch (task.status) {
-      case 'completed':
-        return <CheckCircle2 className={cn("w-5 h-5", colorClass)} />;
-      case 'in-progress':
-        return <Clock className={cn("w-5 h-5", colorClass)} />;
-      case 'blocked':
-        return <Minus className={cn("w-5 h-5", colorClass)} />;
-      default:
-        return <Circle className={cn("w-5 h-5", colorClass)} />;
+    if (task.status === 'completed') {
+      return (
+        <div className="relative">
+          <CheckSquare2 className={cn(
+            "w-5 h-5 text-green-600 transition-all duration-300",
+            isAnimating && "drop-shadow-lg"
+          )} />
+          {/* Success ring animation */}
+          {isAnimating && (
+            <div className="absolute inset-0 rounded border-2 border-green-400 animate-ping" />
+          )}
+        </div>
+      );
+    } else {
+      return (
+        <Square className={cn(
+          "w-5 h-5 text-muted-foreground transition-all duration-200",
+          "hover:text-green-500 hover:scale-105"
+        )} />
+      );
     }
   };
 
@@ -191,6 +203,64 @@ export function TaskItem({
     onDeleteSubtask(task.id, subtaskId);
   };
 
+  // Create confetti particles animation
+  const createConfettiParticles = (button: HTMLElement) => {
+    const colors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
+    const rect = button.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    for (let i = 0; i < 12; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'confetti-particle';
+      particle.style.cssText = `
+        position: fixed;
+        width: 6px;
+        height: 6px;
+        background: ${colors[Math.floor(Math.random() * colors.length)]};
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 9999;
+        left: ${centerX}px;
+        top: ${centerY}px;
+        transform-origin: center;
+      `;
+
+      document.body.appendChild(particle);
+
+      const angle = (i / 12) * Math.PI * 2;
+      const velocity = 100 + Math.random() * 100;
+      const gravity = 500;
+      const life = 800 + Math.random() * 400;
+
+      let startTime = performance.now();
+      
+      const animate = (currentTime: number) => {
+        const elapsed = currentTime - startTime;
+        const progress = elapsed / life;
+
+        if (progress >= 1) {
+          particle.remove();
+          return;
+        }
+
+        const x = centerX + Math.cos(angle) * velocity * (elapsed / 1000);
+        const y = centerY + Math.sin(angle) * velocity * (elapsed / 1000) + 0.5 * gravity * Math.pow(elapsed / 1000, 2);
+        const opacity = 1 - progress;
+        const scale = 1 - progress * 0.5;
+
+        particle.style.left = x + 'px';
+        particle.style.top = y + 'px';
+        particle.style.opacity = opacity.toString();
+        particle.style.transform = `scale(${scale})`;
+
+        requestAnimationFrame(animate);
+      };
+
+      requestAnimationFrame(animate);
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -214,11 +284,33 @@ export function TaskItem({
 
         {/* Status Toggle */}
         <button
-          onClick={() => {
+          onClick={(e) => {
             const nextStatus = task.status === 'completed' ? 'todo' : 'completed';
+            
+            // Trigger exciting animation when completing a task
+            if (nextStatus === 'completed') {
+              setIsAnimating(true);
+              
+              // Create confetti particles
+              createConfettiParticles(e.currentTarget as HTMLElement);
+              
+              // Reset animation state
+              setTimeout(() => {
+                setIsAnimating(false);
+              }, 1000);
+            }
+            
             onStatusChange(task.id, nextStatus);
           }}
-          className="flex-shrink-0 hover:scale-105 transition-transform mt-0.5"
+          className={cn(
+            "flex-shrink-0 transition-all duration-300 relative mt-0.5",
+            "hover:scale-110 active:scale-95",
+            isAnimating && "animate-bounce"
+          )}
+          style={{
+            transform: isAnimating ? 'scale(1.2)' : undefined,
+            transition: 'transform 0.3s ease-in-out'
+          }}
         >
           {getStatusIcon()}
         </button>

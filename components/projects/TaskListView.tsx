@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useProjects } from '@/hooks/useProjects';
 import { Project, ProjectTask } from '@/types/projects';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,8 @@ import {
   SortAsc,
   SortDesc,
   X,
-  Check
+  Check,
+  CheckSquare2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -382,6 +383,64 @@ export function TaskListView({ className }: TaskListViewProps) {
     });
   }, [updateTaskInProject]);
 
+  // Create confetti particles animation
+  const createConfettiParticles = (button: HTMLElement) => {
+    const colors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
+    const rect = button.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    for (let i = 0; i < 12; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'confetti-particle';
+      particle.style.cssText = `
+        position: fixed;
+        width: 6px;
+        height: 6px;
+        background: ${colors[Math.floor(Math.random() * colors.length)]};
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 9999;
+        left: ${centerX}px;
+        top: ${centerY}px;
+        transform-origin: center;
+      `;
+
+      document.body.appendChild(particle);
+
+      const angle = (i / 12) * Math.PI * 2;
+      const velocity = 100 + Math.random() * 100;
+      const gravity = 500;
+      const life = 800 + Math.random() * 400;
+
+      let startTime = performance.now();
+      
+      const animate = (currentTime: number) => {
+        const elapsed = currentTime - startTime;
+        const progress = elapsed / life;
+
+        if (progress >= 1) {
+          particle.remove();
+          return;
+        }
+
+        const x = centerX + Math.cos(angle) * velocity * (elapsed / 1000);
+        const y = centerY + Math.sin(angle) * velocity * (elapsed / 1000) + 0.5 * gravity * Math.pow(elapsed / 1000, 2);
+        const opacity = 1 - progress;
+        const scale = 1 - progress * 0.5;
+
+        particle.style.left = x + 'px';
+        particle.style.top = y + 'px';
+        particle.style.opacity = opacity.toString();
+        particle.style.transform = `scale(${scale})`;
+
+        requestAnimationFrame(animate);
+      };
+
+      requestAnimationFrame(animate);
+    }
+  };
+
   // Handle quick add task
   const handleQuickAdd = () => {
     if (!newTaskTitle.trim() || !newTaskProjectId) return;
@@ -492,21 +551,27 @@ export function TaskListView({ className }: TaskListViewProps) {
   };
 
   // Get status icon
-  const getStatusIcon = (status: ProjectTask['status']) => {
-    switch (status) {
-      case 'completed':
-        return (
-          <div className="relative w-4 h-4">
-            <CheckSquare className="w-4 h-4 text-green-600" />
-            <Check className="w-3 h-3 text-white absolute top-0.5 left-0.5 stroke-[3]" />
-          </div>
-        );
-      case 'in-progress':
-        return <Square className="w-4 h-4 text-blue-500" />;
-      case 'blocked':
-        return <Square className="w-4 h-4 text-red-500" />;
-      default:
-        return <Square className="w-4 h-4 text-gray-400" />;
+  const getStatusIcon = (status: ProjectTask['status'], isAnimating: boolean = false) => {
+    if (status === 'completed') {
+      return (
+        <div className="relative">
+          <CheckSquare2 className={cn(
+            "w-4 h-4 text-green-600 transition-all duration-300",
+            isAnimating && "drop-shadow-lg"
+          )} />
+          {/* Success ring animation */}
+          {isAnimating && (
+            <div className="absolute inset-0 rounded border-2 border-green-400 animate-ping" />
+          )}
+        </div>
+      );
+    } else {
+      return (
+        <Square className={cn(
+          "w-4 h-4 text-muted-foreground transition-all duration-200",
+          "hover:text-green-500 hover:scale-105"
+        )} />
+      );
     }
   };
 
@@ -783,14 +848,26 @@ export function TaskListView({ className }: TaskListViewProps) {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  
+                                  // Trigger confetti for completed tasks
+                                  const newStatus = task.status === 'completed' ? 'todo' : 'completed';
+                                  if (newStatus === 'completed') {
+                                    createConfettiParticles(e.currentTarget as HTMLElement);
+                                  }
+                                  
                                   handleTaskToggle(task);
                                 }}
-                                                              className={cn(
-                                "flex-shrink-0 hover:scale-105 transition-transform duration-200 relative",
-                                celebratingTasks.has(task.id) && "animate-bounce"
-                              )}
+                                className={cn(
+                                  "flex-shrink-0 transition-all duration-300 relative",
+                                  "hover:scale-110 active:scale-95",
+                                  celebratingTasks.has(task.id) && "animate-bounce"
+                                )}
+                                style={{
+                                  transform: celebratingTasks.has(task.id) ? 'scale(1.2)' : undefined,
+                                  transition: 'transform 0.3s ease-in-out'
+                                }}
                               >
-                                {getStatusIcon(task.status)}
+                                {getStatusIcon(task.status, celebratingTasks.has(task.id))}
                                 
                                 {/* Celebration effect */}
                                 {celebratingTasks.has(task.id) && (
