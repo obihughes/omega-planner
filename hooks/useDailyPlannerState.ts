@@ -98,6 +98,7 @@ export function useDailyPlanner() {
       }
       map.get(dateStr)!.push(task);
     });
+    
     return map;
   }, [tasks]);
 
