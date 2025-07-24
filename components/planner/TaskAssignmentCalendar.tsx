@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useRef } from 'react';
 import { Task, PinnedTask } from '@/types/planner';
-import { ChevronLeft, ChevronRight, Clock, Calendar as CalendarIcon, Edit3, ArrowLeft, Pin, Plus, CalendarDays } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Calendar as CalendarIcon, Edit3, ArrowLeft, Pin, Plus, CalendarDays, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatDuration, formatTime } from '@/utils/formatters';
@@ -562,7 +562,7 @@ export function TaskAssignmentCalendar({
               ) : (
                 <>
                   <div>• Drop on any date to <span className="text-blue-600 font-medium">reschedule</span></div>
-                  <div>• Drop on inbox to <span className="text-orange-600 font-medium">unschedule</span></div>
+                  <div>• Drop on inbox or use <span className="text-red-600 font-medium">X button</span> to <span className="text-orange-600 font-medium">unschedule</span></div>
                 </>
               )}
             </div>
@@ -634,9 +634,13 @@ export function TaskAssignmentCalendar({
             const monthlyPinnedTasks = tasksForDay.filter(t => t.isMonthlyPinned);
             
             let allTasks = [...pinnedTasksForDay, ...poolTasksForDay, ...monthlyPinnedTasks];
-            if (showPastEvents && isPastDay) {
+            
+            // Add scheduled tasks based on showPastEvents setting
+            if (showPastEvents || !isPastDay) {
+              // Show all scheduled tasks if showPastEvents is true OR if it's not a past day
               allTasks = [...allTasks, ...tasksForDay.filter(t => !t.isMonthlyPinned)];
             }
+            // If showPastEvents is false AND it's a past day, we skip adding scheduled tasks
 
             // Remove duplicates
             allTasks = allTasks.filter((task, index, self) =>
@@ -702,7 +706,7 @@ export function TaskAssignmentCalendar({
                       }}
                       onDragEnd={handleDragEnd}
                       className={cn(
-                        "p-1.5 text-xs leading-tight font-medium truncate cursor-grab active:cursor-grabbing flex items-center gap-1.5 transition-all duration-150 hover:shadow-sm",
+                        "group relative p-1.5 text-xs leading-tight font-medium truncate cursor-grab active:cursor-grabbing flex items-center gap-1.5 transition-all duration-150 hover:shadow-sm",
                         "border border-border/30 hover:border-border/50",
                         task.color ? task.color : "bg-muted",
                         task.startHour === undefined && "opacity-70 border-dashed",
@@ -711,7 +715,38 @@ export function TaskAssignmentCalendar({
                       title={task.startHour !== undefined ? "Drag to reschedule or drag to inbox to unschedule" : "Drag to schedule"}
                     >
                       {'dueDate' in task && <Pin className="w-3 h-3 flex-shrink-0" />}
-                      <span className="truncate">{task.name}</span>
+                      <span className="truncate flex-1">{task.name}</span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 hover:bg-accent/50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          handleTaskClick(task, task.startHour !== undefined);
+                        }}
+                        title="Edit task"
+                      >
+                        <Edit3 className="w-2.5 h-2.5" />
+                      </Button>
+                      {task.startHour !== undefined && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 hover:bg-red-500/20 hover:text-red-600"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            
+                            if (confirm(`Unschedule "${task.name}"? It will be moved back to your inbox.`)) {
+                              onUnassignTask(task);
+                            }
+                          }}
+                          title="Unschedule task"
+                        >
+                          <X className="w-2.5 h-2.5" />
+                        </Button>
+                      )}
                     </div>
                   ))}
                   {allTasks.length > 3 && (
