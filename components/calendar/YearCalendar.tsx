@@ -53,7 +53,7 @@ function EventPeriodDetailsModal({
       <div className="bg-background border rounded-lg shadow-lg max-w-sm w-full mx-4">
         <div className="flex items-center justify-between p-4 border-b">
           <h3 className="text-lg font-semibold">
-            {isEvent ? 'Event Details' : 'Period Details'}
+                            {isEvent ? 'Event Details' : 'Interval Details'}
           </h3>
           <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="w-4 h-4" />
@@ -159,7 +159,7 @@ function DayDetailsModal({
         
         <div className="p-4 space-y-4">
           {events.length === 0 && periods.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">No events or periods on this day</p>
+                          <p className="text-muted-foreground text-center py-8">No events or intervals on this day</p>
           ) : (
             <>
               {events.length > 0 && (
@@ -194,7 +194,7 @@ function DayDetailsModal({
               
               {periods.length > 0 && (
                 <div>
-                  <h4 className="font-medium mb-2 text-sm text-muted-foreground uppercase tracking-wide">Periods</h4>
+                  <h4 className="font-medium mb-2 text-sm text-muted-foreground uppercase tracking-wide">Intervals</h4>
                   <div className="space-y-2">
                     {periods.map(period => (
                       <div 
@@ -229,7 +229,7 @@ function DayDetailsModal({
         </div>
         <div className="flex justify-end gap-2 p-4 border-t">
             <Button variant="outline" size="sm" onClick={onAddPeriodRequest}>
-                <Plus className="w-4 h-4 mr-2" /> New Period
+                <Plus className="w-4 h-4 mr-2" /> New Interval
             </Button>
             <Button size="sm" onClick={onAddEventRequest}>
                 <Plus className="w-4 h-4 mr-2" /> New Event
@@ -273,9 +273,9 @@ function ActionPopup({
       <Button variant="ghost" size="sm" className="w-full justify-start" onClick={onAddEvent}>
         <Plus className="w-4 h-4 mr-2" /> New Event
       </Button>
-      <Button variant="ghost" size="sm" className="w-full justify-start" onClick={onAddPeriod}>
-        <Plus className="w-4 h-4 mr-2" /> New Period
-      </Button>
+                <Button variant="ghost" size="sm" className="w-full justify-start" onClick={onAddPeriod}>
+            <Plus className="w-4 h-4 mr-2" /> New Interval
+          </Button>
     </div>
   );
 }
@@ -980,7 +980,7 @@ export function YearCalendar({
               disabled={eraserMode}
             >
               <Plus className="w-4 h-4" />
-              Add Period
+              Add Interval
             </Button>
 
             <Button

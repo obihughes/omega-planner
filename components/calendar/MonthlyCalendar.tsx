@@ -64,9 +64,13 @@ export function MonthlyCalendar({
       );
       
       // Get periods that include this date
-      const dayPeriods = data.periods.filter(period =>
-        date >= period.startDate && date <= period.endDate
-      );
+      const dayPeriods = data.periods.filter(period => {
+        // Use date-only comparison to avoid time zone issues
+        const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        const startOnly = new Date(period.startDate.getFullYear(), period.startDate.getMonth(), period.startDate.getDate());
+        const endOnly = new Date(period.endDate.getFullYear(), period.endDate.getMonth(), period.endDate.getDate());
+        return dateOnly >= startOnly && dateOnly <= endOnly;
+      });
       
       days.push({
         date,
@@ -239,7 +243,7 @@ export function MonthlyCalendar({
             className="flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
-            Add Period
+            Add Interval
           </Button>
         </div>
       </div>
@@ -298,19 +302,35 @@ export function MonthlyCalendar({
               <div
                 key={index}
                 className={cn(
-                  "min-h-[140px] p-3 border-r border-b border-border/40 last:border-r-0 transition-all duration-200 cursor-pointer relative group",
-                  "hover:bg-accent/40 hover:shadow-md hover:scale-[1.02] hover:z-10",
-                  !day.isCurrentMonth && "bg-muted/20 text-muted-foreground/50",
-                  day.isToday && "bg-primary/15 border-primary/30 ring-2 ring-primary/50 ring-offset-1 ring-offset-background shadow-lg",
-                  selectedDate && day.date.toDateString() === selectedDate.toDateString() && "ring-2 ring-accent-foreground/50 ring-offset-1 ring-offset-background bg-accent/20",
-                  // Override background for periods
-                  !periodStyle.backgroundColor && !periodStyle.background && !day.isCurrentMonth && "bg-muted/20",
-                  !periodStyle.backgroundColor && !periodStyle.background && day.isCurrentMonth && "bg-background"
+                  "min-h-[140px] border-r border-b border-border/40 last:border-r-0 transition-all duration-200 cursor-pointer relative group",
+                  "hover:shadow-md hover:scale-[1.02] hover:z-10",
+                  !day.isCurrentMonth && "text-muted-foreground/50",
+                  day.isToday && "border-primary/30 ring-2 ring-primary/50 ring-offset-1 ring-offset-background shadow-lg",
+                  selectedDate && day.date.toDateString() === selectedDate.toDateString() && "ring-2 ring-accent-foreground/50 ring-offset-1 ring-offset-background"
                 )}
-                style={periodStyle}
                 onClick={() => handleDateClick(day.date)}
                 onDoubleClick={() => handleDateDoubleClick(day.date)}
               >
+                {/* Default Background Layer */}
+                <div className={cn(
+                  "absolute inset-0",
+                  !day.isCurrentMonth && "bg-muted/20",
+                  day.isCurrentMonth && "bg-background",
+                  day.isToday && "bg-primary/15",
+                  selectedDate && day.date.toDateString() === selectedDate.toDateString() && "bg-accent/20",
+                  "group-hover:bg-accent/40"
+                )} />
+                
+                {/* Period Background Layer */}
+                {day.periods.length > 0 && (
+                  <div 
+                    className="absolute inset-0 rounded-lg z-[1]"
+                    style={periodStyle}
+                  />
+                )}
+                
+                {/* Content Layer */}
+                <div className="relative z-10 p-3 h-full">
                 <div className={cn(
                   "text-sm font-medium mb-2 transition-colors duration-200 relative z-10",
                   !day.isCurrentMonth && !periodStyle.color && "text-muted-foreground",
@@ -331,12 +351,13 @@ export function MonthlyCalendar({
                   {day.events.slice(0, 3).map(event => (
                     <div
                       key={event.id}
-                      className="p-1.5 rounded-lg text-xs cursor-pointer hover:scale-[1.03] hover:shadow-lg hover:ring-2 hover:ring-offset-1 hover:ring-offset-background transition-all duration-300 border group relative"
+                      className="p-1.5 rounded-lg text-xs cursor-pointer hover:scale-[1.03] hover:shadow-lg hover:ring-2 hover:ring-offset-1 hover:ring-offset-background transition-all duration-300 border group relative backdrop-blur-sm"
                       style={{ 
-                        backgroundColor: event.color + '25', 
-                        borderColor: event.color + '70',
+                        backgroundColor: event.color + '90', // More opaque for better visibility
+                        borderColor: event.color,
                         borderLeftWidth: '3px',
-                        borderLeftColor: event.color
+                        borderLeftColor: event.color,
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
                       }}
                       onClick={(e) => handleEventClick(event, e)}
                       title={`${event.title}${event.description ? ` - ${event.description}` : ''}`}
@@ -347,14 +368,14 @@ export function MonthlyCalendar({
                             className="w-2 h-2 rounded-full flex-shrink-0 ring-1 ring-white/20"
                             style={{ backgroundColor: event.color }}
                           />
-                          <span className="truncate font-medium text-xs text-foreground">
+                          <span className="truncate font-medium text-xs text-white drop-shadow-sm">
                             {event.title}
                           </span>
                         </div>
                         <Edit2 className="w-2.5 h-2.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all duration-200" />
                       </div>
                       {event.description && (
-                        <div className="text-xs text-muted-foreground mt-1 truncate">
+                        <div className="text-xs text-white/90 mt-1 truncate drop-shadow-sm">
                           {event.description}
                         </div>
                       )}
@@ -365,6 +386,7 @@ export function MonthlyCalendar({
                       +{day.events.length - 3} more events
                     </div>
                   )}
+                </div>
                 </div>
               </div>
             );
@@ -387,13 +409,13 @@ export function MonthlyCalendar({
         
         <div className="bg-card/70 backdrop-blur-md rounded-2xl p-5 border border-border/40 shadow-lg hover:shadow-xl hover:ring-2 hover:ring-primary/20 hover:ring-offset-1 hover:ring-offset-background transition-all duration-300">
           <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-semibold text-foreground">Periods</h4>
+            <h4 className="text-sm font-semibold text-foreground">Intervals</h4>
             <Clock className="w-4 h-4 text-primary" />
           </div>
           <div className="text-2xl font-bold text-primary">
             {monthStats.totalPeriods}
           </div>
-          <div className="text-xs text-muted-foreground font-medium">Active periods</div>
+                      <div className="text-xs text-muted-foreground font-medium">Active intervals</div>
         </div>
         
         <div className="bg-card/70 backdrop-blur-md rounded-2xl p-5 border border-border/40 shadow-lg hover:shadow-xl hover:ring-2 hover:ring-primary/20 hover:ring-offset-1 hover:ring-offset-background transition-all duration-300">

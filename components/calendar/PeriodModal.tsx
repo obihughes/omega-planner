@@ -107,7 +107,7 @@ export function PeriodModal({
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="text-base">
-            {period ? 'Edit Period' : 'Add Period'}
+            {period ? 'Edit Interval' : 'Add Interval'}
           </DialogTitle>
         </DialogHeader>
 
@@ -120,7 +120,7 @@ export function PeriodModal({
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Period title"
+              placeholder="Interval title"
               className="w-full text-sm h-9"
             />
           </div>
@@ -234,7 +234,7 @@ export function PeriodModal({
             <Textarea
               value={description}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
-              placeholder="Period description"
+              placeholder="Interval description"
               className="w-full text-sm"
               rows={2}
             />
@@ -261,7 +261,7 @@ export function PeriodModal({
               disabled={!title.trim() || endDate < startDate}
               className="flex-1 h-9 text-sm"
             >
-              {period ? 'Update' : 'Add'} Period
+              {period ? 'Update' : 'Add'} Interval
             </Button>
             
             {period && onDelete && (
