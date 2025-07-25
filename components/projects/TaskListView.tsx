@@ -24,6 +24,66 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+// Storage key for task list preferences
+const TASK_LIST_PREFERENCES_KEY = 'omega-planner-task-list-preferences';
+
+// Types for task list preferences
+interface TaskListPreferences {
+  groupBy: 'project' | 'status' | 'dueDate' | 'dateCreated' | 'none';
+  filters: {
+    priority: 'all' | 'urgent' | 'high' | 'medium' | 'low';
+    dueDate: 'all' | 'overdue' | 'today' | 'tomorrow' | 'thisWeek' | 'future' | 'none';
+    status: 'all' | 'todo' | 'in-progress' | 'completed' | 'blocked';
+  };
+  sortBy: 'title' | 'dueDate' | 'priority' | 'status' | 'created';
+  sortOrder: 'asc' | 'desc';
+}
+
+// Default preferences
+const defaultPreferences: TaskListPreferences = {
+  groupBy: 'project',
+  filters: {
+    priority: 'all',
+    dueDate: 'all',
+    status: 'all'
+  },
+  sortBy: 'created',
+  sortOrder: 'desc'
+};
+
+// Helper functions for localStorage
+const loadPreferences = (): TaskListPreferences => {
+  // Check if we're on the client side
+  if (typeof window === 'undefined') {
+    return defaultPreferences;
+  }
+  
+  try {
+    const stored = localStorage.getItem(TASK_LIST_PREFERENCES_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // Merge with defaults to ensure all properties exist
+      return { ...defaultPreferences, ...parsed };
+    }
+  } catch (error) {
+    console.error('Error loading task list preferences:', error);
+  }
+  return defaultPreferences;
+};
+
+const savePreferences = (preferences: TaskListPreferences) => {
+  // Check if we're on the client side
+  if (typeof window === 'undefined') {
+    return;
+  }
+  
+  try {
+    localStorage.setItem(TASK_LIST_PREFERENCES_KEY, JSON.stringify(preferences));
+  } catch (error) {
+    console.error('Error saving task list preferences:', error);
+  }
+};
+
 interface TaskWithProject extends ProjectTask {
   projectId: string;
   projectName: string;
@@ -37,10 +97,12 @@ interface TaskListViewProps {
 export function TaskListView({ className }: TaskListViewProps) {
   const { projects, updateTaskInProject, deleteTaskFromProject, addTaskToProject, createUnassignedTask } = useProjects();
   
-  // Local state
+  // Load initial preferences from localStorage
+  const [preferences, setPreferences] = useState<TaskListPreferences>(() => loadPreferences());
+  
+  // Local state (non-persistent)
   const [searchTerm, setSearchTerm] = useState('');
   const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(new Set());
-  const [groupBy, setGroupBy] = useState<'project' | 'status' | 'dueDate' | 'dateCreated' | 'none'>('project');
   const [newTaskProjectId, setNewTaskProjectId] = useState<string>('');
   const [newTaskTitle, setNewTaskTitle] = useState('');
   
@@ -50,14 +112,23 @@ export function TaskListView({ className }: TaskListViewProps) {
   const [editingValue, setEditingValue] = useState('');
   const editInputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
   
-  // Filtering and sorting state
-  const [filters, setFilters] = useState({
-    priority: 'all' as 'all' | 'urgent' | 'high' | 'medium' | 'low',
-    dueDate: 'all' as 'all' | 'overdue' | 'today' | 'tomorrow' | 'thisWeek' | 'future' | 'none',
-    status: 'all' as 'all' | 'todo' | 'in-progress' | 'completed' | 'blocked'
-  });
-  const [sortBy, setSortBy] = useState<'title' | 'dueDate' | 'priority' | 'status' | 'created'>('created');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  // Extract persistent state from preferences
+  const { groupBy, filters, sortBy, sortOrder } = preferences;
+  
+  // Helper function to update preferences and save to localStorage
+  const updatePreferences = useCallback((updates: Partial<TaskListPreferences>) => {
+    const newPreferences = { ...preferences, ...updates };
+    setPreferences(newPreferences);
+    savePreferences(newPreferences);
+  }, [preferences]);
+
+  // Load preferences on client side after mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const clientPreferences = loadPreferences();
+      setPreferences(clientPreferences);
+    }
+  }, []);
   
   // Full task creation modal state
   const [isFullTaskModalOpen, setIsFullTaskModalOpen] = useState(false);
@@ -531,11 +602,13 @@ export function TaskListView({ className }: TaskListViewProps) {
   }, [editingTaskId, editingField]);
 
   // Reset filters function
-  const resetFilters = () => {
-    setFilters({
-      priority: 'all',
-      dueDate: 'all',
-      status: 'all'
+    const resetFilters = () => {
+    updatePreferences({
+      filters: {
+        priority: 'all',
+        dueDate: 'all', 
+        status: 'all'
+      }
     });
   };
 
@@ -677,7 +750,7 @@ export function TaskListView({ className }: TaskListViewProps) {
                 <div>
                   <select
                     value={filters.priority}
-                    onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value as any }))}
+                                            onChange={(e) => updatePreferences({ filters: { ...filters, priority: e.target.value as any } })}
                     className="w-full px-2 py-1 text-xs bg-input border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
                   >
                     <option value="all">All Priorities</option>
@@ -691,7 +764,7 @@ export function TaskListView({ className }: TaskListViewProps) {
                 <div>
                   <select
                     value={filters.dueDate}
-                    onChange={(e) => setFilters(prev => ({ ...prev, dueDate: e.target.value as any }))}
+                                            onChange={(e) => updatePreferences({ filters: { ...filters, dueDate: e.target.value as any } })}
                     className="w-full px-2 py-1 text-xs bg-input border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
                   >
                     <option value="all">All Dates</option>
@@ -707,7 +780,7 @@ export function TaskListView({ className }: TaskListViewProps) {
                 <div>
                   <select
                     value={filters.status}
-                    onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value as any }))}
+                                            onChange={(e) => updatePreferences({ filters: { ...filters, status: e.target.value as any } })}
                     className="w-full px-2 py-1 text-xs bg-input border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
                   >
                     <option value="all">All Status</option>
@@ -741,7 +814,7 @@ export function TaskListView({ className }: TaskListViewProps) {
                   ].map(option => (
                     <button
                       key={option.value}
-                      onClick={() => setSortBy(option.value as any)}
+                                                onClick={() => updatePreferences({ sortBy: option.value as any })}
                       className={cn(
                         "w-full text-left px-2 py-1 text-xs rounded transition-colors",
                         sortBy === option.value
@@ -755,7 +828,7 @@ export function TaskListView({ className }: TaskListViewProps) {
                 </div>
                 <div className="border-t pt-2">
                   <button
-                    onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                    onClick={() => updatePreferences({ sortOrder: sortOrder === 'asc' ? 'desc' : 'asc' })}
                     className="w-full text-left px-2 py-1 text-xs rounded hover:bg-accent/50 transition-colors"
                   >
                     {sortOrder === 'asc' ? 'A→Z' : 'Z→A'}
@@ -768,7 +841,7 @@ export function TaskListView({ className }: TaskListViewProps) {
           {/* Group by selector */}
           <select
             value={groupBy}
-            onChange={(e) => setGroupBy(e.target.value as 'project' | 'status' | 'dueDate' | 'dateCreated' | 'none')}
+                            onChange={(e) => updatePreferences({ groupBy: e.target.value as 'project' | 'status' | 'dueDate' | 'dateCreated' | 'none' })}
             className="px-2 py-1.5 rounded-lg bg-input border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs"
           >
             <option value="none">No Grouping</option>
