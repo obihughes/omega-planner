@@ -60,7 +60,11 @@ export function useProjects() {
   const updateProjectsState = (updater: (prevProjects: Project[]) => Project[]) => {
     setProjects(prevProjects => {
       const updatedProjects = updater(prevProjects);
-      saveProjectsToStorage(updatedProjects, folders);
+      // Need to get current folders state to save properly
+      setFolders(currentFolders => {
+        saveProjectsToStorage(updatedProjects, currentFolders);
+        return currentFolders;
+      });
       return updatedProjects;
     });
   };
@@ -69,7 +73,11 @@ export function useProjects() {
   const updateFoldersState = (updater: (prevFolders: ProjectFolder[]) => ProjectFolder[]) => {
     setFolders(prevFolders => {
       const updatedFolders = updater(prevFolders);
-      saveProjectsToStorage(projects, updatedFolders);
+      // Need to get current projects state to save properly
+      setProjects(currentProjects => {
+        saveProjectsToStorage(currentProjects, updatedFolders);
+        return currentProjects;
+      });
       return updatedFolders;
     });
   };

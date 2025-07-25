@@ -205,7 +205,36 @@ export function TaskListView({ className }: TaskListViewProps) {
           id: projectId,
           title: project.name,
           color: project.color,
-          tasks: tasks.sort((a, b) => a.order - b.order)
+          tasks: tasks.sort((a, b) => {
+            // Apply the same sorting logic as in filteredTasks
+            let compareValue = 0;
+            
+            switch (sortBy) {
+              case 'title':
+                compareValue = a.title.localeCompare(b.title);
+                break;
+              case 'dueDate':
+                if (!a.dueDate && !b.dueDate) compareValue = 0;
+                else if (!a.dueDate) compareValue = 1;
+                else if (!b.dueDate) compareValue = -1;
+                else compareValue = new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+                break;
+              case 'priority':
+                const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
+                compareValue = (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
+                break;
+              case 'status':
+                const statusOrder = { 'todo': 1, 'in-progress': 2, 'blocked': 3, 'completed': 4 };
+                compareValue = (statusOrder[a.status] || 0) - (statusOrder[b.status] || 0);
+                break;
+              case 'created':
+              default:
+                compareValue = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                break;
+            }
+            
+            return sortOrder === 'asc' ? compareValue : -compareValue;
+          })
         };
       });
     } else if (groupBy === 'dueDate') {
@@ -346,7 +375,7 @@ export function TaskListView({ className }: TaskListViewProps) {
           })
         }));
     }
-  }, [filteredTasks, groupBy, projects]);
+  }, [filteredTasks, groupBy, projects, sortBy, sortOrder]);
 
   // Toggle project collapse
   const toggleProjectCollapse = (projectId: string) => {
@@ -828,7 +857,12 @@ export function TaskListView({ className }: TaskListViewProps) {
                       return (
                         <div 
                             key={task.id} 
-                            className="p-4 hover:bg-accent/20 transition-colors duration-200 rounded-lg cursor-pointer"
+                            className={cn(
+                              "transition-colors duration-200 rounded-lg cursor-pointer border border-transparent hover:border-border/30",
+                              groupBy === 'none' || groupBy === 'status' || groupBy === 'dueDate' || groupBy === 'dateCreated'
+                                ? "p-5 hover:bg-accent/30" // More padding and stronger hover for ungrouped (prominent task names)
+                                : "p-4 hover:bg-accent/20" // Standard padding for grouped
+                            )}
                             onClick={(e) => {
                               // Only trigger due date editing if not clicking on other interactive elements
                               const target = e.target as Element;
@@ -885,7 +919,7 @@ export function TaskListView({ className }: TaskListViewProps) {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1 min-w-0">
-                                  {/* Title - Editable and Prominent */}
+                                  {/* Title - Editable and Prominent (size based on grouping) */}
                                   {editingTaskId === task.id && editingField === 'title' ? (
                                     <input
                                       ref={editInputRef as React.RefObject<HTMLInputElement>}
@@ -897,15 +931,24 @@ export function TaskListView({ className }: TaskListViewProps) {
                                         if (e.key === 'Enter') saveEdit();
                                         if (e.key === 'Escape') cancelEdit();
                                       }}
-                                      className="w-full font-medium text-base bg-transparent border-none outline-none focus:bg-accent/50 rounded px-1 -mx-1 tracking-tight"
+                                      className={cn(
+                                        "w-full bg-transparent border-none outline-none focus:bg-accent/50 rounded px-1 -mx-1 tracking-tight",
+                                        groupBy === 'none' || groupBy === 'status' || groupBy === 'dueDate' || groupBy === 'dateCreated' 
+                                          ? "font-semibold text-lg" 
+                                          : "font-medium text-base"
+                                      )}
                                     />
                                   ) : (
                                     <h3 
                                       className={cn(
-                                        "font-medium text-base cursor-pointer hover:bg-accent/20 rounded px-1 -mx-1 transition-colors leading-relaxed select-none tracking-tight",
+                                        "cursor-pointer hover:bg-accent/20 rounded px-1 -mx-1 transition-colors leading-relaxed select-none tracking-tight",
+                                        // Make task title more prominent when not grouped by project
+                                        groupBy === 'none' || groupBy === 'status' || groupBy === 'dueDate' || groupBy === 'dateCreated'
+                                          ? "font-semibold text-lg"
+                                          : "font-medium text-base",
                                         task.status === 'completed' 
                                           ? "line-through text-muted-foreground/70" 
-                                          : "text-foreground/90"
+                                          : "text-foreground"
                                       )}
                                       onDoubleClick={(e) => {
                                         e.stopPropagation();
@@ -915,6 +958,19 @@ export function TaskListView({ className }: TaskListViewProps) {
                                     >
                                       {task.title}
                                     </h3>
+                                  )}
+                                  
+                                  {/* Project name (when not grouped by project) - Subtle and smaller */}
+                                  {groupBy !== 'project' && (
+                                    <div className="flex items-center gap-2 mt-1.5 mb-1">
+                                      <div 
+                                        className="w-3 h-3 rounded-full shadow-sm flex-shrink-0"
+                                        style={{ backgroundColor: task.projectColor }}
+                                      />
+                                      <span className="text-sm font-medium text-muted-foreground/80 tracking-tight truncate">
+                                        {task.projectName}
+                                      </span>
+                                    </div>
                                   )}
                                   
                                   {/* Description - Editable and Subtle */}
@@ -945,19 +1001,6 @@ export function TaskListView({ className }: TaskListViewProps) {
                                         {task.description}
                                       </p>
                                     )
-                                  )}
-                                  
-                                  {/* Project name (when not grouped by project) */}
-                                  {groupBy !== 'project' && (
-                                    <div className="flex items-center gap-2 mt-1 mb-2">
-                                      <div 
-                                        className="w-4 h-4 rounded-full shadow-sm"
-                                        style={{ backgroundColor: task.projectColor }}
-                                      />
-                                      <span className="text-lg font-bold text-foreground tracking-tight">
-                                        {task.projectName}
-                                      </span>
-                                    </div>
                                   )}
                                   
                                   {/* Due date - Editable and Compact */}

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useProjects } from '@/hooks/useProjects';
 import { Project, ProjectFolder } from '@/types';
 import { ProjectCard } from '@/components/projects/ProjectCard';
@@ -100,8 +100,9 @@ function SortableProjectCard({
   );
 }
 
-export default function ProjectsPage() {
+function ProjectsPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { 
     projects, 
     folders,
@@ -138,6 +139,14 @@ export default function ProjectsPage() {
   
   // Selected folder for filtering
   const [selectedFolderId, setSelectedFolderId] = useState<string | undefined>(undefined);
+
+  // Handle folder URL parameter
+  useEffect(() => {
+    const folderParam = searchParams.get('folder');
+    if (folderParam && folders.some(f => f.id === folderParam)) {
+      setSelectedFolderId(folderParam);
+    }
+  }, [searchParams, folders]);
 
   // Drag and drop state
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
@@ -675,5 +684,19 @@ export default function ProjectsPage() {
         )}
       </Suspense>
     </AppLayout>
+  );
+}
+
+export default function ProjectsPage() {
+  return (
+    <Suspense fallback={
+      <AppLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </AppLayout>
+    }>
+      <ProjectsPageContent />
+    </Suspense>
   );
 } 
