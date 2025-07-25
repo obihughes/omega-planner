@@ -14,6 +14,7 @@ export default function Documents() {
     documents,
     trashedDocuments,
     selectedDocument,
+    isLoading,
     createDocument,
     updateDocument,
     deleteDocument,
@@ -125,8 +126,8 @@ export default function Documents() {
         }
         // If user chose cancel, just close the tab (don't archive)
       } else {
-        // For empty documents, just remove them completely
-        deleteDocument(documentId);
+        // For empty documents, just close the tab (don't delete)
+        // The document will remain in the documents list
       }
       
       // Remove from open documents regardless of choice
@@ -197,6 +198,19 @@ export default function Documents() {
   const handleToggleDragMode = () => {
     setDragMode(!dragMode);
   };
+
+  if (isLoading) {
+    return (
+      <div className="h-full flex flex-col bg-card rounded-lg shadow-sm border overflow-hidden min-w-0">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading documents...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col bg-card rounded-lg shadow-sm border overflow-hidden min-w-0">
@@ -490,7 +504,27 @@ export default function Documents() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => restoreDocument(doc.id)}
+                          onClick={() => {
+                            restoreDocument(doc.id);
+                            // Show notification that document was restored
+                            const notification = window.document.createElement('div');
+                            notification.className = 'fixed top-4 right-4 bg-green-100 border border-green-300 text-green-800 px-4 py-2 rounded-lg shadow-lg z-50';
+                            notification.innerHTML = `
+                              <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                </svg>
+                                "${doc.title || 'Document'}" restored successfully.
+                              </div>
+                            `;
+                            window.document.body.appendChild(notification);
+                            
+                            setTimeout(() => {
+                              if (notification.parentNode) {
+                                notification.parentNode.removeChild(notification);
+                              }
+                            }, 3000);
+                          }}
                           className="text-green-600 border-green-600 hover:bg-green-50"
                         >
                           <RotateCcw className="w-4 h-4 mr-1" />

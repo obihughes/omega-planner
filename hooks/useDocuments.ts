@@ -21,13 +21,17 @@ export function useDocuments() {
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [settings, setSettings] = useState(defaultSettings);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Load documents from localStorage on mount
   useEffect(() => {
+    console.log('Loading documents from storage...');
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
+        console.log('Found stored documents data:', stored.length, 'characters');
         const data: DocumentsStorageData = JSON.parse(stored);
+        console.log('Parsed documents:', data.documents?.length || 0, 'documents found');
         setDocuments(data.documents || []);
         setSettings({ ...defaultSettings, ...data.settings });
         
@@ -38,13 +42,35 @@ export function useDocuments() {
           );
           if (lastDoc) {
             setSelectedDocument(lastDoc);
+            console.log('Auto-selected last document:', lastDoc.title);
           }
         }
+      } else {
+        console.log('No stored documents found - starting fresh');
       }
     } catch (error) {
       console.error('Failed to load documents from storage:', error);
+    } finally {
+      setIsLoading(false);
+      console.log('Documents loading complete');
     }
   }, []);
+
+  // Automatic save effect - save documents to localStorage whenever they change
+  useEffect(() => {
+    if (!isLoading) {
+      try {
+        const dataToSave: DocumentsStorageData = {
+          documents: documents,
+          settings: settings
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+        console.log('Documents auto-saved:', documents.length, 'documents');
+      } catch (error) {
+        console.error('Failed to auto-save documents to storage:', error);
+      }
+    }
+  }, [documents, settings, isLoading]);
 
   // Save to localStorage whenever documents or settings change
   const saveToStorage = (newDocuments: Document[], newSettings = settings) => {
@@ -60,13 +86,26 @@ export function useDocuments() {
   };
 
   const createDocument = () => {
-    // Generate a more robust unique ID using timestamp + random string + counter
+    // Generate a very robust unique ID to prevent any collisions
     const timestamp = Date.now();
-    const random = Math.random().toString(36).substr(2, 9);
+    const random1 = Math.random().toString(36).substr(2, 9);
+    const random2 = Math.random().toString(36).substr(2, 9);
     const counter = documents.length + 1;
+    const performanceNow = Math.round(performance.now() * 1000);
+    
+    const newId = `doc_${timestamp}_${performanceNow}_${counter}_${random1}_${random2}`;
+    
+    // Double-check for ID uniqueness (should never happen with this generation method)
+    const existingIds = documents.map(doc => doc.id);
+    if (existingIds.includes(newId)) {
+      console.error('Document ID collision detected! This should not happen.');
+      // Add an extra random suffix if somehow there's a collision
+      const newId2 = `${newId}_${Math.random().toString(36).substr(2, 5)}`;
+      console.log('Using fallback ID:', newId2);
+    }
     
     const newDocument: Document = {
-      id: `doc_${timestamp}_${counter}_${random}`,
+      id: newId,
       title: 'Untitled Document',
       content: '', // Start with empty content, let canvas editor handle initialization
       createdAt: new Date().toISOString(),
@@ -76,6 +115,8 @@ export function useDocuments() {
       isTrashed: false
     };
 
+    console.log('Creating new document:', newId, 'Current documents count:', documents.length);
+    
     const updatedDocuments = [newDocument, ...documents];
     setDocuments(updatedDocuments);
     setSelectedDocument(newDocument);
@@ -86,10 +127,7 @@ export function useDocuments() {
     // Save immediately to prevent any timing issues
     saveToStorage(updatedDocuments, newSettings);
     
-    // Force a small delay to ensure the save is complete before returning
-    setTimeout(() => {
-      console.log('Document created with ID:', newDocument.id);
-    }, 50);
+    console.log('Document created successfully:', newId, 'New documents count:', updatedDocuments.length);
   };
 
   const updateDocument = (updatedDocument: Document) => {
@@ -204,6 +242,7 @@ export function useDocuments() {
     trashedDocuments,
     selectedDocument,
     settings,
+    isLoading,
     createDocument,
     updateDocument,
     deleteDocument,

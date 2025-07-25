@@ -63,15 +63,6 @@ export default function CalendarPage() {
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* Header */}
-        <div className="mb-6 bg-card border border-border rounded-lg shadow-sm overflow-hidden p-4">
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold text-foreground">Calendar</h1>
-            <span className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded-full">
-              {currentView === 'monthly' ? 'Monthly View' : 'Yearly View'}
-            </span>
-          </div>
-        </div>
 
         {/* Calendar Component */}
         {currentView === 'monthly' ? (
