@@ -5,7 +5,8 @@ import {
   Calendar,
   AlignLeft,
   Trash2,
-  X
+  X,
+  Play
 } from 'lucide-react';
 
 export interface ProjectTaskFormModalProps {
@@ -27,6 +28,7 @@ export const ProjectTaskFormModal: React.FC<ProjectTaskFormModalProps> = ({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<ProjectTask['status']>('todo');
+  const [startDate, setStartDate] = useState("");
   const [dueDate, setDueDate] = useState("");
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -35,12 +37,14 @@ export const ProjectTaskFormModal: React.FC<ProjectTaskFormModalProps> = ({
       setTitle(taskToEdit.title);
       setDescription(taskToEdit.description || "");
       setStatus(taskToEdit.status);
+      setStartDate(taskToEdit.startDate || "");
       setDueDate(taskToEdit.dueDate || "");
     } else {
       // Reset for new task
       setTitle("");
       setDescription("");
       setStatus('todo');
+      setStartDate("");
       setDueDate("");
     }
   }, [taskToEdit, isOpen]);
@@ -80,6 +84,7 @@ export const ProjectTaskFormModal: React.FC<ProjectTaskFormModalProps> = ({
       title: title.trim(),
       description: description.trim() || undefined,
       status,
+      startDate: startDate || undefined,
       dueDate: dueDate || undefined,
       priority: 'medium', // Set default priority since we're not exposing it in UI
     };
@@ -180,6 +185,20 @@ export const ProjectTaskFormModal: React.FC<ProjectTaskFormModalProps> = ({
               <option value="blocked">Blocked</option>
               <option value="completed">Completed</option>
             </select>
+          </div>
+
+          {/* Start Date */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <Play className="w-4 h-4 inline mr-1" />
+              Start Date
+            </label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+            />
           </div>
 
           {/* Due Date */}

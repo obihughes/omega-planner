@@ -1,8 +1,8 @@
 'use client';
 
 import React, { memo, useMemo } from 'react';
-import { Project } from '@/types';
-import { Clock, MoreVertical, Plus, Edit, Trash2, RotateCcw, GripVertical } from 'lucide-react';
+import { Project, ProjectFolder } from '@/types';
+import { Clock, MoreVertical, Plus, Edit, Trash2, RotateCcw, GripVertical, Folder, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CSS } from '@dnd-kit/utilities';
@@ -76,6 +76,8 @@ interface ProjectCardProps {
   onPermanentlyDelete?: (projectId: string) => void;
   onClick: (project: Project) => void;
   isArchived?: boolean;
+  folders?: ProjectFolder[];
+  onMoveToFolder?: (projectId: string, folderId: string | undefined) => void;
   // Drag and drop props
   isDragging?: boolean;
   transform?: { x: number; y: number; scaleX: number; scaleY: number } | null;
@@ -93,6 +95,8 @@ function ProjectCardComponent({
   onPermanentlyDelete,
   onClick, 
   isArchived = false,
+  folders = [],
+  onMoveToFolder,
   isDragging = false,
   transform,
   listeners,
@@ -182,6 +186,12 @@ function ProjectCardComponent({
     e.stopPropagation();
     if (confirm('Are you sure you want to permanently delete this project? This action cannot be undone.')) {
       onPermanentlyDelete?.(project.id);
+    }
+  };
+
+  const handleMoveToFolder = (folderId: string | undefined) => {
+    if (onMoveToFolder) {
+      onMoveToFolder(project.id, folderId);
     }
   };
 
@@ -296,6 +306,60 @@ function ProjectCardComponent({
                       <Edit className="w-4 h-4" />
                       <span>Edit Project</span>
                     </button>
+                    
+                    {/* Move to Folder submenu */}
+                    {onMoveToFolder && (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button
+                            className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center justify-between"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="flex items-center space-x-2">
+                              <Folder className="w-4 h-4" />
+                              <span>Move to Folder</span>
+                            </div>
+                            <ChevronRight className="w-3 h-3" />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent 
+                          className="w-44 p-0" 
+                          side="right"
+                          align="start"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="py-1">
+                            <button
+                              onClick={() => handleMoveToFolder(undefined)}
+                              className={cn(
+                                "w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center space-x-2",
+                                !project.folderId && "bg-accent"
+                              )}
+                            >
+                              <Folder className="w-4 h-4 text-muted-foreground" />
+                              <span>All Projects</span>
+                            </button>
+                            {folders.map((folder) => (
+                              <button
+                                key={folder.id}
+                                onClick={() => handleMoveToFolder(folder.id)}
+                                className={cn(
+                                  "w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center space-x-2",
+                                  project.folderId === folder.id && "bg-accent"
+                                )}
+                              >
+                                <div 
+                                  className="w-3 h-3 rounded"
+                                  style={{ backgroundColor: folder.color }}
+                                />
+                                <span>{folder.name}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    )}
+                    
                     <button
                       onClick={handleDelete}
                       className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center space-x-2 text-destructive hover:text-destructive"

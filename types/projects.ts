@@ -47,6 +47,9 @@ export interface ProjectTask {
   /** Priority level */
   priority: 'low' | 'medium' | 'high' | 'urgent';
   
+  /** Start date - when the task should begin */
+  startDate?: string;
+  
   /** Due date */
   dueDate?: string;
   

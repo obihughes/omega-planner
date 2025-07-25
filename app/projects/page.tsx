@@ -3,9 +3,10 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProjects } from '@/hooks/useProjects';
-import { Project } from '@/types';
+import { Project, ProjectFolder } from '@/types';
 import { ProjectCard } from '@/components/projects/ProjectCard';
 import { ProjectsCalendar } from '@/components/projects/ProjectsCalendar';
+import { FolderManager } from '@/components/projects/FolderManager';
 
 import { AppLayout } from '@/components/ui/AppLayout';
 import { useProjectsView } from '@/app/context/ProjectsViewContext';
@@ -44,8 +45,9 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 
-// Lazy load the modal to reduce initial bundle size
+// Lazy load the modals to reduce initial bundle size
 const ProjectFormModal = lazy(() => import('@/components/modals/ProjectFormModal').then(module => ({ default: module.ProjectFormModal })));
+const ProjectFolderFormModal = lazy(() => import('@/components/modals/ProjectFolderFormModal').then(module => ({ default: module.ProjectFolderFormModal })));
 
 // Sortable Project Card wrapper
 function SortableProjectCard({ 
@@ -55,7 +57,9 @@ function SortableProjectCard({
   onRestore, 
   onPermanentlyDelete, 
   onClick, 
-  isArchived 
+  isArchived,
+  folders,
+  onMoveToFolder
 }: {
   project: Project;
   onEdit: (project: Project) => void;
@@ -64,6 +68,8 @@ function SortableProjectCard({
   onPermanentlyDelete?: (projectId: string) => void;
   onClick: (project: Project) => void;
   isArchived?: boolean;
+  folders?: ProjectFolder[];
+  onMoveToFolder?: (projectId: string, folderId: string | undefined) => void;
 }) {
   const {
     attributes,
@@ -83,6 +89,8 @@ function SortableProjectCard({
       onPermanentlyDelete={onPermanentlyDelete}
       onClick={onClick}
       isArchived={isArchived}
+      folders={folders}
+      onMoveToFolder={onMoveToFolder}
       isDragging={isDragging}
       transform={transform}
       listeners={listeners}
@@ -96,6 +104,7 @@ export default function ProjectsPage() {
   const router = useRouter();
   const { 
     projects, 
+    folders,
     loading, 
     createProject, 
     updateProject, 
@@ -103,7 +112,13 @@ export default function ProjectsPage() {
     restoreProject,
     permanentlyDeleteProject,
     reorderProjects,
-    addTaskToProject 
+    addTaskToProject,
+    createFolder,
+    updateFolder,
+    deleteFolder,
+    toggleFolder,
+    getProjectsInFolder,
+    moveProjectToFolder
   } = useProjects();
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -116,6 +131,13 @@ export default function ProjectsPage() {
   // Project form modal state
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  
+  // Folder form modal state
+  const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
+  const [editingFolder, setEditingFolder] = useState<ProjectFolder | null>(null);
+  
+  // Selected folder for filtering
+  const [selectedFolderId, setSelectedFolderId] = useState<string | undefined>(undefined);
 
   // Drag and drop state
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
@@ -130,9 +152,27 @@ export default function ProjectsPage() {
     })
   );
 
-  // Create sample projects if none exist
+  // Create sample projects and folders if none exist
   useEffect(() => {
     if (!loading && projects.length === 0) {
+      // Create sample folders first
+      const workFolder = createFolder({
+        name: 'Work Projects',
+        description: 'Professional and business-related projects',
+        color: '#3B82F6'
+      });
+      
+      const personalFolder = createFolder({
+        name: 'Personal',
+        description: 'Personal goals and side projects',
+        color: '#10B981'
+      });
+      
+      const clientsFolder = createFolder({
+        name: 'Client Work',
+        description: 'Projects for external clients',
+        color: '#F59E0B'
+      });
       // Create sample projects with tasks
       const websiteProject = createProject({
         name: 'Website Redesign',
@@ -140,7 +180,8 @@ export default function ProjectsPage() {
         status: 'active',
         color: '#3B82F6',
         startDate: '2024-01-15',
-        endDate: '2024-03-15'
+        endDate: '2024-03-15',
+        folderId: workFolder.id
       });
       
       const mobileProject = createProject({
@@ -149,7 +190,8 @@ export default function ProjectsPage() {
         status: 'planning',
         color: '#10B981',
         startDate: '2024-02-01',
-        endDate: '2024-06-01'
+        endDate: '2024-06-01',
+        folderId: personalFolder.id
       });
       
       const marketingProject = createProject({
@@ -158,7 +200,8 @@ export default function ProjectsPage() {
         status: 'completed',
         color: '#F59E0B',
         startDate: '2024-01-01',
-        endDate: '2024-01-31'
+        endDate: '2024-01-31',
+        folderId: clientsFolder.id
       });
 
       // Add sample tasks to projects
@@ -218,7 +261,7 @@ export default function ProjectsPage() {
         });
       }, 100);
     }
-  }, [loading, projects.length]);
+  }, [loading, projects.length, createFolder]);
 
 
   const activeProjects = projects
@@ -227,7 +270,14 @@ export default function ProjectsPage() {
       if (statusFilter === 'all') return true;
       return p.status === statusFilter;
     })
-    .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    .filter(p => {
+      // Filter by folder if one is selected
+      if (selectedFolderId !== undefined) {
+        return p.folderId === selectedFolderId;
+      }
+      return true;
+    });
 
   const archivedProjects = projects
     .filter(p => p.isDeleted)
@@ -277,6 +327,45 @@ export default function ProjectsPage() {
     setEditingProject(null);
   };
 
+  // Folder modal handlers
+  const handleCreateFolder = () => {
+    setEditingFolder(null);
+    setIsFolderModalOpen(true);
+  };
+
+  const handleEditFolder = (folder: ProjectFolder) => {
+    setEditingFolder(folder);
+    setIsFolderModalOpen(true);
+  };
+
+  const handleDeleteFolder = (folderId: string) => {
+    deleteFolder(folderId);
+    if (selectedFolderId === folderId) {
+      setSelectedFolderId(undefined);
+    }
+  };
+
+  const handleSaveFolder = (folderData: Partial<ProjectFolder>, isNew: boolean) => {
+    if (isNew) {
+      createFolder({
+        name: folderData.name || 'New Folder',
+        description: folderData.description || '',
+        color: folderData.color || '#3B82F6'
+      });
+    } else {
+      updateFolder(editingFolder!.id, folderData);
+    }
+  };
+
+  const handleCloseFolderModal = () => {
+    setIsFolderModalOpen(false);
+    setEditingFolder(null);
+  };
+
+  const getProjectCountForFolder = (folderId: string | undefined) => {
+    return getProjectsInFolder(folderId).length;
+  };
+
   function handleDragStart(event: DragStartEvent) {
     setActiveId(event.active.id);
   }
@@ -285,7 +374,15 @@ export default function ProjectsPage() {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      reorderProjects(active.id as string, over.id as string);
+      // Check if dropping on a folder
+      if (over.data?.current?.type === 'folder') {
+        const projectId = active.id as string;
+        const folderId = over.data.current.folderId;
+        moveProjectToFolder(projectId, folderId);
+      } else {
+        // Regular project reordering
+        reorderProjects(active.id as string, over.id as string);
+      }
     }
     setActiveId(null);
   }
@@ -295,20 +392,58 @@ export default function ProjectsPage() {
   return (
     <AppLayout>
       <div className="container mx-auto px-6 py-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              {activeView === 'active' && (
-                <span className="bg-muted px-3 py-1.5 rounded-full text-xs font-medium">
-                  {activeProjects.length} Projects
-                </span>
-              )}
-              {activeView === 'archived' && (
-                <span className="bg-muted px-3 py-1.5 rounded-full text-xs font-medium">
-                  {archivedProjects.length} Archived
-                </span>
-              )}
-            </div>
+        <div className="flex gap-6">
+          {/* Left Sidebar - Folders */}
+          <div className="w-64 flex-shrink-0">
+            <FolderManager
+              folders={folders}
+              onCreateFolder={handleCreateFolder}
+              onEditFolder={handleEditFolder}
+              onDeleteFolder={handleDeleteFolder}
+              onToggleFolder={toggleFolder}
+              selectedFolderId={selectedFolderId}
+              onSelectFolder={setSelectedFolderId}
+              projectCounts={folders.reduce((acc, folder) => {
+                acc[folder.id] = getProjectCountForFolder(folder.id);
+                return acc;
+              }, {} as { [key: string]: number })}
+              onMoveProjectToFolder={moveProjectToFolder}
+            />
+          </div>
+
+          {/* Main Content Area */}
+          <div className="flex-1">
+                      <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                {selectedFolderId ? (
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-3 h-3 rounded"
+                      style={{ backgroundColor: folders.find(f => f.id === selectedFolderId)?.color }}
+                    />
+                    <span className="font-medium text-foreground">
+                      {folders.find(f => f.id === selectedFolderId)?.name}
+                    </span>
+                    <span className="bg-muted px-3 py-1.5 rounded-full text-xs font-medium">
+                      {activeProjects.length} Projects
+                    </span>
+                  </div>
+                ) : (
+                  <>
+                    {activeView === 'active' && (
+                      <span className="bg-muted px-3 py-1.5 rounded-full text-xs font-medium">
+                        {activeProjects.length} Projects
+                      </span>
+                    )}
+                    {activeView === 'archived' && (
+                      <span className="bg-muted px-3 py-1.5 rounded-full text-xs font-medium">
+                        {archivedProjects.length} Archived
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
             
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
@@ -400,9 +535,9 @@ export default function ProjectsPage() {
               <span>New Project</span>
             </button>
           </div>
-        </div>
+            </div>
 
-          {/* Projects View */}
+            {/* Projects View */}
           {activeView === 'active' && (
             <>
               {activeProjects.length === 0 ? (
@@ -444,6 +579,8 @@ export default function ProjectsPage() {
                           onDelete={handleDeleteProject}
                           onClick={handleProjectClick}
                           isArchived={false}
+                          folders={folders}
+                          onMoveToFolder={moveProjectToFolder}
                         />
                       ))}
                     </div>
@@ -495,6 +632,8 @@ export default function ProjectsPage() {
                       onPermanentlyDelete={handlePermanentlyDeleteProject}
                       onClick={handleProjectClick}
                       isArchived={true}
+                      folders={folders}
+                      onMoveToFolder={moveProjectToFolder}
                     />
                   ))}
                 </div>
@@ -502,12 +641,12 @@ export default function ProjectsPage() {
             </>
           )}
 
-          {/* Projects Calendar View */}
-          {activeView === 'calendar' && (
-            <ProjectsCalendar projects={projects} />
-          )}
-
-
+            {/* Projects Calendar View */}
+            {activeView === 'calendar' && (
+              <ProjectsCalendar projects={projects} />
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Project Form Modal */}
@@ -518,6 +657,20 @@ export default function ProjectsPage() {
             onClose={handleCloseModal}
             onSave={handleSaveProject}
             project={editingProject}
+            folders={folders}
+          />
+        )}
+      </Suspense>
+
+      {/* Folder Form Modal */}
+      <Suspense fallback={null}>
+        {isFolderModalOpen && (
+          <ProjectFolderFormModal
+            isOpen={isFolderModalOpen}
+            onClose={handleCloseFolderModal}
+            onSave={handleSaveFolder}
+            folder={editingFolder}
+            onDelete={handleDeleteFolder}
           />
         )}
       </Suspense>

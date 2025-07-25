@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Project } from '@/types';
-import { X, Calendar as CalendarIcon, Palette } from 'lucide-react';
+import { Project, ProjectFolder } from '@/types';
+import { X, Calendar as CalendarIcon, Palette, Folder } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -12,6 +12,7 @@ interface ProjectFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   project?: Project | null;
+  folders?: ProjectFolder[];
   onSave: (projectData: Partial<Project>, isNew: boolean) => void;
   onDelete?: (projectId: string) => void;
 }
@@ -37,12 +38,13 @@ const PROJECT_STATUSES: { value: Project['status']; label: string; color: string
   { value: 'cancelled', label: 'Cancelled', color: 'text-red-600' },
 ];
 
-export function ProjectFormModal({ isOpen, onClose, project, onSave, onDelete }: ProjectFormModalProps) {
+export function ProjectFormModal({ isOpen, onClose, project, folders = [], onSave, onDelete }: ProjectFormModalProps) {
   const isNewProject = !project;
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<Project['status']>('planning');
   const [color, setColor] = useState(PROJECT_COLORS[0]);
+  const [folderId, setFolderId] = useState<string | undefined>(undefined);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [isStartDateOpen, setIsStartDateOpen] = useState(false);
@@ -57,6 +59,7 @@ export function ProjectFormModal({ isOpen, onClose, project, onSave, onDelete }:
       setDescription(project.description || '');
       setStatus(project.status);
       setColor(project.color);
+      setFolderId(project.folderId);
       setStartDate(project.startDate ? new Date(project.startDate) : undefined);
       setEndDate(project.endDate ? new Date(project.endDate) : undefined);
     } else {
@@ -65,6 +68,7 @@ export function ProjectFormModal({ isOpen, onClose, project, onSave, onDelete }:
       setDescription('');
       setStatus('planning');
       setColor(PROJECT_COLORS[0]);
+      setFolderId(undefined);
       setStartDate(undefined);
       setEndDate(undefined);
     }
@@ -116,6 +120,7 @@ export function ProjectFormModal({ isOpen, onClose, project, onSave, onDelete }:
       description: description.trim() || undefined,
       status,
       color,
+      folderId,
       startDate: startDate?.toISOString(),
       endDate: endDate?.toISOString(),
     };
@@ -204,6 +209,27 @@ export function ProjectFormModal({ isOpen, onClose, project, onSave, onDelete }:
                 {PROJECT_STATUSES.map((s) => (
                   <option key={s.value} value={s.value}>
                     {s.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Folder */}
+            <div>
+              <label htmlFor="project-folder" className="block text-sm font-medium text-foreground mb-2">
+                <Folder className="w-4 h-4 inline mr-1" />
+                Folder
+              </label>
+              <select
+                id="project-folder"
+                value={folderId || ''}
+                onChange={(e) => setFolderId(e.target.value || undefined)}
+                className="w-full p-3 bg-background border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-ring outline-none text-foreground"
+              >
+                <option value="">All Projects (No Folder)</option>
+                {folders.map((folder) => (
+                  <option key={folder.id} value={folder.id}>
+                    {folder.name}
                   </option>
                 ))}
               </select>

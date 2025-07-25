@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Clock, Calendar as CalendarIcon, Edit3, Arro
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatDuration, formatTime } from '@/utils/formatters';
+import { getDateKeyFromOffset, dateFromDateKey, getDateKey } from '@/utils/dateUtils';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 
@@ -117,12 +118,12 @@ export function TaskAssignmentCalendar({
   };
 
   const getTasksForDate = (date: Date) => {
-    const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+    const dateKey = getDateKey(date); // Use standard date utility
     return tasksByDate[dateKey] || [];
   };
 
   const getPoolTasksForDateKey = (date: Date) => {
-    const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+    const dateKey = getDateKey(date); // Use standard date utility
     return getPoolTasksForDate(dateKey);
   };
 

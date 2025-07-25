@@ -3,10 +3,11 @@
 import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Project, ProjectTask } from '@/types';
-import { ChevronLeft, ChevronRight, Clock, Folder, CheckCircle, Filter, X, AlertCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Folder, CheckCircle, Filter, X, AlertCircle, Play, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { getDateKey } from '@/utils/dateUtils';
 
 interface ProjectsCalendarProps {
   projects: Project[];
@@ -46,8 +47,7 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
     filteredProjects
       .filter(project => !project.isDeleted && project.endDate)
       .forEach(project => {
-        const dueDate = new Date(project.endDate!);
-        const dateKey = dueDate.toDateString();
+        const dateKey = getDateKey(new Date(project.endDate!));
         if (!grouped[dateKey]) {
           grouped[dateKey] = [];
         }
@@ -57,18 +57,17 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
     return grouped;
   }, [filteredProjects]);
 
-  // Group tasks by due date
-  const tasksByDate = useMemo(() => {
+  // Group tasks by start date
+  const taskStartDatesByDate = useMemo(() => {
     const grouped: { [key: string]: { project: Project; task: ProjectTask }[] } = {};
     
     filteredProjects
       .filter(project => !project.isDeleted)
       .forEach(project => {
         project.tasks
-          .filter(task => task.dueDate && task.status !== 'completed')
+          .filter(task => task.startDate && task.status !== 'completed')
           .forEach(task => {
-            const dueDate = new Date(task.dueDate!);
-            const dateKey = dueDate.toDateString();
+            const dateKey = getDateKey(new Date(task.startDate!));
             if (!grouped[dateKey]) {
               grouped[dateKey] = [];
             }
@@ -79,9 +78,30 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
     return grouped;
   }, [filteredProjects]);
 
-  // Group completed tasks by completion date and project
+  // Group tasks by due date
+  const taskDueDatesByDate = useMemo(() => {
+    const grouped: { [key: string]: { project: Project; task: ProjectTask }[] } = {};
+    
+    filteredProjects
+      .filter(project => !project.isDeleted)
+      .forEach(project => {
+        project.tasks
+          .filter(task => task.dueDate && task.status !== 'completed')
+          .forEach(task => {
+            const dateKey = getDateKey(new Date(task.dueDate!));
+            if (!grouped[dateKey]) {
+              grouped[dateKey] = [];
+            }
+            grouped[dateKey].push({ project, task });
+          });
+      });
+    
+    return grouped;
+  }, [filteredProjects]);
+
+  // Group completed tasks by completion date for minimal display
   const taskCompletionsByDate = useMemo(() => {
-    const grouped: { [key: string]: { project: Project; tasks: ProjectTask[] }[] } = {};
+    const grouped: { [key: string]: number } = {};
     
     filteredProjects
       .filter(project => !project.isDeleted)
@@ -91,24 +111,14 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
         );
         
         completedTasks.forEach(task => {
-          const completedDate = new Date(task.completedAt!);
-          const dateKey = completedDate.toDateString();
+          const dateKey = getDateKey(new Date(task.completedAt!));
           
-          if (!grouped[dateKey]) {
-            grouped[dateKey] = [];
-          }
-          
-          const existingProject = grouped[dateKey].find(item => item.project.id === project.id);
-          if (existingProject) {
-            existingProject.tasks.push(task);
-          } else {
-            grouped[dateKey].push({ project, tasks: [task] });
-          }
+          grouped[dateKey] = (grouped[dateKey] || 0) + 1;
         });
       });
     
-          return grouped;
-    }, [filteredProjects]);
+    return grouped;
+  }, [filteredProjects]);
 
   const navigateMonth = (direction: 'prev' | 'next') => {
     setCurrentDate(prev => {
@@ -128,15 +138,23 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
   };
 
   const getProjectsForDate = (date: Date) => {
-    return projectsByDate[date.toDateString()] || [];
+    const dateKey = getDateKey(date);
+    return projectsByDate[dateKey] || [];
   };
 
-  const getTaskCompletionsForDate = (date: Date) => {
-    return taskCompletionsByDate[date.toDateString()] || [];
+  const getTaskStartsForDate = (date: Date) => {
+    const dateKey = getDateKey(date);
+    return taskStartDatesByDate[dateKey] || [];
   };
 
-  const getTasksForDate = (date: Date) => {
-    return tasksByDate[date.toDateString()] || [];
+  const getTaskDuesForDate = (date: Date) => {
+    const dateKey = getDateKey(date);
+    return taskDueDatesByDate[dateKey] || [];
+  };
+
+  const getCompletedCountForDate = (date: Date) => {
+    const dateKey = getDateKey(date);
+    return taskCompletionsByDate[dateKey] || 0;
   };
 
   const handleDayClick = (date: Date) => {
@@ -158,6 +176,21 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
     if (diffDays === 0) return { text: 'Due today', isOverdue: false };
     if (diffDays === 1) return { text: 'Due tomorrow', isOverdue: false };
     return { text: `${diffDays}d left`, isOverdue: false };
+  };
+
+  const getActiveTasksCount = () => {
+    return filteredProjects
+      .filter(p => !p.isDeleted)
+      .reduce((total, project) => total + project.tasks.filter(t => t.status !== 'completed').length, 0);
+  };
+
+  const getMonthlyCompletedCount = () => {
+    return Object.keys(taskCompletionsByDate)
+      .filter(dateKey => {
+        const [year, month] = dateKey.split('-').map(Number);
+        return month - 1 === currentDate.getMonth() && year === currentDate.getFullYear();
+      })
+      .reduce((total, dateKey) => total + taskCompletionsByDate[dateKey], 0);
   };
 
   return (
@@ -192,17 +225,9 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
         {/* Project Filter and Stats in one line */}
         <div className="flex items-center gap-4 text-sm">
           <div className="flex items-center gap-4 text-muted-foreground">
-            <span>{projects.filter(p => !p.isDeleted && p.status === 'active').length} active</span>
+            <span>{getActiveTasksCount()} active tasks</span>
             <span>•</span>
-            <span>{Object.values(taskCompletionsByDate)
-              .filter(dayCompletions => {
-                const dateKey = Object.keys(taskCompletionsByDate).find(key => taskCompletionsByDate[key] === dayCompletions);
-                if (!dateKey) return false;
-                const date = new Date(dateKey);
-                return date.getMonth() === currentDate.getMonth() && date.getFullYear() === currentDate.getFullYear();
-              })
-              .reduce((total, dayCompletions) => total + dayCompletions.reduce((sum, { tasks }) => sum + tasks.length, 0), 0)
-            } completed this month</span>
+            <span>{getMonthlyCompletedCount()} completed this month</span>
           </div>
           
           <Popover>
@@ -287,8 +312,9 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
         <div className="grid grid-cols-7">
           {daysInCalendar.map((date, index) => {
             const dayProjects = getProjectsForDate(date);
-            const dayTaskCompletions = getTaskCompletionsForDate(date);
-            const dayTasks = getTasksForDate(date);
+            const dayTaskStarts = getTaskStartsForDate(date);
+            const dayTaskDues = getTaskDuesForDate(date);
+            const completedCount = getCompletedCountForDate(date);
             const isCurrentMonthDay = isCurrentMonth(date);
             const isTodayDate = isToday(date);
             
@@ -296,7 +322,7 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
               <div
                 key={index}
                 className={cn(
-                  "min-h-[100px] p-2 border-r border-b border-border/30 last:border-r-0 hover:bg-accent/20 transition-colors cursor-pointer",
+                  "min-h-[120px] p-2 border-r border-b border-border/30 last:border-r-0 hover:bg-accent/20 transition-colors cursor-pointer",
                   !isCurrentMonthDay && "bg-muted/10 text-muted-foreground/50",
                   isTodayDate && "bg-primary/10 border-primary/20"
                 )}
@@ -304,75 +330,90 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
                 title="Click to manage tasks"
               >
                 <div className={cn(
-                  "text-sm font-medium mb-1",
-                  !isCurrentMonthDay && "text-muted-foreground",
-                  isTodayDate && "text-primary font-bold"
+                  "flex items-center justify-between mb-2",
                 )}>
-                  {date.getDate()}
+                  <div className={cn(
+                    "text-sm font-medium",
+                    !isCurrentMonthDay && "text-muted-foreground",
+                    isTodayDate && "text-primary font-bold"
+                  )}>
+                    {date.getDate()}
+                  </div>
+                  
+                  {/* Completed count badge */}
+                  {completedCount > 0 && (
+                    <div className="flex items-center gap-1">
+                      <CheckCircle className="w-2.5 h-2.5 text-green-500" />
+                      <span className="text-xs text-green-600 font-medium">{completedCount}</span>
+                    </div>
+                  )}
                 </div>
                 
-                {/* Task Completions */}
-                {dayTaskCompletions.length > 0 && (
-                  <div className="mb-1">
-                    <div className="flex flex-wrap gap-1">
-                      {dayTaskCompletions.map(({ project, tasks }) => {
-                        const projectInitials = project.name
-                          .split(' ')
-                          .map(word => word[0])
-                          .join('')
-                          .substring(0, 2)
-                          .toUpperCase();
-                        
-                        return (
-                          <div
-                            key={project.id}
-                            className="relative group cursor-pointer"
-                            onClick={() => router.push(`/projects/${project.id}`)}
-                          >
-                            <div
-                              className="min-w-[22px] h-5 px-1 rounded text-white text-xs font-bold hover:scale-105 transition-all shadow-sm border border-white/20 cursor-pointer flex items-center justify-center"
-                              style={{ backgroundColor: project.color }}
-                              title={`${project.name}: ${tasks.length} task(s) completed`}
-                            >
-                              <span className="mr-0.5">{projectInitials}</span>
-                              <span className="text-[8px] bg-white/20 rounded-full w-2.5 h-2.5 flex items-center justify-center">
-                                {tasks.length}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })}
+                {/* Task Start Dates */}
+                {dayTaskStarts.length > 0 && (
+                  <div className="mb-2">
+                    <div className="space-y-1">
+                      {dayTaskStarts.slice(0, 2).map(({ project, task }) => (
+                        <div
+                          key={`start-${task.id}`}
+                          className="flex items-center gap-1.5 px-1.5 py-1 rounded text-xs cursor-pointer hover:bg-accent/30 transition-colors border-l-2 bg-blue-50/50"
+                          style={{ borderLeftColor: project.color }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/projects/${project.id}`);
+                          }}
+                          title={`${task.title} starts today`}
+                        >
+                          <Play className="w-2.5 h-2.5 text-blue-600 flex-shrink-0" />
+                          <div 
+                            className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: project.color }}
+                          />
+                          <span className="truncate font-medium text-foreground flex-1">
+                            {task.title}
+                          </span>
+                        </div>
+                      ))}
+                      {dayTaskStarts.length > 2 && (
+                        <div className="text-xs text-blue-600 px-1.5 font-medium">
+                          +{dayTaskStarts.length - 2} more starting
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
 
                 {/* Task Due Dates */}
-                {dayTasks.length > 0 && (
-                  <div className="mb-1">
-                    <div className="space-y-0.5">
-                      {dayTasks.slice(0, 2).map(({ project, task }) => {
+                {dayTaskDues.length > 0 && (
+                  <div className="mb-2">
+                    <div className="space-y-1">
+                      {dayTaskDues.slice(0, 2).map(({ project, task }) => {
                         const isOverdue = new Date(task.dueDate!) < new Date() && task.status !== 'completed';
                         
                         return (
                           <div
-                            key={task.id}
-                            className="flex items-center gap-1 px-1 py-0.5 rounded text-xs cursor-pointer hover:bg-accent/20 transition-colors"
+                            key={`due-${task.id}`}
+                            className={cn(
+                              "flex items-center gap-1.5 px-1.5 py-1 rounded text-xs cursor-pointer hover:bg-accent/30 transition-colors border-l-2",
+                              isOverdue ? "bg-red-50/50" : "bg-orange-50/50"
+                            )}
+                            style={{ borderLeftColor: project.color }}
                             onClick={(e) => {
                               e.stopPropagation();
                               router.push(`/projects/${project.id}`);
                             }}
-                            title={`${task.title}`}
+                            title={`${task.title} ${isOverdue ? 'is overdue' : 'due today'}`}
                           >
-                            <AlertCircle className={cn(
-                              "w-2 h-2 flex-shrink-0",
-                              isOverdue ? "text-red-500" : "text-orange-500"
+                            <Calendar className={cn(
+                              "w-2.5 h-2.5 flex-shrink-0",
+                              isOverdue ? "text-red-600" : "text-orange-600"
                             )} />
                             <div 
-                              className="w-1 h-1 rounded-full flex-shrink-0"
+                              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
                               style={{ backgroundColor: project.color }}
                             />
                             <span className={cn(
-                              "truncate font-medium",
+                              "truncate font-medium flex-1",
                               isOverdue ? "text-red-600" : "text-foreground"
                             )}>
                               {task.title}
@@ -380,17 +421,20 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
                           </div>
                         );
                       })}
-                      {dayTasks.length > 2 && (
-                        <div className="text-xs text-muted-foreground px-1">
-                          +{dayTasks.length - 2} more
+                      {dayTaskDues.length > 2 && (
+                        <div className={cn(
+                          "text-xs px-1.5 font-medium",
+                          dayTaskDues.some(({ task }) => new Date(task.dueDate!) < new Date()) ? "text-red-600" : "text-orange-600"
+                        )}>
+                          +{dayTaskDues.length - 2} more due
                         </div>
                       )}
                     </div>
                   </div>
                 )}
                 
-                {/* Due Date Projects */}
-                <div className="space-y-0.5">
+                {/* Project Due Dates */}
+                <div className="space-y-1">
                   {dayProjects.slice(0, 1).map(project => {
                     const timeRemaining = formatTimeRemaining(project.endDate!);
                     return (
@@ -400,7 +444,7 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
                         style={{ 
                           backgroundColor: project.color + '15', 
                           borderColor: project.color + '40',
-                          borderLeftWidth: '2px',
+                          borderLeftWidth: '3px',
                           borderLeftColor: project.color
                         }}
                         title={`${project.name} - ${timeRemaining.text} • ${project.progress}% complete`}
@@ -423,7 +467,7 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
                   })}
                   {dayProjects.length > 1 && (
                     <div className="text-xs text-muted-foreground px-1">
-                      +{dayProjects.length - 1} more due
+                      +{dayProjects.length - 1} more projects due
                     </div>
                   )}
                 </div>

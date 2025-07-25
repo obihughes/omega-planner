@@ -1,16 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Project, ProjectTask, SubTask, ProjectsStorageData } from '@/types';
+import { Project, ProjectTask, SubTask, ProjectsStorageData, ProjectFolder } from '@/types';
 
 const STORAGE_KEY = 'omega-planner-projects';
 const STORAGE_VERSION = '1.0.0';
 
 // Helper to save to localStorage
-const saveProjectsToStorage = (projects: Project[]) => {
+const saveProjectsToStorage = (projects: Project[], folders: ProjectFolder[]) => {
   try {
     const data: ProjectsStorageData = {
       version: STORAGE_VERSION,
       projects: projects,
-      folders: [], // Initialize empty folders array for now
+      folders: folders,
       lastUpdated: new Date().toISOString()
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -21,9 +21,10 @@ const saveProjectsToStorage = (projects: Project[]) => {
 
 export function useProjects() {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [folders, setFolders] = useState<ProjectFolder[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Load projects from localStorage
+  // Load projects and folders from localStorage
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -39,6 +40,13 @@ export function useProjects() {
             })),
           }));
           setProjects(migratedProjects);
+          
+          const migratedFolders = (data.folders || []).map((folder, index) => ({
+            ...folder,
+            order: folder.order ?? index,
+            isExpanded: folder.isExpanded ?? true,
+          }));
+          setFolders(migratedFolders);
         }
       }
     } catch (error) {
@@ -48,12 +56,21 @@ export function useProjects() {
     }
   }, []);
 
-  // Generic state-safe update function
+  // Generic state-safe update function for projects
   const updateProjectsState = (updater: (prevProjects: Project[]) => Project[]) => {
     setProjects(prevProjects => {
       const updatedProjects = updater(prevProjects);
-      saveProjectsToStorage(updatedProjects);
+      saveProjectsToStorage(updatedProjects, folders);
       return updatedProjects;
+    });
+  };
+
+  // Generic state-safe update function for folders
+  const updateFoldersState = (updater: (prevFolders: ProjectFolder[]) => ProjectFolder[]) => {
+    setFolders(prevFolders => {
+      const updatedFolders = updater(prevFolders);
+      saveProjectsToStorage(projects, updatedFolders);
+      return updatedFolders;
     });
   };
 
@@ -354,14 +371,76 @@ export function useProjects() {
         updatedAt: new Date().toISOString()
       };
       
-      updateProjectsState(prevProjects => [unassignedProject!, ...prevProjects]);
+      setProjects(prevProjects => {
+        const updatedProjects = [unassignedProject!, ...prevProjects];
+        saveProjectsToStorage(updatedProjects, folders);
+        return updatedProjects;
+      });
     }
     
     return addTaskToProject('unassigned', taskData);
   }, [projects, addTaskToProject]);
 
+  // Folder management functions
+  const createFolder = useCallback((folderData: Omit<ProjectFolder, 'id' | 'createdAt' | 'updatedAt' | 'order'>) => {
+    const newFolder: ProjectFolder = {
+      ...folderData,
+      id: `folder-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      order: Date.now(),
+      isExpanded: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    updateFoldersState(prevFolders => [...prevFolders, newFolder]);
+    return newFolder;
+  }, []);
+
+  const updateFolder = useCallback((folderId: string, updates: Partial<ProjectFolder>) => {
+    updateFoldersState(prevFolders => 
+      prevFolders.map(f => 
+        f.id === folderId ? { ...f, ...updates, updatedAt: new Date().toISOString() } : f
+      )
+    );
+  }, []);
+
+  const deleteFolder = useCallback((folderId: string) => {
+    // Move projects from this folder to "All Projects" (remove folderId)
+    updateProjectsState(prevProjects =>
+      prevProjects.map(p =>
+        p.folderId === folderId ? { ...p, folderId: undefined, updatedAt: new Date().toISOString() } : p
+      )
+    );
+    
+    // Remove the folder
+    updateFoldersState(prevFolders =>
+      prevFolders.filter(f => f.id !== folderId)
+    );
+  }, []);
+
+  const toggleFolder = useCallback((folderId: string) => {
+    updateFoldersState(prevFolders => 
+      prevFolders.map(f => 
+        f.id === folderId ? { ...f, isExpanded: !f.isExpanded, updatedAt: new Date().toISOString() } : f
+      )
+    );
+  }, []);
+
+  const moveProjectToFolder = useCallback((projectId: string, folderId: string | undefined) => {
+    updateProjectsState(prevProjects =>
+      prevProjects.map(p =>
+        p.id === projectId ? { ...p, folderId, updatedAt: new Date().toISOString() } : p
+      )
+    );
+  }, []);
+
+  const getProjectsInFolder = useCallback((folderId: string | undefined) => {
+    return projects.filter(p => !p.isDeleted && p.folderId === folderId);
+  }, [projects]);
+
   return {
     projects,
+    folders,
     loading,
     createProject,
     updateProject,
@@ -378,6 +457,13 @@ export function useProjects() {
     deleteSubtaskFromTask,
     getAllProjectTasks,
     getTaskStats,
-    createUnassignedTask
+    createUnassignedTask,
+    // Folder functions
+    createFolder,
+    updateFolder,
+    deleteFolder,
+    toggleFolder,
+    moveProjectToFolder,
+    getProjectsInFolder
   };
 } 

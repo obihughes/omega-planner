@@ -232,159 +232,190 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
 
   return (
     <AppLayout>
-      <div className="max-w-6xl mx-auto px-4 py-6 font-['Inter',sans-serif]">
-        {/* Header */}
-        <div className="flex items-center space-x-4 mb-8">
-          <button
-            onClick={() => router.back()}
-            className="p-2 hover:bg-accent transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          
-          <div className="flex-1">
-            {/* Centered Project Name */}
-            <div className="flex items-center justify-between mb-6">
-              <h1 className="text-3xl font-semibold text-foreground font-['Inter',sans-serif] tracking-tight text-center flex-1">
+      <div className="h-full flex flex-col max-w-6xl mx-auto">
+        {/* Fixed Header Section */}
+        <div className="flex-shrink-0 px-4 py-6 border-b border-border/20 bg-background">
+          {/* Header with back button and project title */}
+          <div className="flex items-center space-x-4 mb-6">
+            <button
+              onClick={() => router.back()}
+              className="p-2 hover:bg-accent transition-colors rounded-lg"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            
+            <div className="flex-1 flex items-center justify-between">
+              <h1 className="text-3xl font-semibold text-foreground font-['Inter',sans-serif] tracking-tight">
                 {project.name}
               </h1>
               <button
                 onClick={handleEditProject}
-                className="p-2 hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+                className="p-2 hover:bg-accent transition-colors text-muted-foreground hover:text-foreground rounded-lg"
                 title="Edit project"
               >
                 <MoreVertical className="w-4 h-4" />
               </button>
             </div>
-            
-            {/* Single Line: Add Task + Progress Circles + Status Info */}
-            <div className="flex items-center justify-between py-4 border-t border-border/30">
-              {/* Quick Add Task Input */}
-              <div className="relative flex-1 max-w-md">
-                <Plus className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input
-                  type="text"
-                  value={newTaskTitle}
-                  onChange={(e) => setNewTaskTitle(e.target.value)}
-                  placeholder="Type task name and press Enter..."
-                  className="w-full pl-10 pr-4 py-2 bg-background border border-input focus:outline-none focus:ring-2 focus:ring-ring font-['Inter',sans-serif] text-sm"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && newTaskTitle.trim()) {
-                      handleAddTask();
-                    } else if (e.key === 'Escape') {
-                      setNewTaskTitle('');
-                    }
-                  }}
-                />
-              </div>
-
-              {/* Task Progress Circles */}
-              <div className="flex items-center space-x-3 mx-6">
-                <span className="text-sm font-medium text-muted-foreground flex-shrink-0">
-                  {completedTasks}/{totalTasks}
+          </div>
+          
+          {/* Project Info and Progress Bar */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-6">
+              {/* Progress Info */}
+              <div className="flex items-center space-x-3">
+                <span className="text-sm font-medium text-muted-foreground">
+                  {completedTasks}/{totalTasks} tasks
                 </span>
-                <div className="flex flex-wrap gap-1.5 items-center">
+                <div className="flex items-center space-x-1">
                   {Array.from({ length: Math.min(totalTasks, 12) }, (_, i) => {
                     const isCompleted = i < completedTasks;
                     return (
                       <div
                         key={i}
-                        className={`w-2 h-2 rounded-full transition-all duration-200 flex-shrink-0 ${
+                        className={`w-2 h-2 rounded-full transition-all duration-200 ${
                           isCompleted ? "bg-green-500" : "bg-muted-foreground/30"
                         }`}
                       />
                     );
                   })}
                   {totalTasks > 12 && (
-                    <span className="text-sm text-muted-foreground ml-1 whitespace-nowrap font-medium">+{totalTasks - 12}</span>
+                    <span className="text-sm text-muted-foreground ml-1">+{totalTasks - 12}</span>
                   )}
                 </div>
-              </div>
-
-              {/* Status Info + Actions */}
-              <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                <span className="font-medium">
+                <span className="text-sm font-medium text-primary">
                   {project.progress}% complete
                 </span>
-                {project.endDate && (() => {
-                  const { text, isOverdue } = formatTimeRemaining(project.endDate);
-                  return (
-                    <span className={`flex items-center space-x-1 ${isOverdue ? "text-red-600" : "text-muted-foreground"}`}>
-                      <Clock className="w-3 h-3" />
-                      <span>{text}</span>
-                    </span>
-                  );
-                })()}
-                <button
-                  onClick={() => {
-                    setEditingTask(null);
-                    setIsTaskModalOpen(true);
-                  }}
-                  className="px-3 py-1.5 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center space-x-1 text-xs"
-                  title="Create detailed task"
-                >
-                  <Plus className="w-3 h-3" />
-                  <span>New Task</span>
-                </button>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as ProjectTask['status'] | 'all')}
-                  className="px-2 py-1.5 bg-background border border-input focus:outline-none focus:ring-2 focus:ring-ring font-['Inter',sans-serif] text-xs"
-                >
-                  <option value="all">All Status</option>
-                  <option value="todo">To Do</option>
-                  <option value="in-progress">In Progress</option>
-                  <option value="blocked">Blocked</option>
-                  <option value="completed">Completed</option>
-                </select>
               </div>
+
+              {/* Due Date Info */}
+              {project.endDate && (() => {
+                const { text, isOverdue } = formatTimeRemaining(project.endDate);
+                return (
+                  <div className={`flex items-center space-x-1 text-sm ${isOverdue ? "text-red-600" : "text-muted-foreground"}`}>
+                    <Clock className="w-3 h-3" />
+                    <span>{text}</span>
+                  </div>
+                );
+              })()}
             </div>
+
+            {/* Filter */}
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as ProjectTask['status'] | 'all')}
+              className="px-3 py-2 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+            >
+              <option value="all">All Status</option>
+              <option value="todo">To Do</option>
+              <option value="in-progress">In Progress</option>
+              <option value="blocked">Blocked</option>
+              <option value="completed">Completed</option>
+            </select>
+          </div>
+
+          {/* Always-visible Add Task Section */}
+          <div className="flex items-center space-x-3">
+            {/* Quick Add Task Input */}
+            <div className="relative flex-1 max-w-lg">
+              <Plus className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                type="text"
+                value={newTaskTitle}
+                onChange={(e) => setNewTaskTitle(e.target.value)}
+                placeholder="Type task name and press Enter to add quickly..."
+                className="w-full pl-10 pr-4 py-3 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-sm shadow-sm"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newTaskTitle.trim()) {
+                    handleAddTask();
+                  } else if (e.key === 'Escape') {
+                    setNewTaskTitle('');
+                  }
+                }}
+              />
+            </div>
+
+            {/* Detailed Add Task Button */}
+            <button
+              onClick={() => {
+                setEditingTask(null);
+                setIsTaskModalOpen(true);
+              }}
+              className="px-4 py-3 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors rounded-lg flex items-center space-x-2 text-sm font-medium shadow-sm"
+              title="Create detailed task with dates and description"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Task</span>
+            </button>
           </div>
         </div>
 
-        {/* Tasks List */}
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={filteredAndSortedTasks.map(t => t.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            <div className="space-y-3">
-              {filteredAndSortedTasks.map((task, index) => (
-                <TaskItem
-                  key={task.id}
-                  id={task.id}
-                  task={task}
-                  taskIndex={index + 1}
-                  totalTasks={filteredAndSortedTasks.length}
-                  onStatusChange={handleTaskStatusChange}
-                  onEdit={handleEditTask}
-                  onDelete={handleDeleteTask}
-                  onAddSubtask={(taskId, subtaskData) => {
-                    if (project) addSubtaskToTask(project.id, taskId, subtaskData);
-                  }}
-                  onUpdateSubtask={(taskId, subtaskId, updates) => {
-                    if (project) updateSubtaskInTask(project.id, taskId, subtaskId, updates);
-                  }}
-                  onDeleteSubtask={(taskId, subtaskId) => {
-                    if (project) deleteSubtaskFromTask(project.id, taskId, subtaskId);
-                  }}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
-        
-        {filteredAndSortedTasks.length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-muted-foreground mb-4 font-['Inter',sans-serif]">
-              {tasks.length === 0 ? 'No tasks in this project yet.' : 'No tasks match your filters.'}
-            </div>
+        {/* Scrollable Tasks List */}
+        <div className="flex-1 overflow-hidden relative">
+          <div className="h-full overflow-y-auto px-4 py-6 scrollbar-thin scrollbar-thumb-muted/30 scrollbar-track-transparent">
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={filteredAndSortedTasks.map(t => t.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-3 pb-8">
+                  {filteredAndSortedTasks.map((task, index) => (
+                    <TaskItem
+                      key={task.id}
+                      id={task.id}
+                      task={task}
+                      taskIndex={index + 1}
+                      totalTasks={filteredAndSortedTasks.length}
+                      onStatusChange={handleTaskStatusChange}
+                      onEdit={handleEditTask}
+                      onDelete={handleDeleteTask}
+                      onAddSubtask={(taskId, subtaskData) => {
+                        if (project) addSubtaskToTask(project.id, taskId, subtaskData);
+                      }}
+                      onUpdateSubtask={(taskId, subtaskId, updates) => {
+                        if (project) updateSubtaskInTask(project.id, taskId, subtaskId, updates);
+                      }}
+                      onDeleteSubtask={(taskId, subtaskId) => {
+                        if (project) deleteSubtaskFromTask(project.id, taskId, subtaskId);
+                      }}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+            
+            {filteredAndSortedTasks.length === 0 && (
+              <div className="text-center py-12">
+                <div className="text-muted-foreground mb-4 font-['Inter',sans-serif]">
+                  {tasks.length === 0 ? 'No tasks in this project yet.' : 'No tasks match your filters.'}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Use the quick add above or click "Add Task" for more options.
+                </p>
+              </div>
+            )}
           </div>
-        )}
+
+          {/* Floating Action Button for Quick Task Addition */}
+          {filteredAndSortedTasks.length > 5 && (
+            <button
+              onClick={() => {
+                const quickAddInput = document.querySelector('input[placeholder*="Type task name"]') as HTMLInputElement;
+                if (quickAddInput) {
+                  quickAddInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  quickAddInput.focus();
+                }
+              }}
+              className="fixed bottom-6 right-6 w-14 h-14 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center z-50 hover:scale-105"
+              title="Scroll to quick add task"
+            >
+              <Plus className="w-6 h-6" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Task Form Modal */}

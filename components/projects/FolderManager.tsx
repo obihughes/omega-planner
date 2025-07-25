@@ -15,6 +15,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
+import { useDroppable } from '@dnd-kit/core';
 
 interface FolderManagerProps {
   folders: ProjectFolder[];
@@ -24,6 +25,8 @@ interface FolderManagerProps {
   onToggleFolder: (folderId: string) => void;
   selectedFolderId?: string;
   onSelectFolder: (folderId: string | undefined) => void;
+  projectCounts?: { [key: string]: number };
+  onMoveProjectToFolder?: (projectId: string, folderId: string | undefined) => void;
   className?: string;
 }
 
@@ -35,6 +38,42 @@ interface FolderItemProps {
   onDelete: (folderId: string) => void;
   onToggle: (folderId: string) => void;
   onSelect: (folderId: string) => void;
+  onMoveProjectToFolder?: (projectId: string, folderId: string) => void;
+}
+
+interface AllProjectsItemProps {
+  isSelected: boolean;
+  onSelect: (folderId: string | undefined) => void;
+  onMoveProjectToFolder?: (projectId: string, folderId: string | undefined) => void;
+}
+
+function AllProjectsItem({ isSelected, onSelect, onMoveProjectToFolder }: AllProjectsItemProps) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: 'all-projects',
+    data: { type: 'folder', folderId: undefined }
+  });
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSelect(undefined);
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "flex items-center gap-2 p-2 rounded-md cursor-pointer group transition-all duration-200 border-2",
+        !isSelected 
+          ? "hover:bg-muted/50 border-transparent" 
+          : "bg-primary/10 border-primary/20",
+        isOver && "bg-accent/50 border-accent"
+      )}
+      onClick={handleClick}
+    >
+      <Folder className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+      <span className="text-sm font-medium">All Projects</span>
+    </div>
+  );
 }
 
 function FolderItem({ 
@@ -44,8 +83,14 @@ function FolderItem({
   onEdit, 
   onDelete, 
   onToggle, 
-  onSelect 
+  onSelect,
+  onMoveProjectToFolder
 }: FolderItemProps) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `folder-${folder.id}`,
+    data: { type: 'folder', folderId: folder.id }
+  });
+
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onSelect(folder.id);
@@ -58,11 +103,13 @@ function FolderItem({
 
   return (
     <div
+      ref={setNodeRef}
       className={cn(
-        "flex items-center gap-2 p-2 rounded-md cursor-pointer group transition-all duration-200",
+        "flex items-center gap-2 p-2 rounded-md cursor-pointer group transition-all duration-200 border-2",
         isSelected 
-          ? "bg-primary/10 border border-primary/20" 
-          : "hover:bg-muted/50 border border-transparent"
+          ? "bg-primary/10 border-primary/20" 
+          : "hover:bg-muted/50 border-transparent",
+        isOver && "bg-accent/50 border-accent"
       )}
       onClick={handleClick}
     >
@@ -150,19 +197,10 @@ export function FolderManager({
   onToggleFolder,
   selectedFolderId,
   onSelectFolder,
+  projectCounts = {},
+  onMoveProjectToFolder,
   className
 }: FolderManagerProps) {
-  const [projectCounts, setProjectCounts] = useState<{ [key: string]: number }>({});
-
-  // TODO: Get actual project counts from props or context
-  // For now, using placeholder counts
-  React.useEffect(() => {
-    const counts: { [key: string]: number } = {};
-    folders.forEach(folder => {
-      counts[folder.id] = Math.floor(Math.random() * 10); // Placeholder
-    });
-    setProjectCounts(counts);
-  }, [folders]);
 
   return (
     <div className={cn("space-y-2", className)}>
@@ -180,18 +218,11 @@ export function FolderManager({
       </div>
 
       {/* All Projects Option */}
-      <div
-        className={cn(
-          "flex items-center gap-2 p-2 rounded-md cursor-pointer group transition-all duration-200",
-          !selectedFolderId 
-            ? "bg-primary/10 border border-primary/20" 
-            : "hover:bg-muted/50 border border-transparent"
-        )}
-        onClick={() => onSelectFolder(undefined)}
-      >
-        <Folder className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-        <span className="text-sm font-medium">All Projects</span>
-      </div>
+      <AllProjectsItem
+        isSelected={!selectedFolderId}
+        onSelect={onSelectFolder}
+        onMoveProjectToFolder={onMoveProjectToFolder}
+      />
 
       {/* Folder List */}
       <div className="space-y-1">
@@ -205,6 +236,7 @@ export function FolderManager({
             onDelete={onDeleteFolder}
             onToggle={onToggleFolder}
             onSelect={onSelectFolder}
+            onMoveProjectToFolder={onMoveProjectToFolder}
           />
         ))}
       </div>
