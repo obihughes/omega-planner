@@ -9,6 +9,9 @@ import { Plus, CheckSquare2, Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProjectTask } from '@/types/projects';
 import { useMemo, useState } from 'react';
+import { formatDueDate, getDateKey, getTodayDateKey } from '@/utils/dateUtils';
+import { ProjectTaskFormModal } from '@/components/modals/ProjectTaskFormModal';
+import { Edit3, Filter, SortAsc, X } from 'lucide-react';
 
 // Task with project info interface
 interface TaskWithProject extends ProjectTask {
@@ -21,6 +24,15 @@ export default function ProjectsTodayPage() {
   const { projects, updateTaskInProject, addTaskToProject } = useProjects();
   const [showQuickAdd, setShowQuickAdd] = React.useState(false);
   const [quickAddTitle, setQuickAddTitle] = React.useState('');
+  
+  // Filtering state
+  const [showCompleted, setShowCompleted] = React.useState(false);
+  const [priorityFilter, setPriorityFilter] = React.useState<'all' | 'urgent' | 'high' | 'medium' | 'low'>('all');
+  const [statusFilter, setStatusFilter] = React.useState<'all' | 'todo' | 'in-progress' | 'blocked'>('all');
+  
+  // Edit modal state
+  const [editingTask, setEditingTask] = React.useState<TaskWithProject | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
 
   // Get all tasks with project info
   const allTasks = React.useMemo((): TaskWithProject[] => {
@@ -36,38 +48,55 @@ export default function ProjectsTodayPage() {
       );
   }, [projects]);
 
-  // Filter tasks for Today (due today or overdue, plus completed today)
+  // Filter tasks for Today with filtering options
   const todayTasks = React.useMemo(() => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayKey = getTodayDateKey();
     
-    const dueTasks = allTasks.filter(task => {
+
+    
+    // Start with tasks due today
+    let filteredTasks = allTasks.filter(task => {
       if (!task.dueDate) return false;
       
-      const dueDate = new Date(task.dueDate);
-      const dueDateOnly = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
-      
-      // Include overdue and today's tasks
-      return dueDateOnly <= today;
+      const taskDueDateKey = getDateKey(task.dueDate);
+      // ONLY include tasks due today (not overdue tasks)
+      return taskDueDateKey === todayKey;
     });
 
-    // Also include tasks completed today
-    const completedTodayTasks = allTasks.filter(task => {
-      if (task.status !== 'completed' || !task.completedAt) return false;
-      
-      const completedDate = new Date(task.completedAt);
-      const completedDateOnly = new Date(completedDate.getFullYear(), completedDate.getMonth(), completedDate.getDate());
-      
-      return completedDateOnly.getTime() === today.getTime();
-    });
+    // Optionally include tasks completed today
+    if (showCompleted) {
+      const completedTodayTasks = allTasks.filter(task => {
+        if (task.status !== 'completed' || !task.completedAt) return false;
+        
+        const completedDateKey = getDateKey(task.completedAt);
+        
+        return completedDateKey === todayKey;
+      });
 
-    // Combine and deduplicate
-    const combinedTasks = [...dueTasks];
-    completedTodayTasks.forEach(task => {
-      if (!combinedTasks.find(t => t.id === task.id)) {
-        combinedTasks.push(task);
-      }
-    });
+      // Combine and deduplicate
+      completedTodayTasks.forEach(task => {
+        if (!filteredTasks.find(t => t.id === task.id)) {
+          filteredTasks.push(task);
+        }
+      });
+    } else {
+      // Filter out completed tasks if not showing them
+      filteredTasks = filteredTasks.filter(task => task.status !== 'completed');
+    }
+
+    // Apply priority filter
+    if (priorityFilter !== 'all') {
+      filteredTasks = filteredTasks.filter(task => task.priority === priorityFilter);
+    }
+
+    // Apply status filter (only for non-completed tasks)
+    if (statusFilter !== 'all') {
+      filteredTasks = filteredTasks.filter(task => 
+        task.status === 'completed' || task.status === statusFilter
+      );
+    }
+
+    const combinedTasks = filteredTasks;
 
     // Sort: incomplete tasks first (by due date, then priority), then completed tasks
     return combinedTasks.sort((a, b) => {
@@ -87,7 +116,7 @@ export default function ProjectsTodayPage() {
       const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
       return (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
     });
-  }, [allTasks]);
+  }, [allTasks, showCompleted, priorityFilter, statusFilter]);
 
   // Separate incomplete and completed tasks
   const incompleteTasks = todayTasks.filter(task => task.status !== 'completed');
@@ -101,6 +130,21 @@ export default function ProjectsTodayPage() {
         status,
         completedAt: status === 'completed' ? new Date().toISOString() : undefined
       });
+    }
+  };
+
+  // Handle edit task
+  const handleEditTask = (task: TaskWithProject) => {
+    setEditingTask(task);
+    setIsEditModalOpen(true);
+  };
+
+  // Handle save edited task
+  const handleSaveEditedTask = (updatedTask: Partial<ProjectTask>, isNew: boolean) => {
+    if (editingTask && !isNew) {
+      updateTaskInProject(editingTask.projectId, editingTask.id, updatedTask);
+      setIsEditModalOpen(false);
+      setEditingTask(null);
     }
   };
 
@@ -209,20 +253,7 @@ export default function ProjectsTodayPage() {
       }
     };
 
-    const formatDueDate = (dueDate?: string) => {
-      if (!dueDate) return null;
-      
-      const now = new Date();
-      const due = new Date(dueDate);
-      const diffMs = due.getTime() - now.getTime();
-      const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-      
-      if (diffDays < 0) return { text: 'Overdue', isOverdue: true };
-      if (diffDays === 0) return { text: 'Today', isOverdue: false };
-      if (diffDays === 1) return { text: 'Tomorrow', isOverdue: false };
-      
-      return { text: due.toLocaleDateString(), isOverdue: false };
-    };
+    // Use the centralized formatDueDate utility function
 
     const dueInfo = formatDueDate(task.dueDate);
 
@@ -322,6 +353,17 @@ export default function ProjectsTodayPage() {
               )}
             </div>
           </div>
+
+          {/* Edit Button */}
+          <div className="flex-shrink-0">
+            <button
+              onClick={() => handleEditTask(task)}
+              className="opacity-0 group-hover:opacity-100 p-2 rounded-md hover:bg-accent transition-all flex-shrink-0"
+              title="Edit task"
+            >
+              <Edit3 className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -340,14 +382,70 @@ export default function ProjectsTodayPage() {
             </span>
           </div>
           
-          <Button
-            onClick={() => setShowQuickAdd(true)}
-            size="sm"
-            className="flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Add Task
-          </Button>
+          <div className="flex items-center gap-2">
+            {/* Filters */}
+            <div className="flex items-center gap-2 mr-4">
+              {/* Show Completed Toggle */}
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={showCompleted}
+                  onChange={(e) => setShowCompleted(e.target.checked)}
+                  className="rounded border-gray-300"
+                />
+                <span>Show Completed</span>
+              </label>
+
+              {/* Priority Filter */}
+              <select
+                value={priorityFilter}
+                onChange={(e) => setPriorityFilter(e.target.value as any)}
+                className="px-2 py-1 text-xs bg-background border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                <option value="all">All Priorities</option>
+                <option value="urgent">Urgent</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+
+              {/* Status Filter */}
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as any)}
+                className="px-2 py-1 text-xs bg-background border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                <option value="all">All Status</option>
+                <option value="todo">To Do</option>
+                <option value="in-progress">In Progress</option>
+                <option value="blocked">Blocked</option>
+              </select>
+
+              {/* Clear Filters */}
+              {(priorityFilter !== 'all' || statusFilter !== 'all' || showCompleted) && (
+                <button
+                  onClick={() => {
+                    setPriorityFilter('all');
+                    setStatusFilter('all');
+                    setShowCompleted(false);
+                  }}
+                  className="p-1 text-xs text-muted-foreground hover:text-foreground"
+                  title="Clear filters"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+
+            <Button
+              onClick={() => setShowQuickAdd(true)}
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add Task
+            </Button>
+          </div>
         </div>
 
         <div className="max-w-4xl mx-auto">
@@ -425,6 +523,19 @@ export default function ProjectsTodayPage() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Edit Task Modal */}
+        {editingTask && (
+          <ProjectTaskFormModal
+            isOpen={isEditModalOpen}
+            onClose={() => {
+              setIsEditModalOpen(false);
+              setEditingTask(null);
+            }}
+            onSave={handleSaveEditedTask}
+            taskToEdit={editingTask}
+          />
         )}
       </div>
     </AppLayout>

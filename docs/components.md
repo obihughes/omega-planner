@@ -387,6 +387,48 @@ These now use Math.floor for upcoming dates and Math.ceil for overdue.
 - **Data Persistence**: Added full localStorage support for date-specific tasks
 - **UI/UX Improvements**: Enhanced visual styling and user interaction patterns
 
+### Hydration Error Fix (TaskListView)
+**Issue**: React hydration mismatch error causing "Expected server HTML to contain a matching <div> in <button>" in TaskListView component.
+
+**Root Cause**: TaskListView component was loading preferences from localStorage during initial render, causing differences between server-side (default preferences) and client-side (localStorage preferences) rendering, particularly affecting conditional rendering of filter indicator dots in Popover components.
+
+**Resolution**:
+1. **Consistent Initial State**: Changed initial state from `loadPreferences()` to `defaultPreferences` to ensure server and client render identically
+2. **Client-Side Hydration**: Added `isClient` state to track when component is mounted on client
+3. **Safe Conditional Rendering**: Added `isClient &&` checks to localStorage-dependent conditional renders
+4. **Post-Mount Loading**: Load actual preferences in `useEffect` after component mounts
+
+**Files Modified**:
+- `components/projects/TaskListView.tsx`
+
+**Technical Details**:
+- Prevents hydration mismatches by ensuring server and client initial renders are identical
+- Uses `useEffect` to load localStorage preferences after hydration is complete
+- Guards conditional renders that depend on localStorage data with `isClient` flag
+
+### Date Logic Fix (Projects Today/Tasks)
+**Issue**: Tasks scheduled for today were incorrectly showing as "Overdue" instead of "Today".
+
+**Root Cause**: Date comparison logic in `formatDueDate` functions was comparing exact timestamps instead of calendar dates. Tasks due "today" but created earlier in the day would show as overdue because the current time had passed the task's creation timestamp.
+
+**Resolution**:
+1. **Centralized Date Utility**: Created `formatDueDate` function in `utils/dateUtils.ts` using proper date key comparison
+2. **Consistent Date Keys**: Use YYYY-MM-DD string format for all date comparisons (avoids time component issues)
+3. **Updated Components**: Replaced custom date logic in TaskListView, DraggableTaskCard, and Today page components
+4. **Fixed Filtering**: Updated task filtering logic in Today and Tasks pages to use proper date key comparisons
+
+**Files Modified**:
+- `utils/dateUtils.ts` (added centralized `formatDueDate` function)
+- `app/projects/today/page.tsx`
+- `app/projects/tasks/page.tsx`
+- `components/projects/TaskListView.tsx`
+- `components/projects/DraggableTaskCard.tsx`
+
+**Technical Details**:
+- Uses `getDateKey()` and `getTodayDateKey()` for timezone-safe date comparison
+- String comparison of YYYY-MM-DD format ensures accurate calendar date matching
+- Eliminates time-based calculation errors that caused today's tasks to appear overdue
+
 ### Styling Fixes
 - **Task Cards**: Proper borders, background colors, and theme compatibility
 - **Action Buttons**: Theme-aware styling with hover effects

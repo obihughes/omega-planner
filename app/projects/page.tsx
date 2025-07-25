@@ -7,6 +7,7 @@ import { Project, ProjectFolder } from '@/types';
 import { ProjectCard } from '@/components/projects/ProjectCard';
 import { ProjectsCalendar } from '@/components/projects/ProjectsCalendar';
 import { FolderManager } from '@/components/projects/FolderManager';
+import { UpcomingTasksTimeline } from '@/components/planner/UpcomingTasksTimeline';
 
 import { AppLayout } from '@/components/ui/AppLayout';
 import { useProjectsView } from '@/app/context/ProjectsViewContext';
@@ -406,24 +407,28 @@ function ProjectsPageContent() {
     <AppLayout>
       <div className="container mx-auto px-6 py-6">
         <div className="flex gap-6">
-          {/* Left Sidebar - Folders */}
+          {/* Left Sidebar - Conditional */}
           <div className="w-64 flex-shrink-0">
-            <FolderManager
-              folders={folders}
-              onCreateFolder={handleCreateFolder}
-              onEditFolder={handleEditFolder}
-              onDeleteFolder={handleDeleteFolder}
-              onToggleFolder={toggleFolder}
-              selectedFolderId={selectedFolderId}
-              onSelectFolder={setSelectedFolderId}
-              projectCounts={folders.reduce((acc, folder) => {
-                acc[folder.id] = getProjectCountForFolder(folder.id);
-                return acc;
-              }, {} as { [key: string]: number })}
-              onMoveProjectToFolder={moveProjectToFolder}
-              getProjectsInFolder={getProjectsInFolder}
-              onProjectClick={handleProjectClickById}
-            />
+            {activeView === 'calendar' ? (
+              <UpcomingTasksTimeline className="w-full" />
+            ) : (
+              <FolderManager
+                folders={folders}
+                onCreateFolder={handleCreateFolder}
+                onEditFolder={handleEditFolder}
+                onDeleteFolder={handleDeleteFolder}
+                onToggleFolder={toggleFolder}
+                selectedFolderId={selectedFolderId}
+                onSelectFolder={setSelectedFolderId}
+                projectCounts={folders.reduce((acc, folder) => {
+                  acc[folder.id] = getProjectCountForFolder(folder.id);
+                  return acc;
+                }, {} as { [key: string]: number })}
+                onMoveProjectToFolder={moveProjectToFolder}
+                getProjectsInFolder={getProjectsInFolder}
+                onProjectClick={handleProjectClickById}
+              />
+            )}
           </div>
 
           {/* Main Content Area */}

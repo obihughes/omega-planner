@@ -23,6 +23,7 @@ import {
   CheckSquare2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatDueDate as formatDueDateUtil } from '@/utils/dateUtils';
 
 // Storage key for task list preferences
 const TASK_LIST_PREFERENCES_KEY = 'omega-planner-task-list-preferences';
@@ -32,7 +33,7 @@ interface TaskListPreferences {
   groupBy: 'project' | 'status' | 'dueDate' | 'dateCreated' | 'none';
   filters: {
     priority: 'all' | 'urgent' | 'high' | 'medium' | 'low';
-    dueDate: 'all' | 'overdue' | 'today' | 'tomorrow' | 'thisWeek' | 'future' | 'none';
+    dueDate: 'all' | 'today' | 'tomorrow' | 'thisWeek' | 'future' | 'none';
     status: 'all' | 'todo' | 'in-progress' | 'completed' | 'blocked';
   };
   sortBy: 'title' | 'dueDate' | 'priority' | 'status' | 'created';
@@ -97,8 +98,9 @@ interface TaskListViewProps {
 export function TaskListView({ className }: TaskListViewProps) {
   const { projects, updateTaskInProject, deleteTaskFromProject, addTaskToProject, createUnassignedTask } = useProjects();
   
-  // Load initial preferences from localStorage
-  const [preferences, setPreferences] = useState<TaskListPreferences>(() => loadPreferences());
+  // Initialize with default preferences to prevent hydration mismatch
+  const [preferences, setPreferences] = useState<TaskListPreferences>(defaultPreferences);
+  const [isClient, setIsClient] = useState(false);
   
   // Local state (non-persistent)
   const [searchTerm, setSearchTerm] = useState('');
@@ -122,12 +124,11 @@ export function TaskListView({ className }: TaskListViewProps) {
     savePreferences(newPreferences);
   }, [preferences]);
 
-  // Load preferences on client side after mount
+  // Load preferences on client side after mount to prevent hydration mismatch
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const clientPreferences = loadPreferences();
-      setPreferences(clientPreferences);
-    }
+    setIsClient(true);
+    const clientPreferences = loadPreferences();
+    setPreferences(clientPreferences);
   }, []);
   
   // Full task creation modal state
@@ -201,8 +202,7 @@ export function TaskListView({ className }: TaskListViewProps) {
         const dueDateOnly = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
         
         switch (filters.dueDate) {
-          case 'overdue':
-            return dueDateOnly < today && task.status !== 'completed';
+
           case 'today':
             return dueDateOnly.getTime() === today.getTime();
           case 'tomorrow':
@@ -318,7 +318,7 @@ export function TaskListView({ className }: TaskListViewProps) {
       nextWeek.setDate(nextWeek.getDate() + 7);
       
       const dueDateGroups = {
-        'overdue': { title: 'Overdue', tasks: [] as TaskWithProject[], color: '#EF4444' },
+
         'today': { title: 'Due Today', tasks: [] as TaskWithProject[], color: '#F59E0B' },
         'tomorrow': { title: 'Due Tomorrow', tasks: [] as TaskWithProject[], color: '#3B82F6' },
         'thisWeek': { title: 'This Week', tasks: [] as TaskWithProject[], color: '#8B5CF6' },
@@ -335,9 +335,7 @@ export function TaskListView({ className }: TaskListViewProps) {
         const dueDate = new Date(task.dueDate);
         const dueDateOnly = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
         
-        if (dueDateOnly < today && task.status !== 'completed') {
-          dueDateGroups.overdue.tasks.push(task);
-        } else if (dueDateOnly.getTime() === today.getTime()) {
+        if (dueDateOnly.getTime() === today.getTime()) {
           dueDateGroups.today.tasks.push(task);
         } else if (dueDateOnly.getTime() === tomorrow.getTime()) {
           dueDateGroups.tomorrow.tasks.push(task);
@@ -677,22 +675,8 @@ export function TaskListView({ className }: TaskListViewProps) {
     }
   };
 
-  // Format due date
-  const formatDueDate = (dueDate?: string) => {
-    if (!dueDate) return null;
-    
-    const now = new Date();
-    const due = new Date(dueDate);
-    const diffMs = due.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-    
-    if (diffDays < 0) return { text: 'Overdue', isOverdue: true };
-    if (diffDays === 0) return { text: 'Today', isOverdue: false };
-    if (diffDays === 1) return { text: 'Tomorrow', isOverdue: false };
-    if (diffDays <= 7) return { text: `${diffDays} days`, isOverdue: false };
-    
-    return { text: due.toLocaleDateString(), isOverdue: false };
-  };
+  // Use the centralized formatDueDate utility function
+  const formatDueDate = formatDueDateUtil;
 
   const totalTasks = allTasks.length;
   const completedTasks = allTasks.filter(t => t.status === 'completed').length;
@@ -731,7 +715,7 @@ export function TaskListView({ className }: TaskListViewProps) {
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="flex items-center gap-1 px-2">
                 <Filter className="w-4 h-4" />
-                {hasActiveFilters && (
+                {isClient && hasActiveFilters && (
                   <div className="w-1.5 h-1.5 bg-primary rounded-full" />
                 )}
               </Button>
@@ -740,7 +724,7 @@ export function TaskListView({ className }: TaskListViewProps) {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h4 className="font-medium text-sm">Filters</h4>
-                  {hasActiveFilters && (
+                  {isClient && hasActiveFilters && (
                     <Button variant="ghost" size="sm" onClick={resetFilters} className="h-auto p-1 text-xs">
                       <X className="w-3 h-3" />
                     </Button>
@@ -768,7 +752,7 @@ export function TaskListView({ className }: TaskListViewProps) {
                     className="w-full px-2 py-1 text-xs bg-input border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
                   >
                     <option value="all">All Dates</option>
-                    <option value="overdue">Overdue</option>
+
                     <option value="today">Today</option>
                     <option value="tomorrow">Tomorrow</option>
                     <option value="thisWeek">This Week</option>

@@ -3,6 +3,7 @@
 import React from 'react';
 import { CheckCircle2, Clock, Minus, Circle, CheckSquare2, Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatDueDate as formatDueDateUtil } from '@/utils/dateUtils';
 import { ProjectTask } from '@/types/projects';
 
 interface TaskWithProject extends ProjectTask {
@@ -131,20 +132,8 @@ export function DraggableTaskCard({ task, onStatusChange }: DraggableTaskCardPro
     }
   };
 
-  const formatDueDate = (dueDate?: string) => {
-    if (!dueDate) return null;
-    
-    const now = new Date();
-    const due = new Date(dueDate);
-    const diffMs = due.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-    
-    if (diffDays < 0) return { text: 'Overdue', isOverdue: true };
-    if (diffDays === 0) return { text: 'Today', isOverdue: false };
-    if (diffDays === 1) return { text: 'Tomorrow', isOverdue: false };
-    
-    return { text: due.toLocaleDateString(), isOverdue: false };
-  };
+  // Use the centralized formatDueDate utility function
+  const formatDueDate = formatDueDateUtil;
 
   const dueInfo = formatDueDate(task.dueDate);
 

@@ -128,4 +128,74 @@ export const getCalendarDateForColumn = (columnDayOffset: number): string => {
   return getDateKeyFromOffset(columnDayOffset);
 };
 
+/**
+ * Format a due date string for display, comparing against today's date.
+ * This function properly handles date comparison without time components.
+ * @param {string | undefined} dueDate - Due date in YYYY-MM-DD format or ISO string
+ * @returns {object | null} Object with text and isOverdue flag, or null if no due date
+ */
+export const formatDueDate = (dueDate?: string): { text: string; isOverdue: boolean } | null => {
+  if (!dueDate) return null;
+  
+  // Normalize the due date first to handle different formats
+  const normalizedDueDate = normalizeDueDate(dueDate);
+  if (!normalizedDueDate) return null;
+  
+  // Get the date key (YYYY-MM-DD format) from the due date
+  const dueDateKey = getDateKey(normalizedDueDate);
+  const todayKey = getTodayDateKey();
+  
+
+  
+  // Compare date keys directly (string comparison works for YYYY-MM-DD format)
+  if (dueDateKey < todayKey) return { text: '', isOverdue: true }; // Don't show overdue text
+  if (dueDateKey === todayKey) return { text: 'Today', isOverdue: false };
+  
+  // Calculate days difference for future dates
+  const dueDate_ = dateFromDateKey(dueDateKey);
+  const today = dateFromDateKey(todayKey);
+  const diffMs = dueDate_.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 1) return { text: 'Tomorrow', isOverdue: false };
+  if (diffDays <= 7) return { text: `${diffDays} days`, isOverdue: false };
+  
+  // For dates further in the future, show the formatted date
+  const date = new Date(dueDate);
+  return { text: date.toLocaleDateString(), isOverdue: false };
+};
+
+/**
+ * Normalize a due date to ensure it's in the correct YYYY-MM-DD format.
+ * This function handles various input formats and converts them to date-only strings.
+ * @param {string | undefined} dueDate - Due date in any format
+ * @returns {string | undefined} Normalized date in YYYY-MM-DD format, or undefined if invalid
+ */
+export const normalizeDueDate = (dueDate?: string): string | undefined => {
+  if (!dueDate) return undefined;
+  
+  try {
+    // If it's already in YYYY-MM-DD format, return as-is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) {
+      return dueDate;
+    }
+    
+    // If it's an ISO string or other date format, convert to YYYY-MM-DD
+    const date = new Date(dueDate);
+    if (isNaN(date.getTime())) {
+      console.warn('Invalid due date format:', dueDate);
+      return undefined;
+    }
+    
+    // Convert to YYYY-MM-DD format
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  } catch (error) {
+    console.warn('Error normalizing due date:', dueDate, error);
+    return undefined;
+  }
+};
+
  

@@ -11,6 +11,7 @@ import { useProjects } from '@/hooks/useProjects';
 import { Calendar, List, Plus, Clock, CheckCircle2, Filter, SortAsc } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProjectTask } from '@/types/projects';
+import { getDateKey, getTodayDateKey } from '@/utils/dateUtils';
 
 // Task with project info interface
 interface TaskWithProject extends ProjectTask {
@@ -60,17 +61,15 @@ export default function ProjectsTasksPage() {
 
   // Filter tasks for Today Mode (due today or overdue)
   const todayTasks = React.useMemo(() => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayKey = getTodayDateKey();
     
     return allTasks.filter(task => {
       if (!task.dueDate) return false;
       
-      const dueDate = new Date(task.dueDate);
-      const dueDateOnly = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+      const taskDueDateKey = getDateKey(task.dueDate);
       
-      // Include overdue and today's tasks
-      return dueDateOnly <= today && task.status !== 'completed';
+      // Include overdue and today's tasks (string comparison works for YYYY-MM-DD)
+      return taskDueDateKey <= todayKey && task.status !== 'completed';
     }).sort((a, b) => {
       // Sort by due date (overdue first), then by priority
       const dateA = new Date(a.dueDate!);
@@ -220,7 +219,7 @@ export default function ProjectsTasksPage() {
               <div className="text-center py-12 text-muted-foreground">
                 <CheckCircle2 className="w-12 h-12 mx-auto mb-4 text-green-500" />
                 <h3 className="text-lg font-medium mb-2">All caught up!</h3>
-                <p>No overdue or due today tasks. Great work!</p>
+                <p>No tasks due today. Great work!</p>
               </div>
             ) : (
               <div className="space-y-3">
