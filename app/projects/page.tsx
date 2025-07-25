@@ -301,6 +301,10 @@ function ProjectsPageContent() {
     router.push(`/projects/${project.id}`);
   };
 
+  const handleProjectClickById = (projectId: string) => {
+    router.push(`/projects/${projectId}`);
+  };
+
   const handleEditProject = (project: Project) => {
     setEditingProject(project);
     setIsProjectModalOpen(true);
@@ -417,6 +421,8 @@ function ProjectsPageContent() {
                 return acc;
               }, {} as { [key: string]: number })}
               onMoveProjectToFolder={moveProjectToFolder}
+              getProjectsInFolder={getProjectsInFolder}
+              onProjectClick={handleProjectClickById}
             />
           </div>
 

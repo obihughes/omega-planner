@@ -27,6 +27,8 @@ interface FolderManagerProps {
   onSelectFolder: (folderId: string | undefined) => void;
   projectCounts?: { [key: string]: number };
   onMoveProjectToFolder?: (projectId: string, folderId: string | undefined) => void;
+  getProjectsInFolder?: (folderId: string) => any[];
+  onProjectClick?: (projectId: string) => void;
   className?: string;
 }
 
@@ -39,6 +41,8 @@ interface FolderItemProps {
   onToggle: (folderId: string) => void;
   onSelect: (folderId: string) => void;
   onMoveProjectToFolder?: (projectId: string, folderId: string) => void;
+  getProjectsInFolder?: (folderId: string) => any[];
+  onProjectClick?: (projectId: string) => void;
 }
 
 interface AllProjectsItemProps {
@@ -84,7 +88,9 @@ function FolderItem({
   onDelete, 
   onToggle, 
   onSelect,
-  onMoveProjectToFolder
+  onMoveProjectToFolder,
+  getProjectsInFolder,
+  onProjectClick
 }: FolderItemProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: `folder-${folder.id}`,
@@ -189,6 +195,59 @@ function FolderItem({
   );
 }
 
+function FolderWithProjects({ 
+  folder, 
+  isSelected, 
+  projectCount, 
+  onEdit, 
+  onDelete, 
+  onToggle, 
+  onSelect,
+  onMoveProjectToFolder,
+  getProjectsInFolder,
+  onProjectClick
+}: FolderItemProps) {
+  const projects = getProjectsInFolder ? getProjectsInFolder(folder.id) : [];
+
+  return (
+    <div>
+      <FolderItem
+        folder={folder}
+        isSelected={isSelected}
+        projectCount={projectCount}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        onToggle={onToggle}
+        onSelect={onSelect}
+        onMoveProjectToFolder={onMoveProjectToFolder}
+        getProjectsInFolder={getProjectsInFolder}
+        onProjectClick={onProjectClick}
+      />
+      
+      {/* Show projects when folder is expanded */}
+      {folder.isExpanded && projects.length > 0 && (
+        <div className="ml-6 mt-1 space-y-1">
+          {projects.map((project: any) => (
+            <div
+              key={project.id}
+              className="flex items-center gap-2 p-1.5 rounded-md cursor-pointer hover:bg-muted/30 transition-colors text-sm"
+              onClick={() => onProjectClick && onProjectClick(project.id)}
+            >
+              <div 
+                className="w-2 h-2 rounded-full flex-shrink-0"
+                style={{ backgroundColor: project.color }}
+              />
+              <span className="truncate text-muted-foreground">
+                {project.name}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function FolderManager({
   folders,
   onCreateFolder,
@@ -199,6 +258,8 @@ export function FolderManager({
   onSelectFolder,
   projectCounts = {},
   onMoveProjectToFolder,
+  getProjectsInFolder,
+  onProjectClick,
   className
 }: FolderManagerProps) {
 
@@ -227,7 +288,7 @@ export function FolderManager({
       {/* Folder List */}
       <div className="space-y-1">
         {folders.map(folder => (
-          <FolderItem
+          <FolderWithProjects
             key={folder.id}
             folder={folder}
             isSelected={selectedFolderId === folder.id}
@@ -237,6 +298,8 @@ export function FolderManager({
             onToggle={onToggleFolder}
             onSelect={onSelectFolder}
             onMoveProjectToFolder={onMoveProjectToFolder}
+            getProjectsInFolder={getProjectsInFolder}
+            onProjectClick={onProjectClick}
           />
         ))}
       </div>
