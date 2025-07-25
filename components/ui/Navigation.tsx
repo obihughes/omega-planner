@@ -133,7 +133,6 @@ export function Navigation() {
       icon: FolderKanban,
       active: pathname === '/projects' || pathname.startsWith('/projects/'),
       subViews: [
-        { key: 'overview', label: 'Overview', icon: Files, active: pathname === '/projects/overview' },
         { key: 'today', label: "Today's Tasks", icon: Timer, active: pathname === '/projects/today' },
         { key: 'tasks', label: 'Tasks', icon: ClipboardList, active: pathname === '/projects/tasks' && !pathname.includes('/today') },
         { key: 'active', label: 'Projects', icon: Folder, active: projectsViewMode === 'active' },
@@ -248,9 +247,7 @@ export function Navigation() {
                                 router.push(item.href);
                                 setPlannerViewMode(subView.key as any);
                               } else if (item.href === '/projects') {
-                                if (subView.key === 'overview') {
-                                  router.push('/projects/overview');
-                                } else if (subView.key === 'tasks') {
+                                if (subView.key === 'tasks') {
                                   router.push('/projects/tasks');
                                 } else if (subView.key === 'today') {
                                   router.push('/projects/today');
