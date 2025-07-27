@@ -11,6 +11,7 @@ import {
   ChevronRight, 
   Square, 
   CheckSquare, 
+  CheckSquare2,
   Clock, 
   Calendar as CalendarIcon,
   Edit3,
@@ -18,9 +19,9 @@ import {
   Filter,
   SortAsc,
   SortDesc,
+  FileText,
   X,
-  Check,
-  CheckSquare2
+  Check
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDueDate as formatDueDateUtil } from '@/utils/dateUtils';
@@ -916,9 +917,7 @@ export function TaskListView({ className }: TaskListViewProps) {
                             key={task.id} 
                             className={cn(
                               "transition-colors duration-200 rounded-lg cursor-pointer border border-transparent hover:border-border/30",
-                              groupBy === 'none' || groupBy === 'status' || groupBy === 'dueDate' || groupBy === 'dateCreated'
-                                ? "p-5 hover:bg-accent/30" // More padding and stronger hover for ungrouped (prominent task names)
-                                : "p-4 hover:bg-accent/20" // Standard padding for grouped
+                              "p-3 hover:bg-accent/20 group" // Compact padding for single-line layout
                             )}
                             onClick={(e) => {
                               // Only trigger due date editing if not clicking on other interactive elements
@@ -932,9 +931,10 @@ export function TaskListView({ className }: TaskListViewProps) {
                                 startEditing(task, 'dueDate');
                               }
                             }}
-                            title="Click to edit due date • Double-click title to edit name"
+                            title="Click to edit due date • Click title to edit name"
                           >
-                            <div className="flex items-center gap-4">
+                            {/* Single-line compact layout */}
+                            <div className="flex items-center gap-3 min-h-[28px]">
                               {/* Status toggle with celebration */}
                               <button
                                 onClick={(e) => {
@@ -972,50 +972,59 @@ export function TaskListView({ className }: TaskListViewProps) {
                                 )}
                               </button>
                             
-                            {/* Task content */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex-1 min-w-0">
-                                  {/* Title - Editable and Prominent (size based on grouping) */}
-                                  {editingTaskId === task.id && editingField === 'title' ? (
-                                    <input
-                                      ref={editInputRef as React.RefObject<HTMLInputElement>}
-                                      type="text"
-                                      value={editingValue}
-                                      onChange={(e) => setEditingValue(e.target.value)}
-                                      onBlur={saveEdit}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') saveEdit();
-                                        if (e.key === 'Escape') cancelEdit();
-                                      }}
-                                      className={cn(
-                                        "w-full bg-transparent border-none outline-none focus:bg-accent/50 rounded px-1 -mx-1 tracking-tight",
-                                        groupBy === 'none' || groupBy === 'status' || groupBy === 'dueDate' || groupBy === 'dateCreated' 
-                                          ? "font-semibold text-lg" 
-                                          : "font-medium text-base"
-                                      )}
-                                    />
-                                  ) : (
-                                    <h3 
-                                      className={cn(
-                                        "cursor-pointer hover:bg-accent/20 rounded px-1 -mx-1 transition-colors leading-relaxed select-none tracking-tight",
-                                        // Make task title more prominent when not grouped by project
-                                        groupBy === 'none' || groupBy === 'status' || groupBy === 'dueDate' || groupBy === 'dateCreated'
-                                          ? "font-semibold text-lg"
-                                          : "font-medium text-base",
-                                        task.status === 'completed' 
-                                          ? "line-through text-muted-foreground/70" 
-                                          : "text-foreground"
-                                      )}
-                                      onDoubleClick={(e) => {
-                                        e.stopPropagation();
-                                        startEditing(task, 'title');
-                                      }}
-                                      title="Double-click to edit title"
-                                    >
-                                      {task.title}
-                                    </h3>
+                              {/* Priority indicator - compact */}
+                              {task.priority && task.priority !== 'medium' && (
+                                <div 
+                                  className={cn(
+                                    "w-2 h-2 rounded-full flex-shrink-0",
+                                    task.priority === 'urgent' && "bg-red-500 animate-pulse",
+                                    task.priority === 'high' && "bg-orange-500",
+                                    task.priority === 'low' && "bg-gray-400"
                                   )}
+                                  title={`${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)} priority`}
+                                />
+                              )}
+
+                              {/* Project indicator (when not grouped by project) */}
+                              {groupBy !== 'project' && (
+                                <div 
+                                  className="w-2 h-2 rounded-full flex-shrink-0"
+                                  style={{ backgroundColor: task.projectColor }}
+                                  title={task.projectName}
+                                />
+                              )}
+
+                              {/* Title - Editable and takes available space */}
+                                {editingTaskId === task.id && editingField === 'title' ? (
+                                  <input
+                                    ref={editInputRef as React.RefObject<HTMLInputElement>}
+                                    type="text"
+                                    value={editingValue}
+                                    onChange={(e) => setEditingValue(e.target.value)}
+                                    onBlur={saveEdit}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') saveEdit();
+                                      if (e.key === 'Escape') cancelEdit();
+                                    }}
+                                    className="w-full bg-transparent border-none outline-none focus:bg-accent/50 rounded px-1 -mx-1 font-medium text-sm"
+                                  />
+                                ) : (
+                                  <h3 
+                                    className={cn(
+                                      "cursor-pointer hover:bg-accent/20 rounded px-1 -mx-1 transition-colors select-none font-medium text-sm truncate",
+                                      task.status === 'completed' 
+                                        ? "line-through text-muted-foreground/70" 
+                                        : "text-foreground"
+                                    )}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      startEditing(task, 'title');
+                                    }}
+                                    title={`${task.title}${task.description ? ` • ${task.description}` : ''}`}
+                                  >
+                                    {task.title}
+                                  </h3>
+                                )}
                                   
                                   {/* Project name (when not grouped by project) - Subtle and smaller */}
                                   {groupBy !== 'project' && (
@@ -1106,9 +1115,93 @@ export function TaskListView({ className }: TaskListViewProps) {
                                     <div className="w-3 h-3 bg-orange-500 rounded-full shadow-md" />
                                     <span className="text-xs font-semibold text-orange-600 uppercase tracking-wide">High</span>
                                   </div>
+                              
+                              {/* Project name (when not grouped by project) - compact */}
+                              {groupBy !== 'project' && (
+                                <span className="text-xs text-muted-foreground/60 truncate max-w-[100px] flex-shrink-0">
+                                  {task.projectName}
+                                </span>
+                              )}
+
+                              {/* Due date - compact */}
+                              {(dueInfo || editingTaskId === task.id && editingField === 'dueDate') && (
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                  {editingTaskId === task.id && editingField === 'dueDate' ? (
+                                    <input
+                                      ref={editInputRef as React.RefObject<HTMLInputElement>}
+                                      type="date"
+                                      value={editingValue}
+                                      onChange={(e) => setEditingValue(e.target.value)}
+                                      onBlur={saveEdit}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') saveEdit();
+                                        if (e.key === 'Escape') cancelEdit();
+                                      }}
+                                      className="text-xs bg-accent/30 border border-border rounded px-2 py-1 outline-none focus:bg-accent/50 focus:ring-1 focus:ring-primary/20 w-[110px]"
+                                    />
+                                  ) : dueInfo && (
+                                    <>
+                                      <Clock className="w-3 h-3 text-muted-foreground/50" />
+                                      <span className={cn(
+                                        "text-xs font-medium",
+                                        dueInfo.isOverdue 
+                                          ? "text-red-600" 
+                                          : "text-muted-foreground/70"
+                                      )}>
+                                        {dueInfo.text}
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Action buttons - visible on hover */}
+                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                                {/* Description indicator/editor */}
+                                {task.description && editingTaskId !== task.id ? (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      startEditing(task, 'description');
+                                    }}
+                                    className="p-1 hover:bg-accent rounded text-muted-foreground hover:text-foreground"
+                                    title="Edit description"
+                                  >
+                                    <FileText className="w-3 h-3" />
+                                  </button>
+                                ) : !task.description && editingTaskId !== task.id && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      startEditing(task, 'description');
+                                    }}
+                                    className="p-1 hover:bg-accent rounded text-muted-foreground hover:text-foreground"
+                                    title="Add description"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                  </button>
                                 )}
                               </div>
                             </div>
+
+                            {/* Description editing area - appears below when editing */}
+                            {editingTaskId === task.id && editingField === 'description' && (
+                              <div className="mt-2 pl-8">
+                                <textarea
+                                  ref={editInputRef as React.RefObject<HTMLTextAreaElement>}
+                                  value={editingValue}
+                                  onChange={(e) => setEditingValue(e.target.value)}
+                                  onBlur={saveEdit}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && e.ctrlKey) saveEdit();
+                                    if (e.key === 'Escape') cancelEdit();
+                                  }}
+                                  placeholder="Add description..."
+                                  className="w-full text-sm text-muted-foreground bg-accent/20 border border-border rounded px-2 py-1 outline-none focus:bg-accent/30 resize-none"
+                                  rows={2}
+                                />
+                              </div>
+                            )}
                           </div>
                         </div>
                       );

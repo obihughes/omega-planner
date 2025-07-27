@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { ProjectTask, SubTask } from '@/types';
 import { 
   GripVertical, 
@@ -28,6 +28,7 @@ interface TaskItemProps {
   onStatusChange: (taskId: string, status: ProjectTask['status']) => void;
   onEdit: (task: ProjectTask) => void;
   onDelete: (taskId: string) => void;
+  onUpdateTask?: (taskId: string, updates: Partial<ProjectTask>) => void;
   onAddSubtask?: (taskId: string, subtask: Omit<SubTask, 'id' | 'createdAt' | 'updatedAt' | 'order'>) => void;
   onUpdateSubtask?: (taskId: string, subtaskId: string, updates: Partial<SubTask>) => void;
   onDeleteSubtask?: (taskId: string, subtaskId: string) => void;
@@ -104,6 +105,7 @@ export function TaskItem({
   onStatusChange, 
   onEdit, 
   onDelete,
+  onUpdateTask,
   onAddSubtask,
   onUpdateSubtask,
   onDeleteSubtask
@@ -112,6 +114,11 @@ export function TaskItem({
   const [showAddSubtask, setShowAddSubtask] = React.useState(false);
   const [newSubtaskTitle, setNewSubtaskTitle] = React.useState('');
   const [isAnimating, setIsAnimating] = React.useState(false);
+  
+  // Inline editing state
+  const [isEditingTitle, setIsEditingTitle] = React.useState(false);
+  const [editingValue, setEditingValue] = React.useState('');
+  const editInputRef = useRef<HTMLInputElement>(null);
   
   const {
     attributes,
@@ -202,6 +209,33 @@ export function TaskItem({
     if (!onDeleteSubtask) return;
     onDeleteSubtask(task.id, subtaskId);
   };
+
+  // Inline editing functions
+  const startEditingTitle = () => {
+    setIsEditingTitle(true);
+    setEditingValue(task.title);
+  };
+
+  const saveEditTitle = () => {
+    if (onUpdateTask && editingValue.trim() && editingValue.trim() !== task.title) {
+      onUpdateTask(task.id, { title: editingValue.trim() });
+    }
+    setIsEditingTitle(false);
+    setEditingValue('');
+  };
+
+  const cancelEditTitle = () => {
+    setIsEditingTitle(false);
+    setEditingValue('');
+  };
+
+  // Focus input when editing starts
+  useEffect(() => {
+    if (isEditingTitle && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
+    }
+  }, [isEditingTitle]);
 
   // Create confetti particles animation
   const createConfettiParticles = (button: HTMLElement) => {
@@ -319,12 +353,31 @@ export function TaskItem({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              <h4 className={cn(
-                "font-medium text-foreground mb-1 break-words leading-snug",
-                task.status === 'completed' && "line-through text-muted-foreground"
-              )}>
-                {task.title}
-              </h4>
+              {isEditingTitle ? (
+                <input
+                  type="text"
+                  value={editingValue}
+                  onChange={(e) => setEditingValue(e.target.value)}
+                  onBlur={saveEditTitle}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') saveEditTitle();
+                    if (e.key === 'Escape') cancelEditTitle();
+                  }}
+                  ref={editInputRef}
+                  className="w-full font-medium text-foreground mb-1 bg-transparent border-none outline-none focus:bg-accent/50 rounded px-1 -mx-1 leading-snug"
+                />
+              ) : (
+                <h4 
+                  className={cn(
+                    "font-medium text-foreground mb-1 break-words leading-snug cursor-pointer hover:bg-accent/20 rounded px-1 -mx-1 transition-colors",
+                    task.status === 'completed' && "line-through text-muted-foreground"
+                  )}
+                  onClick={startEditingTitle}
+                  title="Click to edit task name"
+                >
+                  {task.title}
+                </h4>
+              )}
               
               {task.description && (
                 <p className="text-sm text-muted-foreground break-words leading-relaxed">

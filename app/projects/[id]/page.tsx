@@ -372,6 +372,9 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
                       onStatusChange={handleTaskStatusChange}
                       onEdit={handleEditTask}
                       onDelete={handleDeleteTask}
+                      onUpdateTask={(taskId, updates) => {
+                        if (project) updateTaskInProject(project.id, taskId, updates);
+                      }}
                       onAddSubtask={(taskId, subtaskData) => {
                         if (project) addSubtaskToTask(project.id, taskId, subtaskData);
                       }}
