@@ -20,6 +20,8 @@ interface TaskWithProject extends ProjectTask {
   projectId: string;
   projectName: string;
   projectColor: string;
+  taskNumber: number;
+  totalTasksInProject: number;
 }
 
 // Removed ViewMode type - all functionality will be in a single view
@@ -72,11 +74,13 @@ export default function ProjectsTasksPage() {
     return projects
       .filter(p => !p.isDeleted)
       .flatMap(project => 
-        project.tasks.map(task => ({
+        project.tasks.map((task, index) => ({
           ...task,
           projectId: project.id,
           projectName: project.name,
-          projectColor: project.color
+          projectColor: project.color,
+          taskNumber: index + 1, // 1-based indexing
+          totalTasksInProject: project.tasks.length
         }))
       );
   }, [projects]);

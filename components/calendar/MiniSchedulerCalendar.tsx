@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Clock, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ProjectTask } from '@/types/projects';
@@ -31,6 +31,7 @@ export function MiniSchedulerCalendar({
   tasks = []
 }: MiniSchedulerCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date()); // Start with today selected
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
 
   // Get the first day of the current month and calculate calendar grid
@@ -63,12 +64,24 @@ export function MiniSchedulerCalendar({
     return days;
   }, [startDate, currentDate, tasks]);
 
+  // Get tasks for selected date
+  const selectedDateTasks = useMemo(() => {
+    if (!selectedDate) return [];
+    return tasks.filter(task => 
+      task.dueDate && new Date(task.dueDate).toDateString() === selectedDate.toDateString()
+    );
+  }, [selectedDate, tasks]);
+
   const navigateMonth = (direction: 'prev' | 'next') => {
     setCurrentDate(prev => {
       const newDate = new Date(prev);
       newDate.setMonth(prev.getMonth() + (direction === 'next' ? 1 : -1));
       return newDate;
     });
+  };
+
+  const handleDateClick = (date: Date) => {
+    setSelectedDate(date);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -92,6 +105,23 @@ export function MiniSchedulerCalendar({
     
     if (taskId && onDateDrop) {
       onDateDrop(date, taskId);
+    }
+  };
+
+  const formatDueDate = (dueDate: string) => {
+    const date = new Date(dueDate);
+    const today = new Date();
+    const diffTime = date.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) {
+      return { text: `${Math.abs(diffDays)} days overdue`, isOverdue: true };
+    } else if (diffDays === 0) {
+      return { text: 'Due today', isOverdue: false };
+    } else if (diffDays === 1) {
+      return { text: 'Due tomorrow', isOverdue: false };
+    } else {
+      return { text: `Due in ${diffDays} days`, isOverdue: false };
     }
   };
 
@@ -145,14 +175,16 @@ export function MiniSchedulerCalendar({
                 "hover:bg-accent/50 border border-transparent",
                 !day.isCurrentMonth && "text-muted-foreground/40",
                 day.isToday && "bg-primary/20 border-primary/30 font-medium",
+                selectedDate && selectedDate.toDateString() === day.date.toDateString() && "bg-primary/40 border-primary font-medium",
                 dragOverDate === day.date.toDateString() && "bg-primary/30 border-primary/50 border-dashed",
                 "flex items-center justify-center"
               )}
+              onClick={() => handleDateClick(day.date)}
               onDragOver={handleDragOver}
               onDragEnter={handleDragEnter(day.date)}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop(day.date)}
-              title={`Drop task on ${day.date.toLocaleDateString()}`}
+              title={`Click to view tasks for ${day.date.toLocaleDateString()}`}
             >
               <span className="relative z-10">
                 {day.date.getDate()}
@@ -166,6 +198,79 @@ export function MiniSchedulerCalendar({
           ))}
         </div>
       </div>
+      
+      {/* Selected Date Tasks */}
+      {selectedDate && (
+        <div className="border-t border-border">
+          <div className="p-3">
+            <div className="flex items-center gap-2 mb-3">
+              <Calendar className="w-4 h-4 text-muted-foreground" />
+              <h4 className="text-sm font-medium text-foreground">
+                {selectedDate.toLocaleDateString('en-US', { 
+                  weekday: 'short', 
+                  month: 'short', 
+                  day: 'numeric' 
+                })}
+              </h4>
+              <span className="text-xs text-muted-foreground">
+                ({selectedDateTasks.length} {selectedDateTasks.length === 1 ? 'task' : 'tasks'})
+              </span>
+            </div>
+            
+            {selectedDateTasks.length === 0 ? (
+              <div className="text-xs text-muted-foreground text-center py-4">
+                No tasks scheduled for this date
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {selectedDateTasks.map(task => {
+                  const dueInfo = formatDueDate(task.dueDate!);
+                  return (
+                    <div
+                      key={task.id}
+                      className="flex items-start gap-2 p-2 bg-muted/30 rounded-md text-xs"
+                    >
+                      <div 
+                        className="w-2 h-2 rounded-full flex-shrink-0 mt-1"
+                        style={{ backgroundColor: task.projectColor }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-foreground line-clamp-1">
+                          {task.title}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-muted-foreground">
+                            {task.projectName}
+                          </span>
+                          {task.priority && (
+                            <span className={cn(
+                              "px-1.5 py-0.5 rounded text-xs font-medium",
+                              task.priority === 'urgent' && "bg-red-100 text-red-700",
+                              task.priority === 'high' && "bg-orange-100 text-orange-700",
+                              task.priority === 'medium' && "bg-blue-100 text-blue-700",
+                              task.priority === 'low' && "bg-gray-100 text-gray-700"
+                            )}>
+                              {task.priority}
+                            </span>
+                          )}
+                        </div>
+                        {dueInfo.isOverdue && (
+                          <div className="flex items-center gap-1 mt-1 text-red-600">
+                            <AlertCircle className="w-3 h-3" />
+                            <span className="text-xs font-medium">
+                              {dueInfo.text}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       
       {/* Drop Zone Indicator */}
       <div className="p-2 border-t border-border/50">

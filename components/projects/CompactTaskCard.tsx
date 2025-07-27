@@ -17,6 +17,8 @@ interface TaskWithProject extends ProjectTask {
   projectId: string;
   projectName: string;
   projectColor: string;
+  taskNumber: number;
+  totalTasksInProject: number;
 }
 
 interface CompactTaskCardProps {
@@ -40,6 +42,8 @@ export function CompactTaskCard({
   const [isAnimating, setIsAnimating] = useState(false); // For checkbox bounce
   const [showConfetti, setShowConfetti] = useState(false); // For confetti background
   const [isDragging, setIsDragging] = useState(false); // For drag state
+  const [isFadingOut, setIsFadingOut] = useState(false); // For fade-out animation
+  const [pendingStatusChange, setPendingStatusChange] = useState<{ taskId: string; status: ProjectTask['status'] } | null>(null);
 
   const dueInfo = formatDueDate(task.dueDate);
 
@@ -95,6 +99,14 @@ export function CompactTaskCard({
     }
   }, [isEditingDescription]);
 
+  // Handle pending status changes after animation
+  useEffect(() => {
+    if (pendingStatusChange && !isFadingOut) {
+      onStatusChange(pendingStatusChange.taskId, pendingStatusChange.status);
+      setPendingStatusChange(null);
+    }
+  }, [pendingStatusChange, isFadingOut, onStatusChange]);
+
   const handleStatusToggle = (e: React.MouseEvent<HTMLButtonElement>) => {
     const newStatus = task.status === 'completed' ? 'todo' : 'completed';
     
@@ -106,13 +118,26 @@ export function CompactTaskCard({
       // Create confetti particles
       createConfettiParticles(e.currentTarget);
       
-      // Reset animation states
+      // Start fade-out animation before changing status
+      setIsFadingOut(true);
+      setPendingStatusChange({ taskId: task.id, status: newStatus });
+      
+      // Reset animation states and complete fade-out
       setTimeout(() => {
         setIsAnimating(false);
         setShowConfetti(false);
-      }, 1000);
+        setIsFadingOut(false);
+      }, 1200); // Extended duration for fade effect
+    } else {
+      // For uncompleting tasks, immediate change with fade-in
+      setIsFadingOut(true);
+      setPendingStatusChange({ taskId: task.id, status: newStatus });
+      
+      // Quick fade-in effect
+      setTimeout(() => {
+        setIsFadingOut(false);
+      }, 300);
     }
-    onStatusChange(task.id, newStatus);
   };
 
   // Create confetti particles animation
@@ -187,8 +212,10 @@ export function CompactTaskCard({
   return (
     <div 
       className={cn(
-        "group relative overflow-hidden",
-        isDragging && "opacity-50"
+        "group relative overflow-hidden transition-all duration-700 ease-in-out",
+        isDragging && "opacity-50",
+        isFadingOut && "opacity-20 scale-95 transform",
+        !isFadingOut && "opacity-100 scale-100"
       )}
       draggable={true}
       onDragStart={handleDragStart}
@@ -262,7 +289,14 @@ export function CompactTaskCard({
           )}
         </div>
 
-        {/* Column 3: Task title - Fixed width for 60 chars */}
+        {/* Column 3: Task Number - Fixed width */}
+        <div className="w-12 flex-shrink-0">
+          <span className="text-xs text-muted-foreground/60 font-mono">
+            {task.taskNumber}/{task.totalTasksInProject}
+          </span>
+        </div>
+
+        {/* Column 4: Task title - Fixed width for 60 chars */}
         <div className="w-96 flex-shrink-0">
           {isEditingTitle ? (
             <input
@@ -294,7 +328,7 @@ export function CompactTaskCard({
           )}
         </div>
 
-        {/* Column 4: Project name - Fixed width */}
+        {/* Column 5: Project name - Fixed width */}
         {showProject && (
           <div className="w-32 flex-shrink-0">
             <span className="text-xs text-muted-foreground/60 truncate block">
@@ -303,7 +337,7 @@ export function CompactTaskCard({
           </div>
         )}
 
-        {/* Column 5: Due date - Fixed width */}
+        {/* Column 6: Due date - Fixed width */}
         <div className="w-40 flex-shrink-0">
           {task.dueDate && dueInfo && (
             <div className="flex items-center gap-1" title={`Due: ${new Date(task.dueDate).toLocaleDateString()}`}>
@@ -318,7 +352,7 @@ export function CompactTaskCard({
           )}
         </div>
 
-        {/* Column 6: Created date - Fixed width */}
+        {/* Column 7: Created date - Fixed width */}
         <div className="w-28 flex-shrink-0">
           {task.createdAt && (
             <div className="flex items-center gap-1" title={`Created: ${new Date(task.createdAt).toLocaleDateString()}`}>
@@ -330,7 +364,7 @@ export function CompactTaskCard({
           )}
         </div>
 
-        {/* Column 7: Action buttons - Fixed width */}
+        {/* Column 8: Action buttons - Fixed width */}
         <div className="w-8 flex-shrink-0">
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             {/* Description button */}
