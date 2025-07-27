@@ -22,38 +22,24 @@ interface TaskWithProject extends ProjectTask {
   projectColor: string;
 }
 
-type ViewMode = 'all' | 'today' | 'scheduling';
+// Removed ViewMode type - all functionality will be in a single view
 
 export default function ProjectsTasksPage() {
-  const { isSchedulingMode, setIsSchedulingMode } = useViewMode();
+  const { /* isSchedulingMode, setIsSchedulingMode */ } = useViewMode(); // Keep useViewMode for potential future use or if other components still rely on it
   const { projects, updateTaskInProject, addTaskToProject } = useProjects();
   
-  // Main view mode state
-  const [viewMode, setViewMode] = useState<ViewMode>('all');
-  const [showQuickAdd, setShowQuickAdd] = useState(false);
-  const [quickAddTitle, setQuickAddTitle] = useState('');
+  // No longer using viewMode state as there's only one main view
   
-  // All Tasks filtering and grouping state
-  const [allTasksFilters, setAllTasksFilters] = useState({
-    search: '',
-    project: 'all',
-    priority: 'all',
-    status: 'all',
-    dueDate: 'all'
-  });
-  const [allTasksGroupBy, setAllTasksGroupBy] = useState<'none' | 'project' | 'status' | 'priority' | 'dueDate'>('none');
-  const [allTasksSortBy, setAllTasksSortBy] = useState<'title' | 'created' | 'dueDate' | 'priority'>('priority');
-  
-  // Today mode filters
+  // Today mode filters (retained for 'Today' button functionality)
   const [showCompleted, setShowCompleted] = useState(false);
   const [priorityFilter, setPriorityFilter] = useState<'all' | 'urgent' | 'high' | 'medium' | 'low'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'todo' | 'in-progress' | 'blocked'>('all');
   
-  // Edit modal state for today mode
+  // Edit modal state for today mode (now used for all tasks)
   const [editingTask, setEditingTask] = useState<TaskWithProject | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   
-  // Scheduling mode filters and sorting
+  // Scheduling mode filters and sorting (will be integrated into All Tasks filters and sorting)
   const [schedulingSort, setSchedulingSort] = useState<'priority' | 'dueDate' | 'title' | 'created'>('priority');
   const [schedulingFilter, setSchedulingFilter] = useState<{
     project: string;
@@ -64,6 +50,22 @@ export default function ProjectsTasksPage() {
     priority: 'all',
     status: 'all'
   });
+
+  // All Tasks filtering and grouping state
+  const [allTasksFilters, setAllTasksFilters] = useState({
+    search: '',
+    project: 'all',
+    priority: 'all',
+    status: 'all',
+    dueDate: 'all'
+  });
+  const [allTasksGroupBy, setAllTasksGroupBy] = useState<'none' | 'project' | 'status' | 'priority' | 'dueDate'>('none');
+  const [allTasksSubGroupBy, setAllTasksSubGroupBy] = useState<string>('all');
+  const [allTasksSortBy, setAllTasksSortBy] = useState<'dueDate' | 'created' | 'completion' | 'priority'>('priority');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  // Add task modal state
+  const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
 
   // Get all tasks with project info
   const allTasks = useMemo((): TaskWithProject[] => {
@@ -79,7 +81,7 @@ export default function ProjectsTasksPage() {
       );
   }, [projects]);
 
-  // Filter tasks for Today Mode (rich functionality)
+  // Filter tasks for Today Mode (rich functionality) - Retained for logic within main filter
   const todayTasks = useMemo(() => {
     const todayKey = getTodayDateKey();
     
@@ -211,45 +213,91 @@ export default function ProjectsTasksPage() {
     return filtered;
   }, [allTasks, allTasksFilters]);
 
+  // Sorting function
+  const sortTasks = (tasks: TaskWithProject[], sortBy: typeof allTasksSortBy, order: typeof sortOrder) => {
+    return [...tasks].sort((a, b) => {
+      let compareValue = 0;
+      
+      switch (sortBy) {
+        case 'dueDate':
+          if (!a.dueDate && !b.dueDate) compareValue = 0;
+          else if (!a.dueDate) compareValue = 1;
+          else if (!b.dueDate) compareValue = -1;
+          else compareValue = new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+          break;
+        case 'created':
+          compareValue = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+        case 'completion':
+          const statusOrder = { 'completed': 1, 'blocked': 2, 'in-progress': 3, 'todo': 4 };
+          compareValue = (statusOrder[a.status] || 0) - (statusOrder[b.status] || 0);
+          break;
+        case 'priority':
+        default:
+          const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
+          compareValue = (priorityOrder[a.priority] || 0) - (priorityOrder[b.priority] || 0);
+          break;
+      }
+      
+      return order === 'asc' ? compareValue : -compareValue;
+    });
+  };
+
   // Grouped tasks for All Tasks view
   const groupedAllTasks = useMemo(() => {
     if (allTasksGroupBy === 'none') {
       return [{
         id: 'all',
         name: 'All Tasks',
-        tasks: filteredAllTasks.sort((a, b) => {
-          switch (allTasksSortBy) {
-            case 'title':
-              return a.title.localeCompare(b.title);
-            case 'created':
-              return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-            case 'dueDate':
-              if (!a.dueDate && !b.dueDate) return 0;
-              if (!a.dueDate) return 1;
-              if (!b.dueDate) return -1;
-              return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-            case 'priority':
-            default:
-              // Sort by status first (incomplete first)
-              if (a.status === 'completed' && b.status !== 'completed') return 1;
-              if (a.status !== 'completed' && b.status === 'completed') return -1;
-              
-              // Then by priority
-              const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
-              const priorityDiff = (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
-              if (priorityDiff !== 0) return priorityDiff;
-              
-              // Finally by creation date
-              return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-          }
-        })
+        tasks: sortTasks(filteredAllTasks, allTasksSortBy, sortOrder)
       }];
+    }
+
+    // First, filter by subgrouping if selected
+    let tasksToGroup = filteredAllTasks;
+    if (allTasksSubGroupBy !== 'all') {
+      switch (allTasksGroupBy) {
+        case 'project':
+          tasksToGroup = filteredAllTasks.filter(task => task.projectId === allTasksSubGroupBy);
+          break;
+        case 'status':
+          tasksToGroup = filteredAllTasks.filter(task => task.status === allTasksSubGroupBy);
+          break;
+        case 'priority':
+          tasksToGroup = filteredAllTasks.filter(task => task.priority === allTasksSubGroupBy);
+          break;
+        case 'dueDate':
+          // Handle due date filtering logic
+          const today = new Date();
+          const todayStr = today.toISOString().split('T')[0];
+          tasksToGroup = filteredAllTasks.filter(task => {
+            if (allTasksSubGroupBy === 'none') return !task.dueDate;
+            if (allTasksSubGroupBy === 'overdue') return task.dueDate && task.dueDate < todayStr;
+            if (allTasksSubGroupBy === 'today') return task.dueDate === todayStr;
+            if (allTasksSubGroupBy === 'thisWeek') {
+              if (!task.dueDate) return false;
+              const dueDate = new Date(task.dueDate);
+              const weekFromNow = new Date(today);
+              weekFromNow.setDate(today.getDate() + 7);
+              return dueDate >= today && dueDate <= weekFromNow;
+            }
+            if (allTasksSubGroupBy === 'later') {
+              if (!task.dueDate) return false;
+              const dueDate = new Date(task.dueDate);
+              const weekFromNow = new Date(today);
+              weekFromNow.setDate(today.getDate() + 7);
+              return dueDate > weekFromNow;
+            }
+            return true;
+          });
+          break;
+      }
     }
 
     // Group tasks
     const groups = new Map<string, TaskWithProject[]>();
     
-    filteredAllTasks.forEach(task => {
+    tasksToGroup.forEach(task => {
       let groupKey = '';
       let groupName = '';
       
@@ -290,6 +338,7 @@ export default function ProjectsTasksPage() {
             }
           }
           break;
+
       }
       
       if (!groups.has(groupKey)) {
@@ -302,21 +351,58 @@ export default function ProjectsTasksPage() {
       id: groupKey,
       name: groupKey === 'none' ? 'No Due Date' : 
             groupKey === 'overdue' ? 'Overdue' :
-            groupKey === 'today' ? 'Due Today' :
-            groupKey === 'thisWeek' ? 'This Week' :
+            groupKey === 'today' ? 'Due Today' : // Reusing 'today' key for created date too
+            groupKey === 'thisWeek' ? 'This Week' : 
+            groupKey === 'thisMonth' ? 'This Month' : 
             groupKey === 'later' ? 'Later' :
+            groupKey === 'older' ? 'Older' :
             tasks[0]?.projectName || tasks[0]?.status || groupKey,
-      tasks: tasks.sort((a, b) => {
-        // Always sort by priority and creation date within groups
-        const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
-        const priorityDiff = (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
-        if (priorityDiff !== 0) return priorityDiff;
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      })
+      tasks: sortTasks(tasks, allTasksSortBy, sortOrder)
     }));
-  }, [filteredAllTasks, allTasksGroupBy, allTasksSortBy]);
+  }, [filteredAllTasks, allTasksGroupBy, allTasksSubGroupBy, allTasksSortBy, sortOrder]);
 
-  // Filtered and sorted tasks for Scheduling Mode
+  // Get subgrouping options based on current grouping
+  const getSubGroupingOptions = () => {
+    switch (allTasksGroupBy) {
+      case 'project':
+        return [
+          { value: 'all', label: 'All Projects' },
+          ...projects.filter(p => !p.isDeleted).map(project => ({
+            value: project.id,
+            label: project.name
+          }))
+        ];
+      case 'status':
+        return [
+          { value: 'all', label: 'All Statuses' },
+          { value: 'todo', label: 'To Do' },
+          { value: 'in-progress', label: 'In Progress' },
+          { value: 'blocked', label: 'Blocked' },
+          { value: 'completed', label: 'Completed' }
+        ];
+      case 'priority':
+        return [
+          { value: 'all', label: 'All Priorities' },
+          { value: 'urgent', label: 'Urgent' },
+          { value: 'high', label: 'High' },
+          { value: 'medium', label: 'Medium' },
+          { value: 'low', label: 'Low' }
+        ];
+      case 'dueDate':
+        return [
+          { value: 'all', label: 'All Due Dates' },
+          { value: 'overdue', label: 'Overdue' },
+          { value: 'today', label: 'Due Today' },
+          { value: 'thisWeek', label: 'This Week' },
+          { value: 'later', label: 'Later' },
+          { value: 'none', label: 'No Due Date' }
+        ];
+      default:
+        return [];
+    }
+  };
+
+  // Filtered and sorted tasks for Scheduling Mode (will be removed as a separate view)
   const schedulingTasks = useMemo(() => {
     let filtered = allTasks;
     
@@ -364,7 +450,7 @@ export default function ProjectsTasksPage() {
     }
   };
 
-  // Handle task scheduling via drag and drop
+  // Handle task scheduling via drag and drop (will be reused)
   const handleTaskSchedule = (date: Date, taskId: string) => {
     const task = allTasks.find(t => t.id === taskId);
     if (task) {
@@ -379,32 +465,9 @@ export default function ProjectsTasksPage() {
     }
   };
 
-  // Handle quick add task
-  const handleQuickAdd = () => {
-    if (!quickAddTitle.trim()) return;
-    
-    // Add to first available project with today's due date if in today mode
-    const firstProject = projects.find(p => !p.isDeleted);
-    if (firstProject) {
-      const taskData: any = {
-        title: quickAddTitle.trim(),
-        status: 'todo',
-        priority: 'medium'
-      };
-      
-      // If in today mode, set due date to today
-      if (viewMode === 'today') {
-        taskData.dueDate = new Date().toISOString().split('T')[0];
-      }
-      
-      addTaskToProject(firstProject.id, taskData);
-    }
-    
-    setQuickAddTitle('');
-    setShowQuickAdd(false);
-  };
 
-  // Handle edit task for today mode
+
+  // Handle edit task (used for all tasks now)
   const handleEditTask = (task: TaskWithProject) => {
     setEditingTask(task);
     setIsEditModalOpen(true);
@@ -419,7 +482,7 @@ export default function ProjectsTasksPage() {
     }
   };
 
-  // Enhanced Today Task Card with animations
+  // Enhanced Today Task Card with animations (will be moved to CompactTaskCard)
   const TodayTaskCard = ({ task }: { task: TaskWithProject }) => {
     const [isAnimating, setIsAnimating] = useState(false);
     const [showConfetti, setShowConfetti] = useState(false);
@@ -635,7 +698,7 @@ export default function ProjectsTasksPage() {
           
           <div className="flex items-center gap-2">
             <Button
-              onClick={() => setShowQuickAdd(true)}
+              onClick={() => setIsAddTaskModalOpen(true)}
               size="sm"
               className="flex items-center gap-2"
             >
@@ -645,7 +708,8 @@ export default function ProjectsTasksPage() {
           </div>
         </div>
 
-        {/* Persistent View Mode Tabs */}
+        {/* Removed Persistent View Mode Tabs */}
+        {/* 
         <div className="flex items-center bg-muted/30 rounded-lg p-1 w-fit">
           <button
             onClick={() => setViewMode('all')}
@@ -684,6 +748,7 @@ export default function ProjectsTasksPage() {
             Schedule
           </button>
         </div>
+        */}
       </div>
     </div>
   );
@@ -694,230 +759,18 @@ export default function ProjectsTasksPage() {
         {/* Persistent Header */}
         <TasksHeader />
 
-        {/* Content Area */}
-        <div className="flex-1 overflow-hidden">
-          {viewMode === 'today' && (
-            <div className="container mx-auto px-6 py-6 h-full overflow-y-auto">
-              {/* Today Mode Filters */}
-              <div className="flex items-center gap-2 mb-6">
-                <div className="flex items-center gap-4">
-                  <span className="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-sm font-medium">
-                    {incompleteTasks.length} pending • {completedTasks.length} completed
-                  </span>
-                </div>
+        {/* Content Area - Always All Tasks View */}
+        <div className="flex-1 overflow-hidden flex">
+          <div className="container mx-auto px-6 py-6 h-full overflow-y-auto flex-1">
+            {/* Filtering and Grouping Controls */}
+            <div className="mb-6">
+              {/* Filter Controls - Restructured into two clear rows */}
+              <div className="p-4 bg-muted/20 rounded-lg space-y-4">
                 
-                {/* Filters */}
-                <div className="flex items-center gap-2 ml-auto">
-                  {/* Show Completed Toggle */}
-                  <label className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={showCompleted}
-                      onChange={(e) => setShowCompleted(e.target.checked)}
-                      className="rounded border-gray-300"
-                    />
-                    <span>Show Completed</span>
-                  </label>
-
-                  {/* Priority Filter */}
-                  <select
-                    value={priorityFilter}
-                    onChange={(e) => setPriorityFilter(e.target.value as any)}
-                    className="px-2 py-1 text-xs bg-background border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
-                  >
-                    <option value="all">All Priorities</option>
-                    <option value="urgent">Urgent</option>
-                    <option value="high">High</option>
-                    <option value="medium">Medium</option>
-                    <option value="low">Low</option>
-                  </select>
-
-                  {/* Status Filter */}
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value as any)}
-                    className="px-2 py-1 text-xs bg-background border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
-                  >
-                    <option value="all">All Status</option>
-                    <option value="todo">To Do</option>
-                    <option value="in-progress">In Progress</option>
-                    <option value="blocked">Blocked</option>
-                  </select>
-
-                  {/* Clear Filters */}
-                  {(priorityFilter !== 'all' || statusFilter !== 'all' || showCompleted) && (
-                    <button
-                      onClick={() => {
-                        setPriorityFilter('all');
-                        setStatusFilter('all');
-                        setShowCompleted(false);
-                      }}
-                      className="p-1 text-xs text-muted-foreground hover:text-foreground"
-                      title="Clear filters"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="max-w-4xl mx-auto">
-                {/* Incomplete Tasks */}
-                {incompleteTasks.length > 0 && (
-                  <div className="space-y-3 mb-8">
-                    {incompleteTasks.map(task => (
-                      <TodayTaskCard key={task.id} task={task} />
-                    ))}
-                  </div>
-                )}
-
-                {/* Completed Tasks */}
-                {completedTasks.length > 0 && (
-                  <div className="space-y-3">
-                    <h3 className="text-sm font-medium text-muted-foreground border-t pt-4">
-                      Completed Today ({completedTasks.length})
-                    </h3>
-                    {completedTasks.map(task => (
-                      <TodayTaskCard key={task.id} task={task} />
-                    ))}
-                  </div>
-                )}
-
-                {/* Empty State */}
-                {incompleteTasks.length === 0 && completedTasks.length === 0 && (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <CheckCircle2 className="w-12 h-12 mx-auto mb-4 text-green-500" />
-                    <h3 className="text-lg font-medium mb-2">All caught up!</h3>
-                    <p>No tasks due today. Great work!</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Edit Task Modal */}
-              {editingTask && (
-                <ProjectTaskFormModal
-                  isOpen={isEditModalOpen}
-                  onClose={() => {
-                    setIsEditModalOpen(false);
-                    setEditingTask(null);
-                  }}
-                  onSave={handleSaveEditedTask}
-                  taskToEdit={editingTask}
-                />
-              )}
-            </div>
-          )}
-
-          {viewMode === 'scheduling' && (
-            <div className="container mx-auto px-6 py-6 h-full">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
-                  <span className="bg-primary/10 text-primary px-3 py-1.5 rounded-full text-sm font-medium">
-                    {schedulingTasks.length} tasks
-                  </span>
-                </div>
-              </div>
-
-              {/* Controls Panel */}
-              <div className="flex items-center gap-4 mb-6 p-4 bg-muted/30 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <SortAsc className="w-4 h-4 text-muted-foreground" />
-                  <select
-                    value={schedulingSort}
-                    onChange={(e) => setSchedulingSort(e.target.value as any)}
-                    className="px-2 py-1 text-sm bg-background border border-border rounded"
-                  >
-                    <option value="priority">Priority</option>
-                    <option value="dueDate">Due Date</option>
-                    <option value="title">Title</option>
-                    <option value="created">Created</option>
-                  </select>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <Filter className="w-4 h-4 text-muted-foreground" />
-                  <select
-                    value={schedulingFilter.project}
-                    onChange={(e) => setSchedulingFilter(prev => ({ ...prev, project: e.target.value }))}
-                    className="px-2 py-1 text-sm bg-background border border-border rounded"
-                  >
-                    <option value="all">All Projects</option>
-                    {projects.filter(p => !p.isDeleted).map(project => (
-                      <option key={project.id} value={project.id}>{project.name}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <select
-                  value={schedulingFilter.priority}
-                  onChange={(e) => setSchedulingFilter(prev => ({ ...prev, priority: e.target.value }))}
-                  className="px-2 py-1 text-sm bg-background border border-border rounded"
-                >
-                  <option value="all">All Priorities</option>
-                  <option value="urgent">Urgent</option>
-                  <option value="high">High</option>
-                  <option value="medium">Medium</option>
-                  <option value="low">Low</option>
-                </select>
-                
-                <select
-                  value={schedulingFilter.status}
-                  onChange={(e) => setSchedulingFilter(prev => ({ ...prev, status: e.target.value }))}
-                  className="px-2 py-1 text-sm bg-background border border-border rounded"
-                >
-                  <option value="all">All Status</option>
-                  <option value="todo">To Do</option>
-                  <option value="in-progress">In Progress</option>
-                  <option value="blocked">Blocked</option>
-                  <option value="completed">Completed</option>
-                </select>
-              </div>
-
-              <div className="flex gap-6 h-[calc(100vh-280px)]">
-                {/* Tasks Column */}
-                <div className="flex-1 overflow-y-auto">
-                  <div className="space-y-3">
-                    <h3 className="text-lg font-medium text-foreground mb-4">
-                      Drag tasks to schedule ({schedulingTasks.length})
-                    </h3>
-                    {schedulingTasks.length === 0 ? (
-                      <div className="text-center py-12 text-muted-foreground">
-                        No tasks match your filters
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {schedulingTasks.map(task => (
-                          <DraggableTaskCard
-                            key={task.id}
-                            task={task}
-                            onStatusChange={handleTaskStatusChange}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Calendar Sidebar */}
-                <div className="w-80 flex-shrink-0">
-                  <MiniSchedulerCalendar
-                    onDateDrop={handleTaskSchedule}
-                    tasks={schedulingTasks}
-                    className="sticky top-0"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {viewMode === 'all' && (
-            <div className="container mx-auto px-6 py-6 h-full overflow-y-auto">
-              {/* Filtering and Grouping Controls */}
-              <div className="max-w-5xl mx-auto mb-6">
-                {/* Filter Controls - Always Visible */}
-                <div className="flex items-center gap-4 mb-4 p-4 bg-muted/20 rounded-lg">
+                {/* Row 1: Search, Grouping, Subgrouping, and Today Button */}
+                <div className="flex items-center gap-4 flex-wrap">
                   {/* Search */}
-                  <div className="relative flex-1 max-w-xs">
+                  <div className="relative flex-1 min-w-[200px] max-w-xs">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <input
                       type="text"
@@ -928,203 +781,257 @@ export default function ProjectsTasksPage() {
                     />
                   </div>
 
-                  {/* Project Filter */}
-                  <select
-                    value={allTasksFilters.project}
-                    onChange={(e) => setAllTasksFilters(prev => ({ ...prev, project: e.target.value }))}
-                    className="px-3 py-2 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  >
-                    <option value="all">All Projects</option>
-                    {projects.filter(p => !p.isDeleted).map(project => (
-                      <option key={project.id} value={project.id}>{project.name}</option>
-                    ))}
-                  </select>
-
-                  {/* Priority Filter */}
-                  <select
-                    value={allTasksFilters.priority}
-                    onChange={(e) => setAllTasksFilters(prev => ({ ...prev, priority: e.target.value }))}
-                    className="px-3 py-2 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  >
-                    <option value="all">All Priorities</option>
-                    <option value="urgent">Urgent</option>
-                    <option value="high">High</option>
-                    <option value="medium">Medium</option>
-                    <option value="low">Low</option>
-                  </select>
-
-                  {/* Status Filter */}
-                  <select
-                    value={allTasksFilters.status}
-                    onChange={(e) => setAllTasksFilters(prev => ({ ...prev, status: e.target.value }))}
-                    className="px-3 py-2 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  >
-                    <option value="all">All Status</option>
-                    <option value="todo">To Do</option>
-                    <option value="in-progress">In Progress</option>
-                    <option value="blocked">Blocked</option>
-                    <option value="completed">Completed</option>
-                  </select>
-
-                  {/* Due Date Filter */}
-                  <select
-                    value={allTasksFilters.dueDate}
-                    onChange={(e) => setAllTasksFilters(prev => ({ ...prev, dueDate: e.target.value }))}
-                    className="px-3 py-2 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  >
-                    <option value="all">All Due Dates</option>
-                    <option value="overdue">Overdue</option>
-                    <option value="today">Due Today</option>
-                    <option value="thisWeek">This Week</option>
-                    <option value="none">No Due Date</option>
-                  </select>
-
-                  {/* Clear Filters */}
-                  {(allTasksFilters.search || allTasksFilters.project !== 'all' || allTasksFilters.priority !== 'all' || 
-                    allTasksFilters.status !== 'all' || allTasksFilters.dueDate !== 'all') && (
-                    <button
-                      onClick={() => setAllTasksFilters({ search: '', project: 'all', priority: 'all', status: 'all', dueDate: 'all' })}
-                      className="p-2 text-muted-foreground hover:text-foreground"
-                      title="Clear all filters"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-
-                {/* Grouping and Sorting Controls */}
-                <div className="flex items-center gap-4">
-                  {/* Group By Dropdown */}
-                  <div className="relative">
+                  {/* Main Grouping */}
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-muted-foreground">Group by:</label>
                     <select
                       value={allTasksGroupBy}
-                      onChange={(e) => setAllTasksGroupBy(e.target.value as any)}
-                      className="pl-3 pr-8 py-2 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none"
-                    >
-                      <option value="none">No Grouping</option>
-                      <option value="project">Group by Project</option>
-                      <option value="status">Group by Status</option>
-                      <option value="priority">Group by Priority</option>
-                      <option value="dueDate">Group by Due Date</option>
-                    </select>
-                    <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                  </div>
-
-                  {/* Sort By */}
-                  <div className="flex items-center gap-2">
-                    <SortAsc className="w-4 h-4 text-muted-foreground" />
-                    <select
-                      value={allTasksSortBy}
-                      onChange={(e) => setAllTasksSortBy(e.target.value as any)}
+                      onChange={(e) => {
+                        setAllTasksGroupBy(e.target.value as any);
+                        setAllTasksSubGroupBy('all'); // Reset subgrouping when main grouping changes
+                      }}
                       className="px-3 py-2 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20"
                     >
+                      <option value="none">None</option>
+                      <option value="project">Project</option>
+                      <option value="status">Status</option>
                       <option value="priority">Priority</option>
-                      <option value="title">Title</option>
-                      <option value="created">Created Date</option>
                       <option value="dueDate">Due Date</option>
                     </select>
                   </div>
 
+                  {/* Subgrouping - Only show if main grouping is selected */}
+                  {allTasksGroupBy !== 'none' && (
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm text-muted-foreground">Then by:</label>
+                      <select
+                        value={allTasksSubGroupBy}
+                        onChange={(e) => setAllTasksSubGroupBy(e.target.value)}
+                        className="px-3 py-2 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      >
+                        {getSubGroupingOptions().map(option => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Today Button - Quick filter */}
+                  <Button
+                    onClick={() => {
+                      setAllTasksFilters(prev => ({ ...prev, dueDate: 'today' }));
+                    }}
+                    variant={allTasksFilters.dueDate === 'today' ? 'secondary' : 'outline'}
+                    size="sm"
+                    className="flex items-center gap-2 ml-auto"
+                  >
+                    <Clock className="w-4 h-4" />
+                    Today
+                  </Button>
+                </div>
+
+                {/* Row 2: Sorting Options */}
+                <div className="flex items-center gap-4 flex-wrap">
+                  <label className="text-sm text-muted-foreground">Sort by:</label>
+                  
+                  {/* Due Date Sort */}
+                  <Button
+                    onClick={() => {
+                      if (allTasksSortBy === 'dueDate') {
+                        setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                      } else {
+                        setAllTasksSortBy('dueDate');
+                        setSortOrder('asc');
+                      }
+                    }}
+                    variant={allTasksSortBy === 'dueDate' ? 'secondary' : 'outline'}
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    Due Date
+                    {allTasksSortBy === 'dueDate' && (
+                      <span className="text-xs">({sortOrder === 'asc' ? 'Earliest' : 'Latest'})</span>
+                    )}
+                  </Button>
+
+                  {/* Created Sort */}
+                  <Button
+                    onClick={() => {
+                      if (allTasksSortBy === 'created') {
+                        setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                      } else {
+                        setAllTasksSortBy('created');
+                        setSortOrder('desc');
+                      }
+                    }}
+                    variant={allTasksSortBy === 'created' ? 'secondary' : 'outline'}
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    Created
+                    {allTasksSortBy === 'created' && (
+                      <span className="text-xs">({sortOrder === 'desc' ? 'Newest' : 'Oldest'})</span>
+                    )}
+                  </Button>
+
+                  {/* Completion Sort */}
+                  <Button
+                    onClick={() => {
+                      if (allTasksSortBy === 'completion') {
+                        setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                      } else {
+                        setAllTasksSortBy('completion');
+                        setSortOrder('desc');
+                      }
+                    }}
+                    variant={allTasksSortBy === 'completion' ? 'secondary' : 'outline'}
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    Completion
+                    {allTasksSortBy === 'completion' && (
+                      <span className="text-xs">({sortOrder === 'desc' ? 'Incomplete First' : 'Complete First'})</span>
+                    )}
+                  </Button>
+
+                  {/* Priority Sort */}
+                  <Button
+                    onClick={() => {
+                      if (allTasksSortBy === 'priority') {
+                        setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                      } else {
+                        setAllTasksSortBy('priority');
+                        setSortOrder('desc');
+                      }
+                    }}
+                    variant={allTasksSortBy === 'priority' ? 'secondary' : 'outline'}
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    Priority
+                    {allTasksSortBy === 'priority' && (
+                      <span className="text-xs">({sortOrder === 'desc' ? 'High to Low' : 'Low to High'})</span>
+                    )}
+                  </Button>
+
+                  {/* Clear Filters */}
+                  {(allTasksFilters.search || allTasksFilters.dueDate !== 'all' || allTasksGroupBy !== 'none') && (
+                    <button
+                      onClick={() => {
+                        setAllTasksFilters({ search: '', project: 'all', priority: 'all', status: 'all', dueDate: 'all' });
+                        setAllTasksGroupBy('none');
+                        setAllTasksSubGroupBy('all');
+                      }}
+                      className="p-2 text-muted-foreground hover:text-foreground ml-auto"
+                      title="Clear all filters and grouping"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+
                   {/* Task Count */}
-                  <span className="text-sm text-muted-foreground ml-auto">
+                  <span className="text-sm text-muted-foreground">
                     {filteredAllTasks.length} of {allTasks.length} tasks
                   </span>
                 </div>
               </div>
-
-              {/* Tasks List */}
-              <div className="max-w-5xl mx-auto space-y-6">
-                {filteredAllTasks.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    {allTasks.length === 0 ? (
-                      <>
-                        <h3 className="text-lg font-medium mb-2">No tasks yet</h3>
-                        <p>Create your first task to get started!</p>
-                      </>
-                    ) : (
-                      <>
-                        <h3 className="text-lg font-medium mb-2">No tasks match your filters</h3>
-                        <p>Try adjusting your search or filter criteria.</p>
-                      </>
-                    )}
-                  </div>
-                ) : (
-                  groupedAllTasks.map(group => (
-                    <div key={group.id}>
-                      {allTasksGroupBy !== 'none' && (
-                        <h2 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                          {group.name}
-                          <span className="text-sm font-normal text-muted-foreground">
-                            ({group.tasks.length})
-                          </span>
-                        </h2>
-                      )}
-                      <div className="space-y-2">
-                        {group.tasks.map(task => (
-                          <CompactTaskCard
-                            key={task.id}
-                            task={task}
-                            onStatusChange={handleTaskStatusChange}
-                            onUpdateTask={(taskId, updates) => {
-                              updateTaskInProject(task.projectId, taskId, updates);
-                            }}
-                            showProject={allTasksGroupBy !== 'project'}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
             </div>
-          )}
-        </div>
 
-        {/* Quick Add Modal */}
-        {showQuickAdd && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md mx-4">
-              <h3 className="text-lg font-semibold text-foreground mb-4">
-                {viewMode === 'today' ? 'Add Task for Today' : 'Quick Add Task'}
-              </h3>
-              
-              <div className="space-y-4">
-                <input
-                  type="text"
-                  placeholder="Task title..."
-                  value={quickAddTitle}
-                  onChange={(e) => setQuickAddTitle(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleQuickAdd();
-                    if (e.key === 'Escape') {
-                      setShowQuickAdd(false);
-                      setQuickAddTitle('');
-                    }
-                  }}
-                  className="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                  autoFocus
-                />
-                
-                <div className="flex items-center justify-end gap-3">
-                  <Button 
-                    variant="ghost" 
-                    onClick={() => {
-                      setShowQuickAdd(false);
-                      setQuickAddTitle('');
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    onClick={handleQuickAdd}
-                    disabled={!quickAddTitle.trim()}
-                  >
-                    Add Task
-                  </Button>
+            {/* Tasks List */}
+            <div className="max-w-5xl mx-auto space-y-6">
+              {filteredAllTasks.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  {allTasks.length === 0 ? (
+                    <>
+                      <h3 className="text-lg font-medium mb-2">No tasks yet</h3>
+                      <p>Create your first task to get started!</p>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="text-lg font-medium mb-2">No tasks match your filters</h3>
+                      <p>Try adjusting your search or filter criteria.</p>
+                    </>
+                  )}
                 </div>
-              </div>
+              ) : (
+                groupedAllTasks.map(group => (
+                  <div key={group.id}>
+                    {allTasksGroupBy !== 'none' && (
+                      <h2 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                        {group.name}
+                        <span className="text-sm font-normal text-muted-foreground">
+                          ({group.tasks.length})
+                        </span>
+                      </h2>
+                    )}
+                    <div className="space-y-2">
+                      {group.tasks.map(task => (
+                        <CompactTaskCard
+                          key={task.id}
+                          task={task}
+                          onStatusChange={handleTaskStatusChange}
+                          onUpdateTask={(taskId, updates) => {
+                            updateTaskInProject(task.projectId, taskId, updates);
+                          }}
+                          showProject={allTasksGroupBy !== 'project'}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
+
+          {/* Scheduling Calendar Sidebar */}
+          <div className="w-80 flex-shrink-0 border-l border-border/20 p-6 overflow-y-auto">
+            <MiniSchedulerCalendar
+              onDateDrop={handleTaskSchedule}
+              tasks={allTasks} // Pass all tasks for calendar context
+              className="sticky top-0"
+            />
+          </div>
+        </div>
+
+        {/* Add Task Modal */}
+        {isAddTaskModalOpen && (
+          <ProjectTaskFormModal
+            isOpen={isAddTaskModalOpen}
+            onClose={() => setIsAddTaskModalOpen(false)}
+            onSave={(taskData, isNew) => {
+              if (isNew && taskData.title) {
+                // Add to first available project
+                const firstProject = projects.find(p => !p.isDeleted);
+                if (firstProject) {
+                  const newTaskData = {
+                    title: taskData.title,
+                    description: taskData.description || '',
+                    status: taskData.status || 'todo' as const,
+                    priority: taskData.priority || 'medium' as const,
+                    dueDate: taskData.dueDate,
+                    startDate: taskData.startDate
+                  };
+                  addTaskToProject(firstProject.id, newTaskData);
+                }
+              }
+              setIsAddTaskModalOpen(false);
+            }}
+          />
+        )}
+
+        {/* Edit Task Modal */}
+        {isEditModalOpen && editingTask && (
+          <ProjectTaskFormModal
+            isOpen={isEditModalOpen}
+            onClose={() => {
+              setIsEditModalOpen(false);
+              setEditingTask(null);
+            }}
+            onSave={handleSaveEditedTask}
+            taskToEdit={editingTask}
+          />
         )}
       </div>
     </AppLayout>

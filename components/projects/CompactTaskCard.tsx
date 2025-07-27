@@ -26,17 +26,20 @@ interface CompactTaskCardProps {
   showProject?: boolean;
 }
 
-export function CompactTaskCard({ 
-  task, 
-  onStatusChange, 
+export function CompactTaskCard({
+  task,
+  onStatusChange,
   onUpdateTask,
-  showProject = true 
+  showProject = true
 }: CompactTaskCardProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [editingValue, setEditingValue] = useState('');
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const [isAnimating, setIsAnimating] = useState(false); // For checkbox bounce
+  const [showConfetti, setShowConfetti] = useState(false); // For confetti background
+  const [isDragging, setIsDragging] = useState(false); // For drag state
 
   const dueInfo = formatDueDate(task.dueDate);
 
@@ -92,53 +95,175 @@ export function CompactTaskCard({
     }
   }, [isEditingDescription]);
 
-  const handleStatusToggle = () => {
+  const handleStatusToggle = (e: React.MouseEvent<HTMLButtonElement>) => {
     const newStatus = task.status === 'completed' ? 'todo' : 'completed';
+    
+    // Trigger exciting animation when completing a task
+    if (newStatus === 'completed') {
+      setIsAnimating(true);
+      setShowConfetti(true);
+      
+      // Create confetti particles
+      createConfettiParticles(e.currentTarget);
+      
+      // Reset animation states
+      setTimeout(() => {
+        setIsAnimating(false);
+        setShowConfetti(false);
+      }, 1000);
+    }
     onStatusChange(task.id, newStatus);
   };
 
+  // Create confetti particles animation
+  const createConfettiParticles = (button: HTMLElement) => {
+    const colors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
+    const rect = button.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    for (let i = 0; i < 12; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'confetti-particle'; // Ensure you have CSS for this class
+      particle.style.cssText = `
+        position: fixed;
+        width: 6px;
+        height: 6px;
+        background: ${colors[Math.floor(Math.random() * colors.length)]};
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 9999;
+        left: ${centerX}px;
+        top: ${centerY}px;
+        transform-origin: center;
+      `;
+
+      document.body.appendChild(particle);
+
+      const angle = (i / 12) * Math.PI * 2;
+      const velocity = 100 + Math.random() * 100;
+      const gravity = 500;
+      const life = 800 + Math.random() * 400;
+
+      let startTime = performance.now();
+      
+      const animate = (currentTime: number) => {
+        const elapsed = currentTime - startTime;
+        const progress = elapsed / life;
+
+        if (progress >= 1) {
+          particle.remove();
+          return;
+        }
+
+        const x = centerX + Math.cos(angle) * velocity * (elapsed / 1000);
+        const y = centerY + Math.sin(angle) * velocity * (elapsed / 1000) + 0.5 * gravity * Math.pow(elapsed / 1000, 2);
+        const opacity = 1 - progress;
+        const scale = 1 - progress * 0.5;
+
+        particle.style.left = x + 'px';
+        particle.style.top = y + 'px';
+        particle.style.opacity = opacity.toString();
+        particle.style.transform = `scale(${scale})`;
+
+        requestAnimationFrame(animate);
+      };
+
+      requestAnimationFrame(animate);
+    }
+  };
+
+  // Drag handlers
+  const handleDragStart = (e: React.DragEvent) => {
+    setIsDragging(true);
+    e.dataTransfer.setData('text/plain', task.id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
   return (
-    <div className="group">
+    <div 
+      className={cn(
+        "group relative overflow-hidden",
+        isDragging && "opacity-50"
+      )}
+      draggable={true}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      {/* Celebration background effect */}
+      {showConfetti && (
+        <div className="absolute inset-0 bg-gradient-to-r from-green-100/50 to-blue-100/50 animate-fade-in-out pointer-events-none" />
+      )}
+
       {/* Main single-line task row */}
       <div 
-        className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent/20 transition-colors border border-transparent hover:border-border/30"
+        className={cn(
+          "flex items-center gap-2 p-3 rounded-lg hover:bg-accent/20 transition-colors border border-transparent hover:border-border/30 relative z-10",
+          isDragging && "bg-accent/30"
+        )}
       >
-        {/* Status checkbox */}
-        <button
-          onClick={handleStatusToggle}
-          className="flex-shrink-0 transition-all duration-300 hover:scale-110 active:scale-95"
-        >
-          {task.status === 'completed' ? (
-            <CheckSquare2 className="w-4 h-4 text-green-600" />
-          ) : (
-            <Square className="w-4 h-4 text-muted-foreground hover:text-green-500" />
-          )}
-        </button>
-
-        {/* Priority indicator */}
-        {task.priority && task.priority !== 'medium' && (
-          <div 
+        {/* Column 1: Status checkbox - Fixed width */}
+        <div className="w-6 flex-shrink-0">
+          <button
+            onClick={handleStatusToggle}
             className={cn(
-              "w-2 h-2 rounded-full flex-shrink-0",
-              task.priority === 'urgent' && "bg-red-500 animate-pulse",
-              task.priority === 'high' && "bg-orange-500",
-              task.priority === 'low' && "bg-gray-400"
+              "transition-all duration-300 relative",
+              "hover:scale-110 active:scale-95",
+              isAnimating && "animate-bounce"
             )}
-            title={`${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)} priority`}
-          />
-        )}
+            style={{
+              transform: isAnimating ? 'scale(1.2)' : undefined,
+              transition: 'transform 0.3s ease-in-out'
+            }}
+          >
+            {task.status === 'completed' ? (
+              <div className="relative">
+                <CheckSquare2 className={cn(
+                  "w-4 h-4 text-green-600 transition-all duration-300",
+                  isAnimating && "drop-shadow-lg"
+                )} />
+                {/* Success ring animation */}
+                {isAnimating && (
+                  <div className="absolute inset-0 rounded border-2 border-green-400 animate-ping" />
+                )}
+              </div>
+            ) : (
+              <Square className="w-4 h-4 text-muted-foreground hover:text-green-500" />
+            )}
+          </button>
+        </div>
 
-        {/* Project indicator */}
-        {showProject && (
-          <div 
-            className="w-2 h-2 rounded-full flex-shrink-0"
-            style={{ backgroundColor: task.projectColor }}
-            title={task.projectName}
-          />
-        )}
+        {/* Column 2: Priority & Project indicators - Fixed width */}
+        <div className="w-8 flex-shrink-0 flex items-center gap-1">
+          {/* Priority indicator */}
+          {task.priority && task.priority !== 'medium' && (
+            <div 
+              className={cn(
+                "w-2 h-2 rounded-full",
+                task.priority === 'urgent' && "bg-red-500 animate-pulse",
+                task.priority === 'high' && "bg-orange-500",
+                task.priority === 'low' && "bg-gray-400"
+              )}
+              title={`${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)} priority`}
+            />
+          )}
 
-        {/* Task title - editable with 60 char limit */}
-        <div className="flex-shrink-0 w-80">
+          {/* Project indicator */}
+          {showProject && (
+            <div 
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: task.projectColor }}
+              title={task.projectName}
+            />
+          )}
+        </div>
+
+        {/* Column 3: Task title - Fixed width for 60 chars */}
+        <div className="w-96 flex-shrink-0">
           {isEditingTitle ? (
             <input
               ref={titleInputRef}
@@ -169,48 +294,64 @@ export function CompactTaskCard({
           )}
         </div>
 
-        {/* Project name (compact) */}
+        {/* Column 4: Project name - Fixed width */}
         {showProject && (
-          <span className="text-xs text-muted-foreground/60 truncate max-w-[100px] flex-shrink-0">
-            {task.projectName}
-          </span>
-        )}
-
-        {/* Due date */}
-        {dueInfo && (
-          <div className="flex items-center gap-1 flex-shrink-0">
-            <Clock className="w-3 h-3 text-muted-foreground/50" />
-            <span className={cn(
-              "text-xs font-medium",
-              dueInfo.isOverdue 
-                ? "text-red-600" 
-                : "text-muted-foreground/70"
-            )}>
-              {dueInfo.text}
+          <div className="w-32 flex-shrink-0">
+            <span className="text-xs text-muted-foreground/60 truncate block">
+              {task.projectName}
             </span>
           </div>
         )}
 
-        {/* Action buttons */}
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-          {/* Description button */}
-          {task.description ? (
-            <button
-              onClick={startEditingDescription}
-              className="p-1 hover:bg-accent rounded text-muted-foreground hover:text-foreground"
-              title="Edit description"
-            >
-              <FileText className="w-3 h-3" />
-            </button>
-          ) : (
-            <button
-              onClick={startEditingDescription}
-              className="p-1 hover:bg-accent rounded text-muted-foreground hover:text-foreground"
-              title="Add description"
-            >
-              <Plus className="w-3 h-3" />
-            </button>
+        {/* Column 5: Due date - Fixed width */}
+        <div className="w-40 flex-shrink-0">
+          {task.dueDate && dueInfo && (
+            <div className="flex items-center gap-1" title={`Due: ${new Date(task.dueDate).toLocaleDateString()}`}>
+              <Clock className="w-3 h-3 text-muted-foreground/50" />
+              <span className={cn(
+                "text-xs font-medium truncate",
+                dueInfo.isOverdue ? "text-red-600" : "text-muted-foreground/70"
+              )}>
+                {dueInfo.text} ({new Date(task.dueDate).toLocaleDateString()})
+              </span>
+            </div>
           )}
+        </div>
+
+        {/* Column 6: Created date - Fixed width */}
+        <div className="w-28 flex-shrink-0">
+          {task.createdAt && (
+            <div className="flex items-center gap-1" title={`Created: ${new Date(task.createdAt).toLocaleDateString()}`}>
+              <Plus className="w-3 h-3 text-muted-foreground/50" />
+              <span className="text-xs font-medium text-muted-foreground/70 truncate">
+                {new Date(task.createdAt).toLocaleDateString()}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Column 7: Action buttons - Fixed width */}
+        <div className="w-8 flex-shrink-0">
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            {/* Description button */}
+            {task.description ? (
+              <button
+                onClick={startEditingDescription}
+                className="p-1 hover:bg-accent rounded text-muted-foreground hover:text-foreground"
+                title="Edit description"
+              >
+                <FileText className="w-3 h-3" />
+              </button>
+            ) : (
+              <button
+                onClick={startEditingDescription}
+                className="p-1 hover:bg-accent rounded text-muted-foreground hover:text-foreground"
+                title="Add description"
+              >
+                <Plus className="w-3 h-3" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
