@@ -129,7 +129,7 @@ export function Navigation() {
     },
     {
       href: '/projects',
-      label: 'Projects',
+      label: 'Workspace',
       icon: FolderKanban,
       active: pathname === '/projects' || pathname.startsWith('/projects/'),
       subViews: [
