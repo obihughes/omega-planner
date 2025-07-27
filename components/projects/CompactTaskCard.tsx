@@ -342,10 +342,7 @@ export function CompactTaskCard({
           {task.dueDate && dueInfo && (
             <div className="flex items-center gap-1" title={`Due: ${new Date(task.dueDate).toLocaleDateString()}`}>
               <Clock className="w-3 h-3 text-muted-foreground/50" />
-              <span className={cn(
-                "text-xs font-medium truncate",
-                dueInfo.isOverdue ? "text-red-600" : "text-muted-foreground/70"
-              )}>
+              <span className="text-xs font-medium text-muted-foreground/70 truncate">
                 {dueInfo.text} ({new Date(task.dueDate).toLocaleDateString()})
               </span>
             </div>

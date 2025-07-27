@@ -197,10 +197,7 @@ export function DraggableTaskCard({ task, onStatusChange }: DraggableTaskCardPro
           {dueInfo && (
             <div className="flex items-center gap-1.5 text-xs">
               <Clock className="w-3 h-3 text-muted-foreground" />
-              <span className={cn(
-                "font-medium",
-                dueInfo.isOverdue ? "text-red-600" : "text-muted-foreground"
-              )}>
+              <span className="font-medium text-muted-foreground">
                 {dueInfo.text}
               </span>
             </div>

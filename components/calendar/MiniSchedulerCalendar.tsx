@@ -42,6 +42,14 @@ export function MiniSchedulerCalendar({
   const firstDayWeekday = firstDayOfMonth.getDay(); // 0 = Sunday, 1 = Monday, etc.
   startDate.setDate(firstDayOfMonth.getDate() - firstDayWeekday);
 
+  // Helper function to format date as YYYY-MM-DD for consistent comparison
+  const formatDateForComparison = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   // Generate calendar days (6 weeks * 7 days = 42 days)
   const calendarDays = useMemo(() => {
     const days: DayCell[] = [];
@@ -49,9 +57,10 @@ export function MiniSchedulerCalendar({
       const date = new Date(startDate);
       date.setDate(startDate.getDate() + i);
       
-      // Count tasks for this date
+      // Count tasks for this date using consistent date format
+      const dateKey = formatDateForComparison(date);
       const taskCount = tasks.filter(task => 
-        task.dueDate && new Date(task.dueDate).toDateString() === date.toDateString()
+        task.dueDate && task.dueDate === dateKey
       ).length;
       
       days.push({
@@ -67,8 +76,9 @@ export function MiniSchedulerCalendar({
   // Get tasks for selected date
   const selectedDateTasks = useMemo(() => {
     if (!selectedDate) return [];
+    const selectedDateKey = formatDateForComparison(selectedDate);
     return tasks.filter(task => 
-      task.dueDate && new Date(task.dueDate).toDateString() === selectedDate.toDateString()
+      task.dueDate && task.dueDate === selectedDateKey
     );
   }, [selectedDate, tasks]);
 
@@ -255,7 +265,7 @@ export function MiniSchedulerCalendar({
                           )}
                         </div>
                         {dueInfo.isOverdue && (
-                          <div className="flex items-center gap-1 mt-1 text-red-600">
+                          <div className="flex items-center gap-1 mt-1 text-muted-foreground">
                             <AlertCircle className="w-3 h-3" />
                             <span className="text-xs font-medium">
                               {dueInfo.text}

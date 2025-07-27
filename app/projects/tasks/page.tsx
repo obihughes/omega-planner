@@ -659,10 +659,7 @@ export default function ProjectsTasksPage() {
               {dueInfo && (
                 <>
                   <span>•</span>
-                  <span className={cn(
-                    "font-medium",
-                    dueInfo.isOverdue ? "text-red-600" : "text-muted-foreground"
-                  )}>
+                  <span className="font-medium text-muted-foreground">
                     {dueInfo.text}
                   </span>
                 </>

@@ -225,6 +225,11 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
     return { text: `Due in ${diffDays} days`, isOverdue: false };
   };
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' });
+  };
+
 
   
   const completedTasks = tasks.filter(task => task.status === 'completed').length || 0;
@@ -291,7 +296,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
               {project.endDate && (() => {
                 const { text, isOverdue } = formatTimeRemaining(project.endDate);
                 return (
-                  <div className={`flex items-center space-x-1 text-sm ${isOverdue ? "text-red-600" : "text-muted-foreground"}`}>
+                  <div className="flex items-center space-x-1 text-sm text-muted-foreground">
                     <Clock className="w-3 h-3" />
                     <span>{text}</span>
                   </div>

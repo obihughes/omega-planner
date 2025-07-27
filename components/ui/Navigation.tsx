@@ -129,13 +129,12 @@ export function Navigation() {
     },
     {
       href: '/projects',
-      label: 'Task Manager',
+      label: 'Projects',
       icon: FolderKanban,
       active: pathname === '/projects' || pathname.startsWith('/projects/'),
       subViews: [
         { key: 'tasks', label: 'Tasks', icon: ClipboardList, active: pathname === '/projects/tasks' },
-        { key: 'active', label: 'Projects', icon: Folder, active: projectsViewMode === 'active' },
-        { key: 'calendar', label: 'Monthly', icon: Calendar, active: projectsViewMode === 'calendar' }
+        { key: 'active', label: 'Projects', icon: Folder, active: projectsViewMode === 'active' }
       ]
     },
     {
