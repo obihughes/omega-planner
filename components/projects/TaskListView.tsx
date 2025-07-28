@@ -44,7 +44,6 @@ interface TaskListPreferences {
 const defaultPreferences: TaskListPreferences = {
   groupBy: 'project',
   filters: {
-    priority: 'all',
     dueDate: 'all',
     status: 'all'
   },
@@ -136,7 +135,6 @@ export function TaskListView({ className }: TaskListViewProps) {
   const [fullTaskForm, setFullTaskForm] = useState({
     title: '',
     description: '',
-    priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent',
     dueDate: '',
     projectId: '',
     estimatedHours: ''
@@ -173,11 +171,6 @@ export function TaskListView({ className }: TaskListViewProps) {
       );
     }
     
-    // Apply priority filter
-    if (filters.priority !== 'all') {
-      filtered = filtered.filter(task => task.priority === filters.priority);
-    }
-    
     // Apply status filter
     if (filters.status !== 'all') {
       filtered = filtered.filter(task => task.status === filters.status);
@@ -202,7 +195,6 @@ export function TaskListView({ className }: TaskListViewProps) {
         const dueDateOnly = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
         
         switch (filters.dueDate) {
-
           case 'today':
             return dueDateOnly.getTime() === today.getTime();
           case 'tomorrow':
@@ -230,10 +222,6 @@ export function TaskListView({ className }: TaskListViewProps) {
           else if (!a.dueDate) compareValue = 1;
           else if (!b.dueDate) compareValue = -1;
           else compareValue = new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-          break;
-        case 'priority':
-          const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
-          compareValue = (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
           break;
         case 'status':
           const statusOrder = { 'todo': 1, 'in-progress': 2, 'blocked': 3, 'completed': 4 };
@@ -290,10 +278,6 @@ export function TaskListView({ className }: TaskListViewProps) {
                 else if (!b.dueDate) compareValue = -1;
                 else compareValue = new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
                 break;
-              case 'priority':
-                const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
-                compareValue = (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
-                break;
               case 'status':
                 const statusOrder = { 'todo': 1, 'in-progress': 2, 'blocked': 3, 'completed': 4 };
                 compareValue = (statusOrder[a.status] || 0) - (statusOrder[b.status] || 0);
@@ -318,7 +302,6 @@ export function TaskListView({ className }: TaskListViewProps) {
       nextWeek.setDate(nextWeek.getDate() + 7);
       
       const dueDateGroups = {
-
         'today': { title: 'Due Today', tasks: [] as TaskWithProject[], color: '#F59E0B' },
         'tomorrow': { title: 'Due Tomorrow', tasks: [] as TaskWithProject[], color: '#3B82F6' },
         'thisWeek': { title: 'This Week', tasks: [] as TaskWithProject[], color: '#8B5CF6' },
@@ -360,8 +343,8 @@ export function TaskListView({ className }: TaskListViewProps) {
             if (a.dueDate && !b.dueDate) return -1;
             if (!a.dueDate && b.dueDate) return 1;
             return a.title.localeCompare(b.title);
-                     })
-         }));
+          })
+        }));
     } else if (groupBy === 'dateCreated') {
       // Group by date created
       const now = new Date();
@@ -600,24 +583,22 @@ export function TaskListView({ className }: TaskListViewProps) {
   }, [editingTaskId, editingField]);
 
   // Reset filters function
-    const resetFilters = () => {
+  const resetFilters = () => {
     updatePreferences({
       filters: {
-        priority: 'all',
         dueDate: 'all', 
         status: 'all'
       }
     });
   };
 
-  const hasActiveFilters = filters.priority !== 'all' || filters.dueDate !== 'all' || filters.status !== 'all';
+  const hasActiveFilters = filters.dueDate !== 'all' || filters.status !== 'all';
 
   // Full task creation handlers
   const openFullTaskModal = () => {
     setFullTaskForm({
       title: '',
       description: '',
-      priority: 'medium',
       dueDate: '',
       projectId: '',
       estimatedHours: ''
@@ -635,7 +616,7 @@ export function TaskListView({ className }: TaskListViewProps) {
     const taskData = {
       title: fullTaskForm.title.trim(),
       description: fullTaskForm.description.trim() || undefined,
-      priority: fullTaskForm.priority,
+      priority: 'medium' as const,
       dueDate: fullTaskForm.dueDate || undefined,
       estimatedHours: fullTaskForm.estimatedHours ? parseInt(fullTaskForm.estimatedHours) : undefined,
       status: 'todo' as const
@@ -733,26 +714,11 @@ export function TaskListView({ className }: TaskListViewProps) {
                 
                 <div>
                   <select
-                    value={filters.priority}
-                                            onChange={(e) => updatePreferences({ filters: { ...filters, priority: e.target.value as any } })}
-                    className="w-full px-2 py-1 text-xs bg-input border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
-                  >
-                    <option value="all">All Priorities</option>
-                    <option value="urgent">Urgent</option>
-                    <option value="high">High</option>
-                    <option value="medium">Medium</option>
-                    <option value="low">Low</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <select
                     value={filters.dueDate}
-                                            onChange={(e) => updatePreferences({ filters: { ...filters, dueDate: e.target.value as any } })}
+                    onChange={(e) => updatePreferences({ filters: { ...filters, dueDate: e.target.value as any } })}
                     className="w-full px-2 py-1 text-xs bg-input border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
                   >
                     <option value="all">All Dates</option>
-
                     <option value="today">Today</option>
                     <option value="tomorrow">Tomorrow</option>
                     <option value="thisWeek">This Week</option>
@@ -764,7 +730,7 @@ export function TaskListView({ className }: TaskListViewProps) {
                 <div>
                   <select
                     value={filters.status}
-                                            onChange={(e) => updatePreferences({ filters: { ...filters, status: e.target.value as any } })}
+                    onChange={(e) => updatePreferences({ filters: { ...filters, status: e.target.value as any } })}
                     className="w-full px-2 py-1 text-xs bg-input border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
                   >
                     <option value="all">All Status</option>
@@ -793,12 +759,11 @@ export function TaskListView({ className }: TaskListViewProps) {
                     { value: 'created', label: 'Created' },
                     { value: 'title', label: 'Title' },
                     { value: 'dueDate', label: 'Due Date' },
-                    { value: 'priority', label: 'Priority' },
                     { value: 'status', label: 'Status' }
                   ].map(option => (
                     <button
                       key={option.value}
-                                                onClick={() => updatePreferences({ sortBy: option.value as any })}
+                      onClick={() => updatePreferences({ sortBy: option.value as any })}
                       className={cn(
                         "w-full text-left px-2 py-1 text-xs rounded transition-colors",
                         sortBy === option.value
@@ -825,7 +790,7 @@ export function TaskListView({ className }: TaskListViewProps) {
           {/* Group by selector */}
           <select
             value={groupBy}
-                            onChange={(e) => updatePreferences({ groupBy: e.target.value as 'project' | 'status' | 'dueDate' | 'dateCreated' | 'none' })}
+            onChange={(e) => updatePreferences({ groupBy: e.target.value as 'project' | 'status' | 'dueDate' | 'dateCreated' | 'none' })}
             className="px-2 py-1.5 rounded-lg bg-input border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs"
           >
             <option value="none">No Grouping</option>
@@ -913,280 +878,121 @@ export function TaskListView({ className }: TaskListViewProps) {
                       
                       return (
                         <div 
-                            key={task.id} 
-                            className={cn(
-                              "transition-colors duration-200 rounded-lg cursor-pointer border border-transparent hover:border-border/30",
-                              "p-3 hover:bg-accent/20 group" // Compact padding for single-line layout
+                          key={task.id} 
+                          className={cn(
+                            "transition-colors duration-200 rounded-lg cursor-pointer border border-transparent hover:border-border/30",
+                            "p-3 hover:bg-accent/20 group" // Compact padding for single-line layout
+                          )}
+                          onClick={(e) => {
+                            // Only trigger due date editing if not clicking on other interactive elements
+                            const target = e.target as Element;
+                            if (
+                              !target.closest('button') && 
+                              !target.closest('input') && 
+                              !target.closest('textarea') &&
+                              editingTaskId !== task.id
+                            ) {
+                              startEditing(task, 'dueDate');
+                            }
+                          }}
+                          title="Click to edit due date • Click title to edit name"
+                        >
+                          {/* Single-line compact layout */}
+                          <div className="flex items-center gap-3 min-h-[28px]">
+                            {/* Status toggle with celebration */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                
+                                // Trigger confetti for completed tasks
+                                const newStatus = task.status === 'completed' ? 'todo' : 'completed';
+                                if (newStatus === 'completed') {
+                                  createConfettiParticles(e.currentTarget as HTMLElement);
+                                }
+                                
+                                handleTaskToggle(task);
+                              }}
+                              className={cn(
+                                "flex-shrink-0 transition-all duration-300 relative",
+                                "hover:scale-110 active:scale-95",
+                                celebratingTasks.has(task.id) && "animate-bounce"
+                              )}
+                              style={{
+                                transform: celebratingTasks.has(task.id) ? 'scale(1.2)' : undefined,
+                                transition: 'transform 0.3s ease-in-out'
+                              }}
+                            >
+                              {getStatusIcon(task.status, celebratingTasks.has(task.id))}
+                              
+                              {/* Celebration effect */}
+                              {celebratingTasks.has(task.id) && (
+                                <div className="absolute -inset-2 pointer-events-none">
+                                  <div className="absolute inset-0 rounded-full bg-green-400 opacity-20 animate-ping"></div>
+                                  <div className="absolute inset-1 rounded-full bg-green-300 opacity-30 animate-ping animation-delay-75"></div>
+                                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1">
+                                    <span className="text-lg animate-bounce">🎉</span>
+                                  </div>
+                                </div>
+                              )}
+                            </button>
+
+                            {/* Project indicator (when not grouped by project) */}
+                            {groupBy !== 'project' && (
+                              <div 
+                                className="w-2 h-2 rounded-full flex-shrink-0"
+                                style={{ backgroundColor: task.projectColor }}
+                                title={task.projectName}
+                              />
                             )}
-                            onClick={(e) => {
-                              // Only trigger due date editing if not clicking on other interactive elements
-                              const target = e.target as Element;
-                              if (
-                                !target.closest('button') && 
-                                !target.closest('input') && 
-                                !target.closest('textarea') &&
-                                editingTaskId !== task.id
-                              ) {
-                                startEditing(task, 'dueDate');
-                              }
-                            }}
-                            title="Click to edit due date • Click title to edit name"
-                          >
-                            {/* Single-line compact layout */}
-                            <div className="flex items-center gap-3 min-h-[28px]">
-                              {/* Status toggle with celebration */}
-                              <button
+
+                            {/* Title - Editable and takes available space */}
+                            {editingTaskId === task.id && editingField === 'title' ? (
+                              <input
+                                ref={editInputRef as React.RefObject<HTMLInputElement>}
+                                type="text"
+                                value={editingValue}
+                                onChange={(e) => setEditingValue(e.target.value)}
+                                onBlur={saveEdit}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') saveEdit();
+                                  if (e.key === 'Escape') cancelEdit();
+                                }}
+                                className="w-full bg-transparent border-none outline-none focus:bg-accent/50 rounded px-1 -mx-1 font-medium text-sm"
+                              />
+                            ) : (
+                              <h3 
+                                className={cn(
+                                  "cursor-pointer hover:bg-accent/20 rounded px-1 -mx-1 transition-colors select-none font-medium text-sm truncate",
+                                  task.status === 'completed' 
+                                    ? "line-through text-muted-foreground/70" 
+                                    : "text-foreground"
+                                )}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  
-                                  // Trigger confetti for completed tasks
-                                  const newStatus = task.status === 'completed' ? 'todo' : 'completed';
-                                  if (newStatus === 'completed') {
-                                    createConfettiParticles(e.currentTarget as HTMLElement);
-                                  }
-                                  
-                                  handleTaskToggle(task);
+                                  startEditing(task, 'title');
                                 }}
-                                className={cn(
-                                  "flex-shrink-0 transition-all duration-300 relative",
-                                  "hover:scale-110 active:scale-95",
-                                  celebratingTasks.has(task.id) && "animate-bounce"
-                                )}
-                                style={{
-                                  transform: celebratingTasks.has(task.id) ? 'scale(1.2)' : undefined,
-                                  transition: 'transform 0.3s ease-in-out'
-                                }}
+                                title={`${task.title}${task.description ? ` • ${task.description}` : ''}`}
                               >
-                                {getStatusIcon(task.status, celebratingTasks.has(task.id))}
-                                
-                                {/* Celebration effect */}
-                                {celebratingTasks.has(task.id) && (
-                                  <div className="absolute -inset-2 pointer-events-none">
-                                    <div className="absolute inset-0 rounded-full bg-green-400 opacity-20 animate-ping"></div>
-                                    <div className="absolute inset-1 rounded-full bg-green-300 opacity-30 animate-ping animation-delay-75"></div>
-                                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1">
-                                      <span className="text-lg animate-bounce">🎉</span>
-                                    </div>
-                                  </div>
-                                )}
-                              </button>
-                            
-                              {/* Priority indicator - compact */}
-                              {task.priority && task.priority !== 'medium' && (
-                                <div 
-                                  className={cn(
-                                    "w-2 h-2 rounded-full flex-shrink-0",
-                                    task.priority === 'urgent' && "bg-red-500 animate-pulse",
-                                    task.priority === 'high' && "bg-orange-500",
-                                    task.priority === 'low' && "bg-gray-400"
-                                  )}
-                                  title={`${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)} priority`}
-                                />
-                              )}
-
-                              {/* Project indicator (when not grouped by project) */}
-                              {groupBy !== 'project' && (
-                                <div 
-                                  className="w-2 h-2 rounded-full flex-shrink-0"
-                                  style={{ backgroundColor: task.projectColor }}
-                                  title={task.projectName}
-                                />
-                              )}
-
-                              {/* Title - Editable and takes available space */}
-                                {editingTaskId === task.id && editingField === 'title' ? (
-                                  <input
-                                    ref={editInputRef as React.RefObject<HTMLInputElement>}
-                                    type="text"
-                                    value={editingValue}
-                                    onChange={(e) => setEditingValue(e.target.value)}
-                                    onBlur={saveEdit}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') saveEdit();
-                                      if (e.key === 'Escape') cancelEdit();
-                                    }}
-                                    className="w-full bg-transparent border-none outline-none focus:bg-accent/50 rounded px-1 -mx-1 font-medium text-sm"
-                                  />
-                                ) : (
-                                  <h3 
-                                    className={cn(
-                                      "cursor-pointer hover:bg-accent/20 rounded px-1 -mx-1 transition-colors select-none font-medium text-sm truncate",
-                                      task.status === 'completed' 
-                                        ? "line-through text-muted-foreground/70" 
-                                        : "text-foreground"
-                                    )}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      startEditing(task, 'title');
-                                    }}
-                                    title={`${task.title}${task.description ? ` • ${task.description}` : ''}`}
-                                  >
-                                    {task.title}
-                                  </h3>
-                                )}
-                                  
-                                  {/* Project name (when not grouped by project) - Subtle and smaller */}
-                                  {groupBy !== 'project' && (
-                                    <div className="flex items-center gap-2 mt-1.5 mb-1">
-                                      <div 
-                                        className="w-3 h-3 rounded-full shadow-sm flex-shrink-0"
-                                        style={{ backgroundColor: task.projectColor }}
-                                      />
-                                      <span className="text-sm font-medium text-muted-foreground/80 tracking-tight truncate">
-                                        {task.projectName}
-                                      </span>
-                                    </div>
-                                  )}
-                                  
-                                  {/* Description - Editable and Subtle */}
-                                  {(task.description || editingTaskId === task.id && editingField === 'description') && (
-                                    editingTaskId === task.id && editingField === 'description' ? (
-                                      <textarea
-                                        ref={editInputRef as React.RefObject<HTMLTextAreaElement>}
-                                        value={editingValue}
-                                        onChange={(e) => setEditingValue(e.target.value)}
-                                        onBlur={saveEdit}
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter' && e.ctrlKey) saveEdit();
-                                          if (e.key === 'Escape') cancelEdit();
-                                        }}
-                                        placeholder="Add description..."
-                                        className="w-full text-sm text-muted-foreground/70 mt-2 bg-transparent border-none outline-none focus:bg-accent/50 rounded px-1 -mx-1 resize-none leading-relaxed font-light"
-                                        rows={2}
-                                      />
-                                    ) : (
-                                      <p 
-                                        className="text-sm text-muted-foreground/70 mt-2 cursor-pointer hover:bg-accent/20 rounded px-1 -mx-1 transition-colors line-clamp-2 leading-relaxed font-light"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          startEditing(task, 'description');
-                                        }}
-                                        title="Click to edit description"
-                                      >
-                                        {task.description}
-                                      </p>
-                                    )
-                                  )}
-                                  
-                                  {/* Due date - Editable and Compact */}
-                                  {(dueInfo || editingTaskId === task.id && editingField === 'dueDate') && (
-                                    editingTaskId === task.id && editingField === 'dueDate' ? (
-                                      <div className="flex items-center gap-2 mt-3">
-                                        <Clock className="w-4 h-4 text-muted-foreground/70" />
-                                        <input
-                                          ref={editInputRef as React.RefObject<HTMLInputElement>}
-                                          type="date"
-                                          value={editingValue}
-                                          onChange={(e) => setEditingValue(e.target.value)}
-                                          onBlur={saveEdit}
-                                          onKeyDown={(e) => {
-                                            if (e.key === 'Enter') saveEdit();
-                                            if (e.key === 'Escape') cancelEdit();
-                                          }}
-                                          className="text-sm font-medium bg-accent/30 border border-border rounded-lg px-2 py-1 outline-none focus:bg-accent/50 focus:ring-2 focus:ring-primary/20 tracking-tight"
-                                        />
-                                      </div>
-                                    ) : dueInfo && (
-                                      <div className="flex items-center gap-2 mt-3">
-                                        <Clock className="w-4 h-4 text-muted-foreground/70" />
-                                        <span className={cn(
-                                          "text-sm font-medium tracking-tight",
-                                          dueInfo.isOverdue 
-                                            ? "text-red-600 bg-red-50 px-2 py-1 rounded-full" 
-                                            : "text-muted-foreground/80"
-                                        )}>
-                                          {dueInfo.text}
-                                        </span>
-                                      </div>
-                                    )
-                                  )}
-                                </div>
-                                
-                                {/* Priority indicator */}
-                                {task.priority === 'urgent' && (
-                                  <div className="flex items-center gap-1 mt-1 flex-shrink-0">
-                                    <div className="w-3 h-3 bg-red-500 rounded-full shadow-lg animate-pulse" />
-                                    <span className="text-xs font-bold text-red-600 uppercase tracking-wide">Urgent</span>
-                                  </div>
-                                )}
-                                {task.priority === 'high' && (
-                                  <div className="flex items-center gap-1 mt-1 flex-shrink-0">
-                                    <div className="w-3 h-3 bg-orange-500 rounded-full shadow-md" />
-                                    <span className="text-xs font-semibold text-orange-600 uppercase tracking-wide">High</span>
-                                  </div>
-                                )}
+                                {task.title}
+                              </h3>
+                            )}
                               
-                              {/* Project name (when not grouped by project) - compact */}
-                              {groupBy !== 'project' && (
-                                <span className="text-xs text-muted-foreground/60 truncate max-w-[100px] flex-shrink-0">
+                            {/* Project name (when not grouped by project) - Subtle and smaller */}
+                            {groupBy !== 'project' && (
+                              <div className="flex items-center gap-2 mt-1.5 mb-1">
+                                <div 
+                                  className="w-3 h-3 rounded-full shadow-sm flex-shrink-0"
+                                  style={{ backgroundColor: task.projectColor }}
+                                />
+                                <span className="text-sm font-medium text-muted-foreground/80 tracking-tight truncate">
                                   {task.projectName}
                                 </span>
-                              )}
-
-                              {/* Due date - compact */}
-                              {(dueInfo || editingTaskId === task.id && editingField === 'dueDate') && (
-                                <div className="flex items-center gap-1 flex-shrink-0">
-                                  {editingTaskId === task.id && editingField === 'dueDate' ? (
-                                    <input
-                                      ref={editInputRef as React.RefObject<HTMLInputElement>}
-                                      type="date"
-                                      value={editingValue}
-                                      onChange={(e) => setEditingValue(e.target.value)}
-                                      onBlur={saveEdit}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') saveEdit();
-                                        if (e.key === 'Escape') cancelEdit();
-                                      }}
-                                      className="text-xs bg-accent/30 border border-border rounded px-2 py-1 outline-none focus:bg-accent/50 focus:ring-1 focus:ring-primary/20 w-[110px]"
-                                    />
-                                  ) : dueInfo && (
-                                    <>
-                                      <Clock className="w-3 h-3 text-muted-foreground/50" />
-                                      <span className={cn(
-                                        "text-xs font-medium",
-                                        dueInfo.isOverdue 
-                                          ? "text-red-600" 
-                                          : "text-muted-foreground/70"
-                                      )}>
-                                        {dueInfo.text}
-                                      </span>
-                                    </>
-                                  )}
-                                </div>
-                              )}
-
-                              {/* Action buttons - visible on hover */}
-                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                                {/* Description indicator/editor */}
-                                {task.description && editingTaskId !== task.id ? (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      startEditing(task, 'description');
-                                    }}
-                                    className="p-1 hover:bg-accent rounded text-muted-foreground hover:text-foreground"
-                                    title="Edit description"
-                                  >
-                                    <FileText className="w-3 h-3" />
-                                  </button>
-                                ) : !task.description && editingTaskId !== task.id && (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      startEditing(task, 'description');
-                                    }}
-                                    className="p-1 hover:bg-accent rounded text-muted-foreground hover:text-foreground"
-                                    title="Add description"
-                                  >
-                                    <Plus className="w-3 h-3" />
-                                  </button>
-                                )}
                               </div>
-                            </div>
-
-                            {/* Description editing area - appears below when editing */}
-                            {editingTaskId === task.id && editingField === 'description' && (
-                              <div className="mt-2 pl-8">
+                            )}
+                            
+                            {/* Description - Editable and Subtle */}
+                            {(task.description || editingTaskId === task.id && editingField === 'description') && (
+                              editingTaskId === task.id && editingField === 'description' ? (
                                 <textarea
                                   ref={editInputRef as React.RefObject<HTMLTextAreaElement>}
                                   value={editingValue}
@@ -1197,12 +1003,142 @@ export function TaskListView({ className }: TaskListViewProps) {
                                     if (e.key === 'Escape') cancelEdit();
                                   }}
                                   placeholder="Add description..."
-                                  className="w-full text-sm text-muted-foreground bg-accent/20 border border-border rounded px-2 py-1 outline-none focus:bg-accent/30 resize-none"
+                                  className="w-full text-sm text-muted-foreground/70 mt-2 bg-transparent border-none outline-none focus:bg-accent/50 rounded px-1 -mx-1 resize-none leading-relaxed font-light"
                                   rows={2}
                                 />
-                              </div>
+                              ) : (
+                                <p 
+                                  className="text-sm text-muted-foreground/70 mt-2 cursor-pointer hover:bg-accent/20 rounded px-1 -mx-1 transition-colors line-clamp-2 leading-relaxed font-light"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    startEditing(task, 'description');
+                                  }}
+                                  title="Click to edit description"
+                                >
+                                  {task.description}
+                                </p>
+                              )
+                            )}
+                            
+                            {/* Due date - Editable and Compact */}
+                            {(dueInfo || editingTaskId === task.id && editingField === 'dueDate') && (
+                              editingTaskId === task.id && editingField === 'dueDate' ? (
+                                <div className="flex items-center gap-2 mt-3">
+                                  <Clock className="w-4 h-4 text-muted-foreground/70" />
+                                  <input
+                                    ref={editInputRef as React.RefObject<HTMLInputElement>}
+                                    type="date"
+                                    value={editingValue}
+                                    onChange={(e) => setEditingValue(e.target.value)}
+                                    onBlur={saveEdit}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') saveEdit();
+                                      if (e.key === 'Escape') cancelEdit();
+                                    }}
+                                    className="text-sm font-medium bg-accent/30 border border-border rounded-lg px-2 py-1 outline-none focus:bg-accent/50 focus:ring-2 focus:ring-primary/20 tracking-tight"
+                                  />
+                                </div>
+                              ) : dueInfo && (
+                                <div className="flex items-center gap-2 mt-3">
+                                  <Clock className="w-4 h-4 text-muted-foreground/70" />
+                                  <span className={cn(
+                                    "text-sm font-medium tracking-tight",
+                                    dueInfo.isOverdue 
+                                      ? "text-muted-foreground/80" 
+                                      : "text-muted-foreground/80"
+                                  )}>
+                                    {dueInfo.text}
+                                  </span>
+                                </div>
+                              )
                             )}
                           </div>
+                          
+                          {/* Project name (when not grouped by project) - compact */}
+                          {groupBy !== 'project' && (
+                            <span className="text-xs text-muted-foreground/60 truncate max-w-[100px] flex-shrink-0">
+                              {task.projectName}
+                            </span>
+                          )}
+
+                          {/* Due date - compact */}
+                          {(dueInfo || editingTaskId === task.id && editingField === 'dueDate') && (
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              {editingTaskId === task.id && editingField === 'dueDate' ? (
+                                <input
+                                  ref={editInputRef as React.RefObject<HTMLInputElement>}
+                                  type="date"
+                                  value={editingValue}
+                                  onChange={(e) => setEditingValue(e.target.value)}
+                                  onBlur={saveEdit}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') saveEdit();
+                                    if (e.key === 'Escape') cancelEdit();
+                                  }}
+                                  className="text-xs bg-accent/30 border border-border rounded px-2 py-1 outline-none focus:bg-accent/50 focus:ring-1 focus:ring-primary/20 w-[110px]"
+                                />
+                              ) : dueInfo && (
+                                <>
+                                  <Clock className="w-3 h-3 text-muted-foreground/50" />
+                                  <span className={cn(
+                                    "text-xs font-medium",
+                                    dueInfo.isOverdue 
+                                      ? "text-muted-foreground/70" 
+                                      : "text-muted-foreground/70"
+                                  )}>
+                                    {dueInfo.text}
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Action buttons - visible on hover */}
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                            {/* Description indicator/editor */}
+                            {task.description && editingTaskId !== task.id ? (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  startEditing(task, 'description');
+                                }}
+                                className="p-1 hover:bg-accent rounded text-muted-foreground hover:text-foreground"
+                                title="Edit description"
+                              >
+                                <FileText className="w-3 h-3" />
+                              </button>
+                            ) : !task.description && editingTaskId !== task.id && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  startEditing(task, 'description');
+                                }}
+                                className="p-1 hover:bg-accent rounded text-muted-foreground hover:text-foreground"
+                                title="Add description"
+                              >
+                                <Plus className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Description editing area - appears below when editing */}
+                          {editingTaskId === task.id && editingField === 'description' && (
+                            <div className="mt-2 pl-8">
+                              <textarea
+                                ref={editInputRef as React.RefObject<HTMLTextAreaElement>}
+                                value={editingValue}
+                                onChange={(e) => setEditingValue(e.target.value)}
+                                onBlur={saveEdit}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && e.ctrlKey) saveEdit();
+                                  if (e.key === 'Escape') cancelEdit();
+                                }}
+                                placeholder="Add description..."
+                                className="w-full text-sm text-muted-foreground bg-accent/20 border border-border rounded px-2 py-1 outline-none focus:bg-accent/30 resize-none"
+                                rows={2}
+                              />
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -1272,24 +1208,8 @@ export function TaskListView({ className }: TaskListViewProps) {
                 </select>
               </div>
 
-              {/* Priority and Due Date Row */}
+              {/* Due Date and Estimated Hours Row */}
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">
-                    Priority
-                  </label>
-                  <select
-                    value={fullTaskForm.priority}
-                    onChange={(e) => setFullTaskForm(prev => ({ ...prev, priority: e.target.value as any }))}
-                    className="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                  >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="urgent">Urgent</option>
-                  </select>
-                </div>
-
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">
                     Due Date
@@ -1301,22 +1221,21 @@ export function TaskListView({ className }: TaskListViewProps) {
                     className="w-full"
                   />
                 </div>
-              </div>
 
-              {/* Estimated Hours */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Estimated Hours
-                </label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.5"
-                  value={fullTaskForm.estimatedHours}
-                  onChange={(e) => setFullTaskForm(prev => ({ ...prev, estimatedHours: e.target.value }))}
-                  placeholder="Optional"
-                  className="w-full"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">
+                    Estimated Hours
+                  </label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    value={fullTaskForm.estimatedHours}
+                    onChange={(e) => setFullTaskForm(prev => ({ ...prev, estimatedHours: e.target.value }))}
+                    placeholder="Optional"
+                    className="w-full"
+                  />
+                </div>
               </div>
             </div>
 
