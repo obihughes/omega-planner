@@ -33,11 +33,10 @@ const TASK_LIST_PREFERENCES_KEY = 'omega-planner-task-list-preferences';
 interface TaskListPreferences {
   groupBy: 'project' | 'status' | 'dueDate' | 'dateCreated' | 'none';
   filters: {
-    priority: 'all' | 'urgent' | 'high' | 'medium' | 'low';
     dueDate: 'all' | 'today' | 'tomorrow' | 'thisWeek' | 'future' | 'none';
     status: 'all' | 'todo' | 'in-progress' | 'completed' | 'blocked';
   };
-  sortBy: 'title' | 'dueDate' | 'priority' | 'status' | 'created';
+  sortBy: 'title' | 'dueDate' | 'status' | 'created';
   sortOrder: 'asc' | 'desc';
 }
 
@@ -45,7 +44,6 @@ interface TaskListPreferences {
 const defaultPreferences: TaskListPreferences = {
   groupBy: 'project',
   filters: {
-    priority: 'all',
     dueDate: 'all',
     status: 'all'
   },
@@ -137,7 +135,6 @@ export function TaskListView({ className }: TaskListViewProps) {
   const [fullTaskForm, setFullTaskForm] = useState({
     title: '',
     description: '',
-    priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent',
     dueDate: '',
     projectId: '',
     estimatedHours: ''
@@ -172,11 +169,6 @@ export function TaskListView({ className }: TaskListViewProps) {
         task.description?.toLowerCase().includes(lowercaseSearch) ||
         task.projectName.toLowerCase().includes(lowercaseSearch)
       );
-    }
-    
-    // Apply priority filter
-    if (filters.priority !== 'all') {
-      filtered = filtered.filter(task => task.priority === filters.priority);
     }
     
     // Apply status filter
@@ -232,10 +224,6 @@ export function TaskListView({ className }: TaskListViewProps) {
           else if (!b.dueDate) compareValue = -1;
           else compareValue = new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
           break;
-        case 'priority':
-          const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
-          compareValue = (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
-          break;
         case 'status':
           const statusOrder = { 'todo': 1, 'in-progress': 2, 'blocked': 3, 'completed': 4 };
           compareValue = (statusOrder[a.status] || 0) - (statusOrder[b.status] || 0);
@@ -290,10 +278,6 @@ export function TaskListView({ className }: TaskListViewProps) {
                 else if (!a.dueDate) compareValue = 1;
                 else if (!b.dueDate) compareValue = -1;
                 else compareValue = new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-                break;
-              case 'priority':
-                const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
-                compareValue = (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
                 break;
               case 'status':
                 const statusOrder = { 'todo': 1, 'in-progress': 2, 'blocked': 3, 'completed': 4 };
@@ -604,21 +588,19 @@ export function TaskListView({ className }: TaskListViewProps) {
     const resetFilters = () => {
     updatePreferences({
       filters: {
-        priority: 'all',
         dueDate: 'all', 
         status: 'all'
       }
     });
   };
 
-  const hasActiveFilters = filters.priority !== 'all' || filters.dueDate !== 'all' || filters.status !== 'all';
+  const hasActiveFilters = filters.dueDate !== 'all' || filters.status !== 'all';
 
   // Full task creation handlers
   const openFullTaskModal = () => {
     setFullTaskForm({
       title: '',
       description: '',
-      priority: 'medium',
       dueDate: '',
       projectId: '',
       estimatedHours: ''
@@ -636,7 +618,6 @@ export function TaskListView({ className }: TaskListViewProps) {
     const taskData = {
       title: fullTaskForm.title.trim(),
       description: fullTaskForm.description.trim() || undefined,
-      priority: fullTaskForm.priority,
       dueDate: fullTaskForm.dueDate || undefined,
       estimatedHours: fullTaskForm.estimatedHours ? parseInt(fullTaskForm.estimatedHours) : undefined,
       status: 'todo' as const
@@ -734,20 +715,6 @@ export function TaskListView({ className }: TaskListViewProps) {
                 
                 <div>
                   <select
-                    value={filters.priority}
-                                            onChange={(e) => updatePreferences({ filters: { ...filters, priority: e.target.value as any } })}
-                    className="w-full px-2 py-1 text-xs bg-input border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
-                  >
-                    <option value="all">All Priorities</option>
-                    <option value="urgent">Urgent</option>
-                    <option value="high">High</option>
-                    <option value="medium">Medium</option>
-                    <option value="low">Low</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <select
                     value={filters.dueDate}
                                             onChange={(e) => updatePreferences({ filters: { ...filters, dueDate: e.target.value as any } })}
                     className="w-full px-2 py-1 text-xs bg-input border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
@@ -794,7 +761,6 @@ export function TaskListView({ className }: TaskListViewProps) {
                     { value: 'created', label: 'Created' },
                     { value: 'title', label: 'Title' },
                     { value: 'dueDate', label: 'Due Date' },
-                    { value: 'priority', label: 'Priority' },
                     { value: 'status', label: 'Status' }
                   ].map(option => (
                     <button
@@ -972,19 +938,6 @@ export function TaskListView({ className }: TaskListViewProps) {
                                 )}
                               </button>
                             
-                              {/* Priority indicator - compact */}
-                              {task.priority && task.priority !== 'medium' && (
-                                <div 
-                                  className={cn(
-                                    "w-2 h-2 rounded-full flex-shrink-0",
-                                    task.priority === 'urgent' && "bg-red-500 animate-pulse",
-                                    task.priority === 'high' && "bg-orange-500",
-                                    task.priority === 'low' && "bg-gray-400"
-                                  )}
-                                  title={`${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)} priority`}
-                                />
-                              )}
-
                               {/* Project indicator (when not grouped by project) */}
                               {groupBy !== 'project' && (
                                 <div 
@@ -1103,19 +1056,6 @@ export function TaskListView({ className }: TaskListViewProps) {
                                   )}
                                 </div>
                                 
-                                {/* Priority indicator */}
-                                {task.priority === 'urgent' && (
-                                  <div className="flex items-center gap-1 mt-1 flex-shrink-0">
-                                    <div className="w-3 h-3 bg-red-500 rounded-full shadow-lg animate-pulse" />
-                                    <span className="text-xs font-bold text-red-600 uppercase tracking-wide">Urgent</span>
-                                  </div>
-                                )}
-                                {task.priority === 'high' && (
-                                  <div className="flex items-center gap-1 mt-1 flex-shrink-0">
-                                    <div className="w-3 h-3 bg-orange-500 rounded-full shadow-md" />
-                                    <span className="text-xs font-semibold text-orange-600 uppercase tracking-wide">High</span>
-                                  </div>
-                              
                               {/* Project name (when not grouped by project) - compact */}
                               {groupBy !== 'project' && (
                                 <span className="text-xs text-muted-foreground/60 truncate max-w-[100px] flex-shrink-0">
@@ -1274,22 +1214,6 @@ export function TaskListView({ className }: TaskListViewProps) {
 
               {/* Priority and Due Date Row */}
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">
-                    Priority
-                  </label>
-                  <select
-                    value={fullTaskForm.priority}
-                    onChange={(e) => setFullTaskForm(prev => ({ ...prev, priority: e.target.value as any }))}
-                    className="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                  >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="urgent">Urgent</option>
-                  </select>
-                </div>
-
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">
                     Due Date
