@@ -57,13 +57,12 @@ export default function ProjectsTasksPage() {
   const [allTasksFilters, setAllTasksFilters] = useState({
     search: '',
     project: 'all',
-    priority: 'all',
     status: 'all',
     dueDate: 'all'
   });
-  const [allTasksGroupBy, setAllTasksGroupBy] = useState<'none' | 'project' | 'status' | 'priority' | 'dueDate'>('none');
+  const [allTasksGroupBy, setAllTasksGroupBy] = useState<'none' | 'project' | 'status' | 'dueDate'>('none');
   const [allTasksSubGroupBy, setAllTasksSubGroupBy] = useState<string>('all');
-  const [allTasksSortBy, setAllTasksSortBy] = useState<'dueDate' | 'created' | 'completion' | 'priority'>('priority');
+  const [allTasksSortBy, setAllTasksSortBy] = useState<'dueDate' | 'created' | 'completion'>('dueDate');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // Add task modal state
@@ -176,10 +175,7 @@ export default function ProjectsTasksPage() {
       filtered = filtered.filter(task => task.projectId === allTasksFilters.project);
     }
 
-    // Apply priority filter
-    if (allTasksFilters.priority !== 'all') {
-      filtered = filtered.filter(task => task.priority === allTasksFilters.priority);
-    }
+
 
     // Apply status filter
     if (allTasksFilters.status !== 'all') {
@@ -236,10 +232,8 @@ export default function ProjectsTasksPage() {
           const statusOrder = { 'completed': 1, 'blocked': 2, 'in-progress': 3, 'todo': 4 };
           compareValue = (statusOrder[a.status] || 0) - (statusOrder[b.status] || 0);
           break;
-        case 'priority':
         default:
-          const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
-          compareValue = (priorityOrder[a.priority] || 0) - (priorityOrder[b.priority] || 0);
+          compareValue = a.title.localeCompare(b.title);
           break;
       }
       
@@ -267,9 +261,7 @@ export default function ProjectsTasksPage() {
         case 'status':
           tasksToGroup = filteredAllTasks.filter(task => task.status === allTasksSubGroupBy);
           break;
-        case 'priority':
-          tasksToGroup = filteredAllTasks.filter(task => task.priority === allTasksSubGroupBy);
-          break;
+
         case 'dueDate':
           // Handle due date filtering logic
           const today = new Date();
@@ -314,10 +306,7 @@ export default function ProjectsTasksPage() {
           groupKey = task.status;
           groupName = task.status.charAt(0).toUpperCase() + task.status.slice(1).replace('-', ' ');
           break;
-        case 'priority':
-          groupKey = task.priority || 'none';
-          groupName = task.priority ? task.priority.charAt(0).toUpperCase() + task.priority.slice(1) : 'No Priority';
-          break;
+
         case 'dueDate':
           if (!task.dueDate) {
             groupKey = 'none';
@@ -384,14 +373,7 @@ export default function ProjectsTasksPage() {
           { value: 'blocked', label: 'Blocked' },
           { value: 'completed', label: 'Completed' }
         ];
-      case 'priority':
-        return [
-          { value: 'all', label: 'All Priorities' },
-          { value: 'urgent', label: 'Urgent' },
-          { value: 'high', label: 'High' },
-          { value: 'medium', label: 'Medium' },
-          { value: 'low', label: 'Low' }
-        ];
+
       case 'dueDate':
         return [
           { value: 'all', label: 'All Due Dates' },
@@ -796,7 +778,6 @@ export default function ProjectsTasksPage() {
                       <option value="none">None</option>
                       <option value="project">Project</option>
                       <option value="status">Status</option>
-                      <option value="priority">Priority</option>
                       <option value="dueDate">Due Date</option>
                     </select>
                   </div>
@@ -897,31 +878,13 @@ export default function ProjectsTasksPage() {
                     )}
                   </Button>
 
-                  {/* Priority Sort */}
-                  <Button
-                    onClick={() => {
-                      if (allTasksSortBy === 'priority') {
-                        setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-                      } else {
-                        setAllTasksSortBy('priority');
-                        setSortOrder('desc');
-                      }
-                    }}
-                    variant={allTasksSortBy === 'priority' ? 'secondary' : 'outline'}
-                    size="sm"
-                    className="flex items-center gap-2"
-                  >
-                    Priority
-                    {allTasksSortBy === 'priority' && (
-                      <span className="text-xs">({sortOrder === 'desc' ? 'High to Low' : 'Low to High'})</span>
-                    )}
-                  </Button>
+
 
                   {/* Clear Filters */}
                   {(allTasksFilters.search || allTasksFilters.dueDate !== 'all' || allTasksGroupBy !== 'none') && (
                     <button
                       onClick={() => {
-                        setAllTasksFilters({ search: '', project: 'all', priority: 'all', status: 'all', dueDate: 'all' });
+                        setAllTasksFilters({ search: '', project: 'all', status: 'all', dueDate: 'all' });
                         setAllTasksGroupBy('none');
                         setAllTasksSubGroupBy('all');
                       }}
