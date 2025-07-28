@@ -62,8 +62,15 @@ const loadPreferences = (): TaskListPreferences => {
     const stored = localStorage.getItem(TASK_LIST_PREFERENCES_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
-      // Merge with defaults to ensure all properties exist
-      return { ...defaultPreferences, ...parsed };
+      // Filter out any legacy priority data and merge with defaults
+      const cleanParsed = {
+        ...parsed,
+        filters: parsed.filters ? {
+          dueDate: parsed.filters.dueDate || 'all',
+          status: parsed.filters.status || 'all'
+        } : defaultPreferences.filters
+      };
+      return { ...defaultPreferences, ...cleanParsed };
     }
   } catch (error) {
     console.error('Error loading task list preferences:', error);
