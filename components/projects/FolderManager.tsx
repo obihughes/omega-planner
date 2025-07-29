@@ -75,7 +75,7 @@ function AllProjectsItem({ isSelected, onSelect, onMoveProjectToFolder }: AllPro
       onClick={handleClick}
     >
       <Folder className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-      <span className="text-sm font-medium">All Projects</span>
+      <span className="text-sm font-medium">Unsorted Projects</span>
     </div>
   );
 }
@@ -278,7 +278,7 @@ export function FolderManager({
         </Button>
       </div>
 
-      {/* All Projects Option */}
+      {/* Unsorted Projects Option */}
       <AllProjectsItem
         isSelected={!selectedFolderId}
         onSelect={onSelectFolder}

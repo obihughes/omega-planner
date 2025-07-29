@@ -6,7 +6,8 @@ import { useProjects } from '@/hooks/useProjects';
 import { Project, ProjectFolder } from '@/types';
 import { ProjectCard } from '@/components/projects/ProjectCard';
 import { ProjectsCalendar } from '@/components/projects/ProjectsCalendar';
-import { FolderManager } from '@/components/projects/FolderManager';
+import { FolderCard } from '@/components/projects/FolderCard';
+import { FolderBreadcrumb } from '@/components/projects/FolderBreadcrumb';
 import { UpcomingTasksTimeline } from '@/components/planner/UpcomingTasksTimeline';
 
 import { AppLayout } from '@/components/ui/AppLayout';
@@ -14,6 +15,7 @@ import { useProjectsView } from '@/app/context/ProjectsViewContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { 
   Plus, 
   Search, 
@@ -23,7 +25,8 @@ import {
   SortAsc,
   SortDesc,
   Grid3X3,
-  List
+  List,
+  Home
 } from 'lucide-react';
 
 // Drag and drop imports
@@ -140,6 +143,9 @@ function ProjectsPageContent() {
   
   // Selected folder for filtering
   const [selectedFolderId, setSelectedFolderId] = useState<string | undefined>(undefined);
+  
+  // Get current folder object for breadcrumb
+  const currentFolder = selectedFolderId ? folders.find(f => f.id === selectedFolderId) : undefined;
 
   // Handle folder URL parameter
   useEffect(() => {
@@ -286,7 +292,8 @@ function ProjectsPageContent() {
       if (selectedFolderId !== undefined) {
         return p.folderId === selectedFolderId;
       }
-      return true;
+      // When no folder is selected, show only unsorted projects (no folderId)
+      return p.folderId === undefined;
     });
 
   const archivedProjects = projects
@@ -304,6 +311,18 @@ function ProjectsPageContent() {
 
   const handleProjectClickById = (projectId: string) => {
     router.push(`/projects/${projectId}`);
+  };
+
+  // Handle folder navigation in main content area
+  const handleFolderClick = (folder: ProjectFolder) => {
+    setSelectedFolderId(folder.id);
+    router.push(`/projects?folder=${folder.id}`);
+  };
+
+  // Handle navigation back to root
+  const handleNavigateToRoot = () => {
+    setSelectedFolderId(undefined);
+    router.push('/projects');
   };
 
   const handleEditProject = (project: Project) => {
@@ -406,134 +425,54 @@ function ProjectsPageContent() {
   return (
     <AppLayout>
       <div className="container mx-auto px-6 py-6">
-        <div className="flex gap-6">
-          {/* Left Sidebar - Conditional */}
-          <div className="w-64 flex-shrink-0">
-            {activeView === 'calendar' ? (
-              <UpcomingTasksTimeline className="w-full" />
-            ) : (
-              <FolderManager
-                folders={folders}
-                onCreateFolder={handleCreateFolder}
-                onEditFolder={handleEditFolder}
-                onDeleteFolder={handleDeleteFolder}
-                onToggleFolder={toggleFolder}
-                selectedFolderId={selectedFolderId}
-                onSelectFolder={setSelectedFolderId}
-                projectCounts={folders.reduce((acc, folder) => {
-                  acc[folder.id] = getProjectCountForFolder(folder.id);
-                  return acc;
-                }, {} as { [key: string]: number })}
-                onMoveProjectToFolder={moveProjectToFolder}
-                getProjectsInFolder={getProjectsInFolder}
-                onProjectClick={handleProjectClickById}
-              />
-            )}
-          </div>
-
           {/* Main Content Area */}
           <div className="flex-1">
-                      <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                {selectedFolderId ? (
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="w-3 h-3 rounded"
-                      style={{ backgroundColor: folders.find(f => f.id === selectedFolderId)?.color }}
-                    />
-                    <span className="font-medium text-foreground">
-                      {folders.find(f => f.id === selectedFolderId)?.name}
-                    </span>
-                    <span className="bg-muted px-3 py-1.5 rounded-full text-xs font-medium">
-                      {activeProjects.length} Projects
-                    </span>
-                  </div>
-                ) : (
-                  <>
-                    {activeView === 'active' && (
-                      <span className="bg-muted px-3 py-1.5 rounded-full text-xs font-medium">
-                        {activeProjects.length} Projects
-                      </span>
-                    )}
-                    {activeView === 'archived' && (
-                      <span className="bg-muted px-3 py-1.5 rounded-full text-xs font-medium">
-                        {archivedProjects.length} Archived
-                      </span>
-                    )}
-                  </>
-                )}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-4">
+                <Tabs value={activeView} onValueChange={(value) => setActiveView(value as any)}>
+                  <TabsList>
+                    <TabsTrigger value="active">Active</TabsTrigger>
+                    <TabsTrigger value="archived">Archived</TabsTrigger>
+                    <TabsTrigger value="calendar">Calendar</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                <h1 className="text-2xl font-bold text-foreground">
+                  {currentFolder ? currentFolder.name : 'All Projects'}
+                </h1>
               </div>
-            
-            <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Search projects..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 w-56 rounded-lg bg-card/50 backdrop-blur-sm border border-border/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all text-sm"
-              />
-            </div>
-          </div>
-
+              
           <div className="flex items-center space-x-2">
-            <Button
-              variant={activeView === 'archived' ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setActiveView(activeView === 'archived' ? 'active' : 'archived')}
-              className="flex items-center space-x-2 text-sm"
-              title={activeView === 'archived' ? "Show active projects" : "Show archived projects"}
-            >
-              <Archive className="w-4 h-4" />
-              <span>{activeView === 'archived' ? "Projects" : "Archive"}</span>
-            </Button>
+            
+            <Input
+              type="search"
+              placeholder="Search projects..."
+              className="w-64"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
 
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="flex items-center space-x-2 text-sm">
-                  <span>View</span>
+                <button className="btn-secondary px-4 py-2 rounded-lg flex items-center space-x-2 font-medium">
                   <ChevronDown className="w-4 h-4" />
-                </Button>
+                  <span>View</span>
+                </button>
               </PopoverTrigger>
-              <PopoverContent className="w-64 p-4">
-                <div className="space-y-4">
+              <PopoverContent align="end" className="w-64">
+                <div className="space-y-4 p-4">
                   <div>
                     <h4 className="font-medium text-sm mb-2">Status</h4>
                     <select
                       value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value as Project['status'] | 'all')}
-                      className="w-full px-3 py-2 rounded-lg bg-input border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                      onChange={(e) => setStatusFilter(e.target.value as any)}
+                      className="w-full p-2 bg-background border border-input rounded-lg"
                     >
-                      <option value="all">All Statuses</option>
+                      <option value="all">All</option>
                       <option value="planning">Planning</option>
                       <option value="active">Active</option>
-                      <option value="on-hold">On Hold</option>
                       <option value="completed">Completed</option>
-                      <option value="cancelled">Cancelled</option>
+                      <option value="on-hold">On Hold</option>
                     </select>
-                  </div>
-
-                  <div>
-                    <h4 className="font-medium text-sm mb-2">Sort by</h4>
-                    <div className="flex items-center space-x-1">
-                      <select
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value as 'name' | 'progress' | 'updated' | 'order')}
-                        className="w-full px-3 py-2 rounded-lg bg-input border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                      >
-                        <option value="order">Custom Order</option>
-                        <option value="name">Name</option>
-                        <option value="progress">Progress</option>
-                        <option value="updated">Last Updated</option>
-                      </select>
-                      <button
-                        onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                        className="p-2 border rounded-lg hover:bg-accent transition-colors"
-                      >
-                        {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
-                      </button>
-                    </div>
                   </div>
 
                   <div>
@@ -560,22 +499,57 @@ function ProjectsPageContent() {
             {/* Projects View */}
           {activeView === 'active' && (
             <>
-              {activeProjects.length === 0 ? (
+              {/* Breadcrumb Navigation */}
+              <FolderBreadcrumb
+                currentFolder={currentFolder}
+                onNavigateToRoot={handleNavigateToRoot}
+              />
+
+              {/* Empty state when inside a folder with no projects */}
+              {activeProjects.length === 0 && selectedFolderId && (
                 <div className="text-center py-12">
                   <div className="text-muted-foreground mb-4">
-                    {searchTerm || statusFilter !== 'all' ? 'No projects match your filters' : 'No projects yet'}
+                    No projects in this folder yet
+                  </div>
+                  <button
+                    onClick={handleCreateProject}
+                    className="btn-primary px-6 py-3 rounded-lg inline-flex items-center space-x-2 font-medium"
+                  >
+                    <Plus className="w-5 h-5" />
+                    <span>Create Project in This Folder</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Empty state for root view when no folders or projects */}
+              {!selectedFolderId && folders.length === 0 && activeProjects.length === 0 && (
+                <div className="text-center py-12">
+                  <div className="text-muted-foreground mb-4">
+                    {searchTerm || statusFilter !== 'all' ? 'No projects match your filters' : 'No projects or folders yet'}
                   </div>
                   {!searchTerm && statusFilter === 'all' && (
-                    <button
-                      onClick={handleCreateProject}
-                      className="btn-primary px-6 py-3 rounded-lg inline-flex items-center space-x-2 font-medium"
-                    >
-                      <Plus className="w-5 h-5" />
-                      <span>Create Your First Project</span>
-                    </button>
+                    <div className="flex gap-3 justify-center">
+                      <button
+                        onClick={handleCreateProject}
+                        className="btn-primary px-6 py-3 rounded-lg inline-flex items-center space-x-2 font-medium"
+                      >
+                        <Plus className="w-5 h-5" />
+                        <span>Create Your First Project</span>
+                      </button>
+                      <button
+                        onClick={handleCreateFolder}
+                        className="btn-secondary px-6 py-3 rounded-lg inline-flex items-center space-x-2 font-medium"
+                      >
+                        <Plus className="w-5 h-5" />
+                        <span>Create Folder</span>
+                      </button>
+                    </div>
                   )}
                 </div>
-              ) : (
+              )}
+
+              {/* Main content area - folders and projects */}
+              {(activeProjects.length > 0 || (folders.length > 0 && !selectedFolderId)) && (
                 <DndContext
                   sensors={sensors}
                   collisionDetection={closestCenter}
@@ -588,9 +562,23 @@ function ProjectsPageContent() {
                   >
                     <div className={
                       viewMode === 'grid' 
-                        ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
+                        ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6"
                         : "space-y-4"
                     }>
+                      {/* Render folders when in root view */}
+                      {!selectedFolderId && folders.map((folder) => (
+                        <FolderCard
+                          key={folder.id}
+                          folder={folder}
+                          projectCount={getProjectsInFolder(folder.id).length}
+                          onEdit={handleEditFolder}
+                          onDelete={handleDeleteFolder}
+                          onClick={handleFolderClick}
+                          onMoveProjectToFolder={moveProjectToFolder}
+                        />
+                      ))}
+
+                      {/* Render projects */}
                       {activeProjects.map((project) => (
                         <SortableProjectCard
                           key={project.id}
@@ -666,7 +654,6 @@ function ProjectsPageContent() {
               <ProjectsCalendar projects={projects} />
             )}
           </div>
-        </div>
       </div>
 
       {/* Project Form Modal */}

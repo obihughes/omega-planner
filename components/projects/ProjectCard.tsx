@@ -2,10 +2,11 @@
 
 import React, { memo, useMemo } from 'react';
 import { Project, ProjectFolder } from '@/types';
-import { Clock, MoreVertical, Plus, Edit, Trash2, RotateCcw, GripVertical, Folder, ChevronRight } from 'lucide-react';
+import { Clock, MoreVertical, Plus, Edit, Trash2, RotateCcw, GripVertical, Folder, ChevronRight, Briefcase } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CSS } from '@dnd-kit/utilities';
+import { Button } from '@/components/ui/button';
 
 // Task Indicator Component - shows dots up to 12, then numbers
 interface TaskIndicatorProps {
@@ -240,202 +241,132 @@ function ProjectCardComponent({
   return (
     <div 
       ref={setNodeRef}
-      style={{
-        ...style,
-        backgroundColor: project.color + '08', // Very light tint of project color
-        borderColor: project.color + '20', // Subtle border with project color
-      }}
+      style={style}
       className={cn(
-        "p-6 cursor-pointer group relative overflow-hidden",
-        "bg-card border-2 shadow-sm",
-        "hover:shadow-md hover:border-opacity-40",
-        "transition-all duration-200 ease-out",
-        "font-['Inter',sans-serif]", // Use Inter font like text canvas
-        isDragging && "rotate-1 scale-105 shadow-xl ring-2 ring-primary/30",
-        isArchived && "opacity-60 bg-muted/20 hover:bg-muted/30"
+        "relative group transition-all duration-200",
+        isDragging ? 'z-10 scale-[1.02]' : '',
       )}
       onClick={handleCardClick}
-      title="Click to open project and manage tasks"
       {...attributes}
     >
-      {/* Header */}
-      <div className="flex items-start justify-between mb-6">
-        <div className="min-w-0 flex-1">
-          <h3 className={cn(
-            "text-xl font-semibold group-hover:text-primary transition-colors truncate mb-2 text-center",
-            "font-['Inter',sans-serif] tracking-tight", // Larger text with Inter font, centered
-            isArchived ? "text-muted-foreground" : "text-foreground"
-          )}>
-            {project.name}
-            {isArchived && <span className="ml-2 text-sm opacity-70">(Archived)</span>}
-          </h3>
-        </div>
-        
-        <div className="flex items-center space-x-1">
-          {!isArchived && (
+      <div className="bg-card/70 backdrop-blur-md rounded-2xl border border-border/40 p-6 shadow-lg hover:shadow-xl hover:ring-2 hover:ring-primary/20 hover:ring-offset-1 hover:ring-offset-background transition-all duration-300">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-3">
             <div 
-              className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing p-2 rounded-md hover:bg-accent transition-opacity flex-shrink-0"
+              className="w-12 h-12 rounded-xl flex items-center justify-center shadow-md ring-1 ring-white/10"
+              style={{ backgroundColor: project.color }}
+            >
+              <Briefcase className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground text-lg truncate max-w-[180px]">
+                {project.name}
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                {project.progress}% complete
+              </p>
+            </div>
+          </div>
+        {!isArchived && (
+          <div className="flex items-center">
+            <div 
+              className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing p-1 rounded-md hover:bg-accent transition-opacity"
               {...listeners}
               title="Drag to reorder"
+              onClick={(e) => e.stopPropagation()}
             >
               <GripVertical className="w-4 h-4 text-muted-foreground" />
             </div>
-          )}
-          <Popover>
+            <Popover>
             <PopoverTrigger asChild>
-              <button
-                className="opacity-0 group-hover:opacity-100 p-2 rounded-md hover:bg-accent transition-all flex-shrink-0"
-                title="More options"
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="h-7 w-7 p-0 ml-2"
                 onClick={(e) => e.stopPropagation()}
               >
-                <MoreVertical className="w-4 h-4 text-muted-foreground" />
-              </button>
+                <MoreVertical className="w-4 h-4" />
+              </Button>
             </PopoverTrigger>
-            <PopoverContent 
-              className="w-40 p-0" 
-              align="end"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="py-1">
-                {!isArchived && (
-                  <>
+            <PopoverContent align="end" className="w-48 p-1">
+              <button
+                onClick={handleEdit}
+                className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center space-x-2 rounded-md"
+              >
+                <Edit className="w-4 h-4" />
+                <span>Edit Project</span>
+              </button>
+              {onMoveToFolder && (
+                <Popover>
+                  <PopoverTrigger asChild>
                     <button
-                      onClick={handleEdit}
-                      className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center space-x-2"
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center justify-between"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      <Edit className="w-4 h-4" />
-                      <span>Edit Project</span>
+                      <div className="flex items-center space-x-2">
+                        <Folder className="w-4 h-4" />
+                        <span>Move to Folder</span>
+                      </div>
+                      <ChevronRight className="w-3 h-3" />
                     </button>
-                    
-                    {/* Move to Folder submenu */}
-                    {onMoveToFolder && (
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <button
-                            className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center justify-between"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <div className="flex items-center space-x-2">
-                              <Folder className="w-4 h-4" />
-                              <span>Move to Folder</span>
-                            </div>
-                            <ChevronRight className="w-3 h-3" />
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent 
-                          className="w-44 p-0" 
-                          side="right"
-                          align="start"
-                          onClick={(e) => e.stopPropagation()}
+                  </PopoverTrigger>
+                  <PopoverContent 
+                    className="w-44 p-0" 
+                    side="right"
+                    align="start"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="py-1">
+                      <button
+                        onClick={() => handleMoveToFolder(undefined)}
+                        className={cn(
+                          "w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center space-x-2",
+                          !project.folderId && "bg-accent"
+                        )}
+                      >
+                        <Folder className="w-4 h-4 text-muted-foreground" />
+                        <span>Unsorted Projects</span>
+                      </button>
+                      {folders.map((folder) => (
+                        <button
+                          key={folder.id}
+                          onClick={() => handleMoveToFolder(folder.id)}
+                          className={cn(
+                            "w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center space-x-2",
+                            project.folderId === folder.id && "bg-accent"
+                          )}
                         >
-                          <div className="py-1">
-                            <button
-                              onClick={() => handleMoveToFolder(undefined)}
-                              className={cn(
-                                "w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center space-x-2",
-                                !project.folderId && "bg-accent"
-                              )}
-                            >
-                              <Folder className="w-4 h-4 text-muted-foreground" />
-                              <span>All Projects</span>
-                            </button>
-                            {folders.map((folder) => (
-                              <button
-                                key={folder.id}
-                                onClick={() => handleMoveToFolder(folder.id)}
-                                className={cn(
-                                  "w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center space-x-2",
-                                  project.folderId === folder.id && "bg-accent"
-                                )}
-                              >
-                                <div 
-                                  className="w-3 h-3 rounded"
-                                  style={{ backgroundColor: folder.color }}
-                                />
-                                <span>{folder.name}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    )}
-                    
-                    <button
-                      onClick={handleDelete}
-                      className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center space-x-2 text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      <span>Archive Project</span>
-                    </button>
-                  </>
-                )}
-                {isArchived && (
-                  <>
-                    <button
-                      onClick={handleRestore}
-                      className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center space-x-2"
-                    >
-                      <RotateCcw className="w-4 h-4" />
-                      <span>Restore Project</span>
-                    </button>
-                    <button
-                      onClick={handlePermanentlyDelete}
-                      className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center space-x-2 text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      <span>Delete Forever</span>
-                    </button>
-                  </>
-                )}
-              </div>
+                          <div 
+                            className="w-3 h-3 rounded"
+                            style={{ backgroundColor: folder.color }}
+                          />
+                          <span>{folder.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+              <button
+                onClick={handleDelete}
+                className="w-full px-3 py-2 text-left text-sm hover:bg-destructive hover:text-destructive-foreground transition-colors flex items-center space-x-2 rounded-md"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Archive Project</span>
+              </button>
             </PopoverContent>
-          </Popover>
-        </div>
-      </div>
-
-      {/* Progress Section - Now with Green Circle Indicator */}
-      <div className="mb-6">
-        {totalTasks === 0 ? (
-          <div className="flex items-center justify-center py-4 bg-muted/10 border border-dashed border-muted-foreground/20">
-            <div className="flex items-center space-x-2 text-muted-foreground text-sm">
-              <Plus className="w-4 h-4" />
-              <span>Click to add tasks</span>
-            </div>
-          </div>
-        ) : (
-          <div className="py-4">
-            {/* Empty space for main content area */}
+                      </Popover>
           </div>
         )}
-      </div>
-
-      {/* Task Progress - Above Bottom Line, Left Side */}
-      {totalTasks > 0 && (
-        <div className="mb-3">
-          <TaskIndicator 
-            completed={completedTasks} 
-            total={totalTasks}
-            className="justify-start"
-          />
         </div>
-      )}
 
-      {/* Consolidated Status Line at Bottom */}
-      <div className="flex items-center justify-between text-sm text-muted-foreground pt-4 border-t border-border/30">
-        <div className="flex items-center space-x-4">
-          <span className="font-medium">
-            {project.progress}% complete
-          </span>
-          {timeRemaining && (
-            <span className={cn(
-              "flex items-center space-x-1",
-              timeRemaining.isOverdue ? "text-red-600" : "text-muted-foreground"
-            )}>
-              <Clock className="w-3 h-3" />
-              <span>{timeRemaining.text}</span>
-            </span>
-          )}
-        </div>
+              {/* Description if exists */}
+        {project.description && (
+          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+            {project.description}
+          </p>
+        )}
       </div>
     </div>
   );

@@ -226,7 +226,7 @@ export function ProjectFormModal({ isOpen, onClose, project, folders = [], onSav
                 onChange={(e) => setFolderId(e.target.value || undefined)}
                 className="w-full p-3 bg-background border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-ring outline-none text-foreground"
               >
-                <option value="">All Projects (No Folder)</option>
+                <option value="">Unsorted Projects (No Folder)</option>
                 {folders.map((folder) => (
                   <option key={folder.id} value={folder.id}>
                     {folder.name}

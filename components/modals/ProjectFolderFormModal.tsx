@@ -104,7 +104,7 @@ export function ProjectFolderFormModal({ isOpen, onClose, folder, onSave, onDele
 
   const handleDelete = () => {
     if (folder && onDelete) {
-      if (confirm('Are you sure you want to delete this folder? Projects in this folder will be moved to "All Projects".')) {
+      if (confirm('Are you sure you want to delete this folder? Projects in this folder will be moved to "Unsorted Projects".')) {
         onDelete(folder.id);
         onClose();
       }
