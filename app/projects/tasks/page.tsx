@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { TaskListView } from '@/components/projects/TaskListView';
 import { CompactTaskCard } from '@/components/projects/CompactTaskCard';
 import { DraggableTaskCard } from '@/components/projects/DraggableTaskCard';
@@ -14,6 +14,69 @@ import { cn } from '@/lib/utils';
 import { ProjectTask } from '@/types/projects';
 import { getDateKey, getTodayDateKey, formatDueDate } from '@/utils/dateUtils';
 import { ProjectTaskFormModal } from '@/components/modals/ProjectTaskFormModal';
+
+// Storage key for tasks view preferences
+const TASKS_VIEW_PREFERENCES_KEY = 'omega-planner-tasks-view-preferences';
+
+// Types for tasks view preferences
+interface TasksViewPreferences {
+  allTasksFilters: {
+    search: string;
+    project: string;
+    status: string;
+    dueDate: string;
+  };
+  allTasksGroupBy: 'none' | 'project' | 'status' | 'dueDate';
+  allTasksSubGroupBy: string;
+  allTasksSortBy: 'dueDate' | 'created' | 'completion';
+  sortOrder: 'asc' | 'desc';
+}
+
+// Default preferences with 'today' as default dueDate filter
+const defaultTasksPreferences: TasksViewPreferences = {
+  allTasksFilters: {
+    search: '',
+    project: 'all',
+    status: 'all',
+    dueDate: 'today' // Default to today filter
+  },
+  allTasksGroupBy: 'none',
+  allTasksSubGroupBy: 'all',
+  allTasksSortBy: 'dueDate',
+  sortOrder: 'desc'
+};
+
+// Helper functions for localStorage
+const loadTasksPreferences = (): TasksViewPreferences => {
+  // Check if we're on the client side
+  if (typeof window === 'undefined') {
+    return defaultTasksPreferences;
+  }
+  
+  try {
+    const stored = localStorage.getItem(TASKS_VIEW_PREFERENCES_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return { ...defaultTasksPreferences, ...parsed };
+    }
+  } catch (error) {
+    console.error('Error loading tasks view preferences:', error);
+  }
+  return defaultTasksPreferences;
+};
+
+const saveTasksPreferences = (preferences: TasksViewPreferences) => {
+  // Check if we're on the client side
+  if (typeof window === 'undefined') {
+    return;
+  }
+  
+  try {
+    localStorage.setItem(TASKS_VIEW_PREFERENCES_KEY, JSON.stringify(preferences));
+  } catch (error) {
+    console.error('Error saving tasks view preferences:', error);
+  }
+};
 
 // Task with project info interface
 interface TaskWithProject extends ProjectTask {
@@ -30,7 +93,9 @@ export default function ProjectsTasksPage() {
   const { /* isSchedulingMode, setIsSchedulingMode */ } = useViewMode(); // Keep useViewMode for potential future use or if other components still rely on it
   const { projects, updateTaskInProject, addTaskToProject } = useProjects();
   
-  // No longer using viewMode state as there's only one main view
+  // Initialize with default preferences to prevent hydration mismatch
+  const [preferences, setPreferences] = useState<TasksViewPreferences>(defaultTasksPreferences);
+  const [isClient, setIsClient] = useState(false);
   
   // Today mode filters (retained for 'Today' button functionality)
   const [showCompleted, setShowCompleted] = useState(false);
@@ -53,17 +118,22 @@ export default function ProjectsTasksPage() {
     status: 'all'
   });
 
-  // All Tasks filtering and grouping state
-  const [allTasksFilters, setAllTasksFilters] = useState({
-    search: '',
-    project: 'all',
-    status: 'all',
-    dueDate: 'all'
-  });
-  const [allTasksGroupBy, setAllTasksGroupBy] = useState<'none' | 'project' | 'status' | 'dueDate'>('none');
-  const [allTasksSubGroupBy, setAllTasksSubGroupBy] = useState<string>('all');
-  const [allTasksSortBy, setAllTasksSortBy] = useState<'dueDate' | 'created' | 'completion'>('dueDate');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  // Extract persistent state from preferences
+  const { allTasksFilters, allTasksGroupBy, allTasksSubGroupBy, allTasksSortBy, sortOrder } = preferences;
+
+  // Helper function to update preferences and save to localStorage
+  const updatePreferences = useCallback((updates: Partial<TasksViewPreferences>) => {
+    const newPreferences = { ...preferences, ...updates };
+    setPreferences(newPreferences);
+    saveTasksPreferences(newPreferences);
+  }, [preferences]);
+
+  // Load preferences on client side after mount to prevent hydration mismatch
+  useEffect(() => {
+    setIsClient(true);
+    const clientPreferences = loadTasksPreferences();
+    setPreferences(clientPreferences);
+  }, []);
 
   // Add task modal state
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
@@ -759,7 +829,9 @@ export default function ProjectsTasksPage() {
                       type="text"
                       placeholder="Search tasks..."
                       value={allTasksFilters.search}
-                      onChange={(e) => setAllTasksFilters(prev => ({ ...prev, search: e.target.value }))}
+                      onChange={(e) => updatePreferences({ 
+                        allTasksFilters: { ...allTasksFilters, search: e.target.value }
+                      })}
                       className="w-full pl-9 pr-3 py-2 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
@@ -770,8 +842,10 @@ export default function ProjectsTasksPage() {
                     <select
                       value={allTasksGroupBy}
                       onChange={(e) => {
-                        setAllTasksGroupBy(e.target.value as any);
-                        setAllTasksSubGroupBy('all'); // Reset subgrouping when main grouping changes
+                        updatePreferences({ 
+                          allTasksGroupBy: e.target.value as any,
+                          allTasksSubGroupBy: 'all' // Reset subgrouping when main grouping changes
+                        });
                       }}
                       className="px-3 py-2 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20"
                     >
@@ -788,7 +862,7 @@ export default function ProjectsTasksPage() {
                       <label className="text-sm text-muted-foreground">Then by:</label>
                       <select
                         value={allTasksSubGroupBy}
-                        onChange={(e) => setAllTasksSubGroupBy(e.target.value)}
+                        onChange={(e) => updatePreferences({ allTasksSubGroupBy: e.target.value })}
                         className="px-3 py-2 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20"
                       >
                         {getSubGroupingOptions().map(option => (
@@ -803,7 +877,9 @@ export default function ProjectsTasksPage() {
                   {/* Today Button - Quick filter */}
                   <Button
                     onClick={() => {
-                      setAllTasksFilters(prev => ({ ...prev, dueDate: 'today' }));
+                      updatePreferences({ 
+                        allTasksFilters: { ...allTasksFilters, dueDate: 'today' }
+                      });
                     }}
                     variant={allTasksFilters.dueDate === 'today' ? 'secondary' : 'outline'}
                     size="sm"
@@ -822,10 +898,12 @@ export default function ProjectsTasksPage() {
                   <Button
                     onClick={() => {
                       if (allTasksSortBy === 'dueDate') {
-                        setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                        updatePreferences({ sortOrder: sortOrder === 'asc' ? 'desc' : 'asc' });
                       } else {
-                        setAllTasksSortBy('dueDate');
-                        setSortOrder('asc');
+                        updatePreferences({ 
+                          allTasksSortBy: 'dueDate',
+                          sortOrder: 'asc'
+                        });
                       }
                     }}
                     variant={allTasksSortBy === 'dueDate' ? 'secondary' : 'outline'}
@@ -842,10 +920,12 @@ export default function ProjectsTasksPage() {
                   <Button
                     onClick={() => {
                       if (allTasksSortBy === 'created') {
-                        setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                        updatePreferences({ sortOrder: sortOrder === 'asc' ? 'desc' : 'asc' });
                       } else {
-                        setAllTasksSortBy('created');
-                        setSortOrder('desc');
+                        updatePreferences({ 
+                          allTasksSortBy: 'created',
+                          sortOrder: 'desc'
+                        });
                       }
                     }}
                     variant={allTasksSortBy === 'created' ? 'secondary' : 'outline'}
@@ -862,10 +942,12 @@ export default function ProjectsTasksPage() {
                   <Button
                     onClick={() => {
                       if (allTasksSortBy === 'completion') {
-                        setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                        updatePreferences({ sortOrder: sortOrder === 'asc' ? 'desc' : 'asc' });
                       } else {
-                        setAllTasksSortBy('completion');
-                        setSortOrder('desc');
+                        updatePreferences({ 
+                          allTasksSortBy: 'completion',
+                          sortOrder: 'desc'
+                        });
                       }
                     }}
                     variant={allTasksSortBy === 'completion' ? 'secondary' : 'outline'}
@@ -884,9 +966,11 @@ export default function ProjectsTasksPage() {
                   {(allTasksFilters.search || allTasksFilters.dueDate !== 'all' || allTasksGroupBy !== 'none') && (
                     <button
                       onClick={() => {
-                        setAllTasksFilters({ search: '', project: 'all', status: 'all', dueDate: 'all' });
-                        setAllTasksGroupBy('none');
-                        setAllTasksSubGroupBy('all');
+                        updatePreferences({
+                          allTasksFilters: { search: '', project: 'all', status: 'all', dueDate: 'all' }, // Reset to show all tasks
+                          allTasksGroupBy: 'none',
+                          allTasksSubGroupBy: 'all'
+                        });
                       }}
                       className="p-2 text-muted-foreground hover:text-foreground ml-auto"
                       title="Clear all filters and grouping"
