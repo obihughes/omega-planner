@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Document } from '@/types';
 import DocumentEditor from './DocumentEditor';
 import { useDocuments } from '@/hooks/useDocuments';
-import { Plus, X, Star, Search, FileText, Save, Move, Trash2, Type, RotateCcw, Archive as ArchiveIcon, Download, Upload, Folder, FolderPlus, ChevronRight, ChevronDown, Check } from 'lucide-react';
+import { Plus, X, Star, Search, FileText, Save, Move, Trash2, Type, RotateCcw, Archive as ArchiveIcon, Download, Upload, Folder, FolderPlus, ChevronRight, ChevronDown, Check, PanelLeftClose, PanelLeftOpen, Filter, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
@@ -42,11 +42,30 @@ export default function Documents() {
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [selectedFolderId, setSelectedFolderId] = useState<string | undefined>();
+  const [openDocuments, setOpenDocuments] = useState<string[]>([]);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [documentFilter, setDocumentFilter] = useState<'all' | 'starred' | 'recent'>('all');
 
-  const filteredDocuments = documents.filter(doc =>
-    doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    doc.content.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredDocuments = documents.filter(doc => {
+    // Apply search filter
+    const matchesSearch = doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      doc.content.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    if (!matchesSearch) return false;
+    
+    // Apply document filter
+    switch (documentFilter) {
+      case 'starred':
+        return doc.isStarred === true;
+      case 'recent':
+        // Show documents modified in the last 7 days
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        return new Date(doc.updatedAt) > weekAgo;
+      default:
+        return true;
+    }
+  });
 
   const sortedDocuments = [...filteredDocuments].sort((a, b) => {
     // Starred documents first
@@ -58,7 +77,7 @@ export default function Documents() {
 
   // Organize documents and folders into tree structure
   const getDocumentsInFolder = (folderId?: string) => {
-    return documents.filter(doc => doc.folderId === folderId);
+    return filteredDocuments.filter(doc => doc.folderId === folderId);
   };
 
   const getFoldersInFolder = (parentId?: string) => {
@@ -153,11 +172,22 @@ export default function Documents() {
 
   const handleSelectDocument = (document: Document) => {
     selectDocument(document.id);
+    // Add to open documents if not already open
+    if (!openDocuments.includes(document.id)) {
+      setOpenDocuments(prev => [...prev, document.id]);
+    }
   };
 
   const handleCreateDocument = () => {
     createDocument(selectedFolderId);
   };
+
+  // Auto-open newly created documents
+  useEffect(() => {
+    if (selectedDocument && !openDocuments.includes(selectedDocument.id)) {
+      setOpenDocuments(prev => [...prev, selectedDocument.id]);
+    }
+  }, [selectedDocument, openDocuments]);
 
   const handleCreateFolder = () => {
     if (newFolderName.trim()) {
@@ -196,11 +226,23 @@ export default function Documents() {
       e.stopPropagation();
     }
     
-    // Simple close behavior - just deselect the document, never delete/archive
-    // The document remains in the documents list for future access
+    // Remove from open tabs but keep in sidebar
+    const newOpenDocuments = openDocuments.filter(id => id !== documentId);
+    setOpenDocuments(newOpenDocuments);
     
+    // If this was the selected document, switch to another open tab or clear selection
     if (selectedDocument?.id === documentId) {
-      clearSelection();
+      if (newOpenDocuments.length > 0) {
+        // Switch to the last opened document
+        const nextDoc = documents.find(doc => doc.id === newOpenDocuments[newOpenDocuments.length - 1]);
+        if (nextDoc) {
+          selectDocument(nextDoc.id);
+        } else {
+          clearSelection();
+        }
+      } else {
+        clearSelection();
+      }
     }
   };
 
@@ -247,8 +289,9 @@ export default function Documents() {
     try {
       const exportData = {
         documents: [...documents, ...trashedDocuments],
+        folders: folders,
         exportDate: new Date().toISOString(),
-        version: '1.0'
+        version: '1.1'
       };
 
       const dataStr = JSON.stringify(exportData, null, 2);
@@ -305,19 +348,41 @@ export default function Documents() {
             throw new Error('Invalid document format');
           }
 
+          const folderCount = importData.folders ? importData.folders.length : 0;
           const confirmed = window.confirm(
-            `Import ${importData.documents.length} documents?\n\n` +
+            `Import ${importData.documents.length} documents and ${folderCount} folders?\n\n` +
             `This will merge with your existing documents.`
           );
 
           if (confirmed) {
-            // Merge imported documents with existing ones
+            // Import folders first (with new IDs)
+            const folderIdMap = new Map<string, string>();
+            
+            if (importData.folders && Array.isArray(importData.folders)) {
+              importData.folders.forEach((folder: any) => {
+                const newFolderId = `imported_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                folderIdMap.set(folder.id, newFolderId);
+                
+                const newFolder = {
+                  ...folder,
+                  id: newFolderId,
+                  name: `${folder.name} (imported)`,
+                  parentId: folder.parentId ? folderIdMap.get(folder.parentId) : undefined,
+                  updatedAt: new Date().toISOString()
+                };
+                
+                createFolder(newFolder.name, newFolder.parentId);
+              });
+            }
+
+            // Then import documents with updated folder references
             importData.documents.forEach((doc: Document) => {
               // Generate new ID to avoid conflicts
               const newDoc = {
                 ...doc,
                 id: `imported_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                 title: `${doc.title} (imported)`,
+                folderId: doc.folderId ? folderIdMap.get(doc.folderId) : undefined,
                 updatedAt: new Date().toISOString()
               };
               
@@ -333,7 +398,7 @@ export default function Documents() {
                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
                 </svg>
-                ${importData.documents.length} documents imported successfully!
+                ${importData.documents.length} documents and ${folderCount} folders imported successfully!
               </div>
             `;
             document.body.appendChild(notification);
@@ -370,146 +435,270 @@ export default function Documents() {
   return (
     <div className="h-full flex bg-card rounded-lg shadow-sm border overflow-hidden">
       {/* Document Explorer Sidebar */}
-      <div className="w-72 flex-shrink-0 border-r border-border/50 flex flex-col bg-muted/20">
+      <div className={cn(
+        "flex-shrink-0 border-r border-border/50 flex flex-col bg-muted/20 transition-all duration-200",
+        sidebarCollapsed ? "w-12" : "w-64"
+      )}>
         {/* Sidebar Header */}
-        <div className="p-3 border-b border-border/50">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-foreground">Documents</h2>
-            <div className="flex items-center gap-1">
+        <div className="p-2 border-b border-border/50">
+          {!sidebarCollapsed ? (
+            <>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold text-foreground">Documents</h2>
+                <div className="flex items-center gap-1">
+                  <Button
+                    onClick={() => setSidebarCollapsed(true)}
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 w-6 p-0"
+                    title="Collapse sidebar"
+                  >
+                    <PanelLeftClose className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Filter Options */}
+              <div className="flex items-center gap-1 mb-2">
+                <Button
+                  onClick={() => setDocumentFilter('all')}
+                  size="sm"
+                  variant={documentFilter === 'all' ? 'default' : 'ghost'}
+                  className="h-6 px-2 text-xs flex-1"
+                >
+                  All
+                </Button>
+                <Button
+                  onClick={() => setDocumentFilter('starred')}
+                  size="sm"
+                  variant={documentFilter === 'starred' ? 'default' : 'ghost'}
+                  className="h-6 px-2 text-xs flex-1"
+                >
+                  <Star className="w-3 h-3 mr-1" />
+                  Starred
+                </Button>
+                <Button
+                  onClick={() => setDocumentFilter('recent')}
+                  size="sm"
+                  variant={documentFilter === 'recent' ? 'default' : 'ghost'}
+                  className="h-6 px-2 text-xs flex-1"
+                >
+                  <Clock className="w-3 h-3 mr-1" />
+                  Recent
+                </Button>
+              </div>
+
+              {/* Search Bar */}
+              <div className="relative mb-2">
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-7 pr-2 py-1 text-xs bg-background/50 border border-border/50 rounded focus:outline-none focus:ring-1 focus:ring-primary/20"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-1">
+                <Button
+                  onClick={() => setCreatingFolder(true)}
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 px-2 text-xs flex-1"
+                  title="Create folder"
+                >
+                  <FolderPlus className="w-3 h-3 mr-1" />
+                  Folder
+                </Button>
+                <Button
+                  onClick={handleCreateDocument}
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 px-2 text-xs flex-1"
+                  title="Create document"
+                >
+                  <Plus className="w-3 h-3 mr-1" />
+                  Doc
+                </Button>
+              </div>
+
+              {/* Folder Creation Input */}
+              {creatingFolder && (
+                <div className="mt-2 flex items-center gap-1">
+                  <input
+                    type="text"
+                    placeholder="Folder name..."
+                    value={newFolderName}
+                    onChange={(e) => setNewFolderName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleCreateFolder();
+                      } else if (e.key === 'Escape') {
+                        setCreatingFolder(false);
+                        setNewFolderName('');
+                      }
+                    }}
+                    className="flex-1 px-2 py-1 text-xs bg-background border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary/20"
+                    autoFocus
+                  />
+                  <Button
+                    onClick={handleCreateFolder}
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 w-6 p-0"
+                  >
+                    <Check className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setCreatingFolder(false);
+                      setNewFolderName('');
+                    }}
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 w-6 p-0"
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              )}
+            </>
+          ) : (
+            /* Collapsed Sidebar */
+            <div className="flex flex-col items-center gap-2">
               <Button
-                onClick={() => setCreatingFolder(true)}
+                onClick={() => setSidebarCollapsed(false)}
                 size="sm"
                 variant="ghost"
-                className="h-6 w-6 p-0"
-                title="Create folder"
+                className="h-8 w-8 p-0"
+                title="Expand sidebar"
               >
-                <FolderPlus className="w-3.5 h-3.5" />
+                <PanelLeftOpen className="w-4 h-4" />
               </Button>
               <Button
                 onClick={handleCreateDocument}
                 size="sm"
                 variant="ghost"
-                className="h-6 w-6 p-0"
+                className="h-8 w-8 p-0"
                 title="Create document"
               >
-                <Plus className="w-3.5 h-3.5" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Search Bar */}
-          <div className="relative">
-            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-7 pr-2 py-1 text-xs bg-background/50 border border-border/50 rounded focus:outline-none focus:ring-1 focus:ring-primary/20"
-            />
-          </div>
-
-          {/* Folder Creation Input */}
-          {creatingFolder && (
-            <div className="mt-2 flex items-center gap-1">
-              <input
-                type="text"
-                placeholder="Folder name..."
-                value={newFolderName}
-                onChange={(e) => setNewFolderName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleCreateFolder();
-                  } else if (e.key === 'Escape') {
-                    setCreatingFolder(false);
-                    setNewFolderName('');
-                  }
-                }}
-                className="flex-1 px-2 py-1 text-xs bg-background border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary/20"
-                autoFocus
-              />
-              <Button
-                onClick={handleCreateFolder}
-                size="sm"
-                variant="ghost"
-                className="h-6 w-6 p-0"
-              >
-                <Check className="w-3 h-3" />
-              </Button>
-              <Button
-                onClick={() => {
-                  setCreatingFolder(false);
-                  setNewFolderName('');
-                }}
-                size="sm"
-                variant="ghost"
-                className="h-6 w-6 p-0"
-              >
-                <X className="w-3 h-3" />
+                <Plus className="w-4 h-4" />
               </Button>
             </div>
           )}
         </div>
 
         {/* Document Tree */}
-        <div className="flex-1 overflow-y-auto p-2">
-          {documents.length === 0 && folders.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
-              <FileText className="w-8 h-8 mb-2 opacity-50" />
-              <p className="text-xs">No documents yet</p>
-              <Button
-                onClick={handleCreateDocument}
-                size="sm"
-                variant="outline"
-                className="mt-2 h-6 text-xs"
-              >
-                Create First Document
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-1">
-              {renderFolderTree()}
-            </div>
-          )}
-        </div>
+        {!sidebarCollapsed && (
+          <div className="flex-1 overflow-y-auto p-2">
+            {documents.length === 0 && folders.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
+                <FileText className="w-8 h-8 mb-2 opacity-50" />
+                <p className="text-xs">No documents yet</p>
+                <Button
+                  onClick={handleCreateDocument}
+                  size="sm"
+                  variant="outline"
+                  className="mt-2 h-6 text-xs"
+                >
+                  Create First Document
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {renderFolderTree()}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Sidebar Footer */}
-        <div className="p-2 border-t border-border/50">
-          <div className="flex items-center gap-1">
-            <Button
-              onClick={() => setShowArchiveModal(true)}
-              size="sm"
-              variant="ghost"
-              className="h-6 text-xs flex-1"
-              title="View archive"
-            >
-              <ArchiveIcon className="w-3 h-3 mr-1" />
-              Archive
-            </Button>
-            <Button
-              onClick={handleExportDocuments}
-              size="sm"
-              variant="ghost"
-              className="h-6 w-6 p-0"
-              title="Export documents"
-            >
-              <Download className="w-3 h-3" />
-            </Button>
-            <Button
-              onClick={handleImportDocuments}
-              size="sm"
-              variant="ghost"
-              className="h-6 w-6 p-0"
-              title="Import documents"
-            >
-              <Upload className="w-3 h-3" />
-            </Button>
+        {!sidebarCollapsed && (
+          <div className="p-2 border-t border-border/50">
+            <div className="flex items-center gap-1">
+              <Button
+                onClick={() => setShowArchiveModal(true)}
+                size="sm"
+                variant="ghost"
+                className="h-6 text-xs flex-1"
+                title="View archive"
+              >
+                <ArchiveIcon className="w-3 h-3 mr-1" />
+                Archive
+              </Button>
+              <Button
+                onClick={handleExportDocuments}
+                size="sm"
+                variant="ghost"
+                className="h-6 w-6 p-0"
+                title="Export documents"
+              >
+                <Download className="w-3 h-3" />
+              </Button>
+              <Button
+                onClick={handleImportDocuments}
+                size="sm"
+                variant="ghost"
+                className="h-6 w-6 p-0"
+                title="Import documents"
+              >
+                <Upload className="w-3 h-3" />
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Document Tabs */}
+        {openDocuments.length > 0 && (
+          <div className="flex items-center bg-muted/10 border-b border-border/50 overflow-x-auto">
+            {openDocuments.map((docId) => {
+              const document = documents.find(d => d.id === docId);
+              if (!document) return null;
+              
+              return (
+                <div
+                  key={document.id}
+                  onClick={() => handleSelectDocument(document)}
+                  className={cn(
+                    "relative flex items-center gap-2 px-3 py-2 cursor-pointer transition-all min-w-fit max-w-xs border-r border-border/50 group hover:bg-background/50",
+                    selectedDocument?.id === document.id
+                      ? "bg-background border-b-2 border-b-primary shadow-sm"
+                      : ""
+                  )}
+                >
+                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                    {document.isStarred && (
+                      <Star className="w-3 h-3 text-yellow-500 fill-current flex-shrink-0" />
+                    )}
+                    <span className="text-sm truncate">
+                      {document.title || 'Untitled'}
+                    </span>
+                  </div>
+                  
+                  {/* Close tab button */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "h-4 w-4 p-0 flex-shrink-0 transition-opacity hover:bg-red-100 dark:hover:bg-red-900/20",
+                      selectedDocument?.id === document.id ? "opacity-70 hover:opacity-100" : "opacity-0 group-hover:opacity-70"
+                    )}
+                    onClick={(e) => handleCloseDocument(document.id, e)}
+                    title="Close tab"
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         {/* Document Header */}
         {selectedDocument && (
           <div className="flex items-center justify-between p-3 border-b border-border/50 bg-background/50">
@@ -631,14 +820,32 @@ export default function Documents() {
             <div className="flex-1 flex items-center justify-center text-muted-foreground">
               <div className="text-center max-w-sm">
                 <div className="text-5xl mb-4">✍️</div>
-                <h3 className="text-lg font-medium mb-2">Select a document</h3>
-                <p className="text-sm text-muted-foreground/70 mb-6">
-                  Choose a document from the sidebar or create a new one to get started
-                </p>
-                <Button onClick={handleCreateDocument} size="sm">
-                  <Plus className="w-4 h-4 mr-2" />
-                  New Document
-                </Button>
+                {openDocuments.length === 0 ? (
+                  <>
+                    <h3 className="text-lg font-medium mb-2">No documents open</h3>
+                    <p className="text-sm text-muted-foreground/70 mb-6">
+                      {documents.length > 0 
+                        ? "Click on a document in the sidebar to open it"
+                        : "Create your first document to get started"
+                      }
+                    </p>
+                    <Button onClick={handleCreateDocument} size="sm">
+                      <Plus className="w-4 h-4 mr-2" />
+                      New Document
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="text-lg font-medium mb-2">Select a document</h3>
+                    <p className="text-sm text-muted-foreground/70 mb-6">
+                      Choose a document from the tabs above or create a new one
+                    </p>
+                    <Button onClick={handleCreateDocument} size="sm">
+                      <Plus className="w-4 h-4 mr-2" />
+                      New Document
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           )}
