@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Document } from '@/types';
 import DocumentEditor from './DocumentEditor';
 import { useDocuments } from '@/hooks/useDocuments';
-import { Plus, X, Star, Search, FileText, Save, Move, Trash2, Type, RotateCcw, Archive as ArchiveIcon } from 'lucide-react';
+import { Plus, X, Star, Search, FileText, Save, Move, Trash2, Type, RotateCcw, Archive as ArchiveIcon, Download, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
@@ -33,15 +33,7 @@ export default function Documents() {
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [dragMode, setDragMode] = useState(false);
   const [isAddingText, setIsAddingText] = useState(false);
-  const [openDocuments, setOpenDocuments] = useState<string[]>([]);
   const [showArchiveModal, setShowArchiveModal] = useState(false);
-
-  // Auto-open new documents when created
-  useEffect(() => {
-    if (selectedDocument && !openDocuments.includes(selectedDocument.id)) {
-      setOpenDocuments(prev => [...prev, selectedDocument.id]);
-    }
-  }, [selectedDocument, openDocuments]);
 
   const filteredDocuments = documents.filter(doc =>
     doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -58,10 +50,6 @@ export default function Documents() {
 
   const handleSelectDocument = (document: Document) => {
     selectDocument(document.id);
-    // Add to open documents if not already open
-    if (!openDocuments.includes(document.id)) {
-      setOpenDocuments(prev => [...prev, document.id]);
-    }
   };
 
   const handleCreateDocument = () => {
@@ -87,77 +75,11 @@ export default function Documents() {
       e.stopPropagation();
     }
     
-    const document = documents.find(doc => doc.id === documentId);
-    if (document) {
-      // Check if document has unsaved changes or important content
-      const hasContent = document.content && document.content.trim().length > 0;
-      
-      if (hasContent) {
-        // Show options for documents with content
-        const choice = window.confirm(
-          `"${document.title || 'Untitled'}" contains content.\n\n` +
-          `Click OK to archive it (you can restore from Archive view later)\n` +
-          `Click Cancel to just close the tab (document will remain in your list)`
-        );
-        
-        if (choice) {
-          // User chose to archive
-          trashDocument(documentId);
-          
-          // Provide feedback that document was archived
-          const notification = window.document.createElement('div');
-          notification.className = 'fixed top-4 right-4 bg-blue-100 border border-blue-300 text-blue-800 px-4 py-2 rounded-lg shadow-lg z-50';
-          notification.innerHTML = `
-            <div class="flex items-center gap-2">
-              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-              </svg>
-              "${document.title || 'Document'}" archived successfully. Find it in Archive view.
-            </div>
-          `;
-          window.document.body.appendChild(notification);
-          
-          // Remove notification after 3 seconds
-          setTimeout(() => {
-            if (notification.parentNode) {
-              notification.parentNode.removeChild(notification);
-            }
-          }, 3000);
-        }
-        // If user chose cancel, just close the tab (don't archive)
-      } else {
-        // For empty documents, just close the tab (don't delete)
-        // The document will remain in the documents list
-      }
-      
-      // Remove from open documents regardless of choice
-      setOpenDocuments(prev => prev.filter(id => id !== documentId));
-      
-      if (selectedDocument?.id === documentId) {
-        // Find next document to open from remaining open documents
-        const remainingOpen = openDocuments.filter(id => id !== documentId);
-        const openDocs = documents.filter(doc => remainingOpen.includes(doc.id));
-        
-        if (openDocs.length > 0) {
-          selectDocument(openDocs[0].id);
-        } else {
-          clearSelection();
-        }
-      }
-    } else {
-      // If document not found, just close the tab
-      setOpenDocuments(prev => prev.filter(id => id !== documentId));
-      
-      if (selectedDocument?.id === documentId) {
-        const remainingOpen = openDocuments.filter(id => id !== documentId);
-        const openDocs = documents.filter(doc => remainingOpen.includes(doc.id));
-        
-        if (openDocs.length > 0) {
-          selectDocument(openDocs[0].id);
-        } else {
-          clearSelection();
-        }
-      }
+    // Simple close behavior - just deselect the document, never delete/archive
+    // The document remains in the documents list for future access
+    
+    if (selectedDocument?.id === documentId) {
+      clearSelection();
     }
   };
 
@@ -199,6 +121,118 @@ export default function Documents() {
     setDragMode(!dragMode);
   };
 
+  // Export documents as JSON
+  const handleExportDocuments = () => {
+    try {
+      const exportData = {
+        documents: [...documents, ...trashedDocuments],
+        exportDate: new Date().toISOString(),
+        version: '1.0'
+      };
+
+      const dataStr = JSON.stringify(exportData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `omega-planner-documents-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      // Show success notification
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-green-100 border border-green-300 text-green-800 px-4 py-2 rounded-lg shadow-lg z-50';
+      notification.innerHTML = `
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+          </svg>
+          Documents exported successfully!
+        </div>
+      `;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification);
+        }
+      }, 3000);
+    } catch (error) {
+      console.error('Failed to export documents:', error);
+      alert('Failed to export documents. Please try again.');
+    }
+  };
+
+  // Import documents from JSON
+  const handleImportDocuments = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const importData = JSON.parse(e.target?.result as string);
+          
+          if (!importData.documents || !Array.isArray(importData.documents)) {
+            throw new Error('Invalid document format');
+          }
+
+          const confirmed = window.confirm(
+            `Import ${importData.documents.length} documents?\n\n` +
+            `This will merge with your existing documents.`
+          );
+
+          if (confirmed) {
+            // Merge imported documents with existing ones
+            importData.documents.forEach((doc: Document) => {
+              // Generate new ID to avoid conflicts
+              const newDoc = {
+                ...doc,
+                id: `imported_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                title: `${doc.title} (imported)`,
+                updatedAt: new Date().toISOString()
+              };
+              
+              // Add to documents using the existing function
+              updateDocument(newDoc);
+            });
+
+            // Show success notification
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 bg-green-100 border border-green-300 text-green-800 px-4 py-2 rounded-lg shadow-lg z-50';
+            notification.innerHTML = `
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                </svg>
+                ${importData.documents.length} documents imported successfully!
+              </div>
+            `;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+              if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+              }
+            }, 3000);
+          }
+        } catch (error) {
+          console.error('Failed to import documents:', error);
+          alert('Failed to import documents. Please check the file format.');
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  };
+
   if (isLoading) {
     return (
       <div className="h-full flex flex-col bg-card rounded-lg shadow-sm border overflow-hidden min-w-0">
@@ -233,67 +267,50 @@ export default function Documents() {
           </div>
         )}
 
-        {/* Tabs and Controls Row */}
+        {/* Current Document Display and Controls */}
         <div className="flex items-center justify-between min-h-[48px] min-w-0">
-          {/* Document Tabs */}
-          <div className="flex items-center overflow-x-auto flex-1 scrollbar-none">
-            {openDocuments.length === 0 ? (
-              <div className="flex items-center px-4 py-2 text-muted-foreground">
-                <FileText className="w-4 h-4 mr-2 opacity-50" />
-                <span className="text-sm">No open documents</span>
+          {/* Current Document Info */}
+          <div className="flex items-center flex-1 min-w-0">
+            {selectedDocument ? (
+              <div className="flex items-center gap-2 px-4 py-2">
+                <FileText className="w-4 h-4 text-primary flex-shrink-0" />
+                <div className="flex items-center gap-1.5 flex-1 min-w-0" onDoubleClick={() => handleTitleDoubleClick(selectedDocument)}>
+                  {selectedDocument.isStarred && (
+                    <Star className="w-3 h-3 text-yellow-500 fill-current flex-shrink-0" />
+                  )}
+                  {editingDocumentId === selectedDocument.id ? (
+                    <input
+                      type="text"
+                      value={editingTitle}
+                      onChange={handleTitleChange}
+                      onBlur={handleTitleBlur}
+                      onKeyDown={handleTitleKeyDown}
+                      className="text-sm font-medium bg-transparent outline-none focus:ring-0 border-0 p-0"
+                      autoFocus
+                    />
+                  ) : (
+                    <span className="text-sm font-medium truncate">
+                      {selectedDocument.title || 'Untitled'}
+                    </span>
+                  )}
+                </div>
+                
+                {/* Close button */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 flex-shrink-0 hover:bg-accent"
+                  onClick={(e) => handleCloseDocument(selectedDocument.id, e)}
+                  title="Close document"
+                >
+                  <X className="w-3 h-3" />
+                </Button>
               </div>
             ) : (
-              openDocuments.map((docId) => {
-                const document = documents.find(d => d.id === docId);
-                if (!document) return null;
-                return (
-                <div
-                  key={document.id}
-                  onClick={() => handleSelectDocument(document)}
-                  className={cn(
-                    "relative flex items-center gap-2 px-3 py-2 cursor-pointer transition-all min-w-fit max-w-xs border-r border-border/50 group hover:bg-background/50",
-                    selectedDocument?.id === document.id
-                      ? "bg-background border-b-2 border-b-primary shadow-sm"
-                      : ""
-                  )}
-                >
-                  <div className="flex items-center gap-1.5 flex-1 min-w-0" onDoubleClick={() => handleTitleDoubleClick(document)}>
-                    {document.isStarred && (
-                      <Star className="w-3 h-3 text-yellow-500 fill-current flex-shrink-0" />
-                    )}
-                    {editingDocumentId === document.id ? (
-                      <input
-                        type="text"
-                        value={editingTitle}
-                        onChange={handleTitleChange}
-                        onBlur={handleTitleBlur}
-                        onKeyDown={handleTitleKeyDown}
-                        className="text-sm bg-transparent outline-none focus:ring-0 border-0 p-0"
-                        autoFocus
-                      />
-                    ) : (
-                      <span className="text-sm truncate">
-                        {getTruncatedTitle(document.title || 'Untitled')}
-                      </span>
-                    )}
-                  </div>
-                  
-                  {/* Archive button */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={cn(
-                      "h-4 w-4 p-0 flex-shrink-0 transition-opacity hover:bg-orange-100 dark:hover:bg-orange-900/20",
-                      selectedDocument?.id === document.id ? "opacity-70 hover:opacity-100" : "opacity-0 group-hover:opacity-70"
-                    )}
-                    onClick={(e) => handleCloseDocument(document.id, e)}
-                    title="Archive document"
-                  >
-                    <X className="w-3 h-3" />
-                  </Button>
-                </div>
-                );
-              })
+              <div className="flex items-center px-4 py-2 text-muted-foreground">
+                <FileText className="w-4 h-4 mr-2 opacity-50" />
+                <span className="text-sm">No document selected</span>
+              </div>
             )}
           </div>
 
@@ -346,8 +363,33 @@ export default function Documents() {
                   variant="ghost"
                   size="sm"
                   onClick={() => {
-                    if (window.confirm('Move this document to archive? You can restore it later.')) {
-                      trashDocument(selectedDocument.id);
+                    if (selectedDocument) {
+                      const confirmed = window.confirm(
+                        `Archive "${selectedDocument.title || 'Untitled'}"?\n\n` +
+                        `You can restore it later from the Archive view.`
+                      );
+                      if (confirmed) {
+                        trashDocument(selectedDocument.id);
+                        
+                        // Show success notification
+                        const notification = document.createElement('div');
+                        notification.className = 'fixed top-4 right-4 bg-blue-100 border border-blue-300 text-blue-800 px-4 py-2 rounded-lg shadow-lg z-50';
+                        notification.innerHTML = `
+                          <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            "${selectedDocument.title || 'Document'}" archived. Find it in Archive view.
+                          </div>
+                        `;
+                        document.body.appendChild(notification);
+                        
+                        setTimeout(() => {
+                          if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                          }
+                        }, 3000);
+                      }
                     }
                   }}
                   className="h-7 w-7 p-0"
@@ -384,6 +426,25 @@ export default function Documents() {
               title="View archive"
             >
               <ArchiveIcon className="w-3.5 h-3.5" />
+            </Button>
+            
+            {/* Backup/Restore tools */}
+            <div className="w-px h-4 bg-border mx-1" />
+            <Button
+              onClick={handleExportDocuments}
+              size="sm"
+              className="h-7 w-7 p-0"
+              title="Export documents (backup)"
+            >
+              <Download className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              onClick={handleImportDocuments}
+              size="sm"
+              className="h-7 w-7 p-0"
+              title="Import documents"
+            >
+              <Upload className="w-3.5 h-3.5" />
             </Button>
           </div>
         </div>
@@ -505,25 +566,70 @@ export default function Documents() {
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            restoreDocument(doc.id);
-                            // Show notification that document was restored
-                            const notification = window.document.createElement('div');
-                            notification.className = 'fixed top-4 right-4 bg-green-100 border border-green-300 text-green-800 px-4 py-2 rounded-lg shadow-lg z-50';
-                            notification.innerHTML = `
-                              <div class="flex items-center gap-2">
-                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                                </svg>
-                                "${doc.title || 'Document'}" restored successfully.
-                              </div>
-                            `;
-                            window.document.body.appendChild(notification);
-                            
-                            setTimeout(() => {
-                              if (notification.parentNode) {
-                                notification.parentNode.removeChild(notification);
+                            try {
+                              // Validate document before restoring
+                              if (!doc.id || !doc.title) {
+                                throw new Error('Invalid document data');
                               }
-                            }, 3000);
+
+                              // Check if document with same ID already exists in active documents
+                              const existingDoc = documents.find(d => d.id === doc.id);
+                              if (existingDoc && !existingDoc.isTrashed) {
+                                const confirmed = window.confirm(
+                                  `A document with this title already exists: "${existingDoc.title}"\n\n` +
+                                  `Do you want to restore anyway? This will create a duplicate.`
+                                );
+                                if (!confirmed) return;
+                              }
+
+                              restoreDocument(doc.id);
+                              
+                              // Show success notification
+                              const notification = window.document.createElement('div');
+                              notification.className = 'fixed top-4 right-4 bg-green-100 border border-green-300 text-green-800 px-4 py-2 rounded-lg shadow-lg z-50';
+                              notification.innerHTML = `
+                                <div class="flex items-center gap-2">
+                                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                  </svg>
+                                  "${doc.title || 'Document'}" restored successfully.
+                                </div>
+                              `;
+                              window.document.body.appendChild(notification);
+                              
+                              setTimeout(() => {
+                                if (notification.parentNode) {
+                                  notification.parentNode.removeChild(notification);
+                                }
+                              }, 3000);
+
+                              // Auto-select the restored document
+                              setTimeout(() => {
+                                selectDocument(doc.id);
+                              }, 100);
+
+                            } catch (error) {
+                              console.error('Failed to restore document:', error);
+                              
+                              // Show error notification
+                              const errorNotification = window.document.createElement('div');
+                              errorNotification.className = 'fixed top-4 right-4 bg-red-100 border border-red-300 text-red-800 px-4 py-2 rounded-lg shadow-lg z-50';
+                              errorNotification.innerHTML = `
+                                <div class="flex items-center gap-2">
+                                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                  </svg>
+                                  Failed to restore "${doc.title || 'Document'}". Please try again.
+                                </div>
+                              `;
+                              window.document.body.appendChild(errorNotification);
+                              
+                              setTimeout(() => {
+                                if (errorNotification.parentNode) {
+                                  errorNotification.parentNode.removeChild(errorNotification);
+                                }
+                              }, 3000);
+                            }
                           }}
                           className="text-green-600 border-green-600 hover:bg-green-50"
                         >

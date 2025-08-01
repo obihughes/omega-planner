@@ -23,65 +23,170 @@ export function useDocuments() {
   const [isNavigating, setIsNavigating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load documents from localStorage on mount
+  // Validate document structure
+  const validateDocument = (doc: any): doc is Document => {
+    return (
+      doc &&
+      typeof doc.id === 'string' &&
+      typeof doc.title === 'string' &&
+      typeof doc.content === 'string' &&
+      typeof doc.createdAt === 'string' &&
+      typeof doc.updatedAt === 'string' &&
+      (doc.isTrashed === undefined || typeof doc.isTrashed === 'boolean') &&
+      (doc.isStarred === undefined || typeof doc.isStarred === 'boolean')
+    );
+  };
+
+  // Validate and clean documents data
+  const validateAndCleanDocuments = (documents: any[]): Document[] => {
+    if (!Array.isArray(documents)) {
+      console.warn('Documents is not an array, returning empty array');
+      return [];
+    }
+
+    const validDocuments = documents.filter(validateDocument);
+    const invalidCount = documents.length - validDocuments.length;
+    
+    if (invalidCount > 0) {
+      console.warn(`Filtered out ${invalidCount} invalid documents`);
+    }
+
+    return validDocuments;
+  };
+
+  // Load documents from localStorage on mount with validation and recovery
   useEffect(() => {
     console.log('Loading documents from storage...');
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         console.log('Found stored documents data:', stored.length, 'characters');
-        const data: DocumentsStorageData = JSON.parse(stored);
-        console.log('Parsed documents:', data.documents?.length || 0, 'documents found');
-        setDocuments(data.documents || []);
-        setSettings({ ...defaultSettings, ...data.settings });
         
-        // Auto-select last opened document (only if not trashed)
-        if (data.settings.lastOpenDocument) {
-          const lastDoc = data.documents.find(doc => 
-            doc.id === data.settings.lastOpenDocument && !doc.isTrashed
+        let data: DocumentsStorageData;
+        try {
+          data = JSON.parse(stored);
+        } catch (parseError) {
+          console.error('Failed to parse stored data, starting fresh:', parseError);
+          setDocuments([]);
+          setSettings(defaultSettings);
+          setIsLoading(false);
+          return;
+        }
+
+        // Validate and clean documents
+        const validDocuments = validateAndCleanDocuments(data.documents || []);
+        console.log('Validated documents:', validDocuments.length, 'of', (data.documents || []).length);
+        
+        setDocuments(validDocuments);
+        
+        // Validate and merge settings
+        const mergedSettings = { ...defaultSettings, ...data.settings };
+        setSettings(mergedSettings);
+        
+        // Auto-select last opened document (only if it exists and not trashed)
+        if (mergedSettings.lastOpenDocument) {
+          const lastDoc = validDocuments.find(doc => 
+            doc.id === mergedSettings.lastOpenDocument && !doc.isTrashed
           );
           if (lastDoc) {
             setSelectedDocument(lastDoc);
             console.log('Auto-selected last document:', lastDoc.title);
+          } else {
+            // Clear invalid lastOpenDocument
+            const cleanSettings = { ...mergedSettings, lastOpenDocument: undefined };
+            setSettings(cleanSettings);
           }
+        }
+
+        // If we had to clean data, save the cleaned version
+        if (validDocuments.length !== (data.documents || []).length || 
+            mergedSettings.lastOpenDocument !== data.settings?.lastOpenDocument) {
+          console.log('Saving cleaned data back to storage');
+          const cleanedData: DocumentsStorageData = {
+            documents: validDocuments,
+            settings: mergedSettings
+          };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanedData));
         }
       } else {
         console.log('No stored documents found - starting fresh');
       }
     } catch (error) {
       console.error('Failed to load documents from storage:', error);
+      
+      // Try to recover by clearing corrupted data
+      try {
+        console.log('Attempting to recover by clearing corrupted storage');
+        localStorage.removeItem(STORAGE_KEY);
+        setDocuments([]);
+        setSettings(defaultSettings);
+      } catch (recoveryError) {
+        console.error('Failed to recover from storage error:', recoveryError);
+      }
     } finally {
       setIsLoading(false);
       console.log('Documents loading complete');
     }
   }, []);
 
-  // Automatic save effect - save documents to localStorage whenever they change
+  // Debounced auto-save effect - save documents to localStorage with debouncing to prevent conflicts
   useEffect(() => {
     if (!isLoading) {
-      try {
-        const dataToSave: DocumentsStorageData = {
-          documents: documents,
-          settings: settings
-        };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
-        console.log('Documents auto-saved:', documents.length, 'documents');
-      } catch (error) {
-        console.error('Failed to auto-save documents to storage:', error);
-      }
+      const timeoutId = setTimeout(() => {
+        try {
+          const dataToSave: DocumentsStorageData = {
+            documents: documents,
+            settings: settings
+          };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+          console.log('Documents auto-saved:', documents.length, 'documents');
+        } catch (error) {
+          console.error('Failed to auto-save documents to storage:', error);
+          // Could implement retry logic here if needed
+        }
+      }, 500); // 500ms debounce to prevent rapid saves
+
+      return () => clearTimeout(timeoutId);
     }
   }, [documents, settings, isLoading]);
 
-  // Save to localStorage whenever documents or settings change
+  // Immediate save to localStorage - used for critical operations that need instant persistence
   const saveToStorage = (newDocuments: Document[], newSettings = settings) => {
     try {
+      // Validate data before saving
+      if (!Array.isArray(newDocuments)) {
+        console.error('Invalid documents array provided to saveToStorage');
+        return false;
+      }
+
       const dataToSave: DocumentsStorageData = {
         documents: newDocuments,
         settings: newSettings
       };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+      
+      // Check localStorage quota
+      const serialized = JSON.stringify(dataToSave);
+      if (serialized.length > 5 * 1024 * 1024) { // 5MB limit
+        console.warn('Document data approaching localStorage limit');
+      }
+      
+      localStorage.setItem(STORAGE_KEY, serialized);
+      console.log('Documents immediately saved:', newDocuments.length, 'documents');
+      return true;
     } catch (error) {
       console.error('Failed to save documents to storage:', error);
+      
+      // Try to recover by clearing localStorage if it's full
+      if (error instanceof DOMException && error.code === 22) {
+        console.warn('localStorage full, attempting to clear corrupted data');
+        try {
+          localStorage.removeItem(STORAGE_KEY);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultStorageData));
+        } catch (retryError) {
+          console.error('Failed to recover from localStorage error:', retryError);
+        }
+      }
+      return false;
     }
   };
 
@@ -144,7 +249,7 @@ export function useDocuments() {
       setSelectedDocument(updatedDocument);
     }
     
-    saveToStorage(updatedDocuments);
+    // Rely on debounced auto-save for frequent updates
   };
 
   const deleteDocument = (documentId: string) => {
@@ -177,10 +282,9 @@ export function useDocuments() {
       setSelectedDocument(null);
       const newSettings = { ...settings, lastOpenDocument: undefined };
       setSettings(newSettings);
-      saveToStorage(updatedDocuments, newSettings);
-    } else {
-      saveToStorage(updatedDocuments);
     }
+    
+    // Rely on debounced auto-save for trash operations
   };
 
   const restoreDocument = (documentId: string) => {
@@ -205,7 +309,7 @@ export function useDocuments() {
       setSelectedDocument(document);
       const newSettings = { ...settings, lastOpenDocument: documentId };
       setSettings(newSettings);
-      saveToStorage(documents, newSettings);
+      // Rely on debounced auto-save for selection changes
     }
     
     // Reset navigation flag after a short delay
@@ -223,14 +327,14 @@ export function useDocuments() {
     if (selectedDocument?.id === documentId) {
       setSelectedDocument(updatedDocuments.find(doc => doc.id === documentId) || null);
     }
-    saveToStorage(updatedDocuments);
+    // Rely on debounced auto-save for star changes
   };
 
   const clearSelection = () => {
     setSelectedDocument(null);
     const newSettings = { ...settings, lastOpenDocument: undefined };
     setSettings(newSettings);
-    saveToStorage(documents, newSettings);
+    // Rely on debounced auto-save for selection clearing
   };
 
   // Filter out trashed documents for the main view
