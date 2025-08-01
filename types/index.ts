@@ -13,6 +13,7 @@ export type { Project, ProjectTask, SubTask, ProjectFolder, ProjectsStorageData 
 
 export type {
   Document,
+  DocumentFolder,
   DocumentsStorageData,
   DocumentEditorProps,
   DocumentListProps

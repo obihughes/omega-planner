@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Document } from '@/types';
 import DocumentEditor from './DocumentEditor';
 import { useDocuments } from '@/hooks/useDocuments';
-import { Plus, X, Star, Search, FileText, Save, Move, Trash2, Type, RotateCcw, Archive as ArchiveIcon, Download, Upload } from 'lucide-react';
+import { Plus, X, Star, Search, FileText, Save, Move, Trash2, Type, RotateCcw, Archive as ArchiveIcon, Download, Upload, Folder, FolderPlus, ChevronRight, ChevronDown, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
@@ -12,12 +12,16 @@ import { cn } from '@/lib/utils';
 export default function Documents() {
   const {
     documents,
+    folders,
     trashedDocuments,
     selectedDocument,
     isLoading,
     createDocument,
+    createFolder,
     updateDocument,
+    updateFolder,
     deleteDocument,
+    deleteFolder,
     trashDocument,
     restoreDocument,
     selectDocument,
@@ -34,6 +38,10 @@ export default function Documents() {
   const [dragMode, setDragMode] = useState(false);
   const [isAddingText, setIsAddingText] = useState(false);
   const [showArchiveModal, setShowArchiveModal] = useState(false);
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [creatingFolder, setCreatingFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [selectedFolderId, setSelectedFolderId] = useState<string | undefined>();
 
   const filteredDocuments = documents.filter(doc =>
     doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -48,12 +56,125 @@ export default function Documents() {
     return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
   });
 
+  // Organize documents and folders into tree structure
+  const getDocumentsInFolder = (folderId?: string) => {
+    return documents.filter(doc => doc.folderId === folderId);
+  };
+
+  const getFoldersInFolder = (parentId?: string) => {
+    return folders.filter(folder => folder.parentId === parentId);
+  };
+
+  const renderFolderTree = (parentId?: string, level = 0) => {
+    const foldersAtLevel = getFoldersInFolder(parentId);
+    const documentsAtLevel = getDocumentsInFolder(parentId);
+
+    return (
+      <>
+        {/* Folders */}
+        {foldersAtLevel.map(folder => {
+          const isExpanded = expandedFolders.has(folder.id);
+          const hasChildren = getFoldersInFolder(folder.id).length > 0 || getDocumentsInFolder(folder.id).length > 0;
+
+          return (
+            <div key={folder.id}>
+              <div
+                className={cn(
+                  "flex items-center gap-2 px-2 py-1 rounded-md cursor-pointer hover:bg-accent/50 transition-colors",
+                  selectedFolderId === folder.id && "bg-accent"
+                )}
+                style={{ paddingLeft: `${8 + level * 16}px` }}
+                onClick={() => setSelectedFolderId(folder.id)}
+              >
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFolderExpanded(folder.id);
+                  }}
+                  className="p-0 w-4 h-4 flex items-center justify-center"
+                >
+                  {hasChildren ? (
+                    isExpanded ? (
+                      <ChevronDown className="w-3 h-3" />
+                    ) : (
+                      <ChevronRight className="w-3 h-3" />
+                    )
+                  ) : (
+                    <div className="w-3 h-3" />
+                  )}
+                </button>
+                <Folder className="w-4 h-4 text-blue-500" />
+                <span className="text-sm font-medium truncate">{folder.name}</span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm(`Delete folder "${folder.name}"? Documents inside will be moved to the root.`)) {
+                      deleteFolder(folder.id);
+                    }
+                  }}
+                  className="opacity-0 group-hover:opacity-100 p-0 w-4 h-4 flex items-center justify-center hover:text-red-500"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+              {isExpanded && renderFolderTree(folder.id, level + 1)}
+            </div>
+          );
+        })}
+
+        {/* Documents */}
+        {documentsAtLevel.map(document => (
+          <div
+            key={document.id}
+            className={cn(
+              "flex items-center gap-2 px-2 py-1 rounded-md cursor-pointer hover:bg-accent/50 transition-colors group",
+              selectedDocument?.id === document.id && "bg-primary/10 border-l-2 border-l-primary"
+            )}
+            style={{ paddingLeft: `${24 + level * 16}px` }}
+            onClick={() => handleSelectDocument(document)}
+          >
+            <FileText className="w-4 h-4 text-muted-foreground" />
+            {document.isStarred && <Star className="w-3 h-3 text-yellow-500 fill-current" />}
+            <span className="text-sm truncate flex-1">{document.title || 'Untitled'}</span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                trashDocument(document.id);
+              }}
+              className="opacity-0 group-hover:opacity-100 p-0 w-4 h-4 flex items-center justify-center hover:text-red-500"
+            >
+              <Trash2 className="w-3 h-3" />
+            </button>
+          </div>
+        ))}
+      </>
+    );
+  };
+
   const handleSelectDocument = (document: Document) => {
     selectDocument(document.id);
   };
 
   const handleCreateDocument = () => {
-    createDocument();
+    createDocument(selectedFolderId);
+  };
+
+  const handleCreateFolder = () => {
+    if (newFolderName.trim()) {
+      createFolder(newFolderName.trim(), selectedFolderId);
+      setNewFolderName('');
+      setCreatingFolder(false);
+    }
+  };
+
+  const toggleFolderExpanded = (folderId: string) => {
+    const newExpanded = new Set(expandedFolders);
+    if (newExpanded.has(folderId)) {
+      newExpanded.delete(folderId);
+    } else {
+      newExpanded.add(folderId);
+    }
+    setExpandedFolders(newExpanded);
   };
 
   const handleSaveDocument = (document: Document) => {
@@ -247,242 +368,281 @@ export default function Documents() {
   }
 
   return (
-    <div className="h-full flex flex-col bg-card rounded-lg shadow-sm border overflow-hidden min-w-0">
-      {/* Unified Header with Tabs and Controls */}
-      <div className="border-b bg-muted/10">
-        {/* Search Bar (when visible) */}
-        {showSearch && (
-          <div className="px-4 py-2 border-b bg-muted/20">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Search documents..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 text-sm border rounded bg-background focus:ring-1 focus:ring-primary focus:border-transparent outline-none"
-                autoFocus
-              />
+    <div className="h-full flex bg-card rounded-lg shadow-sm border overflow-hidden">
+      {/* Document Explorer Sidebar */}
+      <div className="w-72 flex-shrink-0 border-r border-border/50 flex flex-col bg-muted/20">
+        {/* Sidebar Header */}
+        <div className="p-3 border-b border-border/50">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-foreground">Documents</h2>
+            <div className="flex items-center gap-1">
+              <Button
+                onClick={() => setCreatingFolder(true)}
+                size="sm"
+                variant="ghost"
+                className="h-6 w-6 p-0"
+                title="Create folder"
+              >
+                <FolderPlus className="w-3.5 h-3.5" />
+              </Button>
+              <Button
+                onClick={handleCreateDocument}
+                size="sm"
+                variant="ghost"
+                className="h-6 w-6 p-0"
+                title="Create document"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </Button>
             </div>
           </div>
-        )}
 
-        {/* Current Document Display and Controls */}
-        <div className="flex items-center justify-between min-h-[48px] min-w-0">
-          {/* Current Document Info */}
-          <div className="flex items-center flex-1 min-w-0">
-            {selectedDocument ? (
-              <div className="flex items-center gap-2 px-4 py-2">
-                <FileText className="w-4 h-4 text-primary flex-shrink-0" />
-                <div className="flex items-center gap-1.5 flex-1 min-w-0" onDoubleClick={() => handleTitleDoubleClick(selectedDocument)}>
-                  {selectedDocument.isStarred && (
-                    <Star className="w-3 h-3 text-yellow-500 fill-current flex-shrink-0" />
-                  )}
-                  {editingDocumentId === selectedDocument.id ? (
-                    <input
-                      type="text"
-                      value={editingTitle}
-                      onChange={handleTitleChange}
-                      onBlur={handleTitleBlur}
-                      onKeyDown={handleTitleKeyDown}
-                      className="text-sm font-medium bg-transparent outline-none focus:ring-0 border-0 p-0"
-                      autoFocus
-                    />
-                  ) : (
-                    <span className="text-sm font-medium truncate">
-                      {selectedDocument.title || 'Untitled'}
-                    </span>
-                  )}
-                </div>
-                
-                {/* Close button */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0 flex-shrink-0 hover:bg-accent"
-                  onClick={(e) => handleCloseDocument(selectedDocument.id, e)}
-                  title="Close document"
-                >
-                  <X className="w-3 h-3" />
-                </Button>
-              </div>
-            ) : (
-              <div className="flex items-center px-4 py-2 text-muted-foreground">
-                <FileText className="w-4 h-4 mr-2 opacity-50" />
-                <span className="text-sm">No document selected</span>
-              </div>
-            )}
+          {/* Search Bar */}
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-7 pr-2 py-1 text-xs bg-background/50 border border-border/50 rounded focus:outline-none focus:ring-1 focus:ring-primary/20"
+            />
           </div>
 
-          {/* Controls */}
-          <div className="flex items-center gap-1 px-2 py-2 border-l border-border/50 flex-shrink-0">
-            {/* Text editing tools - only when document is selected */}
-            {selectedDocument && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsAddingText(!isAddingText)}
-                  className={cn(
-                    "h-7 px-2 text-xs",
-                    isAddingText ? "bg-green-100 text-green-700" : ""
-                  )}
-                  title={isAddingText ? "Cancel adding text" : "Add new text block"}
-                >
-                  <Type className="w-3.5 h-3.5 mr-1" />
-                  Text
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleToggleDragMode}
-                  className={cn(
-                    "h-7 px-2 text-xs",
-                    dragMode ? "bg-blue-100 text-blue-700" : ""
-                  )}
-                  title={dragMode ? "Exit drag mode" : "Enter drag mode"}
-                >
-                  <Move className="w-3.5 h-3.5 mr-1" />
-                  Move
-                </Button>
-                <div className="w-px h-4 bg-border mx-1" />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => starDocument(selectedDocument.id)}
-                  className="h-7 w-7 p-0"
-                  title="Star document"
-                >
-                  {selectedDocument.isStarred ? (
-                    <Star className="w-3.5 h-3.5 text-yellow-500 fill-current" />
-                  ) : (
-                    <Star className="w-3.5 h-3.5" />
-                  )}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    if (selectedDocument) {
-                      const confirmed = window.confirm(
-                        `Archive "${selectedDocument.title || 'Untitled'}"?\n\n` +
-                        `You can restore it later from the Archive view.`
-                      );
-                      if (confirmed) {
-                        trashDocument(selectedDocument.id);
-                        
-                        // Show success notification
-                        const notification = document.createElement('div');
-                        notification.className = 'fixed top-4 right-4 bg-blue-100 border border-blue-300 text-blue-800 px-4 py-2 rounded-lg shadow-lg z-50';
-                        notification.innerHTML = `
-                          <div class="flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                            </svg>
-                            "${selectedDocument.title || 'Document'}" archived. Find it in Archive view.
-                          </div>
-                        `;
-                        document.body.appendChild(notification);
-                        
-                        setTimeout(() => {
-                          if (notification.parentNode) {
-                            notification.parentNode.removeChild(notification);
-                          }
-                        }, 3000);
-                      }
-                    }
-                  }}
-                  className="h-7 w-7 p-0"
-                  title="Archive document"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </Button>
-              </>
-            )}
-            
-            {/* Global tools */}
-            <div className="w-px h-4 bg-border mx-1" />
-            <Button
-              variant={showSearch ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setShowSearch(!showSearch)}
-              className="h-7 w-7 p-0"
-              title="Search documents"
-            >
-              <Search className="w-3.5 h-3.5" />
-            </Button>
-            <Button
-              onClick={handleCreateDocument}
-              size="sm"
-              className="h-7 w-7 p-0"
-              title="Create new document"
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </Button>
+          {/* Folder Creation Input */}
+          {creatingFolder && (
+            <div className="mt-2 flex items-center gap-1">
+              <input
+                type="text"
+                placeholder="Folder name..."
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleCreateFolder();
+                  } else if (e.key === 'Escape') {
+                    setCreatingFolder(false);
+                    setNewFolderName('');
+                  }
+                }}
+                className="flex-1 px-2 py-1 text-xs bg-background border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary/20"
+                autoFocus
+              />
+              <Button
+                onClick={handleCreateFolder}
+                size="sm"
+                variant="ghost"
+                className="h-6 w-6 p-0"
+              >
+                <Check className="w-3 h-3" />
+              </Button>
+              <Button
+                onClick={() => {
+                  setCreatingFolder(false);
+                  setNewFolderName('');
+                }}
+                size="sm"
+                variant="ghost"
+                className="h-6 w-6 p-0"
+              >
+                <X className="w-3 h-3" />
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Document Tree */}
+        <div className="flex-1 overflow-y-auto p-2">
+          {documents.length === 0 && folders.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
+              <FileText className="w-8 h-8 mb-2 opacity-50" />
+              <p className="text-xs">No documents yet</p>
+              <Button
+                onClick={handleCreateDocument}
+                size="sm"
+                variant="outline"
+                className="mt-2 h-6 text-xs"
+              >
+                Create First Document
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {renderFolderTree()}
+            </div>
+          )}
+        </div>
+
+        {/* Sidebar Footer */}
+        <div className="p-2 border-t border-border/50">
+          <div className="flex items-center gap-1">
             <Button
               onClick={() => setShowArchiveModal(true)}
               size="sm"
-              className="h-7 w-7 p-0"
+              variant="ghost"
+              className="h-6 text-xs flex-1"
               title="View archive"
             >
-              <ArchiveIcon className="w-3.5 h-3.5" />
+              <ArchiveIcon className="w-3 h-3 mr-1" />
+              Archive
             </Button>
-            
-            {/* Backup/Restore tools */}
-            <div className="w-px h-4 bg-border mx-1" />
             <Button
               onClick={handleExportDocuments}
               size="sm"
-              className="h-7 w-7 p-0"
-              title="Export documents (backup)"
+              variant="ghost"
+              className="h-6 w-6 p-0"
+              title="Export documents"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-3 h-3" />
             </Button>
             <Button
               onClick={handleImportDocuments}
               size="sm"
-              className="h-7 w-7 p-0"
+              variant="ghost"
+              className="h-6 w-6 p-0"
               title="Import documents"
             >
-              <Upload className="w-3.5 h-3.5" />
+              <Upload className="w-3 h-3" />
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Editor Area */}
-      <div className="flex-1 overflow-hidden">
-        {selectedDocument ? (
-          <DocumentEditor
-            document={selectedDocument}
-            onSave={(doc) => {
-              handleSaveDocument(doc);
-              setHasUnsavedChanges(false);
-            }}
-            onClose={() => handleCloseDocument(selectedDocument.id)}
-            onDelete={handleDeleteDocument}
-            onStar={() => starDocument(selectedDocument.id)}
-            onChange={() => setHasUnsavedChanges(true)}
-            dragMode={dragMode}
-            onDragModeChange={setDragMode}
-            isAddingText={isAddingText}
-            onIsAddingTextChange={setIsAddingText}
-          />
-        ) : (
-          <div className="flex-1 flex items-center justify-center text-muted-foreground">
-            <div className="text-center max-w-sm">
-              <div className="text-5xl mb-4">✍️</div>
-              <h3 className="text-lg font-medium mb-2">Ready to write?</h3>
-              <p className="text-sm text-muted-foreground/70 mb-6">
-                Create your first document to get started
-              </p>
-              <Button onClick={handleCreateDocument} size="sm">
-                <Plus className="w-4 h-4 mr-2" />
-                New Document
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Document Header */}
+        {selectedDocument && (
+          <div className="flex items-center justify-between p-3 border-b border-border/50 bg-background/50">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <FileText className="w-4 h-4 text-primary flex-shrink-0" />
+              {selectedDocument.isStarred && (
+                <Star className="w-3 h-3 text-yellow-500 fill-current flex-shrink-0" />
+              )}
+              <div className="flex-1 min-w-0" onDoubleClick={() => handleTitleDoubleClick(selectedDocument)}>
+                {editingDocumentId === selectedDocument.id ? (
+                  <input
+                    type="text"
+                    value={editingTitle}
+                    onChange={handleTitleChange}
+                    onBlur={handleTitleBlur}
+                    onKeyDown={handleTitleKeyDown}
+                    className="text-sm font-medium bg-transparent outline-none focus:ring-0 border-0 p-0 w-full"
+                    autoFocus
+                  />
+                ) : (
+                  <span className="text-sm font-medium truncate block">
+                    {selectedDocument.title || 'Untitled'}
+                  </span>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-1">
+              {/* Text editing tools */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsAddingText(!isAddingText)}
+                className={cn(
+                  "h-6 px-2 text-xs",
+                  isAddingText ? "bg-green-100 text-green-700" : ""
+                )}
+                title={isAddingText ? "Cancel adding text" : "Add new text block"}
+              >
+                <Type className="w-3 h-3 mr-1" />
+                Text
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleToggleDragMode}
+                className={cn(
+                  "h-6 px-2 text-xs",
+                  dragMode ? "bg-blue-100 text-blue-700" : ""
+                )}
+                title={dragMode ? "Exit drag mode" : "Enter drag mode"}
+              >
+                <Move className="w-3 h-3 mr-1" />
+                Move
+              </Button>
+              <div className="w-px h-4 bg-border mx-1" />
+              <Button
+                onClick={() => starDocument(selectedDocument.id)}
+                size="sm"
+                variant="ghost"
+                className="h-6 w-6 p-0"
+                title={selectedDocument.isStarred ? "Unstar document" : "Star document"}
+              >
+                {selectedDocument.isStarred ? (
+                  <Star className="w-3.5 h-3.5 text-yellow-500 fill-current" />
+                ) : (
+                  <Star className="w-3.5 h-3.5" />
+                )}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const confirmed = window.confirm(
+                    `Archive "${selectedDocument.title || 'Untitled'}"?\n\n` +
+                    `You can restore it later from the Archive view.`
+                  );
+                  if (confirmed) {
+                    trashDocument(selectedDocument.id);
+                  }
+                }}
+                className="h-6 w-6 p-0"
+                title="Archive document"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+                onClick={() => handleCloseDocument(selectedDocument.id)}
+                title="Close document"
+              >
+                <X className="w-3.5 h-3.5" />
               </Button>
             </div>
           </div>
         )}
+
+        {/* Editor Area */}
+        <div className="flex-1 overflow-hidden">
+          {selectedDocument ? (
+            <DocumentEditor
+              document={selectedDocument}
+              onSave={(doc) => {
+                handleSaveDocument(doc);
+                setHasUnsavedChanges(false);
+              }}
+              onClose={() => handleCloseDocument(selectedDocument.id)}
+              onDelete={handleDeleteDocument}
+              onStar={() => starDocument(selectedDocument.id)}
+              onChange={() => setHasUnsavedChanges(true)}
+              dragMode={dragMode}
+              onDragModeChange={setDragMode}
+              isAddingText={isAddingText}
+              onIsAddingTextChange={setIsAddingText}
+            />
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-muted-foreground">
+              <div className="text-center max-w-sm">
+                <div className="text-5xl mb-4">✍️</div>
+                <h3 className="text-lg font-medium mb-2">Select a document</h3>
+                <p className="text-sm text-muted-foreground/70 mb-6">
+                  Choose a document from the sidebar or create a new one to get started
+                </p>
+                <Button onClick={handleCreateDocument} size="sm">
+                  <Plus className="w-4 h-4 mr-2" />
+                  New Document
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Archive Modal */}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Document, DocumentsStorageData } from '@/types';
+import { Document, DocumentFolder, DocumentsStorageData } from '@/types/documents';
 
 const STORAGE_KEY = 'omega-planner-documents';
 
@@ -13,11 +13,13 @@ const defaultSettings = {
 
 const defaultStorageData: DocumentsStorageData = {
   documents: [],
+  folders: [],
   settings: defaultSettings
 };
 
 export function useDocuments() {
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [folders, setFolders] = useState<DocumentFolder[]>([]);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [settings, setSettings] = useState(defaultSettings);
   const [isNavigating, setIsNavigating] = useState(false);
@@ -32,8 +34,21 @@ export function useDocuments() {
       typeof doc.content === 'string' &&
       typeof doc.createdAt === 'string' &&
       typeof doc.updatedAt === 'string' &&
+      (doc.folderId === undefined || typeof doc.folderId === 'string') &&
       (doc.isTrashed === undefined || typeof doc.isTrashed === 'boolean') &&
       (doc.isStarred === undefined || typeof doc.isStarred === 'boolean')
+    );
+  };
+
+  // Validate folder structure
+  const validateFolder = (folder: any): folder is DocumentFolder => {
+    return (
+      folder &&
+      typeof folder.id === 'string' &&
+      typeof folder.name === 'string' &&
+      typeof folder.createdAt === 'string' &&
+      typeof folder.updatedAt === 'string' &&
+      (folder.parentId === undefined || typeof folder.parentId === 'string')
     );
   };
 
@@ -52,6 +67,23 @@ export function useDocuments() {
     }
 
     return validDocuments;
+  };
+
+  // Validate and clean folders data
+  const validateAndCleanFolders = (folders: any[]): DocumentFolder[] => {
+    if (!Array.isArray(folders)) {
+      console.warn('Folders is not an array, returning empty array');
+      return [];
+    }
+
+    const validFolders = folders.filter(validateFolder);
+    const invalidCount = folders.length - validFolders.length;
+    
+    if (invalidCount > 0) {
+      console.warn(`Filtered out ${invalidCount} invalid folders`);
+    }
+
+    return validFolders;
   };
 
   // Load documents from localStorage on mount with validation and recovery
@@ -77,7 +109,12 @@ export function useDocuments() {
         const validDocuments = validateAndCleanDocuments(data.documents || []);
         console.log('Validated documents:', validDocuments.length, 'of', (data.documents || []).length);
         
+        // Validate and clean folders
+        const validFolders = validateAndCleanFolders(data.folders || []);
+        console.log('Validated folders:', validFolders.length, 'of', (data.folders || []).length);
+        
         setDocuments(validDocuments);
+        setFolders(validFolders);
         
         // Validate and merge settings
         const mergedSettings = { ...defaultSettings, ...data.settings };
@@ -100,10 +137,12 @@ export function useDocuments() {
 
         // If we had to clean data, save the cleaned version
         if (validDocuments.length !== (data.documents || []).length || 
+            validFolders.length !== (data.folders || []).length ||
             mergedSettings.lastOpenDocument !== data.settings?.lastOpenDocument) {
           console.log('Saving cleaned data back to storage');
           const cleanedData: DocumentsStorageData = {
             documents: validDocuments,
+            folders: validFolders,
             settings: mergedSettings
           };
           localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanedData));
@@ -136,10 +175,11 @@ export function useDocuments() {
         try {
           const dataToSave: DocumentsStorageData = {
             documents: documents,
+            folders: folders,
             settings: settings
           };
           localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
-          console.log('Documents auto-saved:', documents.length, 'documents');
+          console.log('Documents auto-saved:', documents.length, 'documents,', folders.length, 'folders');
         } catch (error) {
           console.error('Failed to auto-save documents to storage:', error);
           // Could implement retry logic here if needed
@@ -148,19 +188,24 @@ export function useDocuments() {
 
       return () => clearTimeout(timeoutId);
     }
-  }, [documents, settings, isLoading]);
+  }, [documents, folders, settings, isLoading]);
 
   // Immediate save to localStorage - used for critical operations that need instant persistence
-  const saveToStorage = (newDocuments: Document[], newSettings = settings) => {
+  const saveToStorage = (newDocuments: Document[], newSettings = settings, newFolders = folders) => {
     try {
       // Validate data before saving
       if (!Array.isArray(newDocuments)) {
         console.error('Invalid documents array provided to saveToStorage');
         return false;
       }
+      if (!Array.isArray(newFolders)) {
+        console.error('Invalid folders array provided to saveToStorage');
+        return false;
+      }
 
       const dataToSave: DocumentsStorageData = {
         documents: newDocuments,
+        folders: newFolders,
         settings: newSettings
       };
       
@@ -171,7 +216,7 @@ export function useDocuments() {
       }
       
       localStorage.setItem(STORAGE_KEY, serialized);
-      console.log('Documents immediately saved:', newDocuments.length, 'documents');
+      console.log('Documents immediately saved:', newDocuments.length, 'documents,', newFolders.length, 'folders');
       return true;
     } catch (error) {
       console.error('Failed to save documents to storage:', error);
@@ -190,7 +235,7 @@ export function useDocuments() {
     }
   };
 
-  const createDocument = () => {
+  const createDocument = (folderId?: string) => {
     // Generate a very robust unique ID to prevent any collisions
     const timestamp = Date.now();
     const random1 = Math.random().toString(36).substr(2, 9);
@@ -215,6 +260,7 @@ export function useDocuments() {
       content: '', // Start with empty content, let canvas editor handle initialization
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      folderId: folderId,
       tags: [],
       isStarred: false,
       isTrashed: false
@@ -233,6 +279,58 @@ export function useDocuments() {
     saveToStorage(updatedDocuments, newSettings);
     
     console.log('Document created successfully:', newId, 'New documents count:', updatedDocuments.length);
+  };
+
+  const createFolder = (name: string, parentId?: string) => {
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substr(2, 9);
+    const newId = `folder_${timestamp}_${random}`;
+    
+    const newFolder: DocumentFolder = {
+      id: newId,
+      name: name,
+      parentId: parentId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    const updatedFolders = [...folders, newFolder];
+    setFolders(updatedFolders);
+    
+    // Save immediately
+    saveToStorage(documents, settings, updatedFolders);
+    
+    console.log('Folder created successfully:', newId);
+    return newFolder;
+  };
+
+  const updateFolder = (folderId: string, updates: Partial<DocumentFolder>) => {
+    const updatedFolders = folders.map(folder =>
+      folder.id === folderId
+        ? { ...folder, ...updates, updatedAt: new Date().toISOString() }
+        : folder
+    );
+    
+    setFolders(updatedFolders);
+    // Rely on debounced auto-save for folder updates
+  };
+
+  const deleteFolder = (folderId: string) => {
+    // Move all documents in this folder to root (no folder)
+    const updatedDocuments = documents.map(doc =>
+      doc.folderId === folderId
+        ? { ...doc, folderId: undefined, updatedAt: new Date().toISOString() }
+        : doc
+    );
+    
+    // Remove the folder
+    const updatedFolders = folders.filter(folder => folder.id !== folderId);
+    
+    setDocuments(updatedDocuments);
+    setFolders(updatedFolders);
+    
+    // Save immediately for folder deletion
+    saveToStorage(updatedDocuments, settings, updatedFolders);
   };
 
   const updateDocument = (updatedDocument: Document) => {
@@ -343,13 +441,17 @@ export function useDocuments() {
 
   return {
     documents: activeDocuments,
+    folders,
     trashedDocuments,
     selectedDocument,
     settings,
     isLoading,
     createDocument,
+    createFolder,
     updateDocument,
+    updateFolder,
     deleteDocument,
+    deleteFolder,
     trashDocument,
     restoreDocument,
     selectDocument,
