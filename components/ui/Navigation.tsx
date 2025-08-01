@@ -146,16 +146,16 @@ export function Navigation() {
         { key: 'yearly', label: 'Yearly', icon: CalendarDays, active: calendarViewMode === 'yearly' },
         { key: 'monthly', label: 'Monthly', icon: Calendar, active: calendarViewMode === 'monthly' }
       ]
-    }
-    // {
-    //   href: '/documents',
-    //   label: 'Text Canvas',
-    //   icon: FileText,
-    //   active: pathname === '/documents',
-    //   subViews: [
-    //     { key: 'documents', label: 'Documents', icon: Files, active: true } // Documents view is now always active
-    //   ]
-    // } // Hidden until ready to work on again
+    },
+    {
+      href: '/documents',
+      label: 'Text Canvas',
+      icon: FileText,
+      active: pathname === '/documents',
+      subViews: [
+        { key: 'documents', label: 'Documents', icon: Files, active: true } // Documents view is now always active
+      ]
+    } 
   ];
 
   return (

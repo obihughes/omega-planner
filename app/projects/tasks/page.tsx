@@ -9,7 +9,7 @@ import { AppLayout } from '@/components/ui/AppLayout';
 import { Button } from '@/components/ui/button';
 import { useViewMode } from '@/app/context/ViewModeContext';
 import { useProjects } from '@/hooks/useProjects';
-import { Calendar, List, Plus, Clock, CheckCircle2, Filter, SortAsc, CheckSquare2, Square, Edit3, X, ChevronDown, Search } from 'lucide-react';
+import { Calendar, List, Plus, Clock, CheckCircle2, Filter, SortAsc, CheckSquare2, Square, Edit3, X, ChevronDown, ChevronRight, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProjectTask } from '@/types/projects';
 import { getDateKey, getTodayDateKey, formatDueDate } from '@/utils/dateUtils';
@@ -30,6 +30,7 @@ interface TasksViewPreferences {
   allTasksSubGroupBy: string;
   allTasksSortBy: 'dueDate' | 'created' | 'completion';
   sortOrder: 'asc' | 'desc';
+  collapsedProjectGroups: string[]; // Array of collapsed project IDs
 }
 
 // Default preferences with 'today' as default dueDate filter
@@ -43,7 +44,8 @@ const defaultTasksPreferences: TasksViewPreferences = {
   allTasksGroupBy: 'none',
   allTasksSubGroupBy: 'all',
   allTasksSortBy: 'dueDate',
-  sortOrder: 'desc'
+  sortOrder: 'desc',
+  collapsedProjectGroups: [] // Empty array - will be populated with all project IDs when grouping by project
 };
 
 // Helper functions for localStorage
@@ -57,7 +59,14 @@ const loadTasksPreferences = (): TasksViewPreferences => {
     const stored = localStorage.getItem(TASKS_VIEW_PREFERENCES_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
-      return { ...defaultTasksPreferences, ...parsed };
+      // Ensure collapsedProjectGroups is always an array
+      const cleanParsed = {
+        ...parsed,
+        collapsedProjectGroups: Array.isArray(parsed.collapsedProjectGroups) 
+          ? parsed.collapsedProjectGroups 
+          : []
+      };
+      return { ...defaultTasksPreferences, ...cleanParsed };
     }
   } catch (error) {
     console.error('Error loading tasks view preferences:', error);
@@ -119,7 +128,7 @@ export default function ProjectsTasksPage() {
   });
 
   // Extract persistent state from preferences
-  const { allTasksFilters, allTasksGroupBy, allTasksSubGroupBy, allTasksSortBy, sortOrder } = preferences;
+  const { allTasksFilters, allTasksGroupBy, allTasksSubGroupBy, allTasksSortBy, sortOrder, collapsedProjectGroups } = preferences;
 
   // Helper function to update preferences and save to localStorage
   const updatePreferences = useCallback((updates: Partial<TasksViewPreferences>) => {
@@ -134,6 +143,18 @@ export default function ProjectsTasksPage() {
     const clientPreferences = loadTasksPreferences();
     setPreferences(clientPreferences);
   }, []);
+
+  // Function to toggle project group collapse state
+  const toggleProjectCollapse = useCallback((projectId: string) => {
+    const isCurrentlyCollapsed = collapsedProjectGroups.includes(projectId);
+    const newCollapsedGroups = isCurrentlyCollapsed
+      ? collapsedProjectGroups.filter(id => id !== projectId)
+      : [...collapsedProjectGroups, projectId];
+    
+    updatePreferences({
+      collapsedProjectGroups: newCollapsedGroups
+    });
+  }, [collapsedProjectGroups, updatePreferences]);
 
   // Add task modal state
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
@@ -153,6 +174,23 @@ export default function ProjectsTasksPage() {
         }))
       );
   }, [projects]);
+
+  // Initialize collapsed state when switching to project grouping
+  useEffect(() => {
+    if (allTasksGroupBy === 'project' && isClient && allTasks.length > 0) {
+      // Get all unique project IDs from current tasks
+      const projectIdsSet = new Set<string>();
+      allTasks.forEach(task => projectIdsSet.add(task.projectId));
+      const projectIds = Array.from(projectIdsSet);
+      
+      // If no collapsed state exists yet, set all projects as collapsed by default
+      if (collapsedProjectGroups.length === 0 && projectIds.length > 0) {
+        updatePreferences({
+          collapsedProjectGroups: projectIds // All projects collapsed by default
+        });
+      }
+    }
+  }, [allTasksGroupBy, isClient, allTasks, collapsedProjectGroups.length, updatePreferences]);
 
   // Filter tasks for Today Mode (rich functionality) - Retained for logic within main filter
   const todayTasks = useMemo(() => {
@@ -1004,31 +1042,55 @@ export default function ProjectsTasksPage() {
                   )}
                 </div>
               ) : (
-                groupedAllTasks.map(group => (
-                  <div key={group.id}>
-                    {allTasksGroupBy !== 'none' && (
-                      <h2 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                        {group.name}
-                        <span className="text-sm font-normal text-muted-foreground">
-                          ({group.tasks.length})
-                        </span>
-                      </h2>
-                    )}
-                    <div className="space-y-2">
-                      {group.tasks.map(task => (
-                        <CompactTaskCard
-                          key={task.id}
-                          task={task}
-                          onStatusChange={handleTaskStatusChange}
-                          onUpdateTask={(taskId, updates) => {
-                            updateTaskInProject(task.projectId, taskId, updates);
-                          }}
-                          showProject={allTasksGroupBy !== 'project'}
-                        />
-                      ))}
+                groupedAllTasks.map(group => {
+                  const isProjectGroup = allTasksGroupBy === 'project';
+                  const isCollapsed = isProjectGroup && collapsedProjectGroups.includes(group.id);
+                  
+                  return (
+                    <div key={group.id}>
+                      {allTasksGroupBy !== 'none' && (
+                        <div 
+                          className={cn(
+                            "flex items-center gap-2 mb-3",
+                            isProjectGroup && "cursor-pointer hover:bg-accent/20 rounded-lg px-2 py-1 -mx-2 transition-colors"
+                          )}
+                          onClick={isProjectGroup ? () => toggleProjectCollapse(group.id) : undefined}
+                        >
+                          {isProjectGroup && (
+                            <div className="flex-shrink-0">
+                              {isCollapsed ? (
+                                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                              )}
+                            </div>
+                          )}
+                          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                            {group.name}
+                            <span className="text-sm font-normal text-muted-foreground">
+                              ({group.tasks.length})
+                            </span>
+                          </h2>
+                        </div>
+                      )}
+                      {(!isProjectGroup || !isCollapsed) && (
+                        <div className="space-y-2">
+                          {group.tasks.map(task => (
+                            <CompactTaskCard
+                              key={task.id}
+                              task={task}
+                              onStatusChange={handleTaskStatusChange}
+                              onUpdateTask={(taskId, updates) => {
+                                updateTaskInProject(task.projectId, taskId, updates);
+                              }}
+                              showProject={allTasksGroupBy !== 'project'}
+                            />
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
