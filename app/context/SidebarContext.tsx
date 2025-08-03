@@ -32,25 +32,37 @@ export const SidebarProvider: React.FC<SidebarProviderProps> = ({
   minWidth = 140, 
   maxWidth = 320 
 }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [sidebarWidth, setSidebarWidthState] = useState(initialWidth);
+  // Initialize state with localStorage values if available
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedCollapsed = localStorage.getItem('sidebarCollapsed');
+      return savedCollapsed !== null ? JSON.parse(savedCollapsed) : false;
+    }
+    return false;
+  });
+  
+  const [sidebarWidth, setSidebarWidthState] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedWidth = localStorage.getItem('sidebarWidth');
+      if (savedWidth) {
+        return Math.max(minWidth, Math.min(maxWidth, parseInt(savedWidth, 10)));
+      }
+    }
+    return initialWidth;
+  });
 
+  // Only adjust width if it's outside the new bounds
   useEffect(() => {
-    // Load saved width
-    const savedWidth = localStorage.getItem('sidebarWidth');
-    if (savedWidth) {
-      setSidebarWidthState(Math.max(minWidth, Math.min(maxWidth, parseInt(savedWidth, 10))));
+    const currentWidth = sidebarWidth;
+    const boundedWidth = Math.max(minWidth, Math.min(maxWidth, currentWidth));
+    if (currentWidth !== boundedWidth) {
+      setSidebarWidthState(boundedWidth);
+      localStorage.setItem('sidebarWidth', boundedWidth.toString());
     }
-    
-    // Load saved collapsed state
-    const savedCollapsed = localStorage.getItem('sidebarCollapsed');
-    if (savedCollapsed !== null) {
-      setIsCollapsed(JSON.parse(savedCollapsed));
-    }
-  }, [minWidth, maxWidth]);
+  }, [minWidth, maxWidth, sidebarWidth]);
 
   const toggleSidebar = () => {
-    setIsCollapsed(prev => {
+    setIsCollapsed((prev: boolean) => {
       const newCollapsed = !prev;
       localStorage.setItem('sidebarCollapsed', JSON.stringify(newCollapsed));
       return newCollapsed;

@@ -43,8 +43,19 @@ export default function Documents() {
   const [newFolderName, setNewFolderName] = useState('');
   const [selectedFolderId, setSelectedFolderId] = useState<string | undefined>();
   const [openDocuments, setOpenDocuments] = useState<string[]>([]);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedState = localStorage.getItem('documents-sidebar-collapsed');
+      return savedState !== null ? JSON.parse(savedState) : false;
+    }
+    return false;
+  });
   const [documentFilter, setDocumentFilter] = useState<'all' | 'starred' | 'recent'>('all');
+  const [hasInteracted, setHasInteracted] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('documents-sidebar-collapsed', JSON.stringify(sidebarCollapsed));
+  }, [sidebarCollapsed]);
 
   const filteredDocuments = documents.filter(doc => {
     // Apply search filter
@@ -435,10 +446,16 @@ export default function Documents() {
   return (
     <div className="h-full flex bg-card rounded-lg shadow-sm border overflow-hidden">
       {/* Document Explorer Sidebar */}
-      <div className={cn(
-        "flex-shrink-0 border-r border-border/50 flex flex-col bg-muted/20 transition-all duration-200",
-        sidebarCollapsed ? "w-12" : "w-64"
-      )}>
+      <div 
+        className={cn(
+          "flex-shrink-0 border-r border-border/50 flex flex-col bg-muted/20",
+          hasInteracted && "transition-all duration-200",
+          sidebarCollapsed ? "w-12" : "w-64"
+        )}
+        style={{
+          width: sidebarCollapsed ? '48px' : '256px'
+        }}
+      >
         {/* Sidebar Header */}
         <div className="p-2 border-b border-border/50">
           {!sidebarCollapsed ? (
@@ -446,13 +463,16 @@ export default function Documents() {
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-sm font-semibold text-foreground">Documents</h2>
                 <div className="flex items-center gap-1">
-                  <Button
-                    onClick={() => setSidebarCollapsed(true)}
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 w-6 p-0"
-                    title="Collapse sidebar"
-                  >
+                                     <Button
+                     onClick={() => {
+                       setHasInteracted(true);
+                       setSidebarCollapsed(true);
+                     }}
+                     size="sm"
+                     variant="ghost"
+                     className="h-6 w-6 p-0"
+                     title="Collapse sidebar"
+                   >
                     <PanelLeftClose className="w-3.5 h-3.5" />
                   </Button>
                 </div>
@@ -568,13 +588,16 @@ export default function Documents() {
           ) : (
             /* Collapsed Sidebar */
             <div className="flex flex-col items-center gap-2">
-              <Button
-                onClick={() => setSidebarCollapsed(false)}
-                size="sm"
-                variant="ghost"
-                className="h-8 w-8 p-0"
-                title="Expand sidebar"
-              >
+                             <Button
+                 onClick={() => {
+                   setHasInteracted(true);
+                   setSidebarCollapsed(false);
+                 }}
+                 size="sm"
+                 variant="ghost"
+                 className="h-8 w-8 p-0"
+                 title="Expand sidebar"
+               >
                 <PanelLeftOpen className="w-4 h-4" />
               </Button>
               <Button
