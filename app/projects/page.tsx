@@ -149,7 +149,7 @@ function ProjectsPageContent() {
   // Selected folder for filtering
   const [selectedFolderId, setSelectedFolderId] = useState<string | undefined>(undefined);
   
-  // Expanded folders state
+  // Expanded folders state - start with all folders expanded by default
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   
   // Get current folder object for breadcrumb
@@ -162,6 +162,13 @@ function ProjectsPageContent() {
       setSelectedFolderId(folderParam);
     }
   }, [searchParams, folders]);
+
+  // Set all folders as expanded by default when folders load
+  useEffect(() => {
+    if (folders.length > 0) {
+      setExpandedFolders(new Set(folders.map(f => f.id)));
+    }
+  }, [folders]);
 
   // Drag and drop state
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
@@ -300,8 +307,8 @@ function ProjectsPageContent() {
       if (selectedFolderId !== undefined) {
         return p.folderId === selectedFolderId;
       }
-      // When no folder is selected, show ALL projects (both foldered and unfoldered)
-      return true;
+      // When no folder is selected, show only projects that are NOT in folders
+      return !p.folderId;
     });
 
   const archivedProjects = projects

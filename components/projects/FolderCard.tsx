@@ -142,11 +142,11 @@ export function FolderCard({
         {/* Expanded Projects View */}
         {isExpanded && projects.length > 0 && (
           <div className="mt-3 pt-3 border-t border-border/30">
-            <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+            <div className="grid grid-cols-2 gap-1.5 max-h-24 overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
               {projects.map((project) => (
                 <div
                   key={project.id}
-                  className="bg-muted/30 rounded border border-border/40 p-2 hover:bg-muted/50 transition-colors cursor-pointer group"
+                  className="bg-muted/30 rounded border border-border/40 p-1.5 hover:bg-muted/50 transition-colors cursor-pointer group"
                   onClick={(e) => {
                     e.stopPropagation();
                     onProjectClick?.(project);
@@ -154,15 +154,15 @@ export function FolderCard({
                 >
                   <div className="flex items-center gap-1 mb-1">
                     <div 
-                      className="w-3 h-3 rounded-sm flex-shrink-0"
+                      className="w-2 h-2 rounded-sm flex-shrink-0"
                       style={{ backgroundColor: project.color }}
                     />
-                    <h4 className="text-xs font-medium text-foreground truncate flex-1">
+                    <h4 className="text-xs font-medium text-foreground truncate flex-1 leading-3">
                       {project.name}
                     </h4>
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {project.progress}% complete
+                  <div className="text-xs text-muted-foreground leading-3">
+                    {project.progress}%
                   </div>
                 </div>
               ))}
