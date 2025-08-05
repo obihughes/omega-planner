@@ -72,7 +72,7 @@ export function FolderCard({
       onClick={handleClick}
     >
       {/* Folder Card */}
-      <div className="bg-card rounded-lg border border-border/60 p-4 hover:border-border transition-all duration-200 hover:shadow-sm aspect-square flex flex-col">
+      <div className="bg-card border border-border/60 p-3 hover:border-border transition-all duration-200 hover:shadow-sm aspect-square flex flex-col">
         {/* Header with folder icon and menu */}
         <div className="flex items-start justify-between mb-3 flex-shrink-0">
           <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -142,27 +142,29 @@ export function FolderCard({
         {/* Expanded Projects View */}
         {isExpanded && projects.length > 0 && (
           <div className="mt-3 pt-3 border-t border-border/30">
-            <div className="grid grid-cols-2 gap-1.5 max-h-24 overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+            <div className="flex flex-col gap-1 max-h-20 overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
               {projects.map((project) => (
                 <div
                   key={project.id}
-                  className="bg-muted/30 rounded border border-border/40 p-1.5 hover:bg-muted/50 transition-colors cursor-pointer group"
+                  className="bg-muted/30 border border-border/40 p-1 hover:bg-muted/50 transition-colors cursor-pointer group"
                   onClick={(e) => {
                     e.stopPropagation();
                     onProjectClick?.(project);
                   }}
                 >
-                  <div className="flex items-center gap-1 mb-1">
-                    <div 
-                      className="w-2 h-2 rounded-sm flex-shrink-0"
-                      style={{ backgroundColor: project.color }}
-                    />
-                    <h4 className="text-xs font-medium text-foreground truncate flex-1 leading-3">
-                      {project.name}
-                    </h4>
-                  </div>
-                  <div className="text-xs text-muted-foreground leading-3">
-                    {project.progress}%
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1 flex-1">
+                      <div 
+                        className="w-1.5 h-1.5 flex-shrink-0"
+                        style={{ backgroundColor: project.color }}
+                      />
+                      <h4 className="text-xs font-medium text-foreground truncate flex-1 leading-3">
+                        {project.name}
+                      </h4>
+                    </div>
+                    <div className="text-xs text-muted-foreground leading-3 ml-2">
+                      {project.progress}%
+                    </div>
                   </div>
                 </div>
               ))}
