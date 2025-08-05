@@ -26,7 +26,8 @@ import {
   SortDesc,
   Grid3X3,
   List,
-  Home
+  Home,
+  GripVertical
 } from 'lucide-react';
 
 // Drag and drop imports
@@ -143,6 +144,9 @@ function ProjectsPageContent() {
   
   // Selected folder for filtering
   const [selectedFolderId, setSelectedFolderId] = useState<string | undefined>(undefined);
+  
+  // Expanded folders state
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   
   // Get current folder object for breadcrumb
   const currentFolder = selectedFolderId ? folders.find(f => f.id === selectedFolderId) : undefined;
@@ -292,8 +296,8 @@ function ProjectsPageContent() {
       if (selectedFolderId !== undefined) {
         return p.folderId === selectedFolderId;
       }
-      // When no folder is selected, show only unsorted projects (no folderId)
-      return p.folderId === undefined;
+      // When no folder is selected, show ALL projects (both foldered and unfoldered)
+      return true;
     });
 
   const archivedProjects = projects
@@ -317,6 +321,17 @@ function ProjectsPageContent() {
   const handleFolderClick = (folder: ProjectFolder) => {
     setSelectedFolderId(folder.id);
     router.push(`/projects?folder=${folder.id}`);
+  };
+
+  const handleToggleFolder = (folderId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newExpanded = new Set(expandedFolders);
+    if (newExpanded.has(folderId)) {
+      newExpanded.delete(folderId);
+    } else {
+      newExpanded.add(folderId);
+    }
+    setExpandedFolders(newExpanded);
   };
 
   // Handle navigation back to root
@@ -427,35 +442,35 @@ function ProjectsPageContent() {
       <div className="container mx-auto px-6 py-6">
           {/* Main Content Area */}
           <div className="flex-1">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-4">
-                <Tabs value={activeView} onValueChange={(value) => setActiveView(value as any)}>
-                  <TabsList>
-                    <TabsTrigger value="active">Active</TabsTrigger>
-                    <TabsTrigger value="archived">Archived</TabsTrigger>
-                    <TabsTrigger value="calendar">Calendar</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-                <h1 className="text-2xl font-bold text-foreground">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-6">
+                <h1 className="text-2xl font-semibold text-foreground">
                   {currentFolder ? currentFolder.name : 'All Projects'}
                 </h1>
+                <Tabs value={activeView} onValueChange={(value) => setActiveView(value as any)}>
+                  <TabsList className="bg-muted/50 border-0">
+                    <TabsTrigger value="active" className="text-sm">Active</TabsTrigger>
+                    <TabsTrigger value="archived" className="text-sm">Archived</TabsTrigger>
+                    <TabsTrigger value="calendar" className="text-sm">Calendar</TabsTrigger>
+                  </TabsList>
+                </Tabs>
               </div>
               
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             
             <Input
               type="search"
               placeholder="Search projects..."
-              className="w-64"
+              className="w-56 h-9 text-sm border-border/60"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
 
             <Popover>
               <PopoverTrigger asChild>
-                <button className="btn-secondary px-4 py-2 rounded-lg flex items-center space-x-2 font-medium">
-                  <ChevronDown className="w-4 h-4" />
+                <button className="px-3 py-2 rounded-md border border-border/60 hover:border-border text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center space-x-2">
                   <span>View</span>
+                  <ChevronDown className="w-3 h-3" />
                 </button>
               </PopoverTrigger>
               <PopoverContent align="end" className="w-64">
@@ -476,6 +491,34 @@ function ProjectsPageContent() {
                   </div>
 
                   <div>
+                    <h4 className="font-medium text-sm mb-2">Sort by</h4>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as any)}
+                      className="w-full p-2 bg-background border border-input rounded-lg mb-2"
+                    >
+                      <option value="order">Custom Order</option>
+                      <option value="name">Name</option>
+                      <option value="progress">Progress</option>
+                      <option value="updated">Last Updated</option>
+                    </select>
+                    <div className="flex items-center space-x-1 border rounded-lg p-1 bg-muted/50">
+                      <button 
+                        onClick={() => setSortOrder('asc')} 
+                        className={`flex-1 p-2 rounded-md transition-colors text-sm flex items-center justify-center ${sortOrder === 'asc' ? 'bg-primary text-primary-foreground' : ''}`}
+                      >
+                        <SortAsc className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => setSortOrder('desc')} 
+                        className={`flex-1 p-2 rounded-md transition-colors text-sm flex items-center justify-center ${sortOrder === 'desc' ? 'bg-primary text-primary-foreground' : ''}`}
+                      >
+                        <SortDesc className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
                     <h4 className="font-medium text-sm mb-2">Display</h4>
                     <div className="flex items-center space-x-1 border rounded-lg p-1 bg-muted/50">
                       <button onClick={() => setViewMode('grid')} className={`flex-1 p-2 rounded-md transition-colors text-sm ${viewMode === 'grid' ? 'bg-primary text-primary-foreground' : ''}`}>Grid</button>
@@ -488,7 +531,7 @@ function ProjectsPageContent() {
 
             <button
               onClick={handleCreateProject}
-              className="btn-primary px-4 py-2 rounded-lg flex items-center space-x-2 font-medium shadow-sm hover:shadow-md transition-all"
+              className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm hover:bg-primary/90 transition-colors flex items-center space-x-2"
             >
               <Plus className="w-4 h-4" />
               <span>New Project</span>
@@ -548,6 +591,16 @@ function ProjectsPageContent() {
                 </div>
               )}
 
+              {/* Custom Order Indicator */}
+              {sortBy === 'order' && (activeProjects.length > 0 || (folders.length > 0 && !selectedFolderId)) && (
+                <div className="mb-6 p-3 bg-muted/30 border border-border/40 rounded-lg">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <GripVertical className="w-4 h-4" />
+                    <span>Drag to reorder projects</span>
+                  </div>
+                </div>
+              )}
+
               {/* Main content area - folders and projects */}
               {(activeProjects.length > 0 || (folders.length > 0 && !selectedFolderId)) && (
                 <DndContext
@@ -562,20 +615,39 @@ function ProjectsPageContent() {
                   >
                     <div className={
                       viewMode === 'grid' 
-                        ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6"
+                        ? "grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"
                         : "space-y-4"
                     }>
                       {/* Render folders when in root view */}
                       {!selectedFolderId && folders.map((folder) => (
-                        <FolderCard
-                          key={folder.id}
-                          folder={folder}
-                          projectCount={getProjectsInFolder(folder.id).length}
-                          onEdit={handleEditFolder}
-                          onDelete={handleDeleteFolder}
-                          onClick={handleFolderClick}
-                          onMoveProjectToFolder={moveProjectToFolder}
-                        />
+                        <React.Fragment key={folder.id}>
+                          <FolderCard
+                            folder={folder}
+                            projectCount={getProjectsInFolder(folder.id).length}
+                            onEdit={handleEditFolder}
+                            onDelete={handleDeleteFolder}
+                            onClick={handleFolderClick}
+                            onMoveProjectToFolder={moveProjectToFolder}
+                            onToggleExpand={handleToggleFolder}
+                            isExpanded={expandedFolders.has(folder.id)}
+                          />
+                          {/* Render expanded folder projects */}
+                          {expandedFolders.has(folder.id) && 
+                            getProjectsInFolder(folder.id).map((project) => (
+                              <div key={`${folder.id}-${project.id}`} className="relative border-l-2 border-l-primary/20 pl-2">
+                                <SortableProjectCard
+                                  project={project}
+                                  onEdit={handleEditProject}
+                                  onDelete={handleDeleteProject}
+                                  onClick={handleProjectClick}
+                                  isArchived={false}
+                                  folders={folders}
+                                  onMoveToFolder={moveProjectToFolder}
+                                />
+                              </div>
+                            ))
+                          }
+                        </React.Fragment>
                       ))}
 
                       {/* Render projects */}

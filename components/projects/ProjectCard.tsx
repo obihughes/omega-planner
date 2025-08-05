@@ -199,39 +199,41 @@ function ProjectCardComponent({
   const renderProgressCircles = () => {
     if (totalTasks === 0) {
       return (
-        <div className="flex items-center justify-center py-4 bg-muted/10 border border-dashed border-muted-foreground/20">
-          <div className="flex items-center space-x-2 text-muted-foreground text-sm">
-            <Plus className="w-4 h-4" />
-            <span>Click to add tasks</span>
+        <div className="flex items-center justify-center py-2 px-3 bg-muted/10 border border-dashed border-muted-foreground/20 rounded">
+          <div className="flex items-center space-x-1 text-muted-foreground text-xs">
+            <Plus className="w-3 h-3" />
+            <span>Add tasks</span>
           </div>
         </div>
       );
     }
 
-    const maxCircles = 12;
+    const maxCircles = 8;
     const totalCircles = Math.min(totalTasks, maxCircles);
     const showEllipsis = totalTasks > maxCircles;
 
     return (
-      <div className="flex items-center space-x-3 py-3">
-        <span className="text-sm font-medium text-muted-foreground flex-shrink-0">
-          {completedTasks}/{totalTasks}
-        </span>
-        <div className="flex flex-wrap gap-1.5 items-center">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-muted-foreground">
+            {completedTasks}/{totalTasks} tasks
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-1 items-center">
           {Array.from({ length: totalCircles }, (_, i) => {
             const isCompleted = i < completedTasks;
             return (
               <div
                 key={i}
                 className={cn(
-                  "w-2 h-2 rounded-full transition-all duration-200 flex-shrink-0",
+                  "w-1.5 h-1.5 rounded-full transition-all duration-200 flex-shrink-0",
                   isCompleted ? "bg-green-500" : "bg-muted-foreground/30"
                 )}
               />
             );
           })}
           {showEllipsis && (
-            <span className="text-sm text-muted-foreground ml-1 whitespace-nowrap font-medium">+{totalTasks - maxCircles}</span>
+            <span className="text-xs text-muted-foreground ml-1">+{totalTasks - maxCircles}</span>
           )}
         </div>
       </div>
@@ -244,23 +246,23 @@ function ProjectCardComponent({
       style={style}
       className={cn(
         "relative group transition-all duration-200",
-        isDragging ? 'z-10 scale-[1.02]' : '',
+        isDragging ? 'z-10 scale-[1.01]' : '',
       )}
       onClick={handleCardClick}
       {...attributes}
     >
-      <div className="bg-card/70 backdrop-blur-md rounded-2xl border border-border/40 p-6 shadow-lg hover:shadow-xl hover:ring-2 hover:ring-primary/20 hover:ring-offset-1 hover:ring-offset-background transition-all duration-300">
+      <div className="bg-card rounded-lg border border-border/60 p-4 hover:border-border transition-all duration-200 hover:shadow-sm aspect-square flex flex-col">
         {/* Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
+        <div className="flex items-start justify-between mb-3 flex-shrink-0">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             <div 
-              className="w-12 h-12 rounded-xl flex items-center justify-center shadow-md ring-1 ring-white/10"
-              style={{ backgroundColor: project.color }}
+              className="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: project.color + '20', color: project.color }}
             >
-              <Briefcase className="w-6 h-6 text-white" />
+              <Briefcase className="w-4 h-4" />
             </div>
-            <div>
-              <h3 className="font-semibold text-foreground text-lg truncate max-w-[180px]">
+            <div className="min-w-0 flex-1">
+              <h3 className="font-medium text-foreground truncate text-sm">
                 {project.name}
               </h3>
               <p className="text-xs text-muted-foreground">
@@ -361,12 +363,10 @@ function ProjectCardComponent({
         )}
         </div>
 
-              {/* Description if exists */}
-        {project.description && (
-          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-            {project.description}
-          </p>
-        )}
+              {/* Task Completion Indicators */}
+        <div className="mt-auto">
+          {renderProgressCircles()}
+        </div>
       </div>
     </div>
   );

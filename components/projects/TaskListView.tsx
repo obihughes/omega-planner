@@ -21,10 +21,32 @@ import {
   SortDesc,
   FileText,
   X,
-  Check
+  Check,
+  GripVertical
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDueDate as formatDueDateUtil } from '@/utils/dateUtils';
+
+// Drag and drop imports
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
+  UniqueIdentifier
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // Storage key for task list preferences
 const TASK_LIST_PREFERENCES_KEY = 'omega-planner-task-list-preferences';
@@ -36,8 +58,13 @@ interface TaskListPreferences {
     dueDate: 'all' | 'today' | 'tomorrow' | 'thisWeek' | 'future' | 'none';
     status: 'all' | 'todo' | 'in-progress' | 'completed' | 'blocked';
   };
-  sortBy: 'title' | 'dueDate' | 'status' | 'created';
+  sortBy: 'title' | 'dueDate' | 'status' | 'created' | 'custom';
   sortOrder: 'asc' | 'desc';
+  // Multiple sort criteria - array of sort options applied in order
+  multipleSorts: Array<{
+    field: 'title' | 'dueDate' | 'status' | 'created' | 'custom';
+    order: 'asc' | 'desc';
+  }>;
 }
 
 // Default preferences
@@ -48,7 +75,11 @@ const defaultPreferences: TaskListPreferences = {
     status: 'all'
   },
   sortBy: 'created',
-  sortOrder: 'desc'
+  sortOrder: 'desc',
+  multipleSorts: [
+    { field: 'status', order: 'asc' },
+    { field: 'title', order: 'asc' }
+  ]
 };
 
 // Helper functions for localStorage
@@ -62,35 +93,24 @@ const loadPreferences = (): TaskListPreferences => {
     const stored = localStorage.getItem(TASK_LIST_PREFERENCES_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
-      // Filter out any legacy priority data and merge with defaults
-      const cleanParsed = {
-        ...parsed,
-        filters: parsed.filters ? {
-          dueDate: parsed.filters.dueDate || 'all',
-          status: parsed.filters.status || 'all'
-        } : defaultPreferences.filters
-      };
-      return { ...defaultPreferences, ...cleanParsed };
+      // Merge with defaults to handle any missing fields
+      return { ...defaultPreferences, ...parsed };
     }
   } catch (error) {
-    console.error('Error loading task list preferences:', error);
+    console.warn('Failed to load task list preferences:', error);
   }
   return defaultPreferences;
 };
 
 const savePreferences = (preferences: TaskListPreferences) => {
-  // Check if we're on the client side
-  if (typeof window === 'undefined') {
-    return;
-  }
-  
   try {
     localStorage.setItem(TASK_LIST_PREFERENCES_KEY, JSON.stringify(preferences));
   } catch (error) {
-    console.error('Error saving task list preferences:', error);
+    console.warn('Failed to save task list preferences:', error);
   }
 };
 
+// Extended task type with project info
 interface TaskWithProject extends ProjectTask {
   projectId: string;
   projectName: string;
@@ -101,8 +121,238 @@ interface TaskListViewProps {
   className?: string;
 }
 
+// Sortable Task Item Component
+function SortableTaskItem({ 
+  task, 
+  dueInfo, 
+  editingTaskId, 
+  editingField, 
+  editingValue, 
+  setEditingTaskId, 
+  setEditingField, 
+  setEditingValue, 
+  editInputRef,
+  celebratingTasks,
+  isCustomOrderMode,
+  onStatusToggle,
+  onSaveEdit,
+  onCancelEdit,
+  onDeleteTask,
+  getStatusIcon,
+  formatDueDate
+}: {
+  task: TaskWithProject;
+  dueInfo: any;
+  editingTaskId: string | null;
+  editingField: string | null;
+  editingValue: string;
+  setEditingTaskId: (id: string | null) => void;
+  setEditingField: (field: 'title' | 'description' | 'dueDate' | null) => void;
+  setEditingValue: (value: string) => void;
+  editInputRef: React.RefObject<HTMLInputElement | HTMLTextAreaElement>;
+  celebratingTasks: Set<string>;
+  isCustomOrderMode: boolean;
+  onStatusToggle: (task: TaskWithProject) => void;
+  onSaveEdit: () => void;
+  onCancelEdit: () => void;
+  onDeleteTask: (task: TaskWithProject) => void;
+  getStatusIcon: (status: ProjectTask['status'], isAnimating?: boolean) => React.ReactNode;
+  formatDueDate: (dueDate: string | undefined) => any;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ 
+    id: task.id,
+    disabled: !isCustomOrderMode
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div 
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "transition-colors duration-200 rounded-lg cursor-pointer border border-transparent hover:border-border/30",
+        "p-3 hover:bg-accent/20 group", // Compact padding for single-line layout
+        isDragging && "opacity-50 z-50"
+      )}
+      onClick={(e) => {
+        // Only trigger due date editing if not clicking on other interactive elements
+        const target = e.target as Element;
+        if (
+          !target.closest('button') && 
+          !target.closest('input') && 
+          !target.closest('textarea') &&
+          editingTaskId !== task.id
+        ) {
+          setEditingTaskId(task.id);
+          setEditingField('dueDate');
+          setEditingValue(task.dueDate || '');
+        }
+      }}
+    >
+      <div className="flex items-center gap-3">
+        {/* Drag Handle - Only show in custom order mode */}
+        {isCustomOrderMode && (
+          <div
+            {...attributes}
+            {...listeners}
+            className="opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+          >
+            <GripVertical className="w-4 h-4 text-muted-foreground" />
+          </div>
+        )}
+
+        {/* Status Checkbox */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onStatusToggle(task);
+          }}
+          className="flex-shrink-0"
+        >
+          {getStatusIcon(task.status, celebratingTasks.has(task.id))}
+        </button>
+
+        {/* Task content - rest of the task item UI */}
+        <div className="flex-1 min-w-0 flex items-center justify-between">
+          <div className="flex-1 min-w-0">
+            {editingTaskId === task.id && editingField === 'title' ? (
+              <input
+                ref={editInputRef as React.RefObject<HTMLInputElement>}
+                type="text"
+                value={editingValue}
+                onChange={(e) => setEditingValue(e.target.value)}
+                onBlur={onSaveEdit}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') onSaveEdit();
+                  if (e.key === 'Escape') onCancelEdit();
+                }}
+                className="w-full bg-transparent border-b border-primary text-sm font-medium focus:outline-none"
+                autoFocus
+              />
+            ) : (
+              <span 
+                className={cn(
+                  "font-medium text-sm text-foreground cursor-pointer",
+                  task.status === 'completed' && "line-through text-muted-foreground"
+                )}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingTaskId(task.id);
+                  setEditingField('title');
+                  setEditingValue(task.title);
+                }}
+              >
+                {task.title}
+              </span>
+            )}
+          </div>
+
+          {/* Due date and actions */}
+          <div className="flex items-center gap-2 ml-3">
+            {/* Due date */}
+            {editingTaskId === task.id && editingField === 'dueDate' ? (
+              <input
+                ref={editInputRef as React.RefObject<HTMLInputElement>}
+                type="date"
+                value={editingValue}
+                onChange={(e) => setEditingValue(e.target.value)}
+                onBlur={onSaveEdit}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') onSaveEdit();
+                  if (e.key === 'Escape') onCancelEdit();
+                }}
+                className="text-xs bg-transparent border border-primary rounded px-1 py-0.5 focus:outline-none"
+                autoFocus
+              />
+            ) : (
+              task.dueDate && (
+                <span 
+                  className={cn(
+                    "text-xs px-2 py-1 rounded-full cursor-pointer transition-colors",
+                    dueInfo.className
+                  )}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingTaskId(task.id);
+                    setEditingField('dueDate');
+                    setEditingValue(task.dueDate || '');
+                  }}
+                >
+                  {dueInfo.text}
+                </span>
+              )
+            )}
+
+            {/* Actions */}
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-6 h-6 p-0 text-muted-foreground hover:text-foreground"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingTaskId(task.id);
+                  setEditingField('description');
+                  setEditingValue(task.description || '');
+                }}
+              >
+                <Edit3 className="w-3 h-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-6 h-6 p-0 text-muted-foreground hover:text-destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteTask(task);
+                }}
+              >
+                <Trash2 className="w-3 h-3" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Description editing */}
+      {editingTaskId === task.id && editingField === 'description' && (
+        <div className="mt-2 ml-7">
+          <textarea
+            ref={editInputRef as React.RefObject<HTMLTextAreaElement>}
+            value={editingValue}
+            onChange={(e) => setEditingValue(e.target.value)}
+            onBlur={onSaveEdit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && e.ctrlKey) onSaveEdit();
+              if (e.key === 'Escape') onCancelEdit();
+            }}
+            placeholder="Add description..."
+            className="w-full p-2 text-xs bg-accent/20 border border-border rounded resize-none focus:outline-none focus:ring-1 focus:ring-primary"
+            rows={2}
+            autoFocus
+          />
+          <div className="text-xs text-muted-foreground mt-1">
+            Press Ctrl+Enter to save, Escape to cancel
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function TaskListView({ className }: TaskListViewProps) {
-  const { projects, updateTaskInProject, deleteTaskFromProject, addTaskToProject, createUnassignedTask } = useProjects();
+  const { projects, updateTaskInProject, deleteTaskFromProject, addTaskToProject, createUnassignedTask, reorderTasksInProject } = useProjects();
   
   // Initialize with default preferences to prevent hydration mismatch
   const [preferences, setPreferences] = useState<TaskListPreferences>(defaultPreferences);
@@ -120,8 +370,56 @@ export function TaskListView({ className }: TaskListViewProps) {
   const [editingValue, setEditingValue] = useState('');
   const editInputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
   
+  // Drag and drop state
+  const [activeTaskId, setActiveTaskId] = useState<UniqueIdentifier | null>(null);
+  const [draggedTask, setDraggedTask] = useState<TaskWithProject | null>(null);
+  
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+  
   // Extract persistent state from preferences
   const { groupBy, filters, sortBy, sortOrder } = preferences;
+  
+  // Check if we're in custom order mode
+  const isCustomOrderMode = sortBy === 'custom' || 
+    (preferences.multipleSorts && preferences.multipleSorts.some(s => s.field === 'custom'));
+  
+  // Drag handlers
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    const { active } = event;
+    setActiveTaskId(active.id);
+    
+    // Find the dragged task
+    const task = allTasks.find(t => t.id === active.id);
+    setDraggedTask(task || null);
+  }, []);
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      // Find the tasks involved
+      const activeTask = allTasks.find(t => t.id === active.id);
+      const overTask = allTasks.find(t => t.id === over.id);
+      
+      if (activeTask && overTask && activeTask.projectId === overTask.projectId) {
+        // Only reorder within the same project
+        reorderTasksInProject(activeTask.projectId, active.id as string, over.id as string);
+      }
+    }
+    
+    setActiveTaskId(null);
+    setDraggedTask(null);
+  }, [reorderTasksInProject]);
   
   // Helper function to update preferences and save to localStorage
   const updatePreferences = useCallback((updates: Partial<TaskListPreferences>) => {
@@ -216,33 +514,50 @@ export function TaskListView({ className }: TaskListViewProps) {
       });
     }
     
-    // Apply sorting
+    // Apply sorting - use multiple sorts if enabled, otherwise single sort
     return filtered.sort((a, b) => {
-      let compareValue = 0;
+      const sortsToApply = preferences.multipleSorts && preferences.multipleSorts.length > 0 
+        ? preferences.multipleSorts 
+        : [{ field: sortBy, order: sortOrder }];
       
-      switch (sortBy) {
-        case 'title':
-          compareValue = a.title.localeCompare(b.title);
-          break;
-        case 'dueDate':
-          if (!a.dueDate && !b.dueDate) compareValue = 0;
-          else if (!a.dueDate) compareValue = 1;
-          else if (!b.dueDate) compareValue = -1;
-          else compareValue = new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-          break;
-        case 'status':
-          const statusOrder = { 'todo': 1, 'in-progress': 2, 'blocked': 3, 'completed': 4 };
-          compareValue = (statusOrder[a.status] || 0) - (statusOrder[b.status] || 0);
-          break;
-        case 'created':
-        default:
-          compareValue = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-          break;
+      for (const sort of sortsToApply) {
+        let compareValue = 0;
+        
+        switch (sort.field) {
+          case 'title':
+            compareValue = a.title.localeCompare(b.title);
+            break;
+          case 'dueDate':
+            if (!a.dueDate && !b.dueDate) compareValue = 0;
+            else if (!a.dueDate) compareValue = 1;
+            else if (!b.dueDate) compareValue = -1;
+            else compareValue = new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+            break;
+          case 'status':
+            const statusOrder = { 'todo': 1, 'in-progress': 2, 'blocked': 3, 'completed': 4 };
+            compareValue = (statusOrder[a.status] || 0) - (statusOrder[b.status] || 0);
+            break;
+          case 'custom':
+            compareValue = (a.order || 0) - (b.order || 0);
+            break;
+          case 'created':
+          default:
+            compareValue = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            break;
+        }
+        
+        const finalCompareValue = sort.order === 'asc' ? compareValue : -compareValue;
+        
+        // If this sort criteria yields a non-zero result, return it
+        // Otherwise, continue to the next sort criteria
+        if (finalCompareValue !== 0) {
+          return finalCompareValue;
+        }
       }
       
-      return sortOrder === 'asc' ? compareValue : -compareValue;
+      return 0; // All sort criteria yielded equal results
     });
-  }, [allTasks, searchTerm, filters, sortBy, sortOrder]);
+  }, [allTasks, searchTerm, filters, sortBy, sortOrder, preferences.multipleSorts]);
 
   // Group tasks
   const groupedTasks = useMemo(() => {
@@ -272,77 +587,6 @@ export function TaskListView({ className }: TaskListViewProps) {
           title: project.name,
           color: project.color,
           tasks: tasks.sort((a, b) => {
-            // Apply the same sorting logic as in filteredTasks
-            let compareValue = 0;
-            
-            switch (sortBy) {
-              case 'title':
-                compareValue = a.title.localeCompare(b.title);
-                break;
-              case 'dueDate':
-                if (!a.dueDate && !b.dueDate) compareValue = 0;
-                else if (!a.dueDate) compareValue = 1;
-                else if (!b.dueDate) compareValue = -1;
-                else compareValue = new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-                break;
-              case 'status':
-                const statusOrder = { 'todo': 1, 'in-progress': 2, 'blocked': 3, 'completed': 4 };
-                compareValue = (statusOrder[a.status] || 0) - (statusOrder[b.status] || 0);
-                break;
-              case 'created':
-              default:
-                compareValue = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-                break;
-            }
-            
-            return sortOrder === 'asc' ? compareValue : -compareValue;
-          })
-        };
-      });
-    } else if (groupBy === 'dueDate') {
-      // Group by due date
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const nextWeek = new Date(today);
-      nextWeek.setDate(nextWeek.getDate() + 7);
-      
-      const dueDateGroups = {
-        'today': { title: 'Due Today', tasks: [] as TaskWithProject[], color: '#F59E0B' },
-        'tomorrow': { title: 'Due Tomorrow', tasks: [] as TaskWithProject[], color: '#3B82F6' },
-        'thisWeek': { title: 'This Week', tasks: [] as TaskWithProject[], color: '#8B5CF6' },
-        'later': { title: 'Later', tasks: [] as TaskWithProject[], color: '#6B7280' },
-        'noDueDate': { title: 'No Due Date', tasks: [] as TaskWithProject[], color: '#6B7280' }
-      };
-      
-      filteredTasks.forEach(task => {
-        if (!task.dueDate) {
-          dueDateGroups.noDueDate.tasks.push(task);
-          return;
-        }
-        
-        const dueDate = new Date(task.dueDate);
-        const dueDateOnly = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
-        
-        if (dueDateOnly.getTime() === today.getTime()) {
-          dueDateGroups.today.tasks.push(task);
-        } else if (dueDateOnly.getTime() === tomorrow.getTime()) {
-          dueDateGroups.tomorrow.tasks.push(task);
-        } else if (dueDateOnly <= nextWeek) {
-          dueDateGroups.thisWeek.tasks.push(task);
-        } else {
-          dueDateGroups.later.tasks.push(task);
-        }
-      });
-      
-      return Object.entries(dueDateGroups)
-        .filter(([_, group]) => group.tasks.length > 0)
-        .map(([key, group]) => ({
-          id: key,
-          title: group.title,
-          color: group.color,
-          tasks: group.tasks.sort((a, b) => {
             // Sort by due date, then by title
             if (a.dueDate && b.dueDate) {
               return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
@@ -351,59 +595,11 @@ export function TaskListView({ className }: TaskListViewProps) {
             if (!a.dueDate && b.dueDate) return 1;
             return a.title.localeCompare(b.title);
           })
-        }));
-    } else if (groupBy === 'dateCreated') {
-      // Group by date created
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const thisWeek = new Date(today);
-      thisWeek.setDate(thisWeek.getDate() - 7);
-      const thisMonth = new Date(today);
-      thisMonth.setMonth(thisMonth.getMonth() - 1);
-      
-      const dateCreatedGroups = {
-        'today': { title: 'Created Today', tasks: [] as TaskWithProject[], color: '#10B981' },
-        'yesterday': { title: 'Created Yesterday', tasks: [] as TaskWithProject[], color: '#3B82F6' },
-        'thisWeek': { title: 'This Week', tasks: [] as TaskWithProject[], color: '#8B5CF6' },
-        'thisMonth': { title: 'This Month', tasks: [] as TaskWithProject[], color: '#F59E0B' },
-        'older': { title: 'Older', tasks: [] as TaskWithProject[], color: '#6B7280' }
-      };
-      
-      filteredTasks.forEach(task => {
-        const createdDate = new Date(task.createdAt);
-        const createdDateOnly = new Date(createdDate.getFullYear(), createdDate.getMonth(), createdDate.getDate());
-        
-        if (createdDateOnly.getTime() === today.getTime()) {
-          dateCreatedGroups.today.tasks.push(task);
-        } else if (createdDateOnly.getTime() === yesterday.getTime()) {
-          dateCreatedGroups.yesterday.tasks.push(task);
-        } else if (createdDateOnly >= thisWeek) {
-          dateCreatedGroups.thisWeek.tasks.push(task);
-        } else if (createdDateOnly >= thisMonth) {
-          dateCreatedGroups.thisMonth.tasks.push(task);
-        } else {
-          dateCreatedGroups.older.tasks.push(task);
-        }
+        };
+      }).sort((a, b) => {
+        // Sort projects by name
+        return a.title.localeCompare(b.title);
       });
-      
-      return Object.entries(dateCreatedGroups)
-        .filter(([_, group]) => group.tasks.length > 0)
-        .map(([key, group]) => ({
-          id: key,
-          title: group.title,
-          color: group.color,
-          tasks: group.tasks.sort((a, b) => {
-            // Sort by creation date (newest first), then by title
-            const dateA = new Date(a.createdAt);
-            const dateB = new Date(b.createdAt);
-            if (dateB.getTime() !== dateA.getTime()) {
-              return dateB.getTime() - dateA.getTime();
-            }
-            return a.title.localeCompare(b.title);
-          })
-        }));
     } else {
       // Group by status
       const statusGroups = {
@@ -434,7 +630,7 @@ export function TaskListView({ className }: TaskListViewProps) {
           })
         }));
     }
-  }, [filteredTasks, groupBy, projects, sortBy, sortOrder]);
+  }, [filteredTasks, groupBy, projects]);
 
   // Toggle project collapse
   const toggleProjectCollapse = (projectId: string) => {
@@ -448,13 +644,12 @@ export function TaskListView({ className }: TaskListViewProps) {
   };
 
   // Handle task status toggle with celebration
-  const handleTaskToggle = useCallback((task: TaskWithProject) => {
+  const handleTaskStatusToggle = useCallback((task: TaskWithProject) => {
     const newStatus = task.status === 'completed' ? 'todo' : 'completed';
     
-    // Add celebration animation for completion
     if (newStatus === 'completed') {
+      // Add celebration
       setCelebratingTasks(prev => new Set([...Array.from(prev), task.id]));
-      
       // Remove celebration after animation
       setTimeout(() => {
         setCelebratingTasks(prev => {
@@ -471,133 +666,80 @@ export function TaskListView({ className }: TaskListViewProps) {
     });
   }, [updateTaskInProject]);
 
-  // Create confetti particles animation
-  const createConfettiParticles = (button: HTMLElement) => {
-    const colors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
-    const rect = button.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-
-    for (let i = 0; i < 12; i++) {
-      const particle = document.createElement('div');
-      particle.className = 'confetti-particle';
-      particle.style.cssText = `
-        position: fixed;
-        width: 6px;
-        height: 6px;
-        background: ${colors[Math.floor(Math.random() * colors.length)]};
-        border-radius: 50%;
-        pointer-events: none;
-        z-index: 9999;
-        left: ${centerX}px;
-        top: ${centerY}px;
-        transform-origin: center;
-      `;
-
-      document.body.appendChild(particle);
-
-      const angle = (i / 12) * Math.PI * 2;
-      const velocity = 100 + Math.random() * 100;
-      const gravity = 500;
-      const life = 800 + Math.random() * 400;
-
-      let startTime = performance.now();
-      
-      const animate = (currentTime: number) => {
-        const elapsed = currentTime - startTime;
-        const progress = elapsed / life;
-
-        if (progress >= 1) {
-          particle.remove();
-          return;
-        }
-
-        const x = centerX + Math.cos(angle) * velocity * (elapsed / 1000);
-        const y = centerY + Math.sin(angle) * velocity * (elapsed / 1000) + 0.5 * gravity * Math.pow(elapsed / 1000, 2);
-        const opacity = 1 - progress;
-        const scale = 1 - progress * 0.5;
-
-        particle.style.left = x + 'px';
-        particle.style.top = y + 'px';
-        particle.style.opacity = opacity.toString();
-        particle.style.transform = `scale(${scale})`;
-
-        requestAnimationFrame(animate);
-      };
-
-      requestAnimationFrame(animate);
-    }
-  };
-
-  // Handle quick add task
-  const handleQuickAdd = () => {
-    if (!newTaskTitle.trim() || !newTaskProjectId) return;
-    
-    addTaskToProject(newTaskProjectId, {
-      title: newTaskTitle.trim(),
-      status: 'todo',
-      priority: 'medium'
-    });
-    
-    setNewTaskTitle('');
-  };
-
-  // Inline editing functions
+  // Editing helpers
   const startEditing = (task: TaskWithProject, field: 'title' | 'description' | 'dueDate') => {
     setEditingTaskId(task.id);
     setEditingField(field);
-    setEditingValue(
-      field === 'title' ? task.title :
-      field === 'description' ? (task.description || '') :
-      field === 'dueDate' ? (task.dueDate || '') : ''
-    );
+    setEditingValue(field === 'dueDate' ? (task.dueDate || '') : (task[field] || ''));
+    
+    // Focus the input after a small delay to ensure it's rendered
+    setTimeout(() => {
+      editInputRef.current?.focus();
+    }, 10);
   };
 
-  const saveEdit = () => {
+  const saveEdit = useCallback(() => {
     if (!editingTaskId || !editingField) return;
     
-    const task = filteredTasks.find(t => t.id === editingTaskId);
+    const task = allTasks.find(t => t.id === editingTaskId);
     if (!task) return;
     
-    const updates: Partial<ProjectTask> = {};
+    const trimmedValue = editingValue.trim();
     
+    // Don't save if the value hasn't changed
+    const currentValue = editingField === 'dueDate' ? task.dueDate : task[editingField];
+    if (trimmedValue === (currentValue || '')) {
+      cancelEdit();
+      return;
+    }
+    
+    // Update the task
+    const updates: Partial<ProjectTask> = {};
     if (editingField === 'title') {
-      updates.title = editingValue.trim() || task.title;
+      if (!trimmedValue) return; // Title is required
+      updates.title = trimmedValue;
     } else if (editingField === 'description') {
-      updates.description = editingValue.trim();
+      updates.description = trimmedValue || undefined;
     } else if (editingField === 'dueDate') {
-      updates.dueDate = editingValue || undefined;
+      updates.dueDate = trimmedValue || undefined;
     }
     
     updateTaskInProject(task.projectId, task.id, updates);
     cancelEdit();
-  };
+  }, [editingTaskId, editingField, editingValue, allTasks, updateTaskInProject]);
 
-  const cancelEdit = () => {
+  const cancelEdit = useCallback(() => {
     setEditingTaskId(null);
     setEditingField(null);
     setEditingValue('');
-  };
+  }, []);
 
-  // Focus input when editing starts
-  useEffect(() => {
-    if (editingTaskId && editInputRef.current) {
-      editInputRef.current.focus();
-      if (editInputRef.current instanceof HTMLInputElement) {
-        editInputRef.current.select();
-      }
+  const deleteTask = useCallback((task: TaskWithProject) => {
+    if (confirm(`Are you sure you want to delete "${task.title}"?`)) {
+      deleteTaskFromProject(task.projectId, task.id);
     }
-  }, [editingTaskId, editingField]);
+  }, [deleteTaskFromProject]);
 
-  // Reset filters function
-  const resetFilters = () => {
-    updatePreferences({
-      filters: {
-        dueDate: 'all', 
-        status: 'all'
-      }
-    });
-  };
+  // Quick add task
+  const handleQuickAdd = useCallback(() => {
+    if (!newTaskTitle.trim() || !newTaskProjectId) return;
+    
+    const taskData = {
+      title: newTaskTitle.trim(),
+      description: '',
+      priority: 'medium' as const,
+      status: 'todo' as const
+    };
+    
+    if (newTaskProjectId === 'unassigned') {
+      createUnassignedTask(taskData);
+    } else {
+      addTaskToProject(newTaskProjectId, taskData);
+    }
+    
+    setNewTaskTitle('');
+    setNewTaskProjectId('');
+  }, [newTaskTitle, newTaskProjectId, addTaskToProject, createUnassignedTask]);
 
   const hasActiveFilters = filters.dueDate !== 'all' || filters.status !== 'all';
 
@@ -671,497 +813,410 @@ export function TaskListView({ className }: TaskListViewProps) {
 
   return (
     <div className={cn("flex flex-col h-full", className)}>
-      {/* Simplified Controls */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <Button 
-            onClick={openFullTaskModal}
-            size="sm"
-            variant="outline"
-            className="flex items-center gap-1.5 text-sm font-medium"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">New Task</span>
-          </Button>
+      {/* Header */}
+      <div className="border-b border-border/30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="flex items-center justify-between p-6">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Tasks</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {totalTasks} total • {completedTasks} completed • {totalTasks - completedTasks} remaining
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <Button 
+              onClick={openFullTaskModal}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              New Task
+            </Button>
+          </div>
         </div>
         
-        <div className="flex items-center gap-2">
-          {/* Compact Search */}
-          <div className="relative">
-            <Search className="w-4 h-4 absolute left-2.5 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+        {/* Controls */}
+        <div className="flex items-center justify-between px-6 pb-4 gap-4">
+          {/* Search */}
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
               type="text"
-              placeholder="Search..."
+              placeholder="Search tasks..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 pr-3 py-1.5 w-40 text-sm"
+              className="pl-10 text-sm"
             />
           </div>
-
-          {/* Filter Popover */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="flex items-center gap-1 px-2">
-                <Filter className="w-4 h-4" />
-                {isClient && hasActiveFilters && (
-                  <div className="w-1.5 h-1.5 bg-primary rounded-full" />
-                )}
+          
+          {/* Filter and sort controls */}
+          <div className="flex items-center gap-2">
+            {/* Clear filters */}
+            {hasActiveFilters && (
+              <Button
+                onClick={() => updatePreferences({ 
+                  filters: { dueDate: 'all', status: 'all' } 
+                })}
+                variant="ghost"
+                size="sm"
+                className="text-xs"
+              >
+                <X className="w-3 h-3 mr-1" />
+                Clear
               </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-56 p-3" align="end">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
+            )}
+            
+            {/* Filters */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="flex items-center gap-1 px-2">
+                  <Filter className="w-4 h-4" />
+                  {hasActiveFilters && <div className="w-2 h-2 bg-primary rounded-full" />}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 p-3" align="end">
+                <div className="space-y-3">
                   <h4 className="font-medium text-sm">Filters</h4>
-                  {isClient && hasActiveFilters && (
-                    <Button variant="ghost" size="sm" onClick={resetFilters} className="h-auto p-1 text-xs">
-                      <X className="w-3 h-3" />
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Due Date</label>
+                    <select
+                      value={filters.dueDate}
+                      onChange={(e) => updatePreferences({ filters: { ...filters, dueDate: e.target.value as any } })}
+                      className="w-full px-2 py-1 text-xs bg-input border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
+                    >
+                      <option value="all">All Dates</option>
+                      <option value="today">Today</option>
+                      <option value="tomorrow">Tomorrow</option>
+                      <option value="thisWeek">This Week</option>
+                      <option value="future">Future</option>
+                      <option value="none">No Due Date</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Status</label>
+                    <select
+                      value={filters.status}
+                      onChange={(e) => updatePreferences({ filters: { ...filters, status: e.target.value as any } })}
+                      className="w-full px-2 py-1 text-xs bg-input border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="todo">To Do</option>
+                      <option value="in-progress">In Progress</option>
+                      <option value="blocked">Blocked</option>
+                      <option value="completed">Completed</option>
+                    </select>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            {/* Sort Controls */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="flex items-center gap-1 px-2">
+                  {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
+                  {preferences.multipleSorts && preferences.multipleSorts.length > 1 && (
+                    <span className="text-xs ml-1 bg-primary/20 text-primary px-1 rounded">
+                      {preferences.multipleSorts.length}
+                    </span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-60 p-3" align="end">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium text-sm">Sort</h4>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => updatePreferences({ 
+                        multipleSorts: preferences.multipleSorts && preferences.multipleSorts.length > 1 
+                          ? [preferences.multipleSorts[0]] 
+                          : [{ field: sortBy, order: sortOrder }]
+                      })}
+                      className="text-xs h-6"
+                    >
+                      {preferences.multipleSorts && preferences.multipleSorts.length > 1 ? 'Single Sort' : 'Multi Sort'}
                     </Button>
+                  </div>
+                  
+                  {/* Multi-sort criteria */}
+                  {preferences.multipleSorts && preferences.multipleSorts.length > 0 ? (
+                    <div className="space-y-2">
+                      {preferences.multipleSorts.map((sort, index) => (
+                        <div key={index} className="flex items-center gap-2 text-xs">
+                          <span className="text-muted-foreground w-4">{index + 1}.</span>
+                          <select
+                            value={sort.field}
+                            onChange={(e) => {
+                              const newSorts = [...preferences.multipleSorts];
+                              newSorts[index] = { ...newSorts[index], field: e.target.value as any };
+                              updatePreferences({ multipleSorts: newSorts });
+                            }}
+                            className="flex-1 px-1 py-0.5 bg-input border-border rounded text-xs"
+                          >
+                            <option value="created">Created</option>
+                            <option value="title">Title</option>
+                            <option value="dueDate">Due Date</option>
+                            <option value="status">Status</option>
+                            <option value="custom">Custom Order</option>
+                          </select>
+                          <select
+                            value={sort.order}
+                            onChange={(e) => {
+                              const newSorts = [...preferences.multipleSorts];
+                              newSorts[index] = { ...newSorts[index], order: e.target.value as any };
+                              updatePreferences({ multipleSorts: newSorts });
+                            }}
+                            className="w-16 px-1 py-0.5 bg-input border-border rounded text-xs"
+                          >
+                            <option value="asc">↑</option>
+                            <option value="desc">↓</option>
+                          </select>
+                          {preferences.multipleSorts.length > 1 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const newSorts = preferences.multipleSorts.filter((_, i) => i !== index);
+                                updatePreferences({ multipleSorts: newSorts });
+                              }}
+                              className="w-6 h-6 p-0 text-muted-foreground hover:text-destructive"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                      
+                      {preferences.multipleSorts.length < 4 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            const newSorts = [...preferences.multipleSorts, { field: 'title' as const, order: 'asc' as const }];
+                            updatePreferences({ multipleSorts: newSorts });
+                          }}
+                          className="w-full h-6 text-xs"
+                        >
+                          <Plus className="w-3 h-3 mr-1" />
+                          Add Sort
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    // Single sort fallback
+                    <div className="space-y-1">
+                      {[
+                        { value: 'created', label: 'Created' },
+                        { value: 'title', label: 'Title' },
+                        { value: 'dueDate', label: 'Due Date' },
+                        { value: 'status', label: 'Status' },
+                        { value: 'custom', label: 'Custom Order' }
+                      ].map(option => (
+                        <button
+                          key={option.value}
+                          onClick={() => updatePreferences({ sortBy: option.value as any })}
+                          className={cn(
+                            "w-full text-left px-2 py-1 text-xs rounded transition-colors",
+                            sortBy === option.value
+                              ? "bg-accent text-accent-foreground"
+                              : "hover:bg-accent/50"
+                          )}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                      <div className="border-t pt-2">
+                        <button
+                          onClick={() => updatePreferences({ sortOrder: sortOrder === 'asc' ? 'desc' : 'asc' })}
+                          className="w-full text-left px-2 py-1 text-xs rounded hover:bg-accent/50 transition-colors"
+                        >
+                          {sortOrder === 'asc' ? 'A→Z' : 'Z→A'}
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
-                
-                <div>
-                  <select
-                    value={filters.dueDate}
-                    onChange={(e) => updatePreferences({ filters: { ...filters, dueDate: e.target.value as any } })}
-                    className="w-full px-2 py-1 text-xs bg-input border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
-                  >
-                    <option value="all">All Dates</option>
-                    <option value="today">Today</option>
-                    <option value="tomorrow">Tomorrow</option>
-                    <option value="thisWeek">This Week</option>
-                    <option value="future">Future</option>
-                    <option value="none">No Due Date</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <select
-                    value={filters.status}
-                    onChange={(e) => updatePreferences({ filters: { ...filters, status: e.target.value as any } })}
-                    className="w-full px-2 py-1 text-xs bg-input border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
-                  >
-                    <option value="all">All Status</option>
-                    <option value="todo">To Do</option>
-                    <option value="in-progress">In Progress</option>
-                    <option value="blocked">Blocked</option>
-                    <option value="completed">Completed</option>
-                  </select>
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
+              </PopoverContent>
+            </Popover>
 
-          {/* Sort Controls */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="flex items-center gap-1 px-2">
-                {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-40 p-3" align="end">
-              <div className="space-y-2">
-                <h4 className="font-medium text-sm">Sort</h4>
-                <div className="space-y-1">
-                  {[
-                    { value: 'created', label: 'Created' },
-                    { value: 'title', label: 'Title' },
-                    { value: 'dueDate', label: 'Due Date' },
-                    { value: 'status', label: 'Status' }
-                  ].map(option => (
-                    <button
-                      key={option.value}
-                      onClick={() => updatePreferences({ sortBy: option.value as any })}
-                      className={cn(
-                        "w-full text-left px-2 py-1 text-xs rounded transition-colors",
-                        sortBy === option.value
-                          ? "bg-accent text-accent-foreground"
-                          : "hover:bg-accent/50"
-                      )}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-                <div className="border-t pt-2">
-                  <button
-                    onClick={() => updatePreferences({ sortOrder: sortOrder === 'asc' ? 'desc' : 'asc' })}
-                    className="w-full text-left px-2 py-1 text-xs rounded hover:bg-accent/50 transition-colors"
-                  >
-                    {sortOrder === 'asc' ? 'A→Z' : 'Z→A'}
-                  </button>
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
-
-          {/* Group by selector */}
-          <select
-            value={groupBy}
-            onChange={(e) => updatePreferences({ groupBy: e.target.value as 'project' | 'status' | 'dueDate' | 'dateCreated' | 'none' })}
-            className="px-2 py-1.5 rounded-lg bg-input border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs"
-          >
-            <option value="none">No Grouping</option>
-            <option value="project">By Project</option>
-            <option value="status">By Status</option>
-            <option value="dueDate">By Due Date</option>
-            <option value="dateCreated">By Date Created</option>
-          </select>
+            {/* Group by selector */}
+            <select
+              value={groupBy}
+              onChange={(e) => updatePreferences({ groupBy: e.target.value as 'project' | 'status' | 'dueDate' | 'dateCreated' | 'none' })}
+              className="px-2 py-1.5 rounded-lg bg-input border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+            >
+              <option value="none">No Grouping</option>
+              <option value="project">By Project</option>
+              <option value="status">By Status</option>
+              <option value="dueDate">By Due Date</option>
+              <option value="dateCreated">By Date Created</option>
+            </select>
+          </div>
         </div>
-      </div>
 
-      {/* Compact Quick Add */}
-      <div className="flex gap-2 mb-4">
-        <select
-          value={newTaskProjectId}
-          onChange={(e) => setNewTaskProjectId(e.target.value)}
-          className="px-2 py-1.5 rounded bg-input border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs min-w-0 flex-shrink-0"
-        >
-          <option value="">Project...</option>
-          {projects.filter(p => !p.isDeleted).map(project => (
-            <option key={project.id} value={project.id}>{project.name}</option>
-          ))}
-        </select>
-        <Input
-          type="text"
-          placeholder="Add a task..."
-          value={newTaskTitle}
-          onChange={(e) => setNewTaskTitle(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') handleQuickAdd();
-          }}
-          className="flex-1 text-sm py-1.5"
-        />
-        <Button 
-          onClick={handleQuickAdd}
-          disabled={!newTaskTitle.trim() || !newTaskProjectId}
-          size="sm"
-          className="px-2"
-        >
-          <Plus className="w-4 h-4" />
-        </Button>
+        {/* Compact Quick Add */}
+        <div className="flex gap-2 mb-4 px-6">
+          <select
+            value={newTaskProjectId}
+            onChange={(e) => setNewTaskProjectId(e.target.value)}
+            className="px-2 py-1.5 rounded bg-input border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs min-w-0 flex-shrink-0"
+          >
+            <option value="">Project...</option>
+            {projects.filter(p => !p.isDeleted).map(project => (
+              <option key={project.id} value={project.id}>{project.name}</option>
+            ))}
+          </select>
+          <Input
+            type="text"
+            placeholder="Add a task..."
+            value={newTaskTitle}
+            onChange={(e) => setNewTaskTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleQuickAdd();
+            }}
+            className="flex-1 text-sm py-1.5"
+          />
+          <Button 
+            onClick={handleQuickAdd}
+            disabled={!newTaskTitle.trim() || !newTaskProjectId}
+            size="sm"
+            className="px-2"
+          >
+            <Plus className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Task Groups */}
-      <div className="flex-1 overflow-y-auto space-y-8">
-        {groupedTasks.map(group => (
-          <div key={group.id} className="bg-card rounded-lg border border-border/30">
-            {/* Group Header - Only show for grouped views */}
-            {groupBy !== 'none' && (
-              <button
-                onClick={() => toggleProjectCollapse(group.id)}
-                className="w-full flex items-center justify-between p-6 hover:bg-accent/20 transition-all duration-200"
-              >
-                <div className="flex items-center gap-3">
-                  {collapsedProjects.has(group.id) ? (
-                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                  ) : (
-                    <ChevronDown className="w-5 h-5 text-muted-foreground" />
-                  )}
-                  <div 
-                    className="w-4 h-4 rounded-full shadow-sm"
-                    style={{ backgroundColor: group.color }}
-                  />
-                  <span className="font-medium text-lg text-foreground">{group.title}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm text-muted-foreground">
-                    {group.tasks.filter(t => t.status === 'completed').length} of {group.tasks.length}
-                  </span>
-                </div>
-              </button>
-            )}
-
-            {/* Tasks */}
-            {(groupBy === 'none' || !collapsedProjects.has(group.id)) && (
-              <div className="p-2">
-                {group.tasks.length === 0 ? (
-                  <div className="p-8 text-center text-muted-foreground text-sm">
-                    No tasks found
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="flex-1 overflow-y-auto space-y-8 p-6">
+          {groupedTasks.map(group => (
+            <div key={group.id} className="bg-card rounded-lg border border-border/30">
+              {/* Group Header - Only show for grouped views */}
+              {groupBy !== 'none' && (
+                <button
+                  onClick={() => toggleProjectCollapse(group.id)}
+                  className="w-full flex items-center justify-between p-6 hover:bg-accent/20 transition-all duration-200"
+                >
+                  <div className="flex items-center gap-3">
+                    {collapsedProjects.has(group.id) ? (
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                    )}
+                    <div 
+                      className="w-4 h-4 rounded-full shadow-sm"
+                      style={{ backgroundColor: group.color }}
+                    />
+                    <span className="font-medium text-lg text-foreground">{group.title}</span>
+                    {isCustomOrderMode && (
+                      <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">
+                        Drag to reorder
+                      </span>
+                    )}
                   </div>
-                ) : (
-                  <div className="space-y-2">
-                    {group.tasks.map(task => {
-                      const dueInfo = formatDueDate(task.dueDate);
-                      
-                      return (
-                        <div 
-                          key={task.id} 
-                          className={cn(
-                            "transition-colors duration-200 rounded-lg cursor-pointer border border-transparent hover:border-border/30",
-                            "p-3 hover:bg-accent/20 group" // Compact padding for single-line layout
-                          )}
-                          onClick={(e) => {
-                            // Only trigger due date editing if not clicking on other interactive elements
-                            const target = e.target as Element;
-                            if (
-                              !target.closest('button') && 
-                              !target.closest('input') && 
-                              !target.closest('textarea') &&
-                              editingTaskId !== task.id
-                            ) {
-                              startEditing(task, 'dueDate');
-                            }
-                          }}
-                          title="Click to edit due date • Click title to edit name"
-                        >
-                          {/* Single-line compact layout */}
-                          <div className="flex items-center gap-3 min-h-[28px]">
-                            {/* Status toggle with celebration */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                
-                                // Trigger confetti for completed tasks
-                                const newStatus = task.status === 'completed' ? 'todo' : 'completed';
-                                if (newStatus === 'completed') {
-                                  createConfettiParticles(e.currentTarget as HTMLElement);
-                                }
-                                
-                                handleTaskToggle(task);
-                              }}
-                              className={cn(
-                                "flex-shrink-0 transition-all duration-300 relative",
-                                "hover:scale-110 active:scale-95",
-                                celebratingTasks.has(task.id) && "animate-bounce"
-                              )}
-                              style={{
-                                transform: celebratingTasks.has(task.id) ? 'scale(1.2)' : undefined,
-                                transition: 'transform 0.3s ease-in-out'
-                              }}
-                            >
-                              {getStatusIcon(task.status, celebratingTasks.has(task.id))}
-                              
-                              {/* Celebration effect */}
-                              {celebratingTasks.has(task.id) && (
-                                <div className="absolute -inset-2 pointer-events-none">
-                                  <div className="absolute inset-0 rounded-full bg-green-400 opacity-20 animate-ping"></div>
-                                  <div className="absolute inset-1 rounded-full bg-green-300 opacity-30 animate-ping animation-delay-75"></div>
-                                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1">
-                                    <span className="text-lg animate-bounce">🎉</span>
-                                  </div>
-                                </div>
-                              )}
-                            </button>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-muted-foreground">
+                      {group.tasks.filter(t => t.status === 'completed').length} of {group.tasks.length}
+                    </span>
+                    {/* Add Task Button - Only show for project groups */}
+                    {groupBy === 'project' && (
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent collapse/expand
+                          setFullTaskForm({
+                            title: '',
+                            description: '',
+                            dueDate: '',
+                            projectId: group.id,
+                            estimatedHours: ''
+                          });
+                          setIsFullTaskModalOpen(true);
+                        }}
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </button>
+              )}
 
-                            {/* Project indicator (when not grouped by project) */}
-                            {groupBy !== 'project' && (
-                              <div 
-                                className="w-2 h-2 rounded-full flex-shrink-0"
-                                style={{ backgroundColor: task.projectColor }}
-                                title={task.projectName}
-                              />
-                            )}
-
-                            {/* Title - Editable and takes available space */}
-                            {editingTaskId === task.id && editingField === 'title' ? (
-                              <input
-                                ref={editInputRef as React.RefObject<HTMLInputElement>}
-                                type="text"
-                                value={editingValue}
-                                onChange={(e) => setEditingValue(e.target.value)}
-                                onBlur={saveEdit}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') saveEdit();
-                                  if (e.key === 'Escape') cancelEdit();
-                                }}
-                                className="w-full bg-transparent border-none outline-none focus:bg-accent/50 rounded px-1 -mx-1 font-medium text-sm"
-                              />
-                            ) : (
-                              <h3 
-                                className={cn(
-                                  "cursor-pointer hover:bg-accent/20 rounded px-1 -mx-1 transition-colors select-none font-medium text-sm truncate",
-                                  task.status === 'completed' 
-                                    ? "line-through text-muted-foreground/70" 
-                                    : "text-foreground"
-                                )}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  startEditing(task, 'title');
-                                }}
-                                title={`${task.title}${task.description ? ` • ${task.description}` : ''}`}
-                              >
-                                {task.title}
-                              </h3>
-                            )}
-                              
-                            {/* Project name (when not grouped by project) - Subtle and smaller */}
-                            {groupBy !== 'project' && (
-                              <div className="flex items-center gap-2 mt-1.5 mb-1">
-                                <div 
-                                  className="w-3 h-3 rounded-full shadow-sm flex-shrink-0"
-                                  style={{ backgroundColor: task.projectColor }}
-                                />
-                                <span className="text-sm font-medium text-muted-foreground/80 tracking-tight truncate">
-                                  {task.projectName}
-                                </span>
-                              </div>
-                            )}
-                            
-                            {/* Description - Editable and Subtle */}
-                            {(task.description || editingTaskId === task.id && editingField === 'description') && (
-                              editingTaskId === task.id && editingField === 'description' ? (
-                                <textarea
-                                  ref={editInputRef as React.RefObject<HTMLTextAreaElement>}
-                                  value={editingValue}
-                                  onChange={(e) => setEditingValue(e.target.value)}
-                                  onBlur={saveEdit}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && e.ctrlKey) saveEdit();
-                                    if (e.key === 'Escape') cancelEdit();
-                                  }}
-                                  placeholder="Add description..."
-                                  className="w-full text-sm text-muted-foreground/70 mt-2 bg-transparent border-none outline-none focus:bg-accent/50 rounded px-1 -mx-1 resize-none leading-relaxed font-light"
-                                  rows={2}
-                                />
-                              ) : (
-                                <p 
-                                  className="text-sm text-muted-foreground/70 mt-2 cursor-pointer hover:bg-accent/20 rounded px-1 -mx-1 transition-colors line-clamp-2 leading-relaxed font-light"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    startEditing(task, 'description');
-                                  }}
-                                  title="Click to edit description"
-                                >
-                                  {task.description}
-                                </p>
-                              )
-                            )}
-                            
-                            {/* Due date - Editable and Compact */}
-                            {(dueInfo || editingTaskId === task.id && editingField === 'dueDate') && (
-                              editingTaskId === task.id && editingField === 'dueDate' ? (
-                                <div className="flex items-center gap-2 mt-3">
-                                  <Clock className="w-4 h-4 text-muted-foreground/70" />
-                                  <input
-                                    ref={editInputRef as React.RefObject<HTMLInputElement>}
-                                    type="date"
-                                    value={editingValue}
-                                    onChange={(e) => setEditingValue(e.target.value)}
-                                    onBlur={saveEdit}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') saveEdit();
-                                      if (e.key === 'Escape') cancelEdit();
-                                    }}
-                                    className="text-sm font-medium bg-accent/30 border border-border rounded-lg px-2 py-1 outline-none focus:bg-accent/50 focus:ring-2 focus:ring-primary/20 tracking-tight"
-                                  />
-                                </div>
-                              ) : dueInfo && (
-                                <div className="flex items-center gap-2 mt-3">
-                                  <Clock className="w-4 h-4 text-muted-foreground/70" />
-                                  <span className={cn(
-                                    "text-sm font-medium tracking-tight",
-                                    dueInfo.isOverdue 
-                                      ? "text-muted-foreground/80" 
-                                      : "text-muted-foreground/80"
-                                  )}>
-                                    {dueInfo.text}
-                                  </span>
-                                </div>
-                              )
-                            )}
-                          </div>
+              {/* Tasks */}
+              {(groupBy === 'none' || !collapsedProjects.has(group.id)) && (
+                <div className="p-2">
+                  <SortableContext items={group.tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                    {group.tasks.length === 0 ? (
+                      <div className="p-8 text-center text-muted-foreground text-sm">
+                        No tasks found
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {group.tasks.map(task => {
+                          const dueInfo = formatDueDate(task.dueDate);
                           
-                          {/* Project name (when not grouped by project) - compact */}
-                          {groupBy !== 'project' && (
-                            <span className="text-xs text-muted-foreground/60 truncate max-w-[100px] flex-shrink-0">
-                              {task.projectName}
-                            </span>
-                          )}
-
-                          {/* Due date - compact */}
-                          {(dueInfo || editingTaskId === task.id && editingField === 'dueDate') && (
-                            <div className="flex items-center gap-1 flex-shrink-0">
-                              {editingTaskId === task.id && editingField === 'dueDate' ? (
-                                <input
-                                  ref={editInputRef as React.RefObject<HTMLInputElement>}
-                                  type="date"
-                                  value={editingValue}
-                                  onChange={(e) => setEditingValue(e.target.value)}
-                                  onBlur={saveEdit}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') saveEdit();
-                                    if (e.key === 'Escape') cancelEdit();
-                                  }}
-                                  className="text-xs bg-accent/30 border border-border rounded px-2 py-1 outline-none focus:bg-accent/50 focus:ring-1 focus:ring-primary/20 w-[110px]"
-                                />
-                              ) : dueInfo && (
-                                <>
-                                  <Clock className="w-3 h-3 text-muted-foreground/50" />
-                                  <span className={cn(
-                                    "text-xs font-medium",
-                                    dueInfo.isOverdue 
-                                      ? "text-muted-foreground/70" 
-                                      : "text-muted-foreground/70"
-                                  )}>
-                                    {dueInfo.text}
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Action buttons - visible on hover */}
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                            {/* Description indicator/editor */}
-                            {task.description && editingTaskId !== task.id ? (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  startEditing(task, 'description');
-                                }}
-                                className="p-1 hover:bg-accent rounded text-muted-foreground hover:text-foreground"
-                                title="Edit description"
-                              >
-                                <FileText className="w-3 h-3" />
-                              </button>
-                            ) : !task.description && editingTaskId !== task.id && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  startEditing(task, 'description');
-                                }}
-                                className="p-1 hover:bg-accent rounded text-muted-foreground hover:text-foreground"
-                                title="Add description"
-                              >
-                                <Plus className="w-3 h-3" />
-                              </button>
-                            )}
-                          </div>
-
-                          {/* Description editing area - appears below when editing */}
-                          {editingTaskId === task.id && editingField === 'description' && (
-                            <div className="mt-2 pl-8">
-                              <textarea
-                                ref={editInputRef as React.RefObject<HTMLTextAreaElement>}
-                                value={editingValue}
-                                onChange={(e) => setEditingValue(e.target.value)}
-                                onBlur={saveEdit}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter' && e.ctrlKey) saveEdit();
-                                  if (e.key === 'Escape') cancelEdit();
-                                }}
-                                placeholder="Add description..."
-                                className="w-full text-sm text-muted-foreground bg-accent/20 border border-border rounded px-2 py-1 outline-none focus:bg-accent/30 resize-none"
-                                rows={2}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
+                          return (
+                            <SortableTaskItem
+                              key={task.id}
+                              task={task}
+                              dueInfo={dueInfo}
+                              editingTaskId={editingTaskId}
+                              editingField={editingField}
+                              editingValue={editingValue}
+                              setEditingTaskId={setEditingTaskId}
+                              setEditingField={setEditingField}
+                              setEditingValue={setEditingValue}
+                              editInputRef={editInputRef}
+                              celebratingTasks={celebratingTasks}
+                              isCustomOrderMode={isCustomOrderMode}
+                              onStatusToggle={handleTaskStatusToggle}
+                              onSaveEdit={saveEdit}
+                              onCancelEdit={cancelEdit}
+                              onDeleteTask={deleteTask}
+                              getStatusIcon={getStatusIcon}
+                              formatDueDate={formatDueDate}
+                            />
+                          );
+                        })}
+                      </div>
+                    )}
+                  </SortableContext>
+                </div>
+              )}
+            </div>
+          ))}
+          
+          {groupedTasks.length === 0 && (
+            <div className="text-center py-12 text-muted-foreground">
+              {searchTerm ? 'No tasks match your search' : 'No tasks found'}
+            </div>
+          )}
+        </div>
         
-        {groupedTasks.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">
-            {searchTerm ? 'No tasks match your search' : 'No tasks found'}
-          </div>
-        )}
-      </div>
+        {/* Drag Overlay */}
+        <DragOverlay>
+          {draggedTask ? (
+            <div className="bg-card rounded-lg border border-border/30 shadow-lg opacity-90">
+              <div className="p-3">
+                <div className="flex items-center gap-3">
+                  <GripVertical className="w-4 h-4 text-muted-foreground" />
+                  {getStatusIcon(draggedTask.status)}
+                  <span className="font-medium text-sm">{draggedTask.title}</span>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
       {/* Full Task Creation Modal */}
       {isFullTaskModalOpen && (
@@ -1181,6 +1236,7 @@ export function TaskListView({ className }: TaskListViewProps) {
                   onChange={(e) => setFullTaskForm(prev => ({ ...prev, title: e.target.value }))}
                   placeholder="Enter task title..."
                   className="w-full"
+                  autoFocus
                 />
               </div>
 
@@ -1192,13 +1248,13 @@ export function TaskListView({ className }: TaskListViewProps) {
                 <textarea
                   value={fullTaskForm.description}
                   onChange={(e) => setFullTaskForm(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Add description..."
+                  placeholder="Optional description..."
+                  className="w-full p-2 border border-border rounded resize-none focus:outline-none focus:ring-1 focus:ring-primary"
                   rows={3}
-                  className="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
 
-              {/* Project Assignment */}
+              {/* Project Selection */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
                   Project
@@ -1206,43 +1262,42 @@ export function TaskListView({ className }: TaskListViewProps) {
                 <select
                   value={fullTaskForm.projectId}
                   onChange={(e) => setFullTaskForm(prev => ({ ...prev, projectId: e.target.value }))}
-                  className="w-full px-3 py-2 bg-input border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full p-2 border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
                 >
-                  <option value="">Unassigned</option>
-                  {projects.filter(p => !p.isDeleted && p.id !== 'unassigned').map(project => (
+                  <option value="">Select a project...</option>
+                  {projects.filter(p => !p.isDeleted).map(project => (
                     <option key={project.id} value={project.id}>{project.name}</option>
                   ))}
+                  <option value="unassigned">Unassigned</option>
                 </select>
               </div>
 
-              {/* Due Date and Estimated Hours Row */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">
-                    Due Date
-                  </label>
-                  <Input
-                    type="date"
-                    value={fullTaskForm.dueDate}
-                    onChange={(e) => setFullTaskForm(prev => ({ ...prev, dueDate: e.target.value }))}
-                    className="w-full"
-                  />
-                </div>
+              {/* Due Date */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Due Date
+                </label>
+                <Input
+                  type="date"
+                  value={fullTaskForm.dueDate}
+                  onChange={(e) => setFullTaskForm(prev => ({ ...prev, dueDate: e.target.value }))}
+                  className="w-full"
+                />
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">
-                    Estimated Hours
-                  </label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.5"
-                    value={fullTaskForm.estimatedHours}
-                    onChange={(e) => setFullTaskForm(prev => ({ ...prev, estimatedHours: e.target.value }))}
-                    placeholder="Optional"
-                    className="w-full"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Estimated Hours
+                </label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  value={fullTaskForm.estimatedHours}
+                  onChange={(e) => setFullTaskForm(prev => ({ ...prev, estimatedHours: e.target.value }))}
+                  placeholder="Optional"
+                  className="w-full"
+                />
               </div>
             </div>
 
@@ -1264,4 +1319,4 @@ export function TaskListView({ className }: TaskListViewProps) {
       )}
     </div>
   );
-} 
+}

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { ProjectFolder } from '@/types';
-import { Folder, MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { Folder, MoreVertical, Edit, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,8 @@ interface FolderCardProps {
   onDelete: (folderId: string) => void;
   onClick: (folder: ProjectFolder) => void;
   onMoveProjectToFolder?: (projectId: string, folderId: string) => void;
+  onToggleExpand?: (folderId: string, e: React.MouseEvent) => void;
+  isExpanded?: boolean;
   className?: string;
 }
 
@@ -25,6 +27,8 @@ export function FolderCard({
   onDelete,
   onClick,
   onMoveProjectToFolder,
+  onToggleExpand,
+  isExpanded = false,
   className
 }: FolderCardProps) {
   const { setNodeRef, isOver } = useDroppable({
@@ -53,25 +57,25 @@ export function FolderCard({
     <div
       ref={setNodeRef}
       className={cn(
-        "relative group cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg",
+        "relative group cursor-pointer transition-all duration-200",
         isOver && "ring-2 ring-primary/50 ring-offset-2 ring-offset-background",
         className
       )}
       onClick={handleClick}
     >
       {/* Folder Card */}
-      <div className="bg-card/70 backdrop-blur-md rounded-2xl border border-border/40 p-6 shadow-lg hover:shadow-xl hover:ring-2 hover:ring-primary/20 hover:ring-offset-1 hover:ring-offset-background transition-all duration-300">
+      <div className="bg-card rounded-lg border border-border/60 p-4 hover:border-border transition-all duration-200 hover:shadow-sm aspect-square flex flex-col">
         {/* Header with folder icon and menu */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
+        <div className="flex items-start justify-between mb-3 flex-shrink-0">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             <div 
-              className="w-12 h-12 rounded-xl flex items-center justify-center shadow-md ring-1 ring-white/10"
-              style={{ backgroundColor: folder.color }}
+              className="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: folder.color + '20', color: folder.color }}
             >
-              <Folder className="w-6 h-6 text-white" />
+              <Folder className="w-4 h-4" />
             </div>
-            <div>
-              <h3 className="font-semibold text-foreground text-lg truncate max-w-[180px]">
+            <div className="min-w-0 flex-1">
+              <h3 className="font-medium text-foreground truncate text-sm">
                 {folder.name}
               </h3>
               <p className="text-xs text-muted-foreground">
@@ -80,18 +84,33 @@ export function FolderCard({
             </div>
           </div>
 
-          {/* Action Menu */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button 
-                variant="ghost" 
+          {/* Action Buttons */}
+          <div className="flex items-center gap-1">
+            {onToggleExpand && projectCount > 0 && (
+              <Button
+                variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                onClick={(e) => e.stopPropagation()}
+                className="h-6 w-6 p-0 opacity-70 hover:opacity-100 transition-opacity"
+                onClick={(e) => onToggleExpand(folder.id, e)}
               >
-                <MoreVertical className="w-4 h-4" />
+                {isExpanded ? (
+                  <ChevronDown className="w-3 h-3" />
+                ) : (
+                  <ChevronRight className="w-3 h-3" />
+                )}
               </Button>
-            </PopoverTrigger>
+            )}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MoreVertical className="w-3 h-3" />
+                </Button>
+              </PopoverTrigger>
             <PopoverContent align="end" className="w-48 p-1">
               <div className="space-y-1">
                 <button
@@ -110,19 +129,13 @@ export function FolderCard({
                 </button>
               </div>
             </PopoverContent>
-          </Popover>
+            </Popover>
+          </div>
         </div>
-
-        {/* Description */}
-        {folder.description && (
-          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-            {folder.description}
-          </p>
-        )}
 
         {/* Drop Zone Indicator */}
         {isOver && (
-          <div className="absolute inset-0 rounded-2xl bg-primary/10 border-2 border-primary/50 border-dashed flex items-center justify-center">
+          <div className="absolute inset-0 rounded-lg bg-primary/10 border-2 border-primary/50 border-dashed flex items-center justify-center">
             <div className="text-primary font-medium text-sm">
               Drop project here
             </div>

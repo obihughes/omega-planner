@@ -369,11 +369,11 @@ export default function DailyPlanner() {
     return (
       <div className="flex h-8 sticky top-0 bg-card z-20">
         {timelineHours.map((hour) => (
-          <div key={`timeline-hour-${hour}-${period}`} className="flex-none text-xs text-muted-foreground/60 pt-1 pl-0.5 border-l border-border/20" style={{ width: `${APP_PIXELS_PER_HOUR}px` }}>
+          <div key={`timeline-hour-${hour}-${period}`} className="flex-none text-xs text-muted-foreground/50 pt-1 pl-1 border-l border-border/10" style={{ width: `${APP_PIXELS_PER_HOUR}px` }}>
             {formatTime(hour)}
           </div>
         ))}
-        <div key={`timeline-end-marker-${period}`} className="flex-none border-l border-border/20" style={{ width: `2px` }}></div>
+        <div key={`timeline-end-marker-${period}`} className="flex-none border-l border-border/10" style={{ width: `1px` }}></div>
       </div>
     );
   }, []); 
@@ -542,7 +542,7 @@ export default function DailyPlanner() {
         >
           {currentTimeMarker}
           {Array.from({ length: endHour - startHour }, (_, i) => (
-            <div key={`grid-${i}`} className="border-l border-border/10 absolute h-full" style={{ left: `${i * APP_PIXELS_PER_HOUR}px`, top: '0', bottom: '0' }} />
+            <div key={`grid-${i}`} className="border-l border-border/5 absolute h-full" style={{ left: `${i * APP_PIXELS_PER_HOUR}px`, top: '0', bottom: '0' }} />
           ))}
           {tasksToRender.map((task) => {
               // The task object from tasksToRender is now always the correct one to display
@@ -855,7 +855,7 @@ export default function DailyPlanner() {
                         Add Task
                     </Button>
                   </div>
-                  <div className="border border-border/30 rounded-md overflow-hidden">
+                  <div className="border border-border/20 rounded-lg overflow-hidden">
                     <div className="flex flex-col">
                         {renderDayColumn(topDayOffset, 'night')}
                         {renderDayColumn(topDayOffset, 'morning')}
@@ -885,7 +885,7 @@ export default function DailyPlanner() {
                         Clone to {bottomDayOffset < topDayOffset ? 'Top' : 'Bottom'}
                     </Button>
                   </div>
-                  <div className="border border-border/30 rounded-md overflow-hidden">
+                  <div className="border border-border/20 rounded-lg overflow-hidden">
                     <div className="flex flex-col">
                         {renderDayColumn(bottomDayOffset, 'night')}
                         {renderDayColumn(bottomDayOffset, 'morning')}

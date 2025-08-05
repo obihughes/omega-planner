@@ -5,11 +5,12 @@ This document provides detailed information about the components used in the Dai
 ## Table of Contents
 
 1. [Planner Components](#planner-components)
-2. [UI Components](#ui-components)
-3. [Calendar Components](#calendar-components)
-4. [Documents Components](#documents-components)
-5. [Primitives Components](#primitives-components)
-6. [Recent Updates](#recent-updates)
+2. [Projects Components](#projects-components)
+3. [UI Components](#ui-components)
+4. [Calendar Components](#calendar-components)
+5. [Documents Components](#documents-components)
+6. [Primitives Components](#primitives-components)
+7. [Recent Updates](#recent-updates)
 
 ## Planner Components
 
@@ -161,6 +162,63 @@ Individual timeline column representing a specific time period.
 - Grid lines for visual guidance
 - Current time indicator
 
+## Projects Components
+
+### **TaskListView**
+**Location**: `components/projects/TaskListView.tsx`
+
+Advanced task management interface with powerful sorting, filtering, and organization features.
+
+**Key Features:**
+- **Multi-Criteria Sorting**: Sort tasks by multiple fields simultaneously (e.g., completion status + title)
+- **Custom Order Sorting**: Drag-and-drop reordering with custom order persistence 
+- **Advanced Filtering**: Filter by due date, status, and search across task content
+- **Flexible Grouping**: Group tasks by project, status, due date, or date created
+- **Inline Task Creation**: Add tasks directly within project groups using "Add Task" buttons
+- **Quick Task Entry**: Fast task creation with project selection
+- **Real-time Editing**: Inline editing of task titles, descriptions, and due dates
+- **Drag & Drop Reordering**: Visual reordering of tasks when in custom order mode
+- **Task Status Management**: Toggle completion status with visual celebrations
+- **Multi-Sort Interface**: Configure multiple sorting criteria with drag-to-reorder priority
+
+**Sorting Options:**
+- **Single Sort**: Traditional single-field sorting (title, due date, status, created date, custom order)
+- **Multi Sort**: Configure up to 4 simultaneous sort criteria with independent ascending/descending order
+- **Custom Order**: Drag-and-drop visual reordering with persistence across sessions
+
+**Filtering Options:**
+- **Due Date**: All, Today, Tomorrow, This Week, Future, No Due Date
+- **Status**: All, To Do, In Progress, Blocked, Completed
+- **Search**: Full-text search across task titles, descriptions, and project names
+
+**Task Creation:**
+- **Quick Add**: Inline task creation with project selection
+- **Project-Specific**: "Add Task" buttons in project group headers that pre-select the project
+- **Full Modal**: Detailed task creation with all fields (title, description, project, due date, estimated hours)
+
+### **ProjectCard** 
+**Location**: `components/projects/ProjectCard.tsx`
+
+Individual project display component with drag-and-drop support.
+
+**Key Features:**
+- **Custom Order Support**: Sortable interface for project reordering
+- **Progress Visualization**: Visual progress indicators
+- **Action Menus**: Edit, delete, archive, and folder management options
+- **Drag Handles**: Visual drag indicators in custom order mode
+
+### **Projects Page**
+**Location**: `app/projects/page.tsx`
+
+Main projects management interface with enhanced sorting capabilities.
+
+**Key Features:**
+- **Custom Order Sorting**: Drag-and-drop project reordering
+- **Multiple Sort Options**: Name, Progress, Last Updated, Custom Order
+- **Visual Sorting Indicators**: Clear indication when in custom order mode with drag instructions
+- **Folder Management**: Organize projects into folders with custom ordering within folders
+- **Sort Direction Controls**: Ascending/descending order toggle with visual indicators
+
 ## UI Components
 
 ### AppLayout (`components/ui/AppLayout.tsx`)
@@ -288,6 +346,34 @@ Custom time selection component.
 - Keyboard and mouse interaction
 
 ## Recent Updates
+
+### Advanced Task Management Features (Latest Update)
+**Comprehensive enhancement of task and project management capabilities**
+
+**TaskListView Enhancements:**
+- **Multi-Criteria Sorting**: Implemented simultaneous sorting by multiple fields (e.g., completion status + title)
+- **Custom Order with Drag & Drop**: Added visual task reordering with persistence
+- **Project-Specific Task Creation**: "Add Task" buttons within project groups that pre-select the project
+- **Enhanced Sort Controls**: UI for configuring up to 4 simultaneous sort criteria
+- **Drag Mode Indicators**: Visual feedback when in custom order mode
+
+**Projects Page Enhancements:**
+- **Sortable Projects Interface**: Added comprehensive sorting controls (Name, Progress, Updated, Custom Order)
+- **Custom Order Mode**: Visual indicators and drag-to-reorder functionality for projects
+- **Sort Direction Controls**: Ascending/descending toggle with icon indicators
+- **Enhanced View Controls**: Improved popover interface for sorting and filtering options
+
+**Technical Improvements:**
+- **SortableTaskItem Component**: New reusable component for drag-and-drop task items
+- **Multiple Sort Logic**: Advanced sorting algorithm supporting multiple criteria with fallbacks
+- **Drag & Drop Integration**: @dnd-kit integration for smooth reordering experience
+- **Preferences Persistence**: LocalStorage persistence for multi-sort configurations
+
+**Files Added/Modified:**
+- `components/projects/TaskListView.tsx` - Complete rewrite with advanced features
+- `app/projects/page.tsx` - Added sorting controls and custom order indicators
+- New drag-and-drop task management system
+- Enhanced user experience with visual feedback and intuitive controls
 
 ### Text Canvas UI Overhaul (Latest)
 **Issue**: Multiple UX problems with the text canvas:

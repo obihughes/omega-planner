@@ -30,13 +30,16 @@ npm run dev:clean
 ## Features
 
 ### Core Functionality
-- Task management with drag-and-drop
-- Dark mode support
-- Copy/paste tasks
-- Time-based task organization
-- Responsive design
-- Task inbox for unscheduled tasks
-- Pinned tasks for quick access
+- **Advanced Task Management**: Multi-criteria sorting, custom order with drag-and-drop
+- **Project Organization**: Task grouping by projects with inline task creation
+- **Smart Sorting**: Sort by multiple fields simultaneously (e.g., completion + title)
+- **Custom Ordering**: Visual drag-and-drop reordering for tasks and projects
+- **Dark mode support** with full theme consistency
+- **Copy/paste tasks** between dates and time slots
+- **Time-based organization** with timeline views
+- **Responsive design** for all device sizes
+- **Task inbox** for unscheduled tasks
+- **Pinned tasks** for quick access
 
 ### Calendar Features
 - Year-view calendar with event and period management
@@ -93,7 +96,26 @@ npm test
 
 ## Recent Changes
 
-### Copy/Paste Rendering Bug Fix (Latest)
+### Advanced Task Management System (Latest)
+- **Multi-Criteria Sorting**: Tasks can now be sorted by multiple fields simultaneously
+  - Example: Sort by completion status first, then by title alphabetically
+  - Configure up to 4 sort criteria with independent ascending/descending order
+  - Intuitive UI for adding, removing, and reordering sort criteria
+- **Custom Order with Drag & Drop**: Visual task and project reordering
+  - Drag tasks within projects to set custom order
+  - Drag projects to reorder them globally
+  - Visual indicators when in custom order mode
+  - Persistent ordering across sessions
+- **Enhanced Task Creation**: 
+  - "Add Task" buttons within project groups that pre-select the project
+  - Quick-add interface with project selection
+  - Full modal for detailed task creation
+- **Improved Projects Interface**:
+  - Sortable projects with multiple criteria (Name, Progress, Updated, Custom Order)
+  - Visual drag-to-reorder indicators
+  - Enhanced view controls with comprehensive sorting options
+
+### Copy/Paste Rendering Bug Fix
 - **Issue Resolution**: Fixed bug where copied and pasted tasks wouldn't render until page reload or other actions
 - **Root Cause**: The `handleDropCopy` function was setting `baseDate` using `toISOString()` format instead of consistent YYYY-MM-DD format
 - **Solution**: Changed to use `getDateKey()` utility for proper date format consistency across the application

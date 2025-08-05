@@ -28,9 +28,15 @@ interface TasksViewPreferences {
   };
   allTasksGroupBy: 'none' | 'project' | 'status' | 'dueDate';
   allTasksSubGroupBy: string;
-  allTasksSortBy: 'dueDate' | 'created' | 'completion';
+  allTasksSortBy: 'dueDate' | 'created' | 'completion' | 'title';
   sortOrder: 'asc' | 'desc';
   collapsedProjectGroups: string[]; // Array of collapsed project IDs
+  // Multiple sort criteria - array of sort options applied in order
+  multipleSorts: Array<{
+    field: 'dueDate' | 'created' | 'completion' | 'title';
+    order: 'asc' | 'desc';
+  }>;
+  useMultipleSort: boolean;
 }
 
 // Default preferences with 'today' as default dueDate filter
@@ -45,7 +51,12 @@ const defaultTasksPreferences: TasksViewPreferences = {
   allTasksSubGroupBy: 'all',
   allTasksSortBy: 'dueDate',
   sortOrder: 'desc',
-  collapsedProjectGroups: [] // Empty array - will be populated with all project IDs when grouping by project
+  collapsedProjectGroups: [], // Empty array - will be populated with all project IDs when grouping by project
+  multipleSorts: [
+    { field: 'completion', order: 'asc' }, // Primary: completion status
+    { field: 'title', order: 'asc' }       // Secondary: title alphabetically
+  ],
+  useMultipleSort: true
 };
 
 // Helper functions for localStorage
@@ -321,31 +332,49 @@ export default function ProjectsTasksPage() {
     return filtered;
   }, [allTasks, allTasksFilters]);
 
-  // Sorting function
+  // Sorting function with multiple criteria support
   const sortTasks = (tasks: TaskWithProject[], sortBy: typeof allTasksSortBy, order: typeof sortOrder) => {
     return [...tasks].sort((a, b) => {
-      let compareValue = 0;
+      // Use multiple sorts if enabled, otherwise single sort
+      const sortsToApply = preferences.useMultipleSort && preferences.multipleSorts && preferences.multipleSorts.length > 0 
+        ? preferences.multipleSorts 
+        : [{ field: sortBy, order: order }];
       
-      switch (sortBy) {
-        case 'dueDate':
-          if (!a.dueDate && !b.dueDate) compareValue = 0;
-          else if (!a.dueDate) compareValue = 1;
-          else if (!b.dueDate) compareValue = -1;
-          else compareValue = new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-          break;
-        case 'created':
-          compareValue = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-          break;
-        case 'completion':
-          const statusOrder = { 'completed': 1, 'blocked': 2, 'in-progress': 3, 'todo': 4 };
-          compareValue = (statusOrder[a.status] || 0) - (statusOrder[b.status] || 0);
-          break;
-        default:
-          compareValue = a.title.localeCompare(b.title);
-          break;
+      for (const sort of sortsToApply) {
+        let compareValue = 0;
+        
+        switch (sort.field) {
+          case 'dueDate':
+            if (!a.dueDate && !b.dueDate) compareValue = 0;
+            else if (!a.dueDate) compareValue = 1;
+            else if (!b.dueDate) compareValue = -1;
+            else compareValue = new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+            break;
+          case 'created':
+            compareValue = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+            break;
+          case 'completion':
+            const statusOrder = { 'completed': 1, 'blocked': 2, 'in-progress': 3, 'todo': 4 };
+            compareValue = (statusOrder[a.status] || 0) - (statusOrder[b.status] || 0);
+            break;
+          case 'title':
+            compareValue = a.title.localeCompare(b.title);
+            break;
+          default:
+            compareValue = a.title.localeCompare(b.title);
+            break;
+        }
+        
+        const finalCompareValue = sort.order === 'asc' ? compareValue : -compareValue;
+        
+        // If this sort criteria yields a non-zero result, return it
+        // Otherwise, continue to the next sort criteria
+        if (finalCompareValue !== 0) {
+          return finalCompareValue;
+        }
       }
       
-      return order === 'asc' ? compareValue : -compareValue;
+      return 0; // All sort criteria yielded equal results
     });
   };
 
@@ -998,6 +1027,60 @@ export default function ProjectsTasksPage() {
                     )}
                   </Button>
 
+                  {/* Title Sort */}
+                  <Button
+                    onClick={() => {
+                      if (allTasksSortBy === 'title') {
+                        updatePreferences({ sortOrder: sortOrder === 'asc' ? 'desc' : 'asc' });
+                      } else {
+                        updatePreferences({ 
+                          allTasksSortBy: 'title',
+                          sortOrder: 'asc'
+                        });
+                      }
+                    }}
+                    variant={allTasksSortBy === 'title' ? 'secondary' : 'outline'}
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    Title
+                    {allTasksSortBy === 'title' && (
+                      <span className="text-xs">({sortOrder === 'asc' ? 'A→Z' : 'Z→A'})</span>
+                    )}
+                  </Button>
+
+                  {/* Multi-Sort Toggle & Indicator */}
+                  <div className="flex items-center gap-2 border-l border-border/30 pl-4 ml-2">
+                    <Button
+                      onClick={() => {
+                        updatePreferences({ useMultipleSort: !preferences.useMultipleSort });
+                      }}
+                      variant={preferences.useMultipleSort ? 'secondary' : 'outline'}
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      Multi-Sort
+                      {preferences.useMultipleSort && (
+                        <span className="text-xs bg-primary/20 text-primary px-1 rounded">
+                          {preferences.multipleSorts?.length || 2}
+                        </span>
+                      )}
+                    </Button>
+                    
+                    {/* Show current multi-sort hierarchy */}
+                    {preferences.useMultipleSort && (
+                      <div className="text-xs text-muted-foreground">
+                        <span className="font-medium">Order:</span>
+                        {preferences.multipleSorts?.map((sort, index) => (
+                          <span key={index} className="ml-1">
+                            {index + 1}.{sort.field === 'completion' ? 'Status' : sort.field.charAt(0).toUpperCase() + sort.field.slice(1)}
+                            {index < (preferences.multipleSorts?.length || 0) - 1 ? ' →' : ''}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
 
 
                   {/* Clear Filters */}
@@ -1051,11 +1134,12 @@ export default function ProjectsTasksPage() {
                       {allTasksGroupBy !== 'none' && (
                         <div 
                           className={cn(
-                            "flex items-center gap-2 mb-3",
+                            "flex items-center justify-between gap-2 mb-3",
                             isProjectGroup && "cursor-pointer hover:bg-accent/20 rounded-lg px-2 py-1 -mx-2 transition-colors"
                           )}
                           onClick={isProjectGroup ? () => toggleProjectCollapse(group.id) : undefined}
                         >
+                          <div className="flex items-center gap-2">
                           {isProjectGroup && (
                             <div className="flex-shrink-0">
                               {isCollapsed ? (
@@ -1065,12 +1149,30 @@ export default function ProjectsTasksPage() {
                               )}
                             </div>
                           )}
-                          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                            {group.name}
-                            <span className="text-sm font-normal text-muted-foreground">
-                              ({group.tasks.length})
-                            </span>
-                          </h2>
+                            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                              {group.name}
+                              <span className="text-sm font-normal text-muted-foreground">
+                                ({group.tasks.length})
+                              </span>
+                            </h2>
+                          </div>
+                          {/* Add Task Button - Only for project groups */}
+                          {isProjectGroup && (
+                            <Button
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent group collapse/expand
+                                setEditingTask(null);
+                                setIsAddTaskModalOpen(true);
+                                // Pre-select the project by setting a temporary project ID
+                                (window as any).selectedProjectId = group.id;
+                              }}
+                              variant="ghost"
+                              size="sm"
+                              className="text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </Button>
+                          )}
                         </div>
                       )}
                       {(!isProjectGroup || !isCollapsed) && (
@@ -1112,9 +1214,20 @@ export default function ProjectsTasksPage() {
             onClose={() => setIsAddTaskModalOpen(false)}
             onSave={(taskData, isNew) => {
               if (isNew && taskData.title) {
-                // Add to first available project
-                const firstProject = projects.find(p => !p.isDeleted);
-                if (firstProject) {
+                // Check if we have a pre-selected project from the "Add Task" button
+                const selectedProjectId = (window as any).selectedProjectId;
+                let targetProject;
+                
+                if (selectedProjectId) {
+                  targetProject = projects.find(p => p.id === selectedProjectId && !p.isDeleted);
+                  // Clear the selected project ID
+                  delete (window as any).selectedProjectId;
+                } else {
+                  // Fallback to first available project
+                  targetProject = projects.find(p => !p.isDeleted);
+                }
+                
+                if (targetProject) {
                   const newTaskData = {
                     title: taskData.title,
                     description: taskData.description || '',
@@ -1123,7 +1236,7 @@ export default function ProjectsTasksPage() {
                     dueDate: taskData.dueDate,
                     startDate: taskData.startDate
                   };
-                  addTaskToProject(firstProject.id, newTaskData);
+                  addTaskToProject(targetProject.id, newTaskData);
                 }
               }
               setIsAddTaskModalOpen(false);
