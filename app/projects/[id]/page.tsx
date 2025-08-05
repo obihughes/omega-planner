@@ -239,9 +239,9 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
     <AppLayout>
       <div className="h-full flex flex-col max-w-6xl mx-auto">
         {/* Fixed Header Section */}
-        <div className="flex-shrink-0 px-4 py-6 border-b border-border/20 bg-background">
+        <div className="flex-shrink-0 px-4 py-4 border-b border-border/20 bg-background">
           {/* Header with back button and project title */}
-          <div className="flex items-center space-x-4 mb-6">
+          <div className="flex items-center space-x-4 mb-4">
             <button
               onClick={() => router.back()}
               className="p-2 hover:bg-accent transition-colors rounded-lg"
@@ -264,7 +264,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
           </div>
           
           {/* Project Info and Progress Bar */}
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-3">
             <div className="flex items-center space-x-6">
               {/* Progress Info */}
               <div className="flex items-center space-x-3">
@@ -356,7 +356,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
 
         {/* Scrollable Tasks List */}
         <div className="flex-1 overflow-hidden relative">
-          <div className="h-full overflow-y-auto px-4 py-6 scrollbar-thin scrollbar-thumb-muted/30 scrollbar-track-transparent">
+          <div className="h-full overflow-y-auto px-4 py-4 scrollbar-thin scrollbar-thumb-muted/30 scrollbar-track-transparent">
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
@@ -366,7 +366,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
                 items={filteredAndSortedTasks.map(t => t.id)}
                 strategy={verticalListSortingStrategy}
               >
-                <div className="space-y-3 pb-8">
+                <div className="space-y-2 pb-4">
                   {filteredAndSortedTasks.map((task, index) => (
                     <TaskItem
                       key={task.id}

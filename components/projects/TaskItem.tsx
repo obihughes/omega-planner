@@ -57,7 +57,7 @@ function SubTaskItem({ subtask, onStatusChange, onEdit, onDelete }: SubTaskItemP
   };
 
   return (
-    <div className="flex items-center gap-2 p-2 bg-muted/20 rounded-md group">
+    <div className="flex items-center gap-2 p-1.5 bg-muted/20 rounded-md group">
       <button
         onClick={() => {
           const nextStatus = subtask.status === 'completed' ? 'todo' : 'completed';
@@ -300,13 +300,13 @@ export function TaskItem({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "border border-border/40 bg-card/60 backdrop-blur-sm p-4 group",
+        "border border-border/40 bg-card/60 backdrop-blur-sm p-3 group",
         "hover:shadow-md hover:border-primary/30 transition-all duration-200",
         "font-['Inter',sans-serif]",
         isDragging && "opacity-50"
       )}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-2">
         {/* Drag Handle */}
         <div 
           className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing p-1 rounded hover:bg-accent transition-opacity flex-shrink-0 mt-0.5"
@@ -369,7 +369,7 @@ export function TaskItem({
               ) : (
                 <h4 
                   className={cn(
-                    "font-medium text-foreground mb-1 break-words leading-snug cursor-pointer hover:bg-accent/20 rounded px-1 -mx-1 transition-colors",
+                    "font-medium text-foreground mb-0.5 break-words leading-snug cursor-pointer hover:bg-accent/20 rounded px-1 -mx-1 transition-colors",
                     task.status === 'completed' && "line-through text-muted-foreground"
                   )}
                   onClick={startEditingTitle}
@@ -380,14 +380,14 @@ export function TaskItem({
               )}
               
               {task.description && (
-                <p className="text-sm text-muted-foreground break-words leading-relaxed">
+                <p className="text-sm text-muted-foreground break-words leading-snug">
                   {task.description}
                 </p>
               )}
               
               {/* Subtask Progress Indicator */}
               {subtaskStats.total > 0 && (
-                <div className="flex items-center gap-2 mt-2">
+                <div className="flex items-center gap-2 mt-1">
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <span>{subtaskStats.completed}/{subtaskStats.total} subtasks</span>
                   </div>
