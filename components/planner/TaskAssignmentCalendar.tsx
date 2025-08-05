@@ -105,10 +105,7 @@ export function TaskAssignmentCalendar({
         const scrollTop = rowOfToday * (120 + 8);
         
         // Scroll to today's row
-        calendarScrollRef.current.scrollTo({
-          top: scrollTop,
-          behavior: 'smooth'
-        });
+        calendarScrollRef.current.scrollTop = scrollTop;
       }
     }
   }, [currentDate, daysInCalendar]);

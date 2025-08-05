@@ -40,6 +40,7 @@ type TimelinePeriod = 'night' | 'morning' | 'afternoon' | 'evening';
 
 export default function DailyPlanner() {
   const { viewMode, setViewMode } = useViewMode();
+  const calendarContainerRef = useRef<HTMLDivElement>(null);
   const {
     tasksByDate,
     poolTasks: combinedPoolTasks,
@@ -125,6 +126,19 @@ export default function DailyPlanner() {
       const timerId = setInterval(() => setCurrentTimeForMarker(new Date()), 60000);
       return () => clearInterval(timerId);
   }, []);
+
+  // Scroll to calendar when monthly view is activated
+  useEffect(() => {
+    if (viewMode === 'monthly' && calendarContainerRef.current) {
+      // Small delay to ensure the view has rendered
+      setTimeout(() => {
+        calendarContainerRef.current?.scrollIntoView({ 
+          behavior: 'auto',
+          block: 'start' 
+        });
+      }, 50);
+    }
+  }, [viewMode]);
 
   const handleResizeStart = (task: Task, edge: 'start' | 'end', e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
@@ -1048,7 +1062,7 @@ export default function DailyPlanner() {
             </div>
 
             {/* Calendar Container */}
-            <div className="bg-background/20 border border-border/20 shadow-lg overflow-hidden backdrop-blur-lg rounded-lg">
+            <div ref={calendarContainerRef} className="bg-background/20 border border-border/20 shadow-lg overflow-hidden backdrop-blur-lg rounded-lg">
               <TaskAssignmentCalendar
                 poolTasks={generalPoolTasks}
                 scheduledTasks={tasksByDate}
