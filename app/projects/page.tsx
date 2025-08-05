@@ -61,6 +61,7 @@ function SortableProjectCard({
   onDelete, 
   onRestore, 
   onPermanentlyDelete, 
+  onClone,
   onClick, 
   isArchived,
   folders,
@@ -71,6 +72,7 @@ function SortableProjectCard({
   onDelete: (projectId: string) => void;
   onRestore?: (projectId: string) => void;
   onPermanentlyDelete?: (projectId: string) => void;
+  onClone?: (project: Project) => void;
   onClick: (project: Project) => void;
   isArchived?: boolean;
   folders?: ProjectFolder[];
@@ -92,6 +94,7 @@ function SortableProjectCard({
       onDelete={onDelete}
       onRestore={onRestore}
       onPermanentlyDelete={onPermanentlyDelete}
+      onClone={onClone}
       onClick={onClick}
       isArchived={isArchived}
       folders={folders}
@@ -113,6 +116,7 @@ function ProjectsPageContent() {
     folders,
     loading, 
     createProject, 
+    cloneProject,
     updateProject, 
     deleteProject, 
     restoreProject,
@@ -343,6 +347,10 @@ function ProjectsPageContent() {
   const handleEditProject = (project: Project) => {
     setEditingProject(project);
     setIsProjectModalOpen(true);
+  };
+
+  const handleCloneProject = (project: Project) => {
+    cloneProject(project);
   };
 
   const handleDeleteProject = (projectId: string) => {
@@ -630,23 +638,12 @@ function ProjectsPageContent() {
                             onMoveProjectToFolder={moveProjectToFolder}
                             onToggleExpand={handleToggleFolder}
                             isExpanded={expandedFolders.has(folder.id)}
+                            projects={getProjectsInFolder(folder.id)}
+                            onProjectEdit={handleEditProject}
+                            onProjectDelete={handleDeleteProject}
+                            onProjectClick={handleProjectClick}
                           />
-                          {/* Render expanded folder projects */}
-                          {expandedFolders.has(folder.id) && 
-                            getProjectsInFolder(folder.id).map((project) => (
-                              <div key={`${folder.id}-${project.id}`} className="relative border-l-2 border-l-primary/20 pl-2">
-                                <SortableProjectCard
-                                  project={project}
-                                  onEdit={handleEditProject}
-                                  onDelete={handleDeleteProject}
-                                  onClick={handleProjectClick}
-                                  isArchived={false}
-                                  folders={folders}
-                                  onMoveToFolder={moveProjectToFolder}
-                                />
-                              </div>
-                            ))
-                          }
+
                         </React.Fragment>
                       ))}
 
@@ -657,6 +654,7 @@ function ProjectsPageContent() {
                           project={project}
                           onEdit={handleEditProject}
                           onDelete={handleDeleteProject}
+                          onClone={handleCloneProject}
                           onClick={handleProjectClick}
                           isArchived={false}
                           folders={folders}

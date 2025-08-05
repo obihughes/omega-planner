@@ -2,7 +2,7 @@
 
 import React, { memo, useMemo } from 'react';
 import { Project, ProjectFolder } from '@/types';
-import { Clock, MoreVertical, Plus, Edit, Trash2, RotateCcw, GripVertical, Folder, ChevronRight, Briefcase } from 'lucide-react';
+import { Clock, MoreVertical, Plus, Edit, Trash2, RotateCcw, GripVertical, Folder, ChevronRight, Briefcase, Copy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CSS } from '@dnd-kit/utilities';
@@ -75,6 +75,7 @@ interface ProjectCardProps {
   onDelete: (projectId: string) => void;
   onRestore?: (projectId: string) => void;
   onPermanentlyDelete?: (projectId: string) => void;
+  onClone?: (project: Project) => void;
   onClick: (project: Project) => void;
   isArchived?: boolean;
   folders?: ProjectFolder[];
@@ -94,6 +95,7 @@ function ProjectCardComponent({
   onDelete, 
   onRestore,
   onPermanentlyDelete,
+  onClone,
   onClick, 
   isArchived = false,
   folders = [],
@@ -178,6 +180,13 @@ function ProjectCardComponent({
     onDelete(project.id);
   };
 
+  const handleClone = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onClone) {
+      onClone(project);
+    }
+  };
+
   const handleRestore = (e: React.MouseEvent) => {
     e.stopPropagation();
     onRestore?.(project.id);
@@ -208,10 +217,30 @@ function ProjectCardComponent({
       );
     }
 
-    const maxCircles = 8;
-    const totalCircles = Math.min(totalTasks, maxCircles);
-    const showEllipsis = totalTasks > maxCircles;
+    // Show circles for up to 20 tasks, then switch to progress bar
+    if (totalTasks > 20) {
+      const progressPercentage = Math.round((completedTasks / totalTasks) * 100);
+      return (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">
+              {completedTasks}/{totalTasks} tasks
+            </span>
+            <span className="text-xs font-medium text-muted-foreground">
+              {progressPercentage}%
+            </span>
+          </div>
+          <div className="w-full bg-muted-foreground/20 rounded-full h-1.5">
+            <div 
+              className="bg-green-500 h-1.5 rounded-full transition-all duration-300" 
+              style={{ width: `${progressPercentage}%` }}
+            />
+          </div>
+        </div>
+      );
+    }
 
+    // Show circles for 20 or fewer tasks
     return (
       <div className="space-y-2">
         <div className="flex items-center justify-between">
@@ -220,7 +249,7 @@ function ProjectCardComponent({
           </span>
         </div>
         <div className="flex flex-wrap gap-1 items-center">
-          {Array.from({ length: totalCircles }, (_, i) => {
+          {Array.from({ length: totalTasks }, (_, i) => {
             const isCompleted = i < completedTasks;
             return (
               <div
@@ -232,9 +261,6 @@ function ProjectCardComponent({
               />
             );
           })}
-          {showEllipsis && (
-            <span className="text-xs text-muted-foreground ml-1">+{totalTasks - maxCircles}</span>
-          )}
         </div>
       </div>
     );
@@ -256,11 +282,9 @@ function ProjectCardComponent({
         <div className="flex items-start justify-between mb-3 flex-shrink-0">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <div 
-              className="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0"
-              style={{ backgroundColor: project.color + '20', color: project.color }}
-            >
-              <Briefcase className="w-4 h-4" />
-            </div>
+              className="w-3 h-3 rounded-sm flex-shrink-0"
+              style={{ backgroundColor: project.color }}
+            />
             <div className="min-w-0 flex-1">
               <h3 className="font-medium text-foreground truncate text-sm">
                 {project.name}
@@ -299,6 +323,15 @@ function ProjectCardComponent({
                 <Edit className="w-4 h-4" />
                 <span>Edit Project</span>
               </button>
+              {onClone && (
+                <button
+                  onClick={handleClone}
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center space-x-2 rounded-md"
+                >
+                  <Copy className="w-4 h-4" />
+                  <span>Clone Project</span>
+                </button>
+              )}
               {onMoveToFolder && (
                 <Popover>
                   <PopoverTrigger asChild>

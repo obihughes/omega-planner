@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { ProjectFolder } from '@/types';
-import { Folder, MoreVertical, Edit, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Folder, MoreVertical, Edit, Trash2, ChevronDown, ChevronRight, Briefcase } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,10 @@ interface FolderCardProps {
   onMoveProjectToFolder?: (projectId: string, folderId: string) => void;
   onToggleExpand?: (folderId: string, e: React.MouseEvent) => void;
   isExpanded?: boolean;
+  projects?: any[];
+  onProjectEdit?: (project: any) => void;
+  onProjectDelete?: (projectId: string) => void;
+  onProjectClick?: (project: any) => void;
   className?: string;
 }
 
@@ -29,6 +33,10 @@ export function FolderCard({
   onMoveProjectToFolder,
   onToggleExpand,
   isExpanded = false,
+  projects = [],
+  onProjectEdit,
+  onProjectDelete,
+  onProjectClick,
   className
 }: FolderCardProps) {
   const { setNodeRef, isOver } = useDroppable({
@@ -69,11 +77,9 @@ export function FolderCard({
         <div className="flex items-start justify-between mb-3 flex-shrink-0">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <div 
-              className="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0"
-              style={{ backgroundColor: folder.color + '20', color: folder.color }}
-            >
-              <Folder className="w-4 h-4" />
-            </div>
+              className="w-3 h-3 rounded-sm flex-shrink-0"
+              style={{ backgroundColor: folder.color }}
+            />
             <div className="min-w-0 flex-1">
               <h3 className="font-medium text-foreground truncate text-sm">
                 {folder.name}
@@ -132,6 +138,37 @@ export function FolderCard({
             </Popover>
           </div>
         </div>
+
+        {/* Expanded Projects View */}
+        {isExpanded && projects.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-border/30">
+            <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+              {projects.map((project) => (
+                <div
+                  key={project.id}
+                  className="bg-muted/30 rounded border border-border/40 p-2 hover:bg-muted/50 transition-colors cursor-pointer group"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onProjectClick?.(project);
+                  }}
+                >
+                  <div className="flex items-center gap-1 mb-1">
+                    <div 
+                      className="w-3 h-3 rounded-sm flex-shrink-0"
+                      style={{ backgroundColor: project.color }}
+                    />
+                    <h4 className="text-xs font-medium text-foreground truncate flex-1">
+                      {project.name}
+                    </h4>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {project.progress}% complete
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Drop Zone Indicator */}
         {isOver && (

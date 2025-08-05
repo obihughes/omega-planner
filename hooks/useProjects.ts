@@ -97,6 +97,30 @@ export function useProjects() {
     return newProject;
   }, []);
 
+  const cloneProject = useCallback((sourceProject: Project) => {
+    const clonedTasks = sourceProject.tasks.map((task, index) => ({
+      ...task,
+      id: `task-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
+      order: index,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }));
+
+    const clonedProject: Project = {
+      ...sourceProject,
+      id: `project-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      name: `${sourceProject.name} (Copy)`,
+      tasks: clonedTasks,
+      progress: sourceProject.tasks.length > 0 ? Math.round((clonedTasks.filter(t => t.status === 'completed').length / clonedTasks.length) * 100) : 0,
+      order: Date.now(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    updateProjectsState(prevProjects => [...prevProjects, clonedProject]);
+    return clonedProject;
+  }, []);
+
   const updateProject = useCallback((projectId: string, updates: Partial<Project>) => {
     updateProjectsState(prevProjects => 
       prevProjects.map(p => 
@@ -451,6 +475,7 @@ export function useProjects() {
     folders,
     loading,
     createProject,
+    cloneProject,
     updateProject,
     deleteProject,
     restoreProject,
