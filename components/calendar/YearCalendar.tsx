@@ -50,7 +50,7 @@ function EventPeriodDetailsModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-background border rounded-lg shadow-lg max-w-sm w-full mx-4">
+              <div className="bg-background border shadow-lg max-w-sm w-full mx-4">
         <div className="flex items-center justify-between p-4 border-b">
           <h3 className="text-lg font-semibold">
                             {isEvent ? 'Event Details' : 'Interval Details'}
@@ -98,7 +98,7 @@ function EventPeriodDetailsModal({
           {item!.notes && (
             <div>
               <p className="text-sm text-muted-foreground mb-1">Notes</p>
-              <div className="text-sm p-3 bg-muted/50 rounded-md whitespace-pre-wrap border border-border max-h-32 overflow-y-auto">{item!.notes}</div>
+              <div className="text-sm p-3 bg-muted/50 whitespace-pre-wrap border border-border max-h-32 overflow-y-auto">{item!.notes}</div>
             </div>
           )}
         </div>
@@ -142,7 +142,7 @@ function DayDetailsModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-background border rounded-lg shadow-lg max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto">
+                <div className="bg-background border shadow-lg max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b">
           <h3 className="text-lg font-semibold">
             {date.toLocaleDateString('en-US', { 
@@ -169,7 +169,7 @@ function DayDetailsModal({
                     {events.map(event => (
                       <div 
                         key={event.id}
-                        className="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer transition-colors"
+                        className="flex items-center gap-3 p-3 border hover:bg-accent/50 cursor-pointer transition-colors"
                         onClick={() => onEventClick?.(event)}
                       >
                         <div 
@@ -199,7 +199,7 @@ function DayDetailsModal({
                     {periods.map(period => (
                       <div 
                         key={period.id}
-                        className="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent/50 cursor-pointer transition-colors"
+                        className="flex items-center gap-3 p-3 border hover:bg-accent/50 cursor-pointer transition-colors"
                         onClick={() => onPeriodClick?.(period)}
                       >
                         <div 

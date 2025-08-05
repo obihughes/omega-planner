@@ -214,7 +214,7 @@ export function PeriodModal({
                   key={periodColor}
                   type="button"
                   className={cn(
-                    "w-6 h-6 rounded-full border-2 transition-all",
+                    "w-6 h-6 border-2 transition-all",
                     color === periodColor 
                       ? "border-foreground scale-110" 
                       : "border-transparent hover:scale-105"

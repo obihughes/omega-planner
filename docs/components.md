@@ -532,4 +532,47 @@ These now use Math.floor for upcoming dates and Math.ceil for overdue.
 - Task dependencies
 - Recurring tasks
 - Advanced filtering and search
-- Performance optimizations 
+- Performance optimizations
+
+## Styling Guidelines
+
+### Sharp Design System
+The Omega Planner uses a **sharp, clean design system** with minimal rounded edges to maintain a professional, modern aesthetic.
+
+**Key Principles:**
+- **No rounded edges**: Use sharp corners for all UI elements (cards, buttons, modals, inputs)
+- **Clean borders**: Prefer crisp, rectangular shapes over rounded alternatives
+- **Minimal styling**: Focus on functionality with clean, uncluttered layouts
+
+**Specific Guidelines:**
+
+#### Avoid These Classes:
+- `rounded-*` (rounded-sm, rounded-md, rounded-lg, rounded-xl, rounded-2xl)
+- `rounded-full` for decorative elements
+- Border radius in custom CSS
+
+#### Use Instead:
+- Plain `border` without radius modifiers
+- Sharp rectangular cards and containers
+- Clean geometric shapes
+
+#### Global CSS:
+- The `--radius` CSS variable is set to `0` in `globals.css`
+- Scrollbar thumbs use sharp edges
+- All UI components should follow this pattern
+
+#### Calendar Components:
+- Monthly calendar uses sharp day cells and event cards
+- Year calendar maintains clean rectangular layouts
+- Mini calendar components avoid rounded elements
+
+**Example:**
+```tsx
+// ❌ Avoid
+<div className="bg-card rounded-lg border p-4">
+
+// ✅ Use instead  
+<div className="bg-card border p-4">
+```
+
+This ensures consistency across the application and maintains the sharp, professional appearance that defines the Omega Planner design language. 

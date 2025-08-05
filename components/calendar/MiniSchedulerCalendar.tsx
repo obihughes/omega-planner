@@ -136,7 +136,7 @@ export function MiniSchedulerCalendar({
   };
 
   return (
-    <div className={cn("bg-card border border-border rounded-lg shadow-sm", className)}>
+    <div className={cn("bg-card border border-border shadow-sm", className)}>
       {/* Compact Header */}
       <div className="flex items-center justify-between p-3 border-b border-border">
         <Button
@@ -181,7 +181,7 @@ export function MiniSchedulerCalendar({
             <div
               key={index}
               className={cn(
-                "relative h-8 p-1 text-xs cursor-pointer rounded transition-colors",
+                "relative h-8 p-1 text-xs cursor-pointer transition-colors",
                 "hover:bg-accent/50 border border-transparent",
                 !day.isCurrentMonth && "text-muted-foreground/40",
                 day.isToday && "bg-primary/20 border-primary/30 font-medium",
@@ -202,7 +202,7 @@ export function MiniSchedulerCalendar({
               
               {/* Task count indicator */}
               {day.taskCount > 0 && (
-                <div className="absolute top-0 right-0 w-2 h-2 bg-primary rounded-full" />
+                <div className="absolute top-0 right-0 w-2 h-2 bg-primary" />
               )}
             </div>
           ))}
@@ -238,7 +238,7 @@ export function MiniSchedulerCalendar({
                   return (
                     <div
                       key={task.id}
-                      className="flex items-start gap-2 p-2 bg-muted/30 rounded-md text-xs"
+                      className="flex items-start gap-2 p-2 bg-muted/30 text-xs"
                     >
                       <div 
                         className="w-2 h-2 rounded-full flex-shrink-0 mt-1"

@@ -229,7 +229,7 @@ export function MonthlyCalendar({
               variant="outline"
               size="icon"
               onClick={() => navigateMonth('prev')}
-              className="h-10 w-10 rounded-xl hover:bg-accent transition-colors border border-border/50"
+              className="h-10 w-10 hover:bg-accent transition-colors border border-border/50"
             >
               <ChevronLeft className="w-5 h-5" />
             </Button>
@@ -242,7 +242,7 @@ export function MonthlyCalendar({
               variant="outline"
               size="icon"
               onClick={() => navigateMonth('next')}
-              className="h-10 w-10 rounded-xl hover:bg-accent transition-colors border border-border/50"
+              className="h-10 w-10 hover:bg-accent transition-colors border border-border/50"
             >
               <ChevronRight className="w-5 h-5" />
             </Button>
@@ -278,7 +278,7 @@ export function MonthlyCalendar({
       </div>
 
       {/* Calendar Grid */}
-      <div className="bg-card/70 backdrop-blur-md rounded-2xl overflow-hidden shadow-xl border border-border/40">
+              <div className="bg-card/70 backdrop-blur-md overflow-hidden shadow-xl border border-border/40">
         {/* Day Headers - Fixed */}
         <div className="grid grid-cols-7 border-b border-border/40 text-center font-semibold text-muted-foreground bg-card/90 backdrop-blur-sm sticky top-0 z-10">
           <div className="p-4 text-sm">Sun</div>
@@ -357,7 +357,7 @@ export function MonthlyCalendar({
                 {/* Period Background Layer */}
                 {day.periods.length > 0 && (
                   <div 
-                    className="absolute inset-0 rounded-lg z-[1]"
+                    className="absolute inset-0 z-[1]"
                     style={periodStyle}
                   />
                 )}
@@ -374,7 +374,7 @@ export function MonthlyCalendar({
                 
                 {/* Period count indicator for multiple periods */}
                 {day.periods.length > 2 && (
-                  <div className="absolute top-1 right-1 text-xs bg-background/80 text-foreground px-1 py-0.5 rounded-full border z-10">
+                  <div className="absolute top-1 right-1 text-xs bg-background/80 text-foreground px-1 py-0.5 border z-10">
                     +{day.periods.length - 2}
                   </div>
                 )}
@@ -384,7 +384,7 @@ export function MonthlyCalendar({
                   {day.events.slice(0, 3).map(event => (
                     <div
                       key={event.id}
-                      className="p-1.5 rounded-lg text-xs cursor-pointer hover:scale-[1.03] hover:shadow-lg hover:ring-2 hover:ring-offset-1 hover:ring-offset-background transition-all duration-300 border group relative backdrop-blur-sm"
+                      className="p-1.5 text-xs cursor-pointer hover:scale-[1.03] hover:shadow-lg hover:ring-2 hover:ring-offset-1 hover:ring-offset-background transition-all duration-300 border group relative backdrop-blur-sm"
                       style={{ 
                         backgroundColor: event.color + '90', // More opaque for better visibility
                         borderColor: event.color,
@@ -398,7 +398,7 @@ export function MonthlyCalendar({
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5 flex-1 min-w-0">
                           <div 
-                            className="w-2 h-2 rounded-full flex-shrink-0 ring-1 ring-white/20"
+                            className="w-2 h-2 flex-shrink-0 ring-1 ring-white/20"
                             style={{ backgroundColor: event.color }}
                           />
                           <span className="truncate font-medium text-xs text-white drop-shadow-sm">
@@ -430,7 +430,7 @@ export function MonthlyCalendar({
       
       {/* Summary Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-card/70 backdrop-blur-md rounded-2xl p-5 border border-border/40 shadow-lg hover:shadow-xl hover:ring-2 hover:ring-primary/20 hover:ring-offset-1 hover:ring-offset-background transition-all duration-300">
+        <div className="bg-card/70 backdrop-blur-md p-5 border border-border/40 shadow-lg hover:shadow-xl hover:ring-2 hover:ring-primary/20 hover:ring-offset-1 hover:ring-offset-background transition-all duration-300">
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-sm font-semibold text-foreground">Events</h4>
             <Calendar className="w-4 h-4 text-primary" />
@@ -441,7 +441,7 @@ export function MonthlyCalendar({
           <div className="text-xs text-muted-foreground font-medium">This month</div>
         </div>
         
-        <div className="bg-card/70 backdrop-blur-md rounded-2xl p-5 border border-border/40 shadow-lg hover:shadow-xl hover:ring-2 hover:ring-primary/20 hover:ring-offset-1 hover:ring-offset-background transition-all duration-300">
+        <div className="bg-card/70 backdrop-blur-md p-5 border border-border/40 shadow-lg hover:shadow-xl hover:ring-2 hover:ring-primary/20 hover:ring-offset-1 hover:ring-offset-background transition-all duration-300">
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-sm font-semibold text-foreground">Intervals</h4>
             <Clock className="w-4 h-4 text-primary" />
@@ -452,7 +452,7 @@ export function MonthlyCalendar({
                       <div className="text-xs text-muted-foreground font-medium">Active intervals</div>
         </div>
         
-        <div className="bg-card/70 backdrop-blur-md rounded-2xl p-5 border border-border/40 shadow-lg hover:shadow-xl hover:ring-2 hover:ring-primary/20 hover:ring-offset-1 hover:ring-offset-background transition-all duration-300">
+        <div className="bg-card/70 backdrop-blur-md p-5 border border-border/40 shadow-lg hover:shadow-xl hover:ring-2 hover:ring-primary/20 hover:ring-offset-1 hover:ring-offset-background transition-all duration-300">
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-sm font-semibold text-foreground">Active Days</h4>
             <Eye className="w-4 h-4 text-primary" />

@@ -166,7 +166,7 @@ export function EventModal({
                   key={eventColor}
                   type="button"
                   className={cn(
-                    "w-6 h-6 rounded-md border-2 transition-all",
+                    "w-6 h-6 border-2 transition-all",
                     color === eventColor 
                       ? "border-foreground scale-110" 
                       : "border-border/30 hover:scale-105 hover:border-border/60"

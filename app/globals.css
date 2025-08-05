@@ -26,7 +26,7 @@
     --border: 0 0% 88%;                       /* Slightly more visible borders */
     --input: 0 0% 96%;                        /* Input background */
     --ring: 252 83% 57%;                      /* Focus ring matches primary */
-    --radius: 0.75rem;
+    --radius: 0;
   }
 
   .dark {
@@ -92,7 +92,7 @@ html.resize-active .resize-handle {
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-muted-foreground/20 rounded-md;
+  @apply bg-muted-foreground/20;
 }
 
 ::-webkit-scrollbar-thumb:hover {
