@@ -42,7 +42,7 @@ export const TIMELINE_END_HOUR = 24;
 export const MIN_TASK_DURATION = 0.25; 
 
 /** Horizontal pixels per hour on the timeline */
-export const PIXELS_PER_HOUR = 205; 
+export const PIXELS_PER_HOUR = 215; 
 
 /** Horizontal pixels per minute on the timeline */
 export const PIXELS_PER_MINUTE = PIXELS_PER_HOUR / 60;
