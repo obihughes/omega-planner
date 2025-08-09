@@ -64,9 +64,9 @@ export default function WeeklyView({}: WeeklyViewProps) {
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       // Handle both horizontal (deltaX) and vertical (deltaY) wheel input
-      // Increased sensitivity for horizontal scrolling
-      const horizontalScroll = e.deltaX * 2; // Increase horizontal scroll sensitivity
-      const verticalToHorizontal = e.deltaY / 1.5; // Convert vertical wheel to horizontal
+      // Increased sensitivity for faster horizontal scrolling
+      const horizontalScroll = e.deltaX * 3; // Increase horizontal scroll sensitivity
+      const verticalToHorizontal = e.deltaY * 2; // Increase vertical-to-horizontal sensitivity
       
       const totalScrollAmount = horizontalScroll + verticalToHorizontal;
       scrollContainer.scrollLeft += totalScrollAmount;
