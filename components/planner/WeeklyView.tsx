@@ -60,10 +60,12 @@ export default function WeeklyView({}: WeeklyViewProps) {
     const initialScrollPosition = WEEKLY_DAY_COLUMN_WIDTH + (6 * WEEKLY_PIXELS_PER_HOUR);
     scrollContainer.scrollLeft = initialScrollPosition;
 
-    // Add horizontal mouse wheel scrolling
+    // Add smooth horizontal mouse wheel scrolling
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      scrollContainer.scrollLeft += e.deltaY;
+      // Reduce scroll sensitivity for smoother scrolling (divide by 3)
+      const scrollAmount = e.deltaY / 3;
+      scrollContainer.scrollLeft += scrollAmount;
     };
 
     scrollContainer.addEventListener('wheel', handleWheel);
@@ -496,7 +498,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
 
       {/* Main content */}
       <div className="flex-1 overflow-hidden">
-        <div className="h-full overflow-auto" ref={timelineScrollRef} style={{ overflowX: 'auto' }}>
+        <div className="h-full overflow-auto" ref={timelineScrollRef} style={{ overflowX: 'auto', scrollBehavior: 'smooth' }}>
           {/* Timeline header */}
           {renderTimelineHeader()}
           
