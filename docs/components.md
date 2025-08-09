@@ -20,8 +20,9 @@ This document provides detailed information about the components used in the Dai
 The main daily planning interface with timeline views and task management.
 
 **Key Features:**
-- **Page-Level View Modes**: Toggle between Daily View and Monthly View
+- **Page-Level View Modes**: Toggle between Daily View, Weekly View, and Monthly View
   - **Daily View**: Traditional timeline-based planning with Pool/Pinned sidebar
+  - **Weekly View**: Weekly overview showing scheduled and inbox tasks across all days
   - **Monthly View**: Full-page calendar for task assignment and scheduling
 - **Timeline System**: 4 time periods (night, morning, afternoon, evening) across two days
 - **Task Inbox Integration**: Unscheduled tasks in collapsible sidebar
@@ -32,11 +33,10 @@ The main daily planning interface with timeline views and task management.
 
 **View Mode Navigation:**
 - Located above the sidebar area
-- Four buttons: "Focus", "Daily" (default), "Weekly", and "Monthly"
+- Three active buttons: "Daily" (default), "Weekly", and "Monthly" (Focus is temporarily hidden)
 - Completely switches the page layout and functionality
-- Focus: Minimal focus session interface for deep work
 - Daily: Timeline + sidebar for detailed time-based planning
-- Weekly: Weekly overview of scheduled and inbox tasks
+- Weekly: Weekly overview of scheduled and inbox tasks across all seven days
 - Monthly: Full calendar for task assignment and scheduling
 
 **Daily View Components:**
@@ -44,6 +44,14 @@ The main daily planning interface with timeline views and task management.
 - Dual-day timeline view with navigation
 - Task cards with drag/drop and resize functionality
 - Time-based task scheduling and collision detection
+
+**Weekly View Components:**
+- Compact weekly timeline showing all seven days
+- Individual day headers with task statistics
+- Scheduled tasks displayed on timelines with visual time blocks
+- Inbox tasks shown in left sidebar for each day
+- Current time marker for today
+- Week navigation controls with relative labels
 
 **Monthly View Components:**
 - Full TaskAssignmentCalendar component
