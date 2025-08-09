@@ -63,9 +63,13 @@ export default function WeeklyView({}: WeeklyViewProps) {
     // Add smooth horizontal mouse wheel scrolling
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      // Increased scroll sensitivity for more responsive scrolling (divide by 1.5)
-      const scrollAmount = e.deltaY / 1.5;
-      scrollContainer.scrollLeft += scrollAmount;
+      // Handle both horizontal (deltaX) and vertical (deltaY) wheel input
+      // Increased sensitivity for horizontal scrolling
+      const horizontalScroll = e.deltaX * 2; // Increase horizontal scroll sensitivity
+      const verticalToHorizontal = e.deltaY / 1.5; // Convert vertical wheel to horizontal
+      
+      const totalScrollAmount = horizontalScroll + verticalToHorizontal;
+      scrollContainer.scrollLeft += totalScrollAmount;
     };
 
     scrollContainer.addEventListener('wheel', handleWheel);
