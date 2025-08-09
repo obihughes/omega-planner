@@ -75,13 +75,16 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           ${isCompressed ? 'p-1.5' : 'p-2'}
           rounded-md
           ${color}
-          border border-border/40 dark:border-gray-700
-          hover:ring-1 hover:ring-border/60 dark:hover:ring-gray-300
+          border border-border/30
+          hover:border-border/80
+          hover:shadow-md
           transition-all duration-200
           ${isCompressed ? 'min-h-[24px]' : 'min-h-[32px]'}
           h-full max-h-full relative overflow-hidden
           ${isPastTask ? 'opacity-50' : ''}
           group
+          font-medium
+          shadow-sm
         `}
         draggable={false}
         onDragStart={(e) => e.preventDefault()}
@@ -119,6 +122,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   ${isCompressed ? 'text-sm writing-mode-vertical-lr transform h-full flex items-center justify-center overflow-hidden leading-tight' : 'text-base line-clamp-2 leading-tight'}
                   font-bold
                   cursor-grab active:cursor-grabbing
+                  drop-shadow-sm
                 `}
                 draggable={false}
                 onDragStart={(e) => e.preventDefault()}
@@ -149,7 +153,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                        }
                      }}
                      style={{ pointerEvents: 'auto' }}>
-                  <div className="text-xs font-semibold opacity-90 leading-tight">
+                  <div className="text-xs font-semibold opacity-90 leading-tight drop-shadow-sm">
                     {formatDuration(task.duration)}
                   </div>
                 </div>

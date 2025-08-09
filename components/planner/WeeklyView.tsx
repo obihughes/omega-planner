@@ -1,13 +1,15 @@
 'use client';
 
-import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect, Fragment } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { 
   ChevronLeft, 
   ChevronRight, 
   Calendar,
-  Plus
+  Plus,
+  ToggleLeft,
+  ToggleRight
 } from 'lucide-react';
 import { Task } from '@/types';
 import { useDailyPlanner } from '@/hooks/useDailyPlannerState';
@@ -43,11 +45,13 @@ export default function WeeklyView({}: WeeklyViewProps) {
     isClient
   } = useDailyPlanner();
 
-  // State for week navigation
+  // State for week navigation and view mode
   const [weekOffset, setWeekOffset] = useState(0);
+  const [isSameDayView, setIsSameDayView] = useState(false);
+  const [selectedDayOfWeek, setSelectedDayOfWeek] = useState(0); // 0 = Sunday, 1 = Monday, etc.
   const timelineScrollRef = useRef<HTMLDivElement>(null);
 
-  // Calculate week dates
+  // Calculate week dates (traditional week view)
   const getWeekDates = (offset: number) => {
     const today = new Date();
     const startOfWeek = new Date(today);
@@ -67,7 +71,50 @@ export default function WeeklyView({}: WeeklyViewProps) {
     return weekDates;
   };
 
-  const weekDates = getWeekDates(weekOffset);
+  // Calculate same day across multiple weeks
+  const getSameDayDates = (dayOfWeek: number, weeksBack: number = 0) => {
+    const today = new Date();
+    const dates = [];
+    
+    // Start from the most recent occurrence of the selected day
+    const startDate = new Date(today);
+    const todayDayOfWeek = today.getDay();
+    const daysToTarget = (dayOfWeek - todayDayOfWeek + 7) % 7;
+    
+    // If target day is in the future, go back a week
+    if (daysToTarget > 0) {
+      startDate.setDate(today.getDate() - (7 - daysToTarget));
+    } else if (daysToTarget === 0) {
+      // If today is the target day, use today
+      startDate.setDate(today.getDate());
+    } else {
+      startDate.setDate(today.getDate() + daysToTarget);
+    }
+    
+    // Add the offset for navigation
+    startDate.setDate(startDate.getDate() + (weeksBack * 7));
+    
+    // Get 7 instances of the same day going backwards
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() - (i * 7));
+      dates.unshift(date); // Add to beginning to keep chronological order
+    }
+    
+    return dates;
+  };
+
+  // Initialize selectedDayOfWeek to today's day when switching to same-day view
+  React.useEffect(() => {
+    if (isSameDayView && selectedDayOfWeek === 0) {
+      const today = new Date();
+      setSelectedDayOfWeek(today.getDay());
+    }
+  }, [isSameDayView, selectedDayOfWeek]);
+
+  const weekDates = isSameDayView 
+    ? getSameDayDates(selectedDayOfWeek, weekOffset)
+    : getWeekDates(weekOffset);
   const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   // Navigation functions
@@ -75,19 +122,39 @@ export default function WeeklyView({}: WeeklyViewProps) {
   const goToNextWeek = () => setWeekOffset(prev => prev + 1);
   const goToCurrentWeek = () => setWeekOffset(0);
 
+  // Get day name from day of week number
+  const getDayName = (dayOfWeek: number) => {
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    return dayNames[dayOfWeek];
+  };
+
   // Get week range string
   const getWeekRangeString = () => {
-    const firstDay = weekDates[0];
-    const lastDay = weekDates[6];
-    return `${firstDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${lastDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    if (isSameDayView) {
+      const dayName = getDayName(selectedDayOfWeek);
+      const firstDay = weekDates[0];
+      const lastDay = weekDates[6];
+      return `${dayName}s: ${firstDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${lastDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    } else {
+      const firstDay = weekDates[0];
+      const lastDay = weekDates[6];
+      return `${firstDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${lastDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    }
   };
 
   // Get relative week label
   const getRelativeWeekLabel = () => {
-    if (weekOffset === 0) return 'This Week';
-    if (weekOffset === -1) return 'Last Week';
-    if (weekOffset === 1) return 'Next Week';
-    return null;
+    if (isSameDayView) {
+      if (weekOffset === 0) return `Recent ${getDayName(selectedDayOfWeek)}s`;
+      if (weekOffset === -1) return `Previous ${getDayName(selectedDayOfWeek)}s`;
+      if (weekOffset === 1) return `Future ${getDayName(selectedDayOfWeek)}s`;
+      return null;
+    } else {
+      if (weekOffset === 0) return 'This Week';
+      if (weekOffset === -1) return 'Last Week';
+      if (weekOffset === 1) return 'Next Week';
+      return null;
+    }
   };
 
   // Helper functions
@@ -127,10 +194,12 @@ export default function WeeklyView({}: WeeklyViewProps) {
             {hours.map((hour) => (
               <div
                 key={hour}
-                className="flex-none border-r border-border/10 py-2 px-1 text-center bg-card"
+                className="flex-none border-r border-border/20 py-2 px-1 text-center bg-card"
                 style={{ width: `${WEEKLY_PIXELS_PER_HOUR}px` }}
               >
-                <div className="text-xs text-muted-foreground">{formatTime(hour)}</div>
+                <div className={`text-xs font-medium ${hour % 6 === 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
+                  {formatTime(hour)}
+                </div>
               </div>
             ))}
           </div>
@@ -191,28 +260,40 @@ export default function WeeklyView({}: WeeklyViewProps) {
         {/* Day label column */}
         <div 
           className={cn(
-            "flex-shrink-0 border-r border-border/40 p-2 flex flex-col justify-center sticky left-0 z-50 shadow-sm",
-            isCurrentDay && "bg-primary/10 text-primary border-primary/30",
-            isWeekendDay && !isCurrentDay && "bg-orange-500/10 text-orange-700 border-orange-500/30",
-            !isCurrentDay && !isWeekendDay && (index % 2 === 0 ? "bg-card" : "bg-muted/50")
+            "flex-shrink-0 border-r border-border/30 p-2 flex flex-col justify-center sticky left-0 z-50 bg-background",
+            isCurrentDay && "bg-muted/20 border-border/50"
           )}
           style={{ width: `${WEEKLY_DAY_COLUMN_WIDTH}px`, height: `${WEEKLY_ROW_HEIGHT}px` }}
         >
           <div className="text-center">
             <div className={cn(
-              "text-xs font-semibold uppercase tracking-wide",
-              isWeekendDay && !isCurrentDay && "text-orange-600"
+              "text-xs font-medium uppercase tracking-wide mb-1",
+              isCurrentDay && "text-foreground font-semibold",
+              !isCurrentDay && "text-muted-foreground"
             )}>
-              {dayNames[index]}
+              {isSameDayView ? getDayName(selectedDayOfWeek).slice(0, 3).toUpperCase() : dayNames[index]}
             </div>
-            <div className="text-lg font-bold leading-tight">
+            
+            <div className={cn(
+              "text-xl font-semibold leading-none mb-1",
+              isCurrentDay && "text-foreground font-bold",
+              !isCurrentDay && "text-foreground"
+            )}>
               {date.getDate()}
             </div>
-            <div className="text-xs text-muted-foreground">
+            
+            <div className={cn(
+              "text-xs",
+              isCurrentDay && "text-muted-foreground font-medium",
+              !isCurrentDay && "text-muted-foreground"
+            )}>
               {date.toLocaleDateString('en-US', { month: 'short' })}
             </div>
+            
+
+            
             {poolTasks.length > 0 && (
-              <div className="text-xs text-orange-600 mt-1">
+              <div className="text-xs text-muted-foreground/80 mt-1">
                 {poolTasks.length} inbox
               </div>
             )}
@@ -232,10 +313,12 @@ export default function WeeklyView({}: WeeklyViewProps) {
           {Array.from({ length: 24 }, (_, i) => (
             <div 
               key={`grid-${i}`} 
-              className="border-l border-border/10 absolute h-full" 
+              className={`absolute h-full ${i % 6 === 0 ? 'border-l border-border/30' : 'border-l border-border/10'}`}
               style={{ left: `${i * WEEKLY_PIXELS_PER_HOUR}px` }} 
             />
           ))}
+
+
 
           {/* Current time marker */}
           {currentTimeMarker}
@@ -250,10 +333,10 @@ export default function WeeklyView({}: WeeklyViewProps) {
             if (renderWidth <= 0) return null;
             
             const taskStyle: React.CSSProperties = {
-              left: `${renderLeft}px`,
-              width: `${Math.max(renderWidth, 30)}px`,
-              top: `${(WEEKLY_ROW_HEIGHT - WEEKLY_TASK_HEIGHT) / 2}px`,
-              height: `${WEEKLY_TASK_HEIGHT}px`,
+              left: `${renderLeft + 1}px`,
+              width: `${Math.max(renderWidth - 2, 30)}px`,
+              top: `0px`,
+              height: `${WEEKLY_ROW_HEIGHT}px`,
               zIndex: 40,
             };
 
@@ -261,7 +344,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
               <div key={task.id} className="absolute" style={taskStyle}>
                 <MemoizedWeeklyTaskCard
                   task={task}
-                  height={WEEKLY_TASK_HEIGHT}
+                  height={WEEKLY_ROW_HEIGHT}
                   onStartEdit={(taskToEdit, options) => openEditModal(taskToEdit, options)} 
                   onViewNotes={openViewNotesModal}
                   currentTime={new Date()}
@@ -309,22 +392,68 @@ export default function WeeklyView({}: WeeklyViewProps) {
               <h2 className="text-xl font-bold text-foreground">Weekly View</h2>
             </div>
             
-            {/* Week Navigation */}
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={goToPreviousWeek}>
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <Button variant="ghost" onClick={goToCurrentWeek} className="min-w-52 font-medium text-sm">
-                {getWeekRangeString()}
-              </Button>
-              <Button variant="ghost" size="sm" onClick={goToNextWeek}>
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-              {getRelativeWeekLabel() && (
-                <span className="text-xs text-muted-foreground px-2 py-1 bg-muted rounded-md">
-                  {getRelativeWeekLabel()}
-                </span>
+            {/* View Toggle and Navigation */}
+            <div className="flex items-center gap-4">
+              {/* View Mode Toggle */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsSameDayView(false)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+                    !isSameDayView 
+                      ? "bg-primary text-primary-foreground" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  )}
+                >
+                  This Week
+                </button>
+                <button
+                  onClick={() => setIsSameDayView(true)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+                    isSameDayView 
+                      ? "bg-primary text-primary-foreground" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  )}
+                >
+                  Same Day
+                </button>
+              </div>
+
+              {/* Day Selector for Same Day View */}
+              {isSameDayView && (
+                <select
+                  value={selectedDayOfWeek}
+                  onChange={(e) => setSelectedDayOfWeek(Number(e.target.value))}
+                  className="px-2 py-1 text-xs bg-background border border-border rounded-md"
+                >
+                  <option value={0}>Sunday</option>
+                  <option value={1}>Monday</option>
+                  <option value={2}>Tuesday</option>
+                  <option value={3}>Wednesday</option>
+                  <option value={4}>Thursday</option>
+                  <option value={5}>Friday</option>
+                  <option value={6}>Saturday</option>
+                </select>
               )}
+
+              {/* Week Navigation */}
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={goToPreviousWeek}>
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <Button variant="ghost" onClick={goToCurrentWeek} className="min-w-52 font-medium text-sm">
+                  {getWeekRangeString()}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={goToNextWeek}>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+                {getRelativeWeekLabel() && (
+                  <span className="text-xs text-muted-foreground px-2 py-1 bg-muted rounded-md">
+                    {getRelativeWeekLabel()}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -349,9 +478,41 @@ export default function WeeklyView({}: WeeklyViewProps) {
           {/* Timeline header */}
           {renderTimelineHeader()}
           
-          {/* Day rows */}
+          {/* Day rows with time indicators */}
           <div className="bg-transparent" style={{ minWidth: `${WEEKLY_DAY_COLUMN_WIDTH + (WEEKLY_PIXELS_PER_HOUR * 24)}px` }}>
-            {weekDates.map((date, index) => renderDayRow(date, index))}
+            {weekDates.map((date, index) => (
+              <Fragment key={`day-${date.toISOString()}`}>
+                {renderDayRow(date, index)}
+                
+                {/* Horizontal time indicator bar between days (except after last day) */}
+                {index < weekDates.length - 1 && (
+                  <div className="flex border-b border-border/10">
+                    {/* Time label spacer */}
+                    <div 
+                      className="flex-shrink-0 border-r border-border/30 bg-muted/30 sticky left-0 z-40"
+                      style={{ width: `${WEEKLY_DAY_COLUMN_WIDTH}px`, height: '18px' }}
+                    />
+                    
+                    {/* Horizontal time bars - aligned with header */}
+                    <div className="relative bg-muted/10" style={{ width: `${WEEKLY_PIXELS_PER_HOUR * 24}px`, height: '18px' }}>
+                      {/* Time labels aligned with header times */}
+                      {Array.from({ length: 24 }, (_, hour) => (
+                        <div
+                          key={`time-${hour}`}
+                          className="absolute top-0 bottom-0 flex items-center justify-center text-xs font-normal text-muted-foreground/60 border-l border-border/10"
+                          style={{ 
+                            left: `${hour * WEEKLY_PIXELS_PER_HOUR}px`,
+                            width: `${WEEKLY_PIXELS_PER_HOUR}px`
+                          }}
+                        >
+                          {hour % 3 === 0 && (hour === 0 ? '12am' : hour === 12 ? '12pm' : formatTime(hour))}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </Fragment>
+            ))}
           </div>
         </div>
       </div>

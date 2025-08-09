@@ -381,13 +381,15 @@ export default function DailyPlanner() {
     }
     const timelineHours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
     return (
-      <div className="flex h-8 sticky top-0 bg-card z-20">
+      <div className="flex h-6 sticky top-0 bg-card/95 backdrop-blur-sm border-b border-border/30 z-20">
         {timelineHours.map((hour) => (
-          <div key={`timeline-hour-${hour}-${period}`} className="flex-none text-xs text-muted-foreground/50 pt-1 pl-1 border-l border-border/10" style={{ width: `${APP_PIXELS_PER_HOUR}px` }}>
-            {formatTime(hour)}
+          <div key={`timeline-hour-${hour}-${period}`} className="flex-none text-xs text-muted-foreground py-1 px-1 border-l border-border/20" style={{ width: `${APP_PIXELS_PER_HOUR}px` }}>
+            <div className={`font-medium ${hour % 6 === 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
+              {formatTime(hour)}
+            </div>
           </div>
         ))}
-        <div key={`timeline-end-marker-${period}`} className="flex-none border-l border-border/10" style={{ width: `1px` }}></div>
+        <div key={`timeline-end-marker-${period}`} className="flex-none border-l border-border/20" style={{ width: `1px` }}></div>
       </div>
     );
   }, []); 
@@ -535,7 +537,7 @@ export default function DailyPlanner() {
         style={{ minWidth: `${APP_PIXELS_PER_HOUR * (endHour - startHour)}px`, height: `${TIMELINE_COLUMN_HEIGHT}px` }}
       >
         {renderTimeline(period)}
-        <div className={`relative flex-grow bg-background ${isTargetCopyDay ? 'cursor-copy' : ''}`}
+        <div className={`relative flex-grow bg-background pt-6 ${isTargetCopyDay ? 'cursor-copy' : ''}`}
           data-testid={`timeline-area-${dayOffset}-${period}`}
           data-day-offset={dayOffset}
           data-section-period={period}
@@ -556,7 +558,7 @@ export default function DailyPlanner() {
         >
           {currentTimeMarker}
           {Array.from({ length: endHour - startHour }, (_, i) => (
-            <div key={`grid-${i}`} className="border-l border-border/5 absolute h-full" style={{ left: `${i * APP_PIXELS_PER_HOUR}px`, top: '0', bottom: '0' }} />
+            <div key={`grid-${i}`} className={`absolute h-full ${i % 6 === 0 ? 'border-l border-border/30' : 'border-l border-border/10'}`} style={{ left: `${i * APP_PIXELS_PER_HOUR}px`, top: '0', bottom: '0' }} />
           ))}
           {tasksToRender.map((task) => {
               // The task object from tasksToRender is now always the correct one to display
@@ -849,27 +851,27 @@ export default function DailyPlanner() {
             </div>
 
             <div className="space-y-6" ref={timelineScrollRef}>
-                <div className="bg-card p-4 rounded-lg shadow-sm border border-border">
-                  <div className="flex items-center justify-between mb-4">
+                <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card/95 backdrop-blur-sm">
                     <div className="flex items-center">
-                      <Button variant="ghost" size="icon" onClick={() => setTopDayOffset(topDayOffset - 7)} title="Previous week">«</Button>
-                      <Button variant="ghost" size="icon" onClick={() => setTopDayOffset(topDayOffset - 1)} title="Previous day">‹</Button>
+                      <Button variant="ghost" size="sm" onClick={() => setTopDayOffset(topDayOffset - 7)} title="Previous week">«</Button>
+                      <Button variant="ghost" size="sm" onClick={() => setTopDayOffset(topDayOffset - 1)} title="Previous day">‹</Button>
                       <span className="text-foreground font-medium text-center px-3 w-52">
                         {isClient ? getDateLabel(topDayOffset) : "Loading..."}
                       </span>
-                      <Button variant="ghost" size="icon" onClick={() => setTopDayOffset(topDayOffset + 1)} title="Next day">›</Button>
-                      <Button variant="ghost" size="icon" onClick={() => setTopDayOffset(topDayOffset + 7)} title="Next week">»</Button>
+                      <Button variant="ghost" size="sm" onClick={() => setTopDayOffset(topDayOffset + 1)} title="Next day">›</Button>
+                      <Button variant="ghost" size="sm" onClick={() => setTopDayOffset(topDayOffset + 7)} title="Next week">»</Button>
                       {isClient && getRelativeDayLabel(topDayOffset) && (
                         <span className="text-xs text-muted-foreground ml-2 px-1.5 py-0.5 bg-muted rounded-sm">
                           {getRelativeDayLabel(topDayOffset)}
                         </span>
                       )}
                     </div>
-                    <Button onClick={() => openEditModal()}>
+                    <Button size="sm" onClick={() => openEditModal()}>
                         Add Task
                     </Button>
                   </div>
-                  <div className="border border-border/20 rounded-lg overflow-hidden">
+                  <div className="border border-border/20 rounded-b-lg overflow-hidden">
                     <div className="flex flex-col">
                         {renderDayColumn(topDayOffset, 'night')}
                         {renderDayColumn(topDayOffset, 'morning')}
@@ -879,27 +881,27 @@ export default function DailyPlanner() {
                   </div>
                 </div>
 
-                <div className="bg-card p-4 rounded-lg shadow-sm border border-border">
-                  <div className="flex items-center justify-between mb-4">
+                <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card/95 backdrop-blur-sm">
                     <div className="flex items-center">
-                        <Button variant="ghost" size="icon" onClick={() => setBottomDayOffset(bottomDayOffset - 7)} title="Previous week">«</Button>
-                        <Button variant="ghost" size="icon" onClick={() => setBottomDayOffset(bottomDayOffset - 1)} title="Previous day">‹</Button>
+                        <Button variant="ghost" size="sm" onClick={() => setBottomDayOffset(bottomDayOffset - 7)} title="Previous week">«</Button>
+                        <Button variant="ghost" size="sm" onClick={() => setBottomDayOffset(bottomDayOffset - 1)} title="Previous day">‹</Button>
                         <span className="text-foreground font-medium text-center px-3 w-52">
                             {isClient ? getDateLabel(bottomDayOffset) : "Loading..."}
                         </span>
-                        <Button variant="ghost" size="icon" onClick={() => setBottomDayOffset(bottomDayOffset + 1)} title="Next day">›</Button>
-                        <Button variant="ghost" size="icon" onClick={() => setBottomDayOffset(bottomDayOffset + 7)} title="Next week">»</Button>
+                        <Button variant="ghost" size="sm" onClick={() => setBottomDayOffset(bottomDayOffset + 1)} title="Next day">›</Button>
+                        <Button variant="ghost" size="sm" onClick={() => setBottomDayOffset(bottomDayOffset + 7)} title="Next week">»</Button>
                         {isClient && getRelativeDayLabel(bottomDayOffset) && (
                             <span className="text-xs text-muted-foreground ml-2 px-1.5 py-0.5 bg-muted rounded-sm">
                             {getRelativeDayLabel(bottomDayOffset)}
                             </span>
                         )}
                     </div>
-                    <Button onClick={() => cloneDayTasks(dateFromDateKey(getCalendarDateForColumn(bottomDayOffset)), dateFromDateKey(getCalendarDateForColumn(topDayOffset)))} title="Clone tasks to the other visible day">
+                    <Button size="sm" onClick={() => cloneDayTasks(dateFromDateKey(getCalendarDateForColumn(bottomDayOffset)), dateFromDateKey(getCalendarDateForColumn(topDayOffset)))} title="Clone tasks to the other visible day">
                         Clone to {bottomDayOffset < topDayOffset ? 'Top' : 'Bottom'}
                     </Button>
                   </div>
-                  <div className="border border-border/20 rounded-lg overflow-hidden">
+                  <div className="border border-border/20 rounded-b-lg overflow-hidden">
                     <div className="flex flex-col">
                         {renderDayColumn(bottomDayOffset, 'night')}
                         {renderDayColumn(bottomDayOffset, 'morning')}

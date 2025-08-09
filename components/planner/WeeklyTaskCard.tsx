@@ -25,8 +25,9 @@ export const WeeklyTaskCard: React.FC<WeeklyTaskCardProps> = ({
 
   // Determine if we should show compact layout based on height 
   const isVeryCompact = height <= 50;
-  const showDuration = task.duration >= 0.25; // Show duration for tasks 15+ minutes
+  const showDuration = task.duration > 0.5; // Only show duration for tasks longer than 30 minutes
   const isSquareFormat = height >= 50; // More square layout for weekly view
+  const useSmallTimeFont = task.duration >= 1; // Use smaller font for 1+ hour tasks
 
   const handleEditClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -45,16 +46,16 @@ export const WeeklyTaskCard: React.FC<WeeklyTaskCardProps> = ({
       className={`
         relative
         ${color}
-        border border-border/20
-        hover:border-border/60
-        hover:shadow-sm
+        border border-border/30
+        hover:border-border/80
+        hover:shadow-md
         transition-all duration-200
         h-full w-full
-        rounded-sm
         overflow-hidden
         group
         cursor-pointer
         font-medium
+        shadow-sm
       `}
       style={{ 
         height: `${height}px`,
@@ -64,15 +65,16 @@ export const WeeklyTaskCard: React.FC<WeeklyTaskCardProps> = ({
       onClick={handleEditClick}
     >
       {/* Content Container */}
-      <div className={`h-full ${isSquareFormat ? 'flex flex-col justify-center px-2 py-1' : `flex items-center ${isVeryCompact ? 'px-1' : 'px-2'}`} relative`}>
+      <div className={`h-full ${isSquareFormat ? 'flex flex-col justify-center px-1 py-0.5' : `flex items-center ${isVeryCompact ? 'px-0.5' : 'px-1'}`} relative`}>
         {/* Task Text */}
         <div className="flex-1 min-w-0">
           <div 
             className={`
-              font-semibold 
+              font-bold 
               ${isSquareFormat ? 'text-sm' : isVeryCompact ? 'text-xs' : 'text-sm'} 
               ${isSquareFormat ? 'leading-snug text-center' : 'leading-tight truncate'}
               tracking-tight
+              drop-shadow-sm
             `}
             title={task.name}
           >
@@ -81,22 +83,15 @@ export const WeeklyTaskCard: React.FC<WeeklyTaskCardProps> = ({
           
           {/* Time info for square format */}
           {isSquareFormat && showDuration && (
-            <div className="text-xs opacity-80 leading-tight font-medium text-center mt-1">
+            <div className={`${useSmallTimeFont ? 'text-xs' : 'text-sm'} opacity-90 leading-tight font-semibold text-center mt-1 drop-shadow-sm`}>
               {formatTime(task.startHour)} - {formatTime(endTime)}
             </div>
           )}
           
           {/* Time info for horizontal format */}
           {!isSquareFormat && !isVeryCompact && showDuration && (
-            <div className="text-xs opacity-80 leading-tight font-medium">
+            <div className={`${useSmallTimeFont ? 'text-xs' : 'text-sm'} opacity-90 leading-tight font-semibold drop-shadow-sm`}>
               {formatTime(task.startHour)} - {formatTime(endTime)}
-            </div>
-          )}
-          
-          {/* Very compact: show just start time */}
-          {!isSquareFormat && isVeryCompact && (
-            <div className="text-xs opacity-80 leading-tight font-medium">
-              {formatTime(task.startHour)}
             </div>
           )}
         </div>
