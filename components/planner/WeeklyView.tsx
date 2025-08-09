@@ -51,6 +51,28 @@ export default function WeeklyView({}: WeeklyViewProps) {
   const [selectedDayOfWeek, setSelectedDayOfWeek] = useState(0); // 0 = Sunday, 1 = Monday, etc.
   const timelineScrollRef = useRef<HTMLDivElement>(null);
 
+  // Set initial scroll position to 6am area and add horizontal mouse wheel scrolling
+  useEffect(() => {
+    const scrollContainer = timelineScrollRef.current;
+    if (!scrollContainer) return;
+
+    // Set initial scroll position to 6am (80px day column + 6 * 120px hours = 800px)
+    const initialScrollPosition = WEEKLY_DAY_COLUMN_WIDTH + (6 * WEEKLY_PIXELS_PER_HOUR);
+    scrollContainer.scrollLeft = initialScrollPosition;
+
+    // Add horizontal mouse wheel scrolling
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      scrollContainer.scrollLeft += e.deltaY;
+    };
+
+    scrollContainer.addEventListener('wheel', handleWheel);
+    
+    return () => {
+      scrollContainer.removeEventListener('wheel', handleWheel);
+    };
+  }, [weekOffset, isSameDayView, selectedDayOfWeek]); // Re-run when view changes
+
   // Calculate week dates (traditional week view)
   const getWeekDates = (offset: number) => {
     const today = new Date();
