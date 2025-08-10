@@ -26,11 +26,12 @@ import {
   MIN_TASK_DURATION as APP_MIN_TASK_DURATION
 } from '../../lib/constants';
 
-// Weekly view specific constants for row-based layout
-const WEEKLY_PIXELS_PER_HOUR = 120; // Increased for better task visibility
-const WEEKLY_ROW_HEIGHT = 80; // Height for each time period row (AM/PM)
-const WEEKLY_TASK_HEIGHT = 60; // Taller, more square task cards
-const WEEKLY_DAY_COLUMN_WIDTH = 80; // Width for day column labels
+// Weekly view specific constants for row-based layout (reduced by 5% width, 34% height)
+const WEEKLY_PIXELS_PER_HOUR = 97; // Reduced from 102 (5% smaller)
+const WEEKLY_ROW_HEIGHT = 52; // Reduced from 55 (another 5% smaller)
+const WEEKLY_TASK_HEIGHT = 39; // Reduced from 41 (another 5% smaller)  
+const WEEKLY_DAY_COLUMN_WIDTH = 65; // Reduced from 68 (5% smaller)
+const WEEKLY_TIMELINE_HEADER_HEIGHT = 23; // Reduced from 24 (another 5% smaller)
 const HOURS_PER_ROW = 12; // 12 hours per row (AM/PM split)
 
 interface WeeklyViewProps {}
@@ -81,15 +82,13 @@ export default function WeeklyView({}: WeeklyViewProps) {
     };
   }, [weekOffset, isSameDayView, selectedDayOfWeek]); // Re-run when view changes
 
-  // Calculate week dates (traditional week view)
+  // Calculate week dates (starting from previous day, with today as second day)
   const getWeekDates = (offset: number) => {
     const today = new Date();
     const startOfWeek = new Date(today);
     
-    // Get to Monday of the current week
-    const dayOfWeek = today.getDay();
-    const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-    startOfWeek.setDate(today.getDate() + daysToMonday + (offset * 7));
+    // Start from yesterday (today - 1 day)
+    startOfWeek.setDate(today.getDate() - 1 + (offset * 7));
     
     const weekDates = [];
     for (let i = 0; i < 7; i++) {
@@ -145,15 +144,19 @@ export default function WeeklyView({}: WeeklyViewProps) {
   const weekDates = isSameDayView 
     ? getSameDayDates(selectedDayOfWeek, weekOffset)
     : getWeekDates(weekOffset);
-  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  // Day names for display (will dynamically show based on actual dates)
+  const getDayName = (date: Date) => {
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return dayNames[date.getDay()];
+  };
 
   // Navigation functions
   const goToPreviousWeek = () => setWeekOffset(prev => prev - 1);
   const goToNextWeek = () => setWeekOffset(prev => prev + 1);
   const goToCurrentWeek = () => setWeekOffset(0);
 
-  // Get day name from day of week number
-  const getDayName = (dayOfWeek: number) => {
+  // Get full day name from day of week number
+  const getFullDayName = (dayOfWeek: number) => {
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     return dayNames[dayOfWeek];
   };
@@ -161,7 +164,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
   // Get week range string
   const getWeekRangeString = () => {
     if (isSameDayView) {
-      const dayName = getDayName(selectedDayOfWeek);
+      const dayName = getFullDayName(selectedDayOfWeek);
       const firstDay = weekDates[0];
       const lastDay = weekDates[6];
       return `${dayName}s: ${firstDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${lastDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
@@ -175,9 +178,9 @@ export default function WeeklyView({}: WeeklyViewProps) {
   // Get relative week label
   const getRelativeWeekLabel = () => {
     if (isSameDayView) {
-      if (weekOffset === 0) return `Recent ${getDayName(selectedDayOfWeek)}s`;
-      if (weekOffset === -1) return `Previous ${getDayName(selectedDayOfWeek)}s`;
-      if (weekOffset === 1) return `Future ${getDayName(selectedDayOfWeek)}s`;
+      if (weekOffset === 0) return `Recent ${getFullDayName(selectedDayOfWeek)}s`;
+      if (weekOffset === -1) return `Previous ${getFullDayName(selectedDayOfWeek)}s`;
+      if (weekOffset === 1) return `Future ${getFullDayName(selectedDayOfWeek)}s`;
       return null;
     } else {
       if (weekOffset === 0) return 'This Week';
@@ -207,32 +210,30 @@ export default function WeeklyView({}: WeeklyViewProps) {
     return Math.floor((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   };
 
-  // Render timeline header with 12-hour timeline
-  const renderTimelineHeader = useCallback(() => {
-    const hours = Array.from({ length: HOURS_PER_ROW }, (_, i) => i);
+  // Render timeline header with period-specific hours
+  const renderTimelineHeader = useCallback((isAM: boolean) => {
+    const baseHour = isAM ? 0 : 12;
+    const hours = Array.from({ length: HOURS_PER_ROW }, (_, i) => baseHour + i);
     
     return (
-      <div className="sticky top-0 z-20 bg-card/95 backdrop-blur-sm border-b border-border/30">
-        <div className="flex">
-          {/* Day label spacer - sticky */}
-          <div className="flex-shrink-0 border-r border-border/30 py-2 px-2 bg-card sticky left-0 z-30" style={{ width: `${WEEKLY_DAY_COLUMN_WIDTH}px` }}>
-            <span className="text-xs font-medium text-muted-foreground">Day</span>
-          </div>
-          
-          {/* Timeline hours - 12 hours only */}
-          <div className="flex" style={{ minWidth: `${WEEKLY_PIXELS_PER_HOUR * HOURS_PER_ROW}px` }}>
-            {hours.map((hour) => (
-              <div
-                key={hour}
-                className="flex-none border-r border-border/20 py-2 px-1 text-center bg-card"
-                style={{ width: `${WEEKLY_PIXELS_PER_HOUR}px` }}
-              >
-                <div className={`text-xs font-medium ${hour % 6 === 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
-                  {formatTime(hour)}
-                </div>
+      <div className="flex border-b border-border/5 bg-muted/5" style={{ height: `${WEEKLY_TIMELINE_HEADER_HEIGHT}px` }}>
+        {/* Empty spacer for day column */}
+        <div className="flex-shrink-0 border-r border-border/30 bg-card/50" style={{ width: `${WEEKLY_DAY_COLUMN_WIDTH}px` }}>
+        </div>
+        
+        {/* Timeline hours for this period */}
+        <div className="flex" style={{ minWidth: `${WEEKLY_PIXELS_PER_HOUR * HOURS_PER_ROW}px` }}>
+          {hours.map((hour) => (
+            <div
+              key={hour}
+              className="flex-none border-r border-border/5 flex items-center justify-center bg-muted/5"
+              style={{ width: `${WEEKLY_PIXELS_PER_HOUR}px` }}
+            >
+              <div className={`text-xs font-medium ${hour % 6 === 0 ? 'text-foreground/80' : 'text-muted-foreground/60'}`}>
+                {formatTime(hour)}
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -347,36 +348,35 @@ export default function WeeklyView({}: WeeklyViewProps) {
     };
     
     // Render a period row (AM or PM)
-    const renderPeriodRow = (isAM: boolean, rowIndex: number) => {
+    const renderPeriodRow = (isAM: boolean) => {
       const tasks = isAM ? amTasks : pmTasks;
       const periodLabel = isAM ? 'AM' : 'PM';
-      const showDayLabel = isAM; // Only show day info on AM row
       
-      return (
-        <div 
-          key={`${dateKey}-${periodLabel}`} 
-          className={cn(
-            "flex border-b border-border/20",
-            rowIndex % 2 === 0 ? "bg-background" : "bg-muted/30"
-          )}
-        >
+              return (
+          <div 
+            key={`${dateKey}-${periodLabel}`} 
+            className={cn(
+              "flex",
+              !isAM && "border-t border-border/5" // Very subtle separator for PM row
+            )}
+          >
           {/* Day label column */}
           <div 
             className={cn(
               "flex-shrink-0 border-r border-border/30 p-2 flex flex-col justify-center sticky left-0 z-50 bg-background",
-              isCurrentDay && "bg-muted/20 border-border/50"
+              isCurrentDay && isAM && "bg-muted/20" // Gentle highlight for today's AM row
             )}
             style={{ width: `${WEEKLY_DAY_COLUMN_WIDTH}px`, height: `${WEEKLY_ROW_HEIGHT}px` }}
           >
             <div className="text-center">
-              {showDayLabel ? (
+              {isAM ? (
                 <>
                   <div className={cn(
                     "text-xs font-medium uppercase tracking-wide mb-1",
                     isCurrentDay && "text-foreground font-semibold",
                     !isCurrentDay && "text-muted-foreground"
                   )}>
-                    {isSameDayView ? getDayName(selectedDayOfWeek).slice(0, 3).toUpperCase() : dayNames[index]}
+                    {isSameDayView ? getFullDayName(selectedDayOfWeek).slice(0, 3).toUpperCase() : getDayName(date).toUpperCase()}
                   </div>
                   
                   <div className={cn(
@@ -388,32 +388,20 @@ export default function WeeklyView({}: WeeklyViewProps) {
                   </div>
                   
                   <div className={cn(
-                    "text-xs mb-1",
+                    "text-xs",
                     isCurrentDay && "text-muted-foreground font-medium",
                     !isCurrentDay && "text-muted-foreground"
                   )}>
                     {date.toLocaleDateString('en-US', { month: 'short' })}
                   </div>
-                  
-                  {poolTasks.length > 0 && (
-                    <div className="text-xs text-muted-foreground/80">
-                      {poolTasks.length} inbox
-                    </div>
-                  )}
                 </>
               ) : (
-                <div className="text-xs text-muted-foreground font-medium">
+                <div className={cn(
+                  "text-xs font-medium text-muted-foreground/70 mt-2",
+                )}>
                   {periodLabel}
                 </div>
               )}
-              
-              {/* Period indicator */}
-              <div className={cn(
-                "text-xs font-bold mt-1 px-1 py-0.5 rounded-sm",
-                isAM ? "text-blue-600 bg-blue-50 dark:bg-blue-950/30" : "text-orange-600 bg-orange-50 dark:bg-orange-950/30"
-              )}>
-                {periodLabel}
-              </div>
             </div>
           </div>
 
@@ -447,11 +435,13 @@ export default function WeeklyView({}: WeeklyViewProps) {
     
     return (
       <Fragment key={dateKey}>
-        {renderPeriodRow(true, index * 2)}     {/* AM row */}
-        {renderPeriodRow(false, index * 2 + 1)} {/* PM row */}
+        {renderTimelineHeader(true)}    {/* AM timeline header */}
+        {renderPeriodRow(true)}         {/* AM row */}
+        {renderTimelineHeader(false)}   {/* PM timeline header */}
+        {renderPeriodRow(false)}        {/* PM row */}
       </Fragment>
     );
-  }, [tasksByDate, getPoolTasksForDate, openEditModal, openViewNotesModal, dayNames, isSameDayView, selectedDayOfWeek]);
+  }, [tasksByDate, getPoolTasksForDate, openEditModal, openViewNotesModal, isSameDayView, selectedDayOfWeek]);
 
   // Get week statistics
   const getWeekStats = () => {
@@ -571,12 +561,21 @@ export default function WeeklyView({}: WeeklyViewProps) {
       {/* Main content */}
       <div className="flex-1 overflow-hidden">
         <div className="h-full overflow-auto" ref={timelineScrollRef} style={{ overflowX: 'auto', scrollBehavior: 'smooth' }}>
-          {/* Timeline header */}
-          {renderTimelineHeader()}
-          
-          {/* Day rows with AM/PM split */}
+          {/* Day rows with AM/PM split and individual timeline headers */}
           <div className="bg-transparent" style={{ minWidth: `${WEEKLY_DAY_COLUMN_WIDTH + (WEEKLY_PIXELS_PER_HOUR * HOURS_PER_ROW)}px` }}>
-            {weekDates.map((date, index) => renderDayRows(date, index))}
+            {weekDates.map((date, index) => (
+              <div key={getDateKey(date)} className={cn(
+                "border-b-2 border-border/40",
+                index === 0 && "border-t-2 border-border/40",
+                "relative"
+              )}>
+                {renderDayRows(date, index)}
+                {/* Day separator line */}
+                {index < weekDates.length - 1 && (
+                  <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/60 to-transparent" />
+                )}
+              </div>
+            ))}
           </div>
         </div>
       </div>
