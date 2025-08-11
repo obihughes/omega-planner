@@ -246,6 +246,8 @@ export default function WeeklyView({}: WeeklyViewProps) {
     const isWeekendDay = isWeekend(date);
     const dayOffset = getDayOffsetFromToday(date);
     
+
+    
     // Filter scheduled tasks
     const scheduledTasks = dayTasks.filter(task => task.startHour !== undefined);
     
