@@ -66,6 +66,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
   // Calculate week dates (starting from previous day, with today as second day)
   const getWeekDates = (offset: number) => {
     const today = new Date();
+    today.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
     const startOfWeek = new Date(today);
     
     // Start from yesterday (today - 1 day)
@@ -75,6 +76,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
     for (let i = 0; i < 7; i++) {
       const date = new Date(startOfWeek);
       date.setDate(startOfWeek.getDate() + i);
+      date.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
       weekDates.push(date);
     }
     
@@ -84,6 +86,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
   // Calculate same day across multiple weeks
   const getSameDayDates = (dayOfWeek: number, weeksBack: number = 0) => {
     const today = new Date();
+    today.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
     const dates = [];
     
     // Start from the most recent occurrence of the selected day
@@ -108,6 +111,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
     for (let i = 0; i < 7; i++) {
       const date = new Date(startDate);
       date.setDate(startDate.getDate() - (i * 7));
+      date.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
       dates.unshift(date); // Add to beginning to keep chronological order
     }
     
@@ -245,8 +249,6 @@ export default function WeeklyView({}: WeeklyViewProps) {
     const isCurrentDay = isToday(date);
     const isWeekendDay = isWeekend(date);
     const dayOffset = getDayOffsetFromToday(date);
-    
-
     
     // Filter scheduled tasks
     const scheduledTasks = dayTasks.filter(task => task.startHour !== undefined);
