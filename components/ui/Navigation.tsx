@@ -123,7 +123,7 @@ export function Navigation() {
       subViews: [
         // { key: 'focus', label: 'Focus', icon: Clock, active: plannerViewMode === 'focus' }, // Hidden until ready to work on again
         { key: 'daily', label: 'Daily', icon: CalendarCheck, active: plannerViewMode === 'daily' },
-        { key: 'weekly', label: 'Weekly', icon: CalendarDays, active: plannerViewMode === 'weekly' },
+        { key: 'weekly', label: 'Week Overview', icon: CalendarDays, active: plannerViewMode === 'weekly' },
         { key: 'monthly', label: 'Monthly', icon: CalendarRange, active: plannerViewMode === 'monthly' }
       ]
     },
