@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { CalendarEvent, CalendarPeriod, CalendarData, CalendarProps } from '@/types/calendar';
-import { ChevronLeft, ChevronRight, Plus, Clock, Calendar, Edit2, Eye } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { EventModal } from './EventModal';
@@ -99,8 +99,8 @@ export function MonthlyCalendar({
         // Calculate which row today is in (0-5 for 6 weeks)
         const rowOfToday = Math.floor(todayIndex / 7);
         
-        // Each row is approximately 140px + borders, let's use 145px per row
-        const rowHeight = 145;
+        // Each row is approximately 120px + borders, let's use 125px per row
+        const rowHeight = 125;
         
         // Scroll to show today's row, but try to center it in the 4-row view
         // We want to show today's row as the 2nd row if possible
@@ -112,38 +112,7 @@ export function MonthlyCalendar({
     }
   }, [calendarDays, currentDate]);
 
-  // Statistics for the current month
-  const monthStats = useMemo(() => {
-    const currentMonthEvents = data.events.filter(event => 
-      event.date.getMonth() === currentDate.getMonth() && 
-      event.date.getFullYear() === currentDate.getFullYear()
-    );
-    
-    const currentMonthPeriods = data.periods.filter(period =>
-      (period.startDate.getMonth() === currentDate.getMonth() && 
-       period.startDate.getFullYear() === currentDate.getFullYear()) ||
-      (period.endDate.getMonth() === currentDate.getMonth() && 
-       period.endDate.getFullYear() === currentDate.getFullYear())
-    );
-    
-    const activeDays = new Set();
-    currentMonthEvents.forEach(event => activeDays.add(event.date.toDateString()));
-    currentMonthPeriods.forEach(period => {
-      const start = new Date(period.startDate);
-      const end = new Date(period.endDate);
-      for (let d = start; d <= end; d.setDate(d.getDate() + 1)) {
-        if (d.getMonth() === currentDate.getMonth() && d.getFullYear() === currentDate.getFullYear()) {
-          activeDays.add(d.toDateString());
-        }
-      }
-    });
-    
-    return {
-      totalEvents: currentMonthEvents.length,
-      totalPeriods: currentMonthPeriods.length,
-      activeDays: activeDays.size,
-    };
-  }, [data, currentDate]);
+
 
   const navigateMonth = (direction: 'prev' | 'next') => {
     setCurrentDate(prev => {
@@ -278,9 +247,9 @@ export function MonthlyCalendar({
       </div>
 
       {/* Calendar Grid */}
-              <div className="bg-card/70 backdrop-blur-md overflow-hidden shadow-xl border border-border/40">
+              <div className="bg-card overflow-hidden border border-border/50 rounded-lg">
         {/* Day Headers - Fixed */}
-        <div className="grid grid-cols-7 border-b border-border/40 text-center font-semibold text-muted-foreground bg-card/90 backdrop-blur-sm sticky top-0 z-10">
+        <div className="grid grid-cols-7 border-b border-border/40 text-center font-semibold text-muted-foreground bg-card sticky top-0 z-10">
           <div className="p-4 text-sm">Sun</div>
           <div className="p-4 text-sm">Mon</div>
           <div className="p-4 text-sm">Tue</div>
@@ -293,7 +262,7 @@ export function MonthlyCalendar({
         {/* Scrollable Calendar Days Container */}
         <div 
           ref={scrollContainerRef}
-          className="h-[580px] overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
+          className="h-[700px] overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
         >
           <div className="grid grid-cols-7">
           {calendarDays.map((day, index) => {
@@ -315,7 +284,7 @@ export function MonthlyCalendar({
             if (day.periods.length === 1) {
               const period = day.periods[0];
               const baseColor = period.color;
-              const opacity = isPast ? 0.3 : 0.7; // More transparent for past dates
+              const opacity = isPast ? 0.15 : 0.25; // Much more subtle opacity
               
               periodStyle.backgroundColor = hexToRgba(baseColor, opacity);
               periodStyle.color = getContrastColor(baseColor);
@@ -323,7 +292,7 @@ export function MonthlyCalendar({
             } else if (day.periods.length >= 2) {
               const p1 = day.periods[0];
               const p2 = day.periods[1];
-              const opacity = isPast ? 0.3 : 0.7;
+              const opacity = isPast ? 0.15 : 0.25; // Much more subtle opacity
               
               // Horizontal split: top half p1, bottom half p2
               periodStyle.background = `linear-gradient(to bottom, ${hexToRgba(p1.color, opacity)} 50%, ${hexToRgba(p2.color, opacity)} 50%)`;
@@ -335,11 +304,12 @@ export function MonthlyCalendar({
               <div
                 key={index}
                 className={cn(
-                  "min-h-[140px] border-r border-b border-border/40 last:border-r-0 transition-all duration-200 cursor-pointer relative group",
-                  "hover:shadow-md hover:scale-[1.02] hover:z-10",
+                  "min-h-[120px] border-r border-b border-border/30 last:border-r-0 transition-all duration-200 cursor-pointer relative group",
+                  "hover:bg-accent/10",
                   !day.isCurrentMonth && "text-muted-foreground/50",
-                  day.isToday && "border-primary/30 ring-2 ring-primary/50 ring-offset-1 ring-offset-background shadow-lg",
-                  selectedDate && day.date.toDateString() === selectedDate.toDateString() && "ring-2 ring-accent-foreground/50 ring-offset-1 ring-offset-background"
+                  isPast && "opacity-50",
+                  day.isToday && "border-primary border-2 bg-primary/10 ring-2 ring-primary/30",
+                  selectedDate && day.date.toDateString() === selectedDate.toDateString() && "border-accent-foreground/60 bg-accent/10"
                 )}
                 onClick={() => handleDateClick(day.date)}
                 onDoubleClick={() => handleDateDoubleClick(day.date)}
@@ -384,34 +354,22 @@ export function MonthlyCalendar({
                   {day.events.slice(0, 3).map(event => (
                     <div
                       key={event.id}
-                      className="p-1.5 text-xs cursor-pointer hover:scale-[1.03] hover:shadow-lg hover:ring-2 hover:ring-offset-1 hover:ring-offset-background transition-all duration-300 border group relative backdrop-blur-sm"
+                      className="h-6 px-2 py-1 text-xs cursor-pointer hover:opacity-90 transition-opacity duration-200 border group relative flex items-center justify-between bg-opacity-90"
                       style={{ 
-                        backgroundColor: event.color + '90', // More opaque for better visibility
+                        backgroundColor: event.color,
                         borderColor: event.color,
                         borderLeftWidth: '3px',
-                        borderLeftColor: event.color,
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                        borderLeftColor: event.color
                       }}
                       onClick={(e) => handleEventClick(event, e)}
                       title={`${event.title}${event.description ? ` - ${event.description}` : ''}`}
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                          <div 
-                            className="w-2 h-2 flex-shrink-0 ring-1 ring-white/20"
-                            style={{ backgroundColor: event.color }}
-                          />
-                          <span className="truncate font-medium text-xs text-white drop-shadow-sm">
-                            {event.title}
-                          </span>
-                        </div>
-                        <Edit2 className="w-2.5 h-2.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all duration-200" />
+                      <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                        <span className="truncate font-medium text-xs text-gray-800 dark:text-gray-800">
+                          {event.title}
+                        </span>
                       </div>
-                      {event.description && (
-                        <div className="text-xs text-white/90 mt-1 truncate drop-shadow-sm">
-                          {event.description}
-                        </div>
-                      )}
+                      <Eye className="w-3 h-3 text-gray-700 opacity-60 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0" />
                     </div>
                   ))}
                   {day.events.length > 3 && (
@@ -427,42 +385,7 @@ export function MonthlyCalendar({
           </div>
         </div>
       </div>
-      
-      {/* Summary Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-card/70 backdrop-blur-md p-5 border border-border/40 shadow-lg hover:shadow-xl hover:ring-2 hover:ring-primary/20 hover:ring-offset-1 hover:ring-offset-background transition-all duration-300">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-semibold text-foreground">Events</h4>
-            <Calendar className="w-4 h-4 text-primary" />
-          </div>
-          <div className="text-2xl font-bold text-primary">
-            {monthStats.totalEvents}
-          </div>
-          <div className="text-xs text-muted-foreground font-medium">This month</div>
-        </div>
-        
-        <div className="bg-card/70 backdrop-blur-md p-5 border border-border/40 shadow-lg hover:shadow-xl hover:ring-2 hover:ring-primary/20 hover:ring-offset-1 hover:ring-offset-background transition-all duration-300">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-semibold text-foreground">Intervals</h4>
-            <Clock className="w-4 h-4 text-primary" />
-          </div>
-          <div className="text-2xl font-bold text-primary">
-            {monthStats.totalPeriods}
-          </div>
-                      <div className="text-xs text-muted-foreground font-medium">Active intervals</div>
-        </div>
-        
-        <div className="bg-card/70 backdrop-blur-md p-5 border border-border/40 shadow-lg hover:shadow-xl hover:ring-2 hover:ring-primary/20 hover:ring-offset-1 hover:ring-offset-background transition-all duration-300">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-semibold text-foreground">Active Days</h4>
-            <Eye className="w-4 h-4 text-primary" />
-          </div>
-          <div className="text-2xl font-bold text-primary">
-            {monthStats.activeDays}
-          </div>
-          <div className="text-xs text-muted-foreground font-medium">Days with activity</div>
-        </div>
-      </div>
+
 
       {/* Event Modal */}
       {showEventModal && (
