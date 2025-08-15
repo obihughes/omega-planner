@@ -211,10 +211,10 @@ export default function WeeklyView({}: WeeklyViewProps) {
           {hours.map((hour) => (
             <div
               key={hour}
-              className="flex-none border-r border-border/5 flex items-center justify-center bg-muted/5"
+              className="flex-none border-r border-border/5 flex items-center justify-start pl-1 bg-muted/5"
               style={{ width: `${WEEKLY_PIXELS_PER_HOUR}px` }}
             >
-              <div className={`text-xs font-medium ${hour % 6 === 0 ? 'text-foreground/80' : 'text-muted-foreground/60'}`}>
+              <div className={`text-xs font-normal ${hour % 6 === 0 ? 'text-foreground/40' : 'text-muted-foreground/30'}`}>
                 {formatTime(hour)}
               </div>
             </div>
@@ -348,10 +348,15 @@ export default function WeeklyView({}: WeeklyViewProps) {
           {/* Day label column */}
           <div 
             className={cn(
-              "flex-shrink-0 border-r border-border/30 p-2 flex flex-col justify-center sticky left-0 z-50 bg-background",
-              isCurrentDay && isAM && "bg-muted/20" // Gentle highlight for today's AM row
+              "flex-shrink-0 border-r border-border/30 p-2 flex flex-col justify-center sticky left-0 z-50 relative",
+              index % 2 === 0 ? "bg-background" : "bg-muted/70", // Alternating background per day
+              isCurrentDay && "bg-muted/20" // Gentle highlight for today
             )}
-            style={{ width: `${WEEKLY_DAY_COLUMN_WIDTH}px`, height: `${WEEKLY_ROW_HEIGHT}px` }}
+            style={{ 
+              width: `${WEEKLY_DAY_COLUMN_WIDTH}px`, 
+              height: `${WEEKLY_ROW_HEIGHT}px`,
+              boxShadow: 'inset 0 0 0 1px transparent' // Ensure solid background isolation
+            }}
           >
             <div className="text-center">
               {isAM ? (
@@ -399,11 +404,11 @@ export default function WeeklyView({}: WeeklyViewProps) {
             }}
             onDoubleClick={(e) => handleTimelineDoubleClick(e, date, isAM)}
           >
-            {/* Grid lines for 12 hours */}
+            {/* Grid lines for 12 hours - only in timeline area */}
             {Array.from({ length: HOURS_PER_ROW }, (_, i) => (
               <div 
                 key={`grid-${i}`} 
-                className={`absolute h-full ${i % 6 === 0 ? 'border-l border-border/30' : 'border-l border-border/10'}`}
+                className={`absolute h-full ${i % 6 === 0 ? 'border-l border-border/30' : 'border-l border-border/10'} pointer-events-none`}
                 style={{ left: `${i * WEEKLY_PIXELS_PER_HOUR}px` }} 
               />
             ))}

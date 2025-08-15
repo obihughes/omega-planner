@@ -62,7 +62,7 @@ export const WeeklyTaskCard: React.FC<WeeklyTaskCardProps> = ({
         minHeight: `${height}px`,
         maxHeight: `${height}px`
       }}
-      onClick={handleEditClick}
+      onClick={handleViewClick}
     >
       {/* Content Container */}
       <div className={`h-full ${isSquareFormat ? 'flex flex-col justify-center px-1 py-0.5' : `flex items-center ${isVeryCompact ? 'px-0.5' : 'px-1'}`} relative`}>
@@ -81,19 +81,7 @@ export const WeeklyTaskCard: React.FC<WeeklyTaskCardProps> = ({
             {task.name}
           </div>
           
-          {/* Time info for square format */}
-          {isSquareFormat && showDuration && (
-            <div className={`${useSmallTimeFont ? 'text-xs' : 'text-sm'} opacity-90 leading-tight font-semibold text-center mt-1 drop-shadow-sm`}>
-              {formatTime(task.startHour)} - {formatTime(endTime)}
-            </div>
-          )}
-          
-          {/* Time info for horizontal format */}
-          {!isSquareFormat && !isVeryCompact && showDuration && (
-            <div className={`${useSmallTimeFont ? 'text-xs' : 'text-sm'} opacity-90 leading-tight font-semibold drop-shadow-sm`}>
-              {formatTime(task.startHour)} - {formatTime(endTime)}
-            </div>
-          )}
+
         </div>
 
         {/* Action Buttons - Position based on format */}
