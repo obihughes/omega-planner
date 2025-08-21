@@ -41,7 +41,6 @@ export function MonthlyCalendar({
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [editingPeriod, setEditingPeriod] = useState<CalendarPeriod | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Get the first day of the current month and calculate calendar grid
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -84,33 +83,7 @@ export function MonthlyCalendar({
     return days;
   }, [startDate, currentDate, data]);
 
-  // Scroll to current day when month changes or component mounts
-  useEffect(() => {
-    if (scrollContainerRef.current) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      // Find today's index in the calendar days
-      const todayIndex = calendarDays.findIndex(day => 
-        day.date.toDateString() === today.toDateString()
-      );
-      
-      if (todayIndex !== -1) {
-        // Calculate which row today is in (0-5 for 6 weeks)
-        const rowOfToday = Math.floor(todayIndex / 7);
-        
-        // Each row is approximately 120px + borders, let's use 125px per row
-        const rowHeight = 125;
-        
-        // Scroll to show today's row, but try to center it in the 4-row view
-        // We want to show today's row as the 2nd row if possible
-        const targetRow = Math.max(0, rowOfToday - 1);
-        const scrollPosition = targetRow * rowHeight;
-        
-        scrollContainerRef.current.scrollTop = scrollPosition;
-      }
-    }
-  }, [calendarDays, currentDate]);
+  // Removed auto-scroll functionality to improve navigation
 
 
 
@@ -259,12 +232,8 @@ export function MonthlyCalendar({
           <div className="p-4 text-sm">Sat</div>
         </div>
         
-        {/* Scrollable Calendar Days Container */}
-        <div 
-          ref={scrollContainerRef}
-          className="h-[700px] overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
-        >
-          <div className="grid grid-cols-7">
+        {/* Calendar Days Container */}
+        <div className="grid grid-cols-7">
           {calendarDays.map((day, index) => {
             // Calculate period styling for full cell background
             const today = new Date();
@@ -382,7 +351,6 @@ export function MonthlyCalendar({
               </div>
             );
           })}
-          </div>
         </div>
       </div>
 

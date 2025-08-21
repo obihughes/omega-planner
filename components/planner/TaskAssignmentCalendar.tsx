@@ -66,7 +66,6 @@ export function TaskAssignmentCalendar({
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
   const [dragOverInbox, setDragOverInbox] = useState(false);
   const dragLeaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const calendarScrollRef = useRef<HTMLDivElement>(null);
 
   // Get the first day of the current month and calculate calendar grid
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -86,29 +85,7 @@ export function TaskAssignmentCalendar({
     return days;
   }, [startDate]);
 
-  // Scroll to today's date when component mounts or month changes
-  useEffect(() => {
-    if (calendarScrollRef.current) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      // Find today's index in the calendar days
-      const todayIndex = daysInCalendar.findIndex(day => 
-        day.toDateString() === today.toDateString()
-      );
-      
-      if (todayIndex !== -1) {
-        // Calculate which row today is in (0-4 for 5 weeks)
-        const rowOfToday = Math.floor(todayIndex / 7);
-        
-        // Calculate scroll position (120px per row + 8px gap)
-        const scrollTop = rowOfToday * (120 + 8);
-        
-        // Scroll to today's row
-        calendarScrollRef.current.scrollTop = scrollTop;
-      }
-    }
-  }, [currentDate, daysInCalendar]);
+  // Removed auto-scroll functionality to improve navigation
 
   const getPinnedTasksForDate = (date: Date) => {
     return pinnedTasks.filter(task => {
@@ -645,11 +622,11 @@ export function TaskAssignmentCalendar({
         </div>
       </div>
 
-      {/* Scrollable Calendar Content */}
-      <div className="flex-1 overflow-hidden">
+      {/* Calendar Content */}
+      <div className="flex-1">
         <div className="p-4">
-          {/* Calendar Grid Container - Limited to 4 rows with scrollbar */}
-          <div ref={calendarScrollRef} className="h-[480px] overflow-y-auto border border-border/20 rounded-lg">
+          {/* Calendar Grid Container */}
+          <div className="border border-border/20 rounded-lg">
             {/* Calendar Grid */}
             <div className="grid grid-cols-7 gap-2 auto-rows-[120px] p-2">
               {daysInCalendar.map(day => {

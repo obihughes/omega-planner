@@ -254,8 +254,11 @@ export default function WeeklyView({}: WeeklyViewProps) {
     const scheduledTasks = dayTasks.filter(task => task.startHour !== undefined);
     
     // Split tasks into AM (0-11.99) and PM (12-23.99)
+    // Tasks that cross the AM/PM boundary should appear in both periods
     const amTasks = scheduledTasks.filter(task => task.startHour < 12);
-    const pmTasks = scheduledTasks.filter(task => task.startHour >= 12);
+    const pmTasks = scheduledTasks.filter(task => 
+      task.startHour >= 12 || (task.startHour < 12 && task.startHour + task.duration > 12)
+    );
     
     // Current time marker for today
     const getCurrentTimeMarker = (isAM: boolean) => {
@@ -342,7 +345,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
             key={`${dateKey}-${periodLabel}`} 
             className={cn(
               "flex",
-              !isAM && "border-t border-border/5" // Very subtle separator for PM row
+              !isAM && "border-t border-border/20" // Increased separator thickness for PM row
             )}
           >
           {/* Day label column */}
@@ -555,8 +558,8 @@ export default function WeeklyView({}: WeeklyViewProps) {
           <div className="bg-transparent" style={{ minWidth: `${WEEKLY_DAY_COLUMN_WIDTH + (WEEKLY_PIXELS_PER_HOUR * HOURS_PER_ROW)}px` }}>
             {weekDates.map((date, index) => (
               <div key={getDateKey(date)} className={cn(
-                "border-b-2 border-border/40",
-                index === 0 && "border-t-2 border-border/40",
+                "border-b-2 border-border/60",
+                index === 0 && "border-t-2 border-border/60",
                 "relative"
               )}>
                 {renderDayRows(date, index)}
