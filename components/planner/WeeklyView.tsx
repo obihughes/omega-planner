@@ -32,7 +32,8 @@ import {
 const WEEKLY_PIXELS_PER_HOUR = 97; // Reduced from 102 (5% smaller)
 const WEEKLY_ROW_HEIGHT = 55; // Balanced height for timeline with events in first column
 const WEEKLY_TASK_HEIGHT = 39; // Reduced from 41 (another 5% smaller)  
-const WEEKLY_DAY_COLUMN_WIDTH = 75; // Optimized for date info only (events moved to timeline)
+const WEEKLY_DAY_COLUMN_WIDTH = 75; // Optimized for date info only 
+const WEEKLY_EVENTS_COLUMN_WIDTH = 90; // Dedicated column for events
 const WEEKLY_TIMELINE_HEADER_HEIGHT = 23; // Reduced from 24 (another 5% smaller)
 const HOURS_PER_ROW = 12; // 12 hours per row (AM/PM split)
 
@@ -65,8 +66,8 @@ export default function WeeklyView({}: WeeklyViewProps) {
     const scrollContainer = timelineScrollRef.current;
     if (!scrollContainer) return;
 
-    // Set initial scroll position to 6am (day column + 6 * pixels per hour)
-    const initialScrollPosition = WEEKLY_DAY_COLUMN_WIDTH + (6 * WEEKLY_PIXELS_PER_HOUR);
+    // Set initial scroll position to 6am (day column + events column + 6 * pixels per hour)
+    const initialScrollPosition = WEEKLY_DAY_COLUMN_WIDTH + WEEKLY_EVENTS_COLUMN_WIDTH + (6 * WEEKLY_PIXELS_PER_HOUR);
     scrollContainer.scrollLeft = initialScrollPosition;
   }, [weekOffset, isSameDayView, selectedDayOfWeek]); // Re-run when view changes
 
@@ -211,6 +212,11 @@ export default function WeeklyView({}: WeeklyViewProps) {
       <div className="flex border-b border-border/5 bg-muted/5" style={{ height: `${WEEKLY_TIMELINE_HEADER_HEIGHT}px` }}>
         {/* Empty spacer for day column */}
         <div className="flex-shrink-0 border-r border-border/30 bg-card/50" style={{ width: `${WEEKLY_DAY_COLUMN_WIDTH}px` }}>
+        </div>
+        
+        {/* Events column header */}
+        <div className="flex-shrink-0 border-r border-border/30 bg-card/30 flex items-center justify-center" style={{ width: `${WEEKLY_EVENTS_COLUMN_WIDTH}px` }}>
+          <span className="text-xs font-medium text-muted-foreground/70">Events</span>
         </div>
         
         {/* Timeline hours for this period */}
@@ -405,6 +411,25 @@ export default function WeeklyView({}: WeeklyViewProps) {
             </div>
           </div>
 
+          {/* Events Column */}
+          <div 
+            className="flex-shrink-0 border-r border-border/30 relative bg-background"
+            style={{ 
+              width: `${WEEKLY_EVENTS_COLUMN_WIDTH}px`,
+              height: `${WEEKLY_ROW_HEIGHT}px`
+            }}
+          >
+            {/* Events for this day (only show in AM row) */}
+            {isAM && (
+              <div className="absolute inset-1 flex flex-col justify-start">
+                <WeeklyEventsDisplay
+                  events={calendarData.events}
+                  date={date}
+                />
+              </div>
+            )}
+          </div>
+
           {/* 12-hour Timeline */}
           <div 
             className="relative bg-background"
@@ -425,22 +450,6 @@ export default function WeeklyView({}: WeeklyViewProps) {
 
             {/* Current time marker */}
             {getCurrentTimeMarker(isAM)}
-
-            {/* Events in first column (only for AM row) */}
-            {isAM && (
-              <div 
-                className="absolute top-1 left-1 flex flex-col justify-start z-30"
-                style={{ 
-                  width: `${WEEKLY_PIXELS_PER_HOUR - 8}px`,
-                  height: `${WEEKLY_ROW_HEIGHT - 8}px`
-                }}
-              >
-                <WeeklyEventsDisplay
-                  events={calendarData.events}
-                  date={date}
-                />
-              </div>
-            )}
 
             {/* Tasks for this period */}
             {renderTasks(tasks, isAM)}

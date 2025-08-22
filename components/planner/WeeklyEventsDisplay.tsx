@@ -39,35 +39,35 @@ export const WeeklyEventsDisplay: React.FC<WeeklyEventsDisplayProps> = ({
 
   return (
     <div className={cn("w-full h-full overflow-hidden", className)}>
-      {dayEvents.slice(0, 2).map((event, index) => ( // Limit to 2 events for timeline column
+      {dayEvents.slice(0, 3).map((event, index) => ( // Increased to 3 events for dedicated column
         <div
           key={event.id}
-          className="mb-1 last:mb-0 p-1 bg-card/90 border border-border/50 rounded text-xs hover:bg-accent/40 transition-colors backdrop-blur-sm"
+          className="mb-1 last:mb-0 p-1.5 bg-card/95 border border-border/60 rounded-md text-xs hover:bg-accent/30 transition-colors shadow-sm"
           title={`${event.title}${event.description ? ` - ${event.description}` : ''}`}
         >
           {/* Event indicator and title */}
-          <div className="flex items-center gap-1 mb-0.5">
+          <div className="flex items-center gap-1.5 mb-1">
             <div 
-              className="w-2 h-2 rounded-full flex-shrink-0"
+              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
               style={{ backgroundColor: event.color }}
             />
-            <div className="font-medium text-foreground leading-tight text-[10px] truncate">
+            <div className="font-medium text-foreground leading-tight text-[11px] truncate">
               {event.title}
             </div>
           </div>
           
           {/* Event time */}
-          <div className="flex items-center gap-1 text-muted-foreground pl-3">
-            <Clock className="w-2 h-2 flex-shrink-0" />
-            <span className="text-[9px] leading-none">{formatEventTime(event.date)}</span>
+          <div className="flex items-center gap-1 text-muted-foreground pl-4">
+            <Clock className="w-2.5 h-2.5 flex-shrink-0" />
+            <span className="text-[10px] leading-none">{formatEventTime(event.date)}</span>
           </div>
         </div>
       ))}
       
-      {/* Show overflow indicator if there are more than 2 events */}
-      {dayEvents.length > 2 && (
-        <div className="text-[9px] text-muted-foreground text-center py-0.5 px-1 bg-muted/50 rounded font-medium">
-          +{dayEvents.length - 2}
+      {/* Show overflow indicator if there are more than 3 events */}
+      {dayEvents.length > 3 && (
+        <div className="text-[10px] text-muted-foreground text-center py-1 px-2 bg-muted/40 rounded font-medium">
+          +{dayEvents.length - 3} more
         </div>
       )}
     </div>
