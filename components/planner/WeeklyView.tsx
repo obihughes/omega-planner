@@ -13,9 +13,11 @@ import {
 } from 'lucide-react';
 import { Task } from '@/types';
 import { useDailyPlanner } from '@/hooks/useDailyPlannerState';
+import { useCalendarData } from '@/hooks/useCalendarData';
 import { formatTime } from '@/utils/formatters';
 import { getDateKey } from '@/utils/dateUtils';
 import { MemoizedWeeklyTaskCard } from './WeeklyTaskCard';
+import { WeeklyEventsDisplay } from './WeeklyEventsDisplay';
 import { 
   TIMELINE_START_HOUR as APP_TIMELINE_START_HOUR,
   TIMELINE_END_HOUR as APP_TIMELINE_END_HOUR,
@@ -46,6 +48,11 @@ export default function WeeklyView({}: WeeklyViewProps) {
     openViewNotesModal,
     isClient
   } = useDailyPlanner();
+
+  // Calendar data for events
+  const {
+    data: calendarData,
+  } = useCalendarData();
 
   // State for week navigation and view mode
   const [weekOffset, setWeekOffset] = useState(0);
@@ -386,6 +393,15 @@ export default function WeeklyView({}: WeeklyViewProps) {
                     !isCurrentDay && "text-muted-foreground"
                   )}>
                     {date.toLocaleDateString('en-US', { month: 'short' })}
+                  </div>
+                  
+                  {/* Events for this day */}
+                  <div className="mt-1 max-h-16 overflow-hidden">
+                    <WeeklyEventsDisplay
+                      events={calendarData.events}
+                      date={date}
+                      className="space-y-0.5"
+                    />
                   </div>
                 </>
               ) : (

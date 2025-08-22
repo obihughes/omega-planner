@@ -8,6 +8,7 @@ interface DailyEventsContainerProps {
   events: CalendarEvent[];
   periods: CalendarPeriod[];
   currentDate: Date;
+  eventsOnly?: boolean; // New prop to show only events
   onEventEdit?: (event: CalendarEvent) => void;
   onPeriodEdit?: (period: CalendarPeriod) => void;
   onEventView?: (event: CalendarEvent) => void;
@@ -18,6 +19,7 @@ export const DailyEventsContainer: React.FC<DailyEventsContainerProps> = ({
   events,
   periods,
   currentDate,
+  eventsOnly = false,
   onEventEdit,
   onPeriodEdit,
   onEventView,
@@ -33,8 +35,8 @@ export const DailyEventsContainer: React.FC<DailyEventsContainerProps> = ({
     );
   });
 
-  // Filter periods that include the current date
-  const todaysPeriods = periods.filter(period => {
+  // Filter periods that include the current date (only if not eventsOnly)
+  const todaysPeriods = eventsOnly ? [] : periods.filter(period => {
     const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
     const startDateOnly = new Date(period.startDate.getFullYear(), period.startDate.getMonth(), period.startDate.getDate());
     const endDateOnly = new Date(period.endDate.getFullYear(), period.endDate.getMonth(), period.endDate.getDate());
@@ -67,7 +69,7 @@ export const DailyEventsContainer: React.FC<DailyEventsContainerProps> = ({
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 text-primary" />
           <h3 className="font-semibold text-sm text-foreground">
-            Today's Events & Periods
+            {eventsOnly ? "Today's Events" : "Today's Events & Periods"}
           </h3>
           <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
             {todaysEvents.length + todaysPeriods.length}
