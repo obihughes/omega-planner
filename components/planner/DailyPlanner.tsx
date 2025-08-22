@@ -11,6 +11,7 @@ import { Task } from '../../types/planner';
 import { TaskInboxSidebar } from './TaskInboxSidebar';
 import { PinnedTasksSidebar } from './PinnedTasksSidebar';
 import { TaskAssignmentCalendar } from './TaskAssignmentCalendar';
+import { MonthlyTimelineView } from '../calendar/MonthlyTimelineView';
 import { useDailyPlanner } from '../../hooks/useDailyPlannerState';
 import { 
     TASK_COLORS, 
@@ -928,164 +929,32 @@ export default function DailyPlanner() {
 
         {/* Monthly View */}
         {viewMode === 'monthly' && (
-          <>
-            {/* Inbox Tasks Section - Compact */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-4">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => createPoolTask()}
-                    className="flex items-center gap-2 hover:bg-primary/10 transition-all duration-200 font-medium"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add Task
-                  </Button>
-                  {generalPoolTasks.length > 0 && (
-                    <p className="text-sm text-muted-foreground font-medium">
-                      Drag tasks to calendar to schedule ({generalPoolTasks.length})
-                    </p>
-                  )}
-                </div>
-              </div>
-              
-              {generalPoolTasks.length > 0 ? (
-                <div 
-                  className="bg-card/50 border border-border/30 rounded-lg p-3"
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    try {
-                      const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-                      if (data.type === 'task-assignment' && data.task && !data.isFromPool && data.task.startHour !== undefined) {
-                        handleUnassignTask(data.task);
-                      }
-                    } catch (error) {
-                      console.error('Error handling drop:', error);
-                    }
-                  }}
-                >
-                  <div className="flex flex-wrap gap-2">
-                    {generalPoolTasks.map(task => (
-                      <div
-                        key={task.id}
-                        draggable
-                        onDragStart={(e) => {
-                          const dragData = {
-                            task,
-                            isFromPool: true,
-                            type: 'task-assignment'
-                          };
-                          e.dataTransfer.setData('text/plain', JSON.stringify(dragData));
-                          e.dataTransfer.effectAllowed = 'move';
-                        }}
-                        className="relative p-2 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-16 cursor-grab active:cursor-grabbing rounded-md"
-                      >
-                        <div className="flex items-start justify-between gap-2 h-full">
-                          <div className="flex items-start gap-2 flex-1 min-w-0">
-                            <div className="flex flex-col flex-1 min-w-0">
-                              <p className="font-medium text-sm text-foreground truncate leading-tight mb-1">
-                                {task.name || "Untitled Task"}
-                              </p>
-                              <div className="flex items-center gap-1">
-                                <Clock className="w-3 h-3 text-muted-foreground" />
-                                <span className="text-xs text-muted-foreground font-mono">
-                                  {formatDuration(task.duration)}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          {/* Action buttons */}
-                          <div className="absolute top-0.5 right-1 flex flex-col gap-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              type="button"
-                              className="h-4 w-4 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                              onClick={(e) => { 
-                                e.preventDefault(); 
-                                e.stopPropagation(); 
-                                openViewNotesModal(task); 
-                              }}
-                              title="View Notes"
-                            >
-                              <Eye className="w-2 h-2" />
-                            </button>
-                            <button
-                              type="button"
-                              className="h-4 w-4 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                              onClick={(e) => { 
-                                e.preventDefault(); 
-                                e.stopPropagation(); 
-                                openEditModal(task, { isFromPool: true }); 
-                              }}
-                              title="Edit Task"
-                            >
-                              <Edit3 className="w-2 h-2" />
-                            </button>
-                            <button
-                              type="button"
-                              className="h-4 w-4 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                              onClick={(e) => { 
-                                e.preventDefault(); 
-                                e.stopPropagation(); 
-                                handleDeletePoolTask(task.id);
-                              }}
-                              title="Delete Task"
-                            >
-                              <Trash2 className="w-2 h-2" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-card/50 border border-border/30 rounded-lg p-3">
-                  <div className="flex flex-col items-center justify-center py-8">
-                    <div className="text-center">
-                      <Calendar className="w-8 h-8 mx-auto mb-3 text-muted-foreground/60" />
-                      <h4 className="text-sm font-semibold text-foreground mb-2">No tasks in inbox</h4>
-                      <p className="text-xs text-muted-foreground mb-4">
-                        Create a task to get started with scheduling
-                      </p>
-                      <Button
-                        size="sm"
-                        onClick={() => createPoolTask()}
-                        className="flex items-center gap-2 text-xs"
-                      >
-                        <Plus className="w-3 h-3" />
-                        Add Your First Task
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Calendar Container */}
-            <div ref={calendarContainerRef} className="bg-background/20 border border-border/20 shadow-lg overflow-hidden backdrop-blur-lg rounded-lg">
-              <TaskAssignmentCalendar
+          <div ref={calendarContainerRef} className="h-[80vh]">
+              <MonthlyTimelineView
                 poolTasks={generalPoolTasks}
                 scheduledTasks={tasksByDate}
                 pinnedTasks={pinnedTasks}
                 onAssignTask={handleAssignTask}
                 onUnassignTask={handleUnassignTask}
                 onRescheduleTask={handleRescheduleTask}
-                onCreatePoolTask={addPoolTaskForDate}
-                onAddTask={handleAddTask}
                 onUpdateTask={handleUpdateTask}
-                onAddPoolTaskForDate={addPoolTaskForDate}
-                onClearPool={clearPool}
                 getPoolTasksForDate={getPoolTasksForDate}
-                createQuickTask={createQuickTask}
                 openEditModal={openEditModal}
                 createPoolTask={createPoolTask}
-                hideInboxSection={true}
-                onNavigateToDaily={handleNavigateToDaily}
+                onNavigateToDaily={(date) => {
+                  // Switch to daily view and navigate to the selected date
+                  setViewMode('daily');
+                  // Calculate day offset from today
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const targetDate = new Date(date);
+                  targetDate.setHours(0, 0, 0, 0);
+                  const dayOffset = Math.floor((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                  setTopDayOffset(dayOffset);
+                  setBottomDayOffset(dayOffset);
+                }}
               />
             </div>
-          </>
         )}
 
 

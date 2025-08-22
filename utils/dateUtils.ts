@@ -56,14 +56,29 @@ export const addDaysToDateKey = (dateKey: string, days: number): string => {
  */
 export const getDateKey = (input: Date | string): string => {
   let date: Date;
+  
+  // Validate input
+  if (!input) {
+    throw new Error('getDateKey: input cannot be null or undefined');
+  }
+  
   if (typeof input === 'string') {
     // Handle ISO strings (e.g., "2023-10-27T05:00:00.000Z") correctly
     // by parsing and then using UTC parts to construct a new date
     const d = new Date(input);
+    if (isNaN(d.getTime())) {
+      throw new Error(`getDateKey: invalid date string "${input}"`);
+    }
     date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 12, 0, 0));
-  } else {
+  } else if (input instanceof Date) {
+    if (isNaN(input.getTime())) {
+      throw new Error('getDateKey: invalid Date object');
+    }
     date = input;
+  } else {
+    throw new Error(`getDateKey: expected Date or string, got ${typeof input}`);
   }
+  
   // Use UTC methods to avoid timezone shift issues
   const year = date.getUTCFullYear();
   const month = String(date.getUTCMonth() + 1).padStart(2, '0');

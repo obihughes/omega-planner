@@ -2,14 +2,15 @@
 
 import React, { useState } from 'react';
 import { AppLayout } from '@/components/ui/AppLayout';
-import { YearCalendar, MonthlyCalendar } from '@/components/calendar';
+import { YearCalendar, MonthlyCalendar, MonthlyTimelineView } from '@/components/calendar';
 import { useCalendarData } from '@/hooks/useCalendarData';
 import { CalendarEvent, CalendarPeriod } from '@/types/calendar';
-import { Settings, Download, RefreshCw, Trash2, Calendar, CalendarDays } from 'lucide-react';
+import { Settings, Download, RefreshCw, Trash2, Calendar, CalendarDays, List, Grid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCalendarView } from '@/app/context/CalendarViewContext';
+import { useDailyPlanner } from '@/hooks/useDailyPlannerState';
 
-type CalendarView = 'yearly' | 'monthly';
+type CalendarView = 'yearly' | 'monthly' | 'timeline';
 
 export default function CalendarPage() {
   const {
@@ -25,6 +26,21 @@ export default function CalendarPage() {
     resetToDefault,
     exportData
   } = useCalendarData();
+
+  // Planner state for timeline view
+  const {
+    tasksByDate,
+    poolTasks,
+    pinnedTasks,
+    getPoolTasksForDate,
+    openEditModal,
+    createPoolTask,
+    handleAssignTask,
+    handleUnassignTask,
+    handleRescheduleTask,
+    handleUpdateTask,
+    isClient
+  } = useDailyPlanner();
 
   const [showSettings, setShowSettings] = useState(false);
   const { viewMode: currentView, setViewMode: setCurrentView } = useCalendarView();
@@ -63,6 +79,36 @@ export default function CalendarPage() {
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* View Toggle */}
+        <div className="flex items-center justify-center gap-2 mb-6">
+          <Button
+            variant={currentView === 'yearly' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setCurrentView('yearly')}
+            className="flex items-center gap-2"
+          >
+            <Grid className="w-4 h-4" />
+            Year
+          </Button>
+          <Button
+            variant={currentView === 'monthly' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setCurrentView('monthly')}
+            className="flex items-center gap-2"
+          >
+            <Calendar className="w-4 h-4" />
+            Monthly Grid
+          </Button>
+          <Button
+            variant={currentView === 'timeline' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setCurrentView('timeline')}
+            className="flex items-center gap-2"
+          >
+            <List className="w-4 h-4" />
+            Timeline
+          </Button>
+        </div>
 
         {/* Calendar Component */}
         {currentView === 'monthly' ? (
@@ -76,6 +122,26 @@ export default function CalendarPage() {
             onPeriodDelete={deletePeriod}
             className="bg-background"
           />
+        ) : currentView === 'timeline' ? (
+          isClient && (
+            <MonthlyTimelineView
+              poolTasks={poolTasks}
+              scheduledTasks={tasksByDate}
+              pinnedTasks={pinnedTasks}
+              onAssignTask={handleAssignTask}
+              onUnassignTask={handleUnassignTask}
+              onRescheduleTask={handleRescheduleTask}
+              onUpdateTask={handleUpdateTask}
+              getPoolTasksForDate={getPoolTasksForDate}
+              openEditModal={openEditModal}
+              createPoolTask={createPoolTask}
+              onNavigateToDaily={(date) => {
+                // Navigate to home page (daily planner) with the selected date
+                // You could implement date-specific navigation here
+                window.location.href = '/';
+              }}
+            />
+          )
         ) : (
           <YearCalendar
             data={data}
