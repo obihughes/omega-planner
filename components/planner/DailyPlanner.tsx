@@ -10,9 +10,11 @@ import { formatTime, formatDuration } from '@/utils/formatters';
 import { Task } from '../../types/planner';
 import { TaskInboxSidebar } from './TaskInboxSidebar';
 import { PinnedTasksSidebar } from './PinnedTasksSidebar';
+import { DailyEventsContainer } from './DailyEventsContainer';
 import { TaskAssignmentCalendar } from './TaskAssignmentCalendar';
 import { MonthlyTimelineView } from '../calendar/MonthlyTimelineView';
 import { useDailyPlanner } from '../../hooks/useDailyPlannerState';
+import { useCalendarData } from '../../hooks/useCalendarData';
 import { 
     TASK_COLORS, 
     TIMELINE_START_HOUR as APP_TIMELINE_START_HOUR,
@@ -33,7 +35,7 @@ import { ViewTaskNotesModal } from './ViewTaskNotesModal';
 import { getCalendarDateForColumn, getDateKey, dateFromDateKey } from '../../utils/dateUtils';
 import { resolveCollisionsForResize, resolveCollisionsForDrag } from '../../utils/taskUtils';
 import WeeklyView from './WeeklyView';
-import FocusView from './FocusView';
+
 import { useModalManager } from '../../hooks/useModalManager';
 import { useViewMode } from '@/app/context/ViewModeContext';
 
@@ -116,6 +118,11 @@ export default function DailyPlanner() {
     createQuickTask,
     handleDropFromPool,
   } = useDailyPlanner();
+
+  // Calendar data for events and periods
+  const {
+    data: calendarData,
+  } = useCalendarData();
 
   const currentViewDateKey = useMemo(() => getDateKey(getCalendarDateForColumn(topDayOffset)), [topDayOffset]);
 
@@ -659,6 +666,13 @@ export default function DailyPlanner() {
         {/* Conditional Content Based on View Mode */}
         {viewMode === 'daily' && (
           <>
+            {/* Daily Events Container */}
+            <DailyEventsContainer
+              events={calendarData.events}
+              periods={calendarData.periods}
+              currentDate={dateFromDateKey(getCalendarDateForColumn(topDayOffset))}
+            />
+
             {/* Unified Task Pool and Pinned Tasks View */}
             <div className="mb-4 bg-card border border-border shadow-sm overflow-hidden">
               {/* Collapsible Content */}
@@ -922,10 +936,7 @@ export default function DailyPlanner() {
           </div>
         )}
 
-        {/* Focus View */}
-        {viewMode === 'focus' && (
-          <FocusView />
-        )}
+
 
         {/* Monthly View */}
         {viewMode === 'monthly' && (

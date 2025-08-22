@@ -9,8 +9,7 @@ This directory contains all components related to the daily planning functionali
 **Purpose**: Main orchestrating component with page-level view mode navigation
 
 **Features:**
-- **Page-Level View Modes**: Toggle between Focus, Daily, Weekly, and Monthly views
-  - Focus View: Minimal focus session interface for deep work
+- **Page-Level View Modes**: Toggle between Daily, Weekly, and Monthly views
   - Daily View: Timeline-based planning with Pool/Pinned sidebar
   - Weekly View: Weekly overview of scheduled and inbox tasks
   - Monthly View: Full-page calendar for task assignment and inbox management
@@ -21,22 +20,16 @@ This directory contains all components related to the daily planning functionali
 - Copy/paste tasks across different days
 
 **View Modes:**
-1. **Focus View**:
-   - Minimal interface for deep work sessions
-   - Focus timer with customizable durations
-   - Current and next task display
-   - Focus session history tracking
-   
-2. **Daily View** (default):
+1. **Daily View** (default):
    - Pool/Pinned task sidebar with tabs
    - Timeline sections for detailed time-based planning
    - Task collision detection and resolution
    
-3. **Weekly View**:
+2. **Weekly View**:
    - Weekly overview showing scheduled and inbox tasks
    - Separate sections for scheduled tasks and inbox tasks per day
    
-4. **Monthly View**:
+3. **Monthly View**:
    - Full TaskAssignmentCalendar component
    - Visual month grid for task assignment
    - Inbox tasks management with "Add Task" functionality
@@ -141,10 +134,9 @@ DailyPlanner
 
 ## Usage Patterns
 
-1. **Focus Sessions**: Use Focus View for deep work with timer and minimal distractions
-2. **Daily Planning**: Use Daily View for detailed time-based task scheduling
-3. **Weekly Overview**: Use Weekly View to see scheduled and inbox tasks across the week
-4. **Task Assignment**: Use Monthly View to assign pool tasks to specific dates
-5. **Inbox Management**: Use Monthly View to create and manage inbox tasks
-6. **Task Management**: Edit tasks through modals accessible from all views
-7. **Workflow**: Create tasks in Inbox (Monthly) → Assign to dates (Monthly) → Schedule times (Daily) → Focus on execution (Focus) 
+1. **Daily Planning**: Use Daily View for detailed time-based task scheduling
+2. **Weekly Overview**: Use Weekly View to see scheduled and inbox tasks across the week
+3. **Task Assignment**: Use Monthly View to assign pool tasks to specific dates
+4. **Inbox Management**: Use Monthly View to create and manage inbox tasks
+5. **Task Management**: Edit tasks through modals accessible from all views
+6. **Workflow**: Create tasks in Inbox (Monthly) → Assign to dates (Monthly) → Schedule times (Daily) 

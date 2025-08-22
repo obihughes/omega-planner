@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
-export type ViewMode = 'daily' | 'weekly' | 'monthly' | 'focus';
+export type ViewMode = 'daily' | 'weekly' | 'monthly';
 
 interface ViewModeContextType {
   viewMode: ViewMode;

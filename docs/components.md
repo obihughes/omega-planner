@@ -33,7 +33,7 @@ The main daily planning interface with timeline views and task management.
 
 **View Mode Navigation:**
 - Located above the sidebar area
-- Three active buttons: "Daily" (default), "Weekly", and "Monthly" (Focus is temporarily hidden)
+- Three active buttons: "Daily" (default), "Weekly", and "Monthly"
 - Completely switches the page layout and functionality
 - Daily: Timeline + sidebar for detailed time-based planning
 - Weekly: Weekly overview of scheduled and inbox tasks across all seven days

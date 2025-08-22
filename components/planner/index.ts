@@ -6,4 +6,5 @@ export { TaskAssignmentCalendar } from './TaskAssignmentCalendar';
 export { UpcomingTasksTimeline } from './UpcomingTasksTimeline';
 export { default as WeeklyView } from './WeeklyView';
 export { WeeklyTaskCard, MemoizedWeeklyTaskCard } from './WeeklyTaskCard';
-export { default as FocusView } from './FocusView'; 
+export { DailyEventsContainer } from './DailyEventsContainer';
+ 

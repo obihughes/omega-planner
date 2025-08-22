@@ -71,8 +71,7 @@ Displays tasks from the "task pool" that are not yet scheduled.
 ### PinnedTasksSidebar
 Shows tasks that the user has pinned for quick access.
 
-### FocusView
-A dedicated view for focusing on a single task.
+
 
 ### WeeklyView
 Displays a 7-day view of scheduled tasks.
