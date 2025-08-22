@@ -29,12 +29,12 @@ import {
 } from '../../lib/constants';
 
 // Weekly view specific constants for row-based layout (reduced by 5% width, 34% height)
-const WEEKLY_PIXELS_PER_HOUR = 97; // Reduced from 102 (5% smaller)
-const WEEKLY_ROW_HEIGHT = 55; // Balanced height for timeline with events in first column
+const WEEKLY_PIXELS_PER_HOUR = 90; // Optimized for better overall layout balance
+const WEEKLY_ROW_HEIGHT = 60; // Increased height for better date display and events visibility
 const WEEKLY_TASK_HEIGHT = 39; // Reduced from 41 (another 5% smaller)  
-const WEEKLY_DAY_COLUMN_WIDTH = 75; // Optimized for date info only 
-const WEEKLY_EVENTS_COLUMN_WIDTH = 90; // Dedicated column for events
-const WEEKLY_TIMELINE_HEADER_HEIGHT = 23; // Reduced from 24 (another 5% smaller)
+const WEEKLY_DAY_COLUMN_WIDTH = 95; // Increased for proper date display visibility
+const WEEKLY_EVENTS_COLUMN_WIDTH = 85; // Slightly reduced for better balance
+const WEEKLY_TIMELINE_HEADER_HEIGHT = 26; // Increased for better header visibility
 const HOURS_PER_ROW = 12; // 12 hours per row (AM/PM split)
 
 interface WeeklyViewProps {}
@@ -364,21 +364,21 @@ export default function WeeklyView({}: WeeklyViewProps) {
           {/* Day label column */}
           <div 
             className={cn(
-              "flex-shrink-0 border-r border-border/30 p-2 flex flex-col justify-center sticky left-0 z-50 relative",
+              "flex-shrink-0 border-r border-border/30 px-3 py-2 flex flex-col justify-center sticky left-0 z-50 relative",
               index % 2 === 0 ? "bg-background" : "bg-muted/70", // Alternating background per day
               isCurrentDay && "bg-muted/20" // Gentle highlight for today
             )}
             style={{ 
               width: `${WEEKLY_DAY_COLUMN_WIDTH}px`, 
               height: `${WEEKLY_ROW_HEIGHT}px`,
-              boxShadow: 'inset 0 0 0 1px transparent' // Ensure solid background isolation
+              boxShadow: '2px 0 4px rgba(0,0,0,0.1)' // Add shadow for better visual separation
             }}
           >
             <div className="text-center">
               {isAM ? (
                 <>
                   <div className={cn(
-                    "text-xs font-medium uppercase tracking-wide mb-1",
+                    "text-xs font-medium uppercase tracking-wide mb-1.5",
                     isCurrentDay && "text-foreground font-semibold",
                     !isCurrentDay && "text-muted-foreground"
                   )}>
@@ -386,7 +386,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
                   </div>
                   
                   <div className={cn(
-                    "text-xl font-semibold leading-none mb-1",
+                    "text-2xl font-bold leading-none mb-1.5",
                     isCurrentDay && "text-foreground font-bold",
                     !isCurrentDay && "text-foreground"
                   )}>
@@ -394,8 +394,8 @@ export default function WeeklyView({}: WeeklyViewProps) {
                   </div>
                   
                   <div className={cn(
-                    "text-xs",
-                    isCurrentDay && "text-muted-foreground font-medium",
+                    "text-xs font-medium",
+                    isCurrentDay && "text-muted-foreground font-semibold",
                     !isCurrentDay && "text-muted-foreground"
                   )}>
                     {date.toLocaleDateString('en-US', { month: 'short' })}
@@ -403,7 +403,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
                 </>
               ) : (
                 <div className={cn(
-                  "text-xs font-medium text-muted-foreground/70 mt-2",
+                  "text-sm font-medium text-muted-foreground/80",
                 )}>
                   {periodLabel}
                 </div>
@@ -421,7 +421,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
           >
             {/* Events for this day (only show in AM row) */}
             {isAM && (
-              <div className="absolute inset-1 flex flex-col justify-start">
+              <div className="absolute inset-2 flex flex-col justify-start">
                 <WeeklyEventsDisplay
                   events={calendarData.events}
                   date={date}
