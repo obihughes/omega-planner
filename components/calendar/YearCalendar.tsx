@@ -693,8 +693,8 @@ export function YearCalendar({
     return (
       <div key={month} id={`month-${month}`}>
         {/* Month Header */}
-        <div className="mb-3">
-          <h3 className="text-lg font-semibold text-center text-foreground">
+        <div className="mb-4">
+          <h3 className="text-lg font-bold text-center text-foreground tracking-tight">
             {getMonthName(month)}
           </h3>
         </div>
@@ -702,14 +702,14 @@ export function YearCalendar({
         {/* Week Days Header */}
         <div className="grid grid-cols-7 gap-1 mb-2">
           {weekDays.map((day, index) => (
-            <div key={`${day}-${index}`} className={cn("text-xs font-medium text-muted-foreground text-center py-1", inter.className)}>
+            <div key={`${day}-${index}`} className={cn("text-xs font-semibold text-muted-foreground/80 text-center py-1.5 tracking-wide", inter.className)}>
               {day}
             </div>
           ))}
         </div>
 
-        {/* Calendar Grid */}
-        <div className="grid grid-cols-7 gap-y-1 relative">
+        {/* Calendar Grid - with subtle background */}
+        <div className="grid grid-cols-7 gap-y-1 relative bg-card/30 border border-border/20 rounded-md p-1">
           {monthDates.map((date, index) => {
             const dayInfo = getDayInfo(date, month, data.events, data.periods, monthDates);
             
@@ -730,18 +730,18 @@ export function YearCalendar({
             const periodStyle: React.CSSProperties = {};
             let periodClasses = '';
 
+            // Convert hex to rgba for transparency
+            const hexToRgba = (hex: string, alpha: number) => {
+              const r = parseInt(hex.slice(1, 3), 16);
+              const g = parseInt(hex.slice(3, 5), 16);
+              const b = parseInt(hex.slice(5, 7), 16);
+              return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            };
+
             if (dayInfo.periods.length === 1) {
               const period = dayInfo.periods[0];
               const baseColor = period.color;
-              const opacity = isPast ? 0.3 : 0.7; // More transparent for past dates
-              
-              // Convert hex to rgba for transparency
-              const hexToRgba = (hex: string, alpha: number) => {
-                const r = parseInt(hex.slice(1, 3), 16);
-                const g = parseInt(hex.slice(3, 5), 16);
-                const b = parseInt(hex.slice(5, 7), 16);
-                return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-              };
+              const opacity = isPast ? 0.15 : 0.25; // Much more subtle opacity like monthly view
               
               periodStyle.backgroundColor = hexToRgba(baseColor, opacity);
               periodStyle.color = getContrastColor(baseColor);
@@ -749,19 +749,12 @@ export function YearCalendar({
             } else if (dayInfo.periods.length >= 2) {
               const p1 = dayInfo.periods[0];
               const p2 = dayInfo.periods[1];
-              const opacity = isPast ? 0.3 : 0.7;
-              
-              const hexToRgba = (hex: string, alpha: number) => {
-                const r = parseInt(hex.slice(1, 3), 16);
-                const g = parseInt(hex.slice(3, 5), 16);
-                const b = parseInt(hex.slice(5, 7), 16);
-                return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-              };
+              const opacity = isPast ? 0.15 : 0.25; // Much more subtle opacity like monthly view
               
               // Horizontal split: top half p1, bottom half p2
               periodStyle.background = `linear-gradient(to bottom, ${hexToRgba(p1.color, opacity)} 50%, ${hexToRgba(p2.color, opacity)} 50%)`;
-              periodStyle.color = '#fff';
-              periodStyle.textShadow = '0 1px 2px rgba(0,0,0,0.7)';
+              periodStyle.color = getContrastColor(p1.color);
+              periodStyle.textShadow = '0 1px 1px rgba(0,0,0,0.5)';
             }
 
             // Removed hasEventIndicator - no longer needed with new circle system
@@ -778,16 +771,17 @@ export function YearCalendar({
                     className={cn(`
                       relative h-8 flex items-center justify-center text-xs border transition-all duration-200`,
                       isPast 
-                        ? 'text-muted-foreground/50 cursor-default border-border/30' 
-                        : 'text-foreground cursor-pointer border-border/50 shadow-sm',
-                      !periodStyle.backgroundColor && !isPast && 'bg-background',
-                      dayInfo.isToday && 'bg-primary text-primary-foreground font-semibold border-primary shadow-md ring-2 ring-primary/70 ring-offset-1 ring-offset-background animate-pulse',
-                      selectedDate && isSameDay(date, selectedDate) && !periodStyle.backgroundColor && 'bg-accent border-accent-foreground/20',
-                      isHovered && !periodStyle.backgroundColor && 'bg-accent ring-2 ring-accent-foreground/50 ring-offset-1 ring-offset-background',
-                      isHovered && periodStyle.backgroundColor && 'ring-2 ring-yellow-400 ring-offset-1 ring-offset-background shadow-lg', // Enhanced highlighting for periods
-                      isDragTarget && 'ring-2 ring-blue-400 shadow-lg scale-105', // Visual feedback for drag
+                        ? 'text-muted-foreground/40 cursor-default border-border/20' 
+                        : 'text-foreground cursor-pointer border-border/40 hover:border-border/60',
+                      !periodStyle.backgroundColor && !isPast && 'bg-card hover:bg-accent/20',
+                      !dayInfo.isCurrentMonth && 'bg-muted/10 border-border/10',
+                      dayInfo.isToday && 'bg-primary/20 text-primary-foreground font-bold border-primary/60 shadow-md ring-2 ring-primary/40 ring-offset-1 ring-offset-background',
+                      selectedDate && isSameDay(date, selectedDate) && !periodStyle.backgroundColor && 'bg-accent/30 border-accent-foreground/40',
+                      isHovered && !periodStyle.backgroundColor && 'bg-accent/40 ring-2 ring-accent-foreground/30 ring-offset-1 ring-offset-background',
+                      isHovered && periodStyle.backgroundColor && 'ring-2 ring-yellow-400/60 ring-offset-1 ring-offset-background shadow-lg', // Enhanced highlighting for periods
+                      isDragTarget && 'ring-2 ring-blue-400/60 shadow-lg scale-105', // Visual feedback for drag
                       dragMode && dayInfo.periods.length > 0 && 'cursor-grabbing',
-                      !dragMode && dayInfo.periods.length > 0 && !isPast && 'hover:shadow-md hover:scale-105 cursor-grab' // Indicate draggable
+                      !dragMode && dayInfo.periods.length > 0 && !isPast && 'hover:shadow-md hover:scale-[1.02] cursor-grab transition-transform duration-200' // Indicate draggable
                     )}
                     style={{ ...periodStyle }}
                     onClick={() => !isPast && handleDateClick(date)}
@@ -797,7 +791,13 @@ export function YearCalendar({
                     onMouseLeave={handleDateMouseUp}
                     onMouseMove={dragMode && !isPast ? (e) => handleDragMove(e, date) : undefined}
                   >
-                    <span className={cn("relative z-20 font-bold select-none", inter.className)}>
+                    <span className={cn(
+                      "relative z-20 select-none transition-colors duration-200",
+                      dayInfo.isToday ? "font-bold text-primary-foreground" : "font-medium",
+                      isPast ? "text-muted-foreground/60" : "text-foreground",
+                      !dayInfo.isCurrentMonth && "text-muted-foreground/30",
+                      inter.className
+                    )}>
                       {date.getDate()}
                     </span>
                     {renderEventCircles(dayInfo.events)}
@@ -849,11 +849,11 @@ export function YearCalendar({
                 <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Events</h4>
                 <div className="flex flex-wrap gap-x-2 gap-y-1">
                   {monthEvents.map(event => (
-                    <div 
-                      key={event.id} 
-                      className={`group flex items-center gap-1.5 text-xs px-2 py-1 rounded-md border border-transparent hover:border-accent hover:bg-accent/30 cursor-pointer transition-all duration-200 ${
-                        eraserMode ? 'hover:border-red-200 hover:bg-red-50 dark:hover:border-red-800 dark:hover:bg-red-900/20' : ''
-                      }`}
+                                      <div 
+                    key={event.id} 
+                    className={`group flex items-center gap-1.5 text-xs px-2 py-1.5 rounded-md border border-transparent bg-card/30 hover:border-accent/50 hover:bg-accent/40 cursor-pointer transition-all duration-300 hover:shadow-sm ${
+                      eraserMode ? 'hover:border-red-300 hover:bg-red-50 dark:hover:border-red-700 dark:hover:bg-red-900/30' : ''
+                    }`}
                       onClick={(e) => handleEventClick(event, e)}
                       onMouseEnter={() => setHoveredItemId(event.id)}
                       onMouseLeave={() => setHoveredItemId(null)}
@@ -887,11 +887,11 @@ export function YearCalendar({
                 <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Periods</h4>
                 <div className="flex flex-wrap gap-x-2 gap-y-1">
                   {monthPeriods.map(period => (
-                    <div 
-                      key={period.id} 
-                      className={`group flex items-center gap-1.5 text-xs px-2 py-1 rounded-md border border-transparent hover:border-accent hover:bg-accent/30 cursor-pointer transition-all duration-200 ${
-                        eraserMode ? 'hover:border-red-200 hover:bg-red-50 dark:hover:border-red-800 dark:hover:bg-red-900/20' : ''
-                      }`}
+                                      <div 
+                    key={period.id} 
+                    className={`group flex items-center gap-1.5 text-xs px-2 py-1.5 rounded-md border border-transparent bg-card/30 hover:border-accent/50 hover:bg-accent/40 cursor-pointer transition-all duration-300 hover:shadow-sm ${
+                      eraserMode ? 'hover:border-red-300 hover:bg-red-50 dark:hover:border-red-700 dark:hover:bg-red-900/30' : ''
+                    }`}
                       onClick={(e) => handlePeriodClick(period, e)}
                       onMouseEnter={() => setHoveredItemId(period.id)}
                       onMouseLeave={() => setHoveredItemId(null)}
@@ -998,7 +998,7 @@ export function YearCalendar({
       
       {/* 12-Month Grid */}
       <div className={cn(
-        "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-x-8 gap-y-10 transition-opacity pt-14 mt-6",
+        "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-x-8 gap-y-12 transition-all duration-300 pt-16 mt-6 px-4 bg-background/50",
         {
           'cursor-crosshair': eraserMode,
           'opacity-50 pointer-events-none': isLoading
