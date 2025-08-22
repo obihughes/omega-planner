@@ -38,36 +38,36 @@ export const WeeklyEventsDisplay: React.FC<WeeklyEventsDisplayProps> = ({
   };
 
   return (
-    <div className={cn("space-y-1", className)}>
-      {dayEvents.slice(0, 3).map((event) => ( // Limit to 3 events to avoid overflow
+    <div className={cn("w-full h-full overflow-hidden", className)}>
+      {dayEvents.slice(0, 2).map((event, index) => ( // Limit to 2 events for timeline column
         <div
           key={event.id}
-          className="flex items-center gap-1 p-1 bg-background/80 border border-border/50 rounded text-xs hover:bg-accent/20 transition-colors"
+          className="mb-1 last:mb-0 p-1 bg-card/90 border border-border/50 rounded text-xs hover:bg-accent/40 transition-colors backdrop-blur-sm"
           title={`${event.title}${event.description ? ` - ${event.description}` : ''}`}
         >
-          {/* Event indicator */}
-          <div 
-            className="w-2 h-2 rounded-full flex-shrink-0"
-            style={{ backgroundColor: event.color }}
-          />
-          
-          {/* Event content */}
-          <div className="flex-1 min-w-0">
-            <div className="font-medium text-foreground truncate leading-tight">
+          {/* Event indicator and title */}
+          <div className="flex items-center gap-1 mb-0.5">
+            <div 
+              className="w-2 h-2 rounded-full flex-shrink-0"
+              style={{ backgroundColor: event.color }}
+            />
+            <div className="font-medium text-foreground leading-tight text-[10px] truncate">
               {event.title}
             </div>
-            <div className="flex items-center gap-1 text-muted-foreground">
-              <Clock className="w-2 h-2" />
-              <span className="text-[10px]">{formatEventTime(event.date)}</span>
-            </div>
+          </div>
+          
+          {/* Event time */}
+          <div className="flex items-center gap-1 text-muted-foreground pl-3">
+            <Clock className="w-2 h-2 flex-shrink-0" />
+            <span className="text-[9px] leading-none">{formatEventTime(event.date)}</span>
           </div>
         </div>
       ))}
       
-      {/* Show overflow indicator if there are more than 3 events */}
-      {dayEvents.length > 3 && (
-        <div className="text-[10px] text-muted-foreground text-center p-1 bg-muted/30 rounded">
-          +{dayEvents.length - 3} more
+      {/* Show overflow indicator if there are more than 2 events */}
+      {dayEvents.length > 2 && (
+        <div className="text-[9px] text-muted-foreground text-center py-0.5 px-1 bg-muted/50 rounded font-medium">
+          +{dayEvents.length - 2}
         </div>
       )}
     </div>

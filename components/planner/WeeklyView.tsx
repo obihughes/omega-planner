@@ -30,9 +30,9 @@ import {
 
 // Weekly view specific constants for row-based layout (reduced by 5% width, 34% height)
 const WEEKLY_PIXELS_PER_HOUR = 97; // Reduced from 102 (5% smaller)
-const WEEKLY_ROW_HEIGHT = 52; // Reduced from 55 (another 5% smaller)
+const WEEKLY_ROW_HEIGHT = 55; // Balanced height for timeline with events in first column
 const WEEKLY_TASK_HEIGHT = 39; // Reduced from 41 (another 5% smaller)  
-const WEEKLY_DAY_COLUMN_WIDTH = 65; // Reduced from 68 (5% smaller)
+const WEEKLY_DAY_COLUMN_WIDTH = 75; // Optimized for date info only (events moved to timeline)
 const WEEKLY_TIMELINE_HEADER_HEIGHT = 23; // Reduced from 24 (another 5% smaller)
 const HOURS_PER_ROW = 12; // 12 hours per row (AM/PM split)
 
@@ -394,15 +394,6 @@ export default function WeeklyView({}: WeeklyViewProps) {
                   )}>
                     {date.toLocaleDateString('en-US', { month: 'short' })}
                   </div>
-                  
-                  {/* Events for this day */}
-                  <div className="mt-1 max-h-16 overflow-hidden">
-                    <WeeklyEventsDisplay
-                      events={calendarData.events}
-                      date={date}
-                      className="space-y-0.5"
-                    />
-                  </div>
                 </>
               ) : (
                 <div className={cn(
@@ -434,6 +425,22 @@ export default function WeeklyView({}: WeeklyViewProps) {
 
             {/* Current time marker */}
             {getCurrentTimeMarker(isAM)}
+
+            {/* Events in first column (only for AM row) */}
+            {isAM && (
+              <div 
+                className="absolute top-1 left-1 flex flex-col justify-start z-30"
+                style={{ 
+                  width: `${WEEKLY_PIXELS_PER_HOUR - 8}px`,
+                  height: `${WEEKLY_ROW_HEIGHT - 8}px`
+                }}
+              >
+                <WeeklyEventsDisplay
+                  events={calendarData.events}
+                  date={date}
+                />
+              </div>
+            )}
 
             {/* Tasks for this period */}
             {renderTasks(tasks, isAM)}
