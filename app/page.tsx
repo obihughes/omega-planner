@@ -52,8 +52,8 @@ export default function Home() {
 
   return (
     <AppLayout>
-      <div className="px-6 pb-6">
-        <div className="max-w-7xl mx-auto">
+      <div className="h-full p-4">
+        <div className="max-w-7xl mx-auto h-full">
           <DailyPlanner />
         </div>
       </div>

@@ -502,9 +502,9 @@ export default function WeeklyView({}: WeeklyViewProps) {
   const weekStats = getWeekStats();
 
   return (
-    <div className="h-full bg-background flex flex-col">
+    <div className="h-full bg-card border border-border rounded-lg shadow-sm overflow-hidden flex flex-col">
       {/* Sticky Header - Fixed at top */}
-      <div className="px-4 py-3 border-b border-border bg-card/95 z-50 shadow-sm backdrop-blur-sm shrink-0">
+      <div className="px-4 py-3 border-b border-border bg-card z-50 shadow-sm shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
@@ -613,19 +613,14 @@ export default function WeeklyView({}: WeeklyViewProps) {
       </div>
 
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-auto" ref={timelineScrollRef} style={{ overflowX: 'auto', scrollBehavior: 'smooth' }}>
-        <div className="bg-transparent" style={{ minWidth: `${WEEKLY_DAY_COLUMN_WIDTH + (WEEKLY_PIXELS_PER_HOUR * HOURS_PER_ROW)}px` }}>
+      <div className="flex-1 overflow-auto bg-background" ref={timelineScrollRef} style={{ overflowX: 'auto', scrollBehavior: 'smooth' }}>
+        <div style={{ minWidth: `${WEEKLY_DAY_COLUMN_WIDTH + (WEEKLY_PIXELS_PER_HOUR * HOURS_PER_ROW)}px` }}>
           {weekDates.map((date, index) => (
             <div key={getDateKey(date)} className={cn(
-              "border-b-2 border-border/60",
-              index === 0 && "border-t-2 border-border/60",
+              "border-b border-border/40",
               "relative"
             )}>
               {renderDayRows(date, index)}
-              {/* Day separator line */}
-              {index < weekDates.length - 1 && (
-                <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/60 to-transparent" />
-              )}
             </div>
           ))}
         </div>

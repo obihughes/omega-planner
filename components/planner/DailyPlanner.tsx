@@ -642,8 +642,8 @@ export default function DailyPlanner() {
   }, [setTopDayOffset, setViewMode]);
 
   return (
-    <div className="min-h-screen p-2 bg-background text-foreground transition-colors">
-      <div className="w-full mx-auto">
+    <div className="h-full bg-background text-foreground transition-colors">
+      <div className="w-full mx-auto h-full">
         {activeEditModalTask && (
           <EditTaskModal
             taskToEdit={activeEditModalTask}
@@ -932,9 +932,7 @@ export default function DailyPlanner() {
 
         {/* Weekly View */}
         {viewMode === 'weekly' && (
-          <div className="bg-card border border-border rounded-lg shadow-sm h-[calc(100vh-8rem)] overflow-hidden">
-            <WeeklyView />
-          </div>
+          <WeeklyView />
         )}
 
 
