@@ -932,7 +932,7 @@ export default function DailyPlanner() {
 
         {/* Weekly View */}
         {viewMode === 'weekly' && (
-          <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-card border border-border rounded-lg shadow-sm h-[calc(100vh-8rem)] overflow-hidden">
             <WeeklyView />
           </div>
         )}

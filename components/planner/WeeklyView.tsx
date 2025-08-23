@@ -441,13 +441,12 @@ export default function WeeklyView({}: WeeklyViewProps) {
 
           {/* 12-hour Timeline */}
           <div 
-            className="relative bg-background hover:bg-muted/20 transition-colors duration-200 cursor-pointer group"
+            className="relative bg-background hover:bg-muted/20 transition-colors duration-200 cursor-pointer"
             style={{ 
               width: `${WEEKLY_PIXELS_PER_HOUR * HOURS_PER_ROW}px`,
               height: `${WEEKLY_ROW_HEIGHT}px`
             }}
             onDoubleClick={(e) => handleTimelineDoubleClick(e, date, isAM)}
-            title="Double-click to add task at specific time"
           >
             {/* Grid lines for 12 hours - only in timeline area */}
             {Array.from({ length: HOURS_PER_ROW }, (_, i) => (
@@ -460,13 +459,6 @@ export default function WeeklyView({}: WeeklyViewProps) {
 
             {/* Current time marker */}
             {getCurrentTimeMarker(isAM)}
-
-            {/* Hover indicator for adding tasks */}
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none flex items-center justify-center">
-              <div className="bg-primary/10 border border-primary/30 rounded-md px-3 py-1 text-xs text-primary font-medium shadow-sm">
-                Double-click to add task
-              </div>
-            </div>
 
             {/* Tasks for this period */}
             {renderTasks(tasks, isAM)}
@@ -510,118 +502,118 @@ export default function WeeklyView({}: WeeklyViewProps) {
   const weekStats = getWeekStats();
 
   return (
-    <div className="h-full bg-background">
-      <div className="h-full overflow-auto" ref={timelineScrollRef} style={{ overflowX: 'auto', scrollBehavior: 'smooth' }}>
-        {/* Sticky Header */}
-        <div className="px-4 py-3 border-b border-border bg-card/95 sticky top-0 z-50 shadow-sm backdrop-blur-sm">
-          <div className="flex items-center justify-between">
+    <div className="h-full bg-background flex flex-col">
+      {/* Sticky Header - Fixed at top */}
+      <div className="px-4 py-3 border-b border-border bg-card/95 z-50 shadow-sm backdrop-blur-sm shrink-0">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-primary" />
+              <h2 className="text-xl font-bold text-foreground">Weekly View</h2>
+            </div>
+            
+            {/* View Toggle and Navigation */}
             <div className="flex items-center gap-4">
+              {/* View Mode Toggle */}
               <div className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-primary" />
-                <h2 className="text-xl font-bold text-foreground">Weekly View</h2>
-              </div>
-              
-              {/* View Toggle and Navigation */}
-              <div className="flex items-center gap-4">
-                {/* View Mode Toggle */}
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setIsSameDayView(false)}
-                    className={cn(
-                      "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
-                      !isSameDayView 
-                        ? "bg-primary text-primary-foreground" 
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                    )}
-                  >
-                    This Week
-                  </button>
-                  <button
-                    onClick={() => setIsSameDayView(true)}
-                    className={cn(
-                      "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
-                      isSameDayView 
-                        ? "bg-primary text-primary-foreground" 
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                    )}
-                  >
-                    Same Day
-                  </button>
-                </div>
-
-                {/* Day Selector for Same Day View */}
-                {isSameDayView && (
-                  <select
-                    value={selectedDayOfWeek}
-                    onChange={(e) => setSelectedDayOfWeek(Number(e.target.value))}
-                    className="px-2 py-1 text-xs bg-background border border-border rounded-md"
-                  >
-                    <option value={0}>Sunday</option>
-                    <option value={1}>Monday</option>
-                    <option value={2}>Tuesday</option>
-                    <option value={3}>Wednesday</option>
-                    <option value={4}>Thursday</option>
-                    <option value={5}>Friday</option>
-                    <option value={6}>Saturday</option>
-                  </select>
-                )}
-
-                {/* Week Navigation */}
-                <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="sm" onClick={goToPreviousWeek}>
-                    <ChevronLeft className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" onClick={goToCurrentWeek} className="min-w-52 font-medium text-sm">
-                    {getWeekRangeString()}
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={goToNextWeek}>
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                  {getRelativeWeekLabel() && (
-                    <span className="text-xs text-muted-foreground px-2 py-1 bg-muted rounded-md">
-                      {getRelativeWeekLabel()}
-                    </span>
+                <button
+                  onClick={() => setIsSameDayView(false)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+                    !isSameDayView 
+                      ? "bg-primary text-primary-foreground" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
                   )}
-                </div>
+                >
+                  This Week
+                </button>
+                <button
+                  onClick={() => setIsSameDayView(true)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+                    isSameDayView 
+                      ? "bg-primary text-primary-foreground" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  )}
+                >
+                  Same Day
+                </button>
+              </div>
+
+              {/* Day Selector for Same Day View */}
+              {isSameDayView && (
+                <select
+                  value={selectedDayOfWeek}
+                  onChange={(e) => setSelectedDayOfWeek(Number(e.target.value))}
+                  className="px-2 py-1 text-xs bg-background border border-border rounded-md"
+                >
+                  <option value={0}>Sunday</option>
+                  <option value={1}>Monday</option>
+                  <option value={2}>Tuesday</option>
+                  <option value={3}>Wednesday</option>
+                  <option value={4}>Thursday</option>
+                  <option value={5}>Friday</option>
+                  <option value={6}>Saturday</option>
+                </select>
+              )}
+
+              {/* Week Navigation */}
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={goToPreviousWeek}>
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <Button variant="ghost" onClick={goToCurrentWeek} className="min-w-52 font-medium text-sm">
+                  {getWeekRangeString()}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={goToNextWeek}>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+                {getRelativeWeekLabel() && (
+                  <span className="text-xs text-muted-foreground px-2 py-1 bg-muted rounded-md">
+                    {getRelativeWeekLabel()}
+                  </span>
+                )}
               </div>
             </div>
+          </div>
 
-            {/* Add Task Button and Stats */}
-            <div className="flex items-center gap-4">
-              {/* Quick Add Task Button */}
-              <Button 
-                size="sm" 
-                className="flex items-center gap-2 h-8"
-                onClick={() => {
-                  openEditModal(undefined, {
-                    isFromPool: false,
-                    initialDayOffset: 0, // Default to today
-                    initialStartHour: new Date().getHours(),
-                    isNew: true
-                  });
-                }}
-              >
-                <Plus className="w-4 h-4" />
-                Add Task
-              </Button>
+          {/* Add Task Button and Stats */}
+          <div className="flex items-center gap-4">
+            {/* Quick Add Task Button */}
+            <Button 
+              size="sm" 
+              className="flex items-center gap-2 h-8"
+              onClick={() => {
+                openEditModal(undefined, {
+                  isFromPool: false,
+                  initialDayOffset: 0, // Default to today
+                  initialStartHour: new Date().getHours(),
+                  isNew: true
+                });
+              }}
+            >
+              <Plus className="w-4 h-4" />
+              Add Task
+            </Button>
 
-              {/* Stats */}
-              <div className="flex items-center gap-3">
-                <div className="text-xs text-muted-foreground">
-                  <span className="font-semibold text-foreground">{weekStats.total}</span> tasks
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  <span className="font-semibold text-foreground">{weekStats.completed}</span> done
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  <span className="font-semibold text-foreground">{weekStats.completionRate}%</span> complete
-                </div>
+            {/* Stats */}
+            <div className="flex items-center gap-3">
+              <div className="text-xs text-muted-foreground">
+                <span className="font-semibold text-foreground">{weekStats.total}</span> tasks
+              </div>
+              <div className="text-xs text-muted-foreground">
+                <span className="font-semibold text-foreground">{weekStats.completed}</span> done
+              </div>
+              <div className="text-xs text-muted-foreground">
+                <span className="font-semibold text-foreground">{weekStats.completionRate}%</span> complete
               </div>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Main content */}
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-auto" ref={timelineScrollRef} style={{ overflowX: 'auto', scrollBehavior: 'smooth' }}>
         <div className="bg-transparent" style={{ minWidth: `${WEEKLY_DAY_COLUMN_WIDTH + (WEEKLY_PIXELS_PER_HOUR * HOURS_PER_ROW)}px` }}>
           {weekDates.map((date, index) => (
             <div key={getDateKey(date)} className={cn(
