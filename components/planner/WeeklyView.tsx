@@ -18,6 +18,7 @@ import { formatTime } from '@/utils/formatters';
 import { getDateKey } from '@/utils/dateUtils';
 import { MemoizedWeeklyTaskCard } from './WeeklyTaskCard';
 import { WeeklyEventsDisplay } from './WeeklyEventsDisplay';
+import { EditTaskModal } from './EditTaskModal';
 import { 
   TIMELINE_START_HOUR as APP_TIMELINE_START_HOUR,
   TIMELINE_END_HOUR as APP_TIMELINE_END_HOUR,
@@ -47,7 +48,15 @@ export default function WeeklyView({}: WeeklyViewProps) {
     handleTaskCompletionToggle,
     startCopy,
     openViewNotesModal,
-    isClient
+    isClient,
+    activeEditModalTask,
+    closeEditModal,
+    saveTaskFromModal,
+    handleTaskColorChange,
+    handlePinTask,
+    pinnedTasks,
+    copyTaskToPool,
+    handleDeleteTask
   } = useDailyPlanner();
 
   // Calendar data for events
@@ -432,12 +441,13 @@ export default function WeeklyView({}: WeeklyViewProps) {
 
           {/* 12-hour Timeline */}
           <div 
-            className="relative bg-background"
+            className="relative bg-background hover:bg-muted/20 transition-colors duration-200 cursor-pointer group"
             style={{ 
               width: `${WEEKLY_PIXELS_PER_HOUR * HOURS_PER_ROW}px`,
               height: `${WEEKLY_ROW_HEIGHT}px`
             }}
             onDoubleClick={(e) => handleTimelineDoubleClick(e, date, isAM)}
+            title="Double-click to add task at specific time"
           >
             {/* Grid lines for 12 hours - only in timeline area */}
             {Array.from({ length: HOURS_PER_ROW }, (_, i) => (
@@ -450,6 +460,13 @@ export default function WeeklyView({}: WeeklyViewProps) {
 
             {/* Current time marker */}
             {getCurrentTimeMarker(isAM)}
+
+            {/* Hover indicator for adding tasks */}
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none flex items-center justify-center">
+              <div className="bg-primary/10 border border-primary/30 rounded-md px-3 py-1 text-xs text-primary font-medium shadow-sm">
+                Double-click to add task
+              </div>
+            </div>
 
             {/* Tasks for this period */}
             {renderTasks(tasks, isAM)}
@@ -568,16 +585,36 @@ export default function WeeklyView({}: WeeklyViewProps) {
             </div>
           </div>
 
-          {/* Stats */}
-          <div className="flex items-center gap-3">
-            <div className="text-xs text-muted-foreground">
-              <span className="font-semibold text-foreground">{weekStats.total}</span> tasks
-            </div>
-            <div className="text-xs text-muted-foreground">
-              <span className="font-semibold text-foreground">{weekStats.completed}</span> done
-            </div>
-            <div className="text-xs text-muted-foreground">
-              <span className="font-semibold text-foreground">{weekStats.completionRate}%</span> complete
+          {/* Add Task Button and Stats */}
+          <div className="flex items-center gap-4">
+            {/* Quick Add Task Button */}
+            <Button 
+              size="sm" 
+              className="flex items-center gap-2 h-8"
+              onClick={() => {
+                openEditModal(undefined, {
+                  isFromPool: false,
+                  initialDayOffset: 0, // Default to today
+                  initialStartHour: new Date().getHours(),
+                  isNew: true
+                });
+              }}
+            >
+              <Plus className="w-4 h-4" />
+              Add Task
+            </Button>
+
+            {/* Stats */}
+            <div className="flex items-center gap-3">
+              <div className="text-xs text-muted-foreground">
+                <span className="font-semibold text-foreground">{weekStats.total}</span> tasks
+              </div>
+              <div className="text-xs text-muted-foreground">
+                <span className="font-semibold text-foreground">{weekStats.completed}</span> done
+              </div>
+              <div className="text-xs text-muted-foreground">
+                <span className="font-semibold text-foreground">{weekStats.completionRate}%</span> complete
+              </div>
             </div>
           </div>
         </div>
@@ -604,6 +641,20 @@ export default function WeeklyView({}: WeeklyViewProps) {
           </div>
         </div>
       </div>
+
+      {/* Task Edit Modal */}
+      {activeEditModalTask && (
+        <EditTaskModal
+          taskToEdit={activeEditModalTask}
+          onSave={saveTaskFromModal}
+          onClose={closeEditModal}
+          onColorChange={handleTaskColorChange}
+          onPinTask={handlePinTask}
+          onMoveToInbox={copyTaskToPool}
+          pinnedTasks={pinnedTasks}
+          onDelete={(taskId, isFromPool) => handleDeleteTask(taskId)}
+        />
+      )}
     </div>
   );
 } 
