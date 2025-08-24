@@ -9,6 +9,7 @@ interface DailyEventsContainerProps {
   periods: CalendarPeriod[];
   currentDate: Date;
   eventsOnly?: boolean; // New prop to show only events
+  showHeader?: boolean; // New prop to control header visibility
   onEventEdit?: (event: CalendarEvent) => void;
   onPeriodEdit?: (period: CalendarPeriod) => void;
   onEventView?: (event: CalendarEvent) => void;
@@ -20,6 +21,7 @@ export const DailyEventsContainer: React.FC<DailyEventsContainerProps> = ({
   periods,
   currentDate,
   eventsOnly = false,
+  showHeader = true,
   onEventEdit,
   onPeriodEdit,
   onEventView,
@@ -43,10 +45,8 @@ export const DailyEventsContainer: React.FC<DailyEventsContainerProps> = ({
     return currentDateOnly >= startDateOnly && currentDateOnly <= endDateOnly;
   });
 
-  // If no events or periods for today, don't render anything
-  if (todaysEvents.length === 0 && todaysPeriods.length === 0) {
-    return null;
-  }
+  // Determine if we have any content to show
+  const hasContent = todaysEvents.length > 0 || todaysPeriods.length > 0;
 
   const formatEventTime = (date: Date) => {
     return date.toLocaleTimeString('en-US', { 
@@ -64,31 +64,34 @@ export const DailyEventsContainer: React.FC<DailyEventsContainerProps> = ({
 
   return (
     <div className="mb-4 bg-card border border-border shadow-sm rounded-lg overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b border-border bg-muted/20">
-        <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-primary" />
-          <h3 className="font-semibold text-sm text-foreground">
-            {eventsOnly ? "Today's Events" : "Today's Events & Periods"}
-          </h3>
-          <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
-            {todaysEvents.length + todaysPeriods.length}
-          </span>
+      {/* Header - conditionally rendered */}
+      {showHeader && (
+        <div className="flex items-center justify-between p-3 border-b border-border bg-muted/20">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-primary" />
+            <h3 className="font-semibold text-sm text-foreground">
+              {eventsOnly ? "Today's Events" : "Today's Events & Periods"}
+            </h3>
+            <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
+              {todaysEvents.length + todaysPeriods.length}
+            </span>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {currentDate.toLocaleDateString('en-US', { 
+              weekday: 'long', 
+              month: 'short', 
+              day: 'numeric' 
+            })}
+          </div>
         </div>
-        <div className="text-xs text-muted-foreground">
-          {currentDate.toLocaleDateString('en-US', { 
-            weekday: 'long', 
-            month: 'short', 
-            day: 'numeric' 
-          })}
-        </div>
-      </div>
+      )}
 
       {/* Content */}
       <div className="p-3">
-        <div className="flex flex-wrap gap-2">
-          {/* Events */}
-          {todaysEvents.map((event) => (
+        {hasContent ? (
+          <div className="flex flex-wrap gap-2">
+            {/* Events */}
+            {todaysEvents.map((event) => (
             <div
               key={event.id}
               className="group flex items-center gap-2 p-2 bg-background border border-border rounded-md hover:border-accent hover:bg-accent/10 transition-all duration-200 min-w-0 flex-shrink-0"
@@ -202,7 +205,11 @@ export const DailyEventsContainer: React.FC<DailyEventsContainerProps> = ({
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        ) : (
+          /* Empty state - completely empty */
+          <div className="h-2"></div>
+        )}
       </div>
     </div>
   );

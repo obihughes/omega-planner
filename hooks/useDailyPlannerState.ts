@@ -974,8 +974,16 @@ export function useDailyPlanner() {
   }, [removePoolTask, removePoolTaskForDate, setPoolTasksByDate]);
 
   const handleUnassignTask = useCallback((task: Task) => {
+    console.log('🎯 INBOX DEBUG: handleUnassignTask called with task:', task);
+    console.log('🎯 INBOX DEBUG: Current tasks before removal:', tasks.map(t => ({ id: t.id, name: t.name, baseDate: t.baseDate })));
+    console.log('🎯 INBOX DEBUG: Current poolTasks before addition:', poolTasks.map(t => ({ id: t.id, name: t.name, baseDate: t.baseDate })));
+    
     // Remove from timeline
-    setTasks(prev => prev.filter(t => t.id !== task.id));
+    setTasks(prev => {
+      const filtered = prev.filter(t => t.id !== task.id);
+      console.log('🎯 INBOX DEBUG: Tasks after removal:', filtered.map(t => ({ id: t.id, name: t.name, baseDate: t.baseDate })));
+      return filtered;
+    });
     
     // Add back to pool (remove scheduling-specific properties)
     const poolTask: Task = {
@@ -985,8 +993,13 @@ export function useDailyPlanner() {
       completed: false
     };
     
-    setPoolTasks(prev => [...prev, poolTask]);
-  }, []);
+    console.log('🎯 INBOX DEBUG: Creating poolTask:', poolTask);
+    setPoolTasks(prev => {
+      const newPoolTasks = [...prev, poolTask];
+      console.log('🎯 INBOX DEBUG: poolTasks after addition:', newPoolTasks.map(t => ({ id: t.id, name: t.name, baseDate: t.baseDate })));
+      return newPoolTasks;
+    });
+  }, [tasks, poolTasks]);
 
   const handleRescheduleTask = useCallback((task: Task, newDate: Date) => {
     const newDateKey = getDateKey(newDate);

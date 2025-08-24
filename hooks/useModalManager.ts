@@ -310,31 +310,39 @@ export function useModalManager({
     } else {
       // This is the new logic path for when no task is provided.
       // It implies creating a new task.
+      console.log('🎯 INBOX DEBUG: openEditModal called with no task, options:', options);
       const tempId = `temp-new-${Date.now()}`;
       const today = new Date();
       today.setHours(0,0,0,0);
       
+      const isFromPool = options?.isFromPool ?? false;
       const targetDate = new Date(today);
       const dayOffset = options?.initialDayOffset ?? topDayOffset; // Use hook's topDayOffset as a fallback
       targetDate.setDate(targetDate.getDate() + dayOffset);
-      const targetDateKey = getDateKey(targetDate);
+      const targetDateKey = isFromPool ? '' : getDateKey(targetDate); // Empty baseDate for pool tasks
       
       setActiveEditModalTask({
         id: tempId,
         name: "", // Start with an empty name
-        startHour: options?.initialStartHour ?? 9, // Default start time
+        startHour: options?.initialStartHour ?? (isFromPool ? 0 : 9), // No specific start time for pool tasks
         duration: 1, // Default duration
         baseDate: targetDateKey,
-        color: TASK_COLORS[0],
+        color: TASK_COLORS[isFromPool ? 17 : 0], // Grey for pool tasks, default color for timeline tasks
         notes: "",
         completed: false,
-        isFromPool: false,
+        isFromPool: isFromPool,
         isNew: true,
         creationContext: {
-          mode: 'timeline',
+          mode: isFromPool ? 'pool-general' : 'timeline',
           targetDate: targetDate,
-          sourceView: 'daily'
+          sourceView: isFromPool ? 'inbox' : 'daily'
         }
+      });
+      console.log('🎯 INBOX DEBUG: Active modal task set:', {
+        id: tempId,
+        isFromPool,
+        baseDate: targetDateKey,
+        mode: isFromPool ? 'pool-general' : 'timeline'
       });
       setInitialDayOffsetForModal(options?.initialDayOffset);
       setInitialStartHourForModal(options?.initialStartHour);
@@ -537,6 +545,7 @@ export function useModalManager({
   
   /** Creates a new task in the general inbox (Inbox view - All tab) */
   const createPoolTask = useCallback((date?: Date) => {
+    console.log('🎯 INBOX DEBUG: createPoolTask called with date:', date);
     const tempId = `temp-pool-${Date.now()}`;
     const today = new Date();
     const targetDate = date || today;
@@ -559,7 +568,9 @@ export function useModalManager({
       }
     };
     
+    console.log('🎯 INBOX DEBUG: Task template created:', taskTemplate);
     setActiveEditModalTask(taskTemplate);
+    console.log('🎯 INBOX DEBUG: Modal opened with task template');
   }, []);
   
   /** Creates a new task for a specific date's inbox (Weekly view, Inbox - Today tab) */

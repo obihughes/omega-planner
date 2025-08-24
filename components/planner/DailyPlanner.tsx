@@ -672,6 +672,7 @@ export default function DailyPlanner() {
               periods={calendarData.periods}
               currentDate={dateFromDateKey(getCalendarDateForColumn(topDayOffset))}
               eventsOnly={true}
+              showHeader={false}
             />
 
             {/* Unified Task Pool and Pinned Tasks View */}
