@@ -420,6 +420,82 @@ const TaskStorage = {
     if (typeof window === 'undefined') return null;
     const collapsedState = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
     return collapsedState ? JSON.parse(collapsedState) : null;
+  },
+
+  // Developer utility to remove sample tasks
+  removeSampleTasks: (): void => {
+    if (typeof window === 'undefined') return;
+    
+    console.log('🧹 Cleaning up sample tasks...');
+    
+    // Load all tasks
+    const tasks = TaskStorage.load() || [];
+    const poolTasks = TaskStorage.loadPoolTasks() || [];
+    const pinnedTasks = TaskStorage.loadPinnedTasks() || [];
+    
+    console.log('Before cleanup:');
+    console.log('- Main tasks:', tasks.length);
+    console.log('- Pool tasks:', poolTasks.length);  
+    console.log('- Pinned tasks:', pinnedTasks.length);
+    
+    // Filter out tasks that look like samples (common sample task patterns)
+    const samplePatterns = [
+      /sample/i,
+      /test/i,
+      /demo/i,
+      /example/i,
+      /meeting/i,
+      /review/i,
+      /call/i,
+      /lunch/i,
+      /workout/i,
+      /project/i
+    ];
+    
+    const isSampleTask = (task: any) => {
+      const name = task.name?.toLowerCase() || '';
+      return samplePatterns.some(pattern => pattern.test(name));
+    };
+    
+    const cleanTasks = tasks.filter(task => !isSampleTask(task));
+    const cleanPoolTasks = poolTasks.filter(task => !isSampleTask(task));
+    const cleanPinnedTasks = pinnedTasks.filter(task => !isSampleTask(task));
+    
+    // Save cleaned data
+    TaskStorage.save(cleanTasks);
+    TaskStorage.savePoolTasks(cleanPoolTasks);
+    TaskStorage.savePinnedTasks(cleanPinnedTasks);
+    
+    console.log('After cleanup:');
+    console.log('- Main tasks:', cleanTasks.length);
+    console.log('- Pool tasks:', cleanPoolTasks.length);
+    console.log('- Pinned tasks:', cleanPinnedTasks.length);
+    console.log('✅ Sample tasks removed! Refresh the page to see changes.');
+  },
+
+  // Developer utility to inspect all stored tasks
+  inspectStoredTasks: (): void => {
+    if (typeof window === 'undefined') return;
+    
+    const tasks = TaskStorage.load() || [];
+    const poolTasks = TaskStorage.loadPoolTasks() || [];
+    const pinnedTasks = TaskStorage.loadPinnedTasks() || [];
+    
+    console.log('📋 Stored Tasks Inspection:');
+    console.log('\n--- MAIN TASKS ---');
+    tasks.forEach((task, i) => {
+      console.log(`${i + 1}. "${task.name}" (ID: ${task.id}, Date: ${task.baseDate})`);
+    });
+    
+    console.log('\n--- POOL TASKS (Inbox) ---');
+    poolTasks.forEach((task, i) => {
+      console.log(`${i + 1}. "${task.name}" (ID: ${task.id}, Date: ${task.baseDate})`);
+    });
+    
+    console.log('\n--- PINNED TASKS ---');
+    pinnedTasks.forEach((task, i) => {
+      console.log(`${i + 1}. "${task.name}" (ID: ${task.pinnedId}, Due: ${task.dueDate})`);
+    });
   }
 };
 

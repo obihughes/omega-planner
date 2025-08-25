@@ -3,10 +3,9 @@
 import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Project, ProjectTask } from '@/types';
-import { ChevronLeft, ChevronRight, Clock, Folder, CheckCircle, Filter, X, AlertCircle, Play, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Folder, CheckCircle, Play, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { getDateKey } from '@/utils/dateUtils';
 
 interface ProjectsCalendarProps {
@@ -36,8 +35,13 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
 
   // Filter projects based on selection
   const filteredProjects = useMemo(() => {
-    if (selectedProjectId === 'all') return projects;
-    return projects.filter(p => p.id === selectedProjectId);
+    let filtered = projects.filter(p => !p.isDeleted);
+    
+    if (selectedProjectId !== 'all') {
+      filtered = filtered.filter(p => p.id === selectedProjectId);
+    }
+    
+    return filtered;
   }, [projects, selectedProjectId]);
 
   // Group projects by due date
@@ -133,10 +137,6 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
     return date.toDateString() === today.toDateString();
   };
 
-  const isCurrentMonth = (date: Date) => {
-    return date.getMonth() === currentDate.getMonth();
-  };
-
   const getProjectsForDate = (date: Date) => {
     const dateKey = getDateKey(date);
     return projectsByDate[dateKey] || [];
@@ -158,8 +158,21 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
   };
 
   const handleDayClick = (date: Date) => {
-    // For now, navigate to projects tasks view with a filter hint
-    router.push('/projects/tasks');
+    // Navigate to projects view with date-specific focus
+    router.push('/projects');
+  };
+
+  const handleProjectClick = (projectId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    router.push(`/projects/${projectId}`);
+  };
+
+  const goToToday = () => {
+    setCurrentDate(new Date());
+  };
+
+  const isCurrentMonth = (date: Date) => {
+    return date.getMonth() === currentDate.getMonth() && date.getFullYear() === currentDate.getFullYear();
   };
 
   const formatTimeRemaining = (dueDate: string): { text: string; isOverdue: boolean } => {
@@ -194,179 +207,141 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Compact Header with Navigation and Filter */}
-      <div className="flex items-center justify-between py-2">
-        {/* Month Navigation */}
+    <div className="space-y-6">
+      {/* Month Navigation */}
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => navigateMonth('prev')}
-            className="h-8 w-8 p-0"
+            className="h-9 w-9 p-0"
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
           
-          <h3 className="text-xl font-semibold text-foreground min-w-[180px] text-center">
-            {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-          </h3>
+          <div className="min-w-[160px] text-center">
+            <span className="text-lg font-semibold text-foreground">
+              {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            </span>
+          </div>
           
           <Button
             variant="outline"
             size="sm"
             onClick={() => navigateMonth('next')}
-            className="h-8 w-8 p-0"
+            className="h-9 w-9 p-0"
           >
             <ChevronRight className="w-4 h-4" />
           </Button>
-        </div>
 
-        {/* Project Filter and Stats in one line */}
-        <div className="flex items-center gap-4 text-sm">
-          <div className="flex items-center gap-4 text-muted-foreground">
-            <span>{getActiveTasksCount()} active tasks</span>
-            <span>•</span>
-            <span>{getMonthlyCompletedCount()} completed this month</span>
-          </div>
-          
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="flex items-center gap-2">
-                <Filter className="w-4 h-4" />
-                <span className="hidden sm:inline">Filter</span>
-                {selectedProjectId !== 'all' && (
-                  <div className="w-1.5 h-1.5 bg-primary rounded-full" />
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-56 p-3" align="end">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium text-sm">Filter by Project</h4>
-                  {selectedProjectId !== 'all' && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => setSelectedProjectId('all')} 
-                      className="h-auto p-1 text-xs"
-                    >
-                      <X className="w-3 h-3" />
-                    </Button>
-                  )}
-                </div>
-                
-                <div className="space-y-1">
-                  <button
-                    onClick={() => setSelectedProjectId('all')}
-                    className={cn(
-                      "w-full text-left px-2 py-1 text-xs rounded transition-colors",
-                      selectedProjectId === 'all'
-                        ? "bg-accent text-accent-foreground"
-                        : "hover:bg-accent/50"
-                    )}
-                  >
-                    All Projects
-                  </button>
-                  {projects
-                    .filter(p => !p.isDeleted)
-                    .map(project => (
-                      <button
-                        key={project.id}
-                        onClick={() => setSelectedProjectId(project.id)}
-                        className={cn(
-                          "w-full text-left px-2 py-1 text-xs rounded transition-colors flex items-center gap-2",
-                          selectedProjectId === project.id
-                            ? "bg-accent text-accent-foreground"
-                            : "hover:bg-accent/50"
-                        )}
-                      >
-                        <div 
-                          className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: project.color }}
-                        />
-                        {project.name}
-                      </button>
-                    ))}
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
+          {!isCurrentMonth(new Date()) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={goToToday}
+              className="h-9 px-3 ml-2 text-xs"
+            >
+              Today
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Compact Calendar Grid */}
-      <div className="bg-card rounded-lg overflow-hidden border border-border/30">
-        {/* Day Headers */}
-        <div className="grid grid-cols-7 border-b border-border/30 text-center font-medium text-muted-foreground bg-muted/20">
-          <div className="py-2 text-sm">Sun</div>
-          <div className="py-2 text-sm">Mon</div>
-          <div className="py-2 text-sm">Tue</div>
-          <div className="py-2 text-sm">Wed</div>
-          <div className="py-2 text-sm">Thu</div>
-          <div className="py-2 text-sm">Fri</div>
-          <div className="py-2 text-sm">Sat</div>
-        </div>
-        
-        {/* Calendar Days */}
-        <div className="grid grid-cols-7">
-          {daysInCalendar.map((date, index) => {
-            const dayProjects = getProjectsForDate(date);
-            const dayTaskStarts = getTaskStartsForDate(date);
-            const dayTaskDues = getTaskDuesForDate(date);
-            const completedCount = getCompletedCountForDate(date);
-            const isCurrentMonthDay = isCurrentMonth(date);
-            const isTodayDate = isToday(date);
-            
-            return (
-              <div
-                key={index}
-                className={cn(
-                  "min-h-[120px] p-2 border-r border-b border-border/30 last:border-r-0 hover:bg-accent/20 transition-colors cursor-pointer",
-                  !isCurrentMonthDay && "bg-muted/10 text-muted-foreground/50",
-                  isTodayDate && "bg-primary/10 border-primary/20"
-                )}
-                onClick={() => handleDayClick(date)}
-                title="Click to manage tasks"
+      {filteredProjects.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <div className="text-center max-w-md">
+              <Calendar className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                {selectedProjectId !== 'all' ? 'No projects in this selection' : 'No projects yet'}
+              </h3>
+              <p className="text-sm text-muted-foreground mb-6">
+                {selectedProjectId !== 'all' 
+                  ? 'The selected project filter has no results.'
+                  : 'Create your first project to see it on the calendar.'
+                }
+              </p>
+              {selectedProjectId !== 'all' && (
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedProjectId('all')}
+                  className="mr-3"
+                >
+                  Show All Projects
+                </Button>
+              )}
+              <Button
+                onClick={() => router.push('/projects')}
+                className="flex items-center gap-2"
               >
-                <div className={cn(
-                  "flex items-center justify-between mb-2",
-                )}>
-                  <div className={cn(
-                    "text-sm font-medium",
-                    !isCurrentMonthDay && "text-muted-foreground",
-                    isTodayDate && "text-primary font-bold"
-                  )}>
-                    {date.getDate()}
-                  </div>
-                  
-                  {/* Completed count badge */}
-                  {completedCount > 0 && (
-                    <div className="flex items-center gap-1">
-                      <CheckCircle className="w-2.5 h-2.5 text-green-500" />
-                      <span className="text-xs text-green-600 font-medium">{completedCount}</span>
-                    </div>
-                  )}
+                <Folder className="w-4 h-4" />
+                Go to Projects
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-card/30 rounded-xl border border-border/20 overflow-hidden shadow-sm">
+            {/* Day Headers */}
+            <div className="grid grid-cols-7 border-b border-border/20 bg-muted/10">
+              {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day) => (
+                <div key={day} className="py-3 px-2 text-center font-medium text-muted-foreground text-sm border-r border-border/20 last:border-r-0">
+                  {day}
                 </div>
+              ))}
+            </div>
+            
+            {/* Calendar Days */}
+            <div className="grid grid-cols-7 divide-x divide-border/20">
+              {daysInCalendar.map((date, index) => {
+                const dayProjects = getProjectsForDate(date);
+                const dayTaskStarts = getTaskStartsForDate(date);
+                const dayTaskDues = getTaskDuesForDate(date);
+                const completedCount = getCompletedCountForDate(date);
+                const isCurrentMonthDay = isCurrentMonth(date);
+                const isTodayDate = isToday(date);
                 
-                {/* Task Start Dates */}
-                {dayTaskStarts.length > 0 && (
-                  <div className="mb-2">
-                    <div className="space-y-1">
+                return (
+                  <div
+                    key={index}
+                    className={cn(
+                      "min-h-[140px] p-3 border-b border-border/20 hover:bg-accent/30 transition-all duration-200 cursor-pointer group",
+                      !isCurrentMonthDay && "bg-muted/20 text-muted-foreground/60",
+                      isTodayDate && "bg-primary/5 border-primary/20 border-l-2 border-l-primary"
+                    )}
+                    onClick={() => handleDayClick(date)}
+                    title="Click to view tasks for this day"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className={cn(
+                        "text-sm font-semibold",
+                        !isCurrentMonthDay && "text-muted-foreground",
+                        isTodayDate && "text-primary"
+                      )}>
+                        {date.getDate()}
+                      </div>
+                      
+                      {/* Completed count badge */}
+                      {completedCount > 0 && (
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 rounded-full">
+                          <CheckCircle className="w-3 h-3 text-green-600" />
+                          <span className="text-xs text-green-700 dark:text-green-300 font-medium">{completedCount}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      {/* Task Start Dates */}
                       {dayTaskStarts.slice(0, 2).map(({ project, task }) => (
                         <div
                           key={`start-${task.id}`}
-                          className="flex items-center gap-1.5 px-1.5 py-1 rounded text-xs cursor-pointer hover:bg-accent/30 transition-colors border-l-2 bg-blue-50/50"
+                          className="flex items-center gap-2 px-2 py-1.5 rounded-md text-xs cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors border-l-2 bg-blue-50/30 dark:bg-blue-900/10"
                           style={{ borderLeftColor: project.color }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/projects/${project.id}`);
-                          }}
+                          onClick={(e) => handleProjectClick(project.id, e)}
                           title={`${task.title} starts today`}
                         >
-                          <Play className="w-2.5 h-2.5 text-blue-600 flex-shrink-0" />
+                          <Play className="w-3 h-3 text-blue-600 flex-shrink-0" />
                           <div 
-                            className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                            className="w-2 h-2 rounded-full flex-shrink-0"
                             style={{ backgroundColor: project.color }}
                           />
                           <span className="truncate font-medium text-foreground flex-1">
@@ -374,19 +349,8 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
                           </span>
                         </div>
                       ))}
-                      {dayTaskStarts.length > 2 && (
-                        <div className="text-xs text-blue-600 px-1.5 font-medium">
-                          +{dayTaskStarts.length - 2} more starting
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
 
-                {/* Task Due Dates */}
-                {dayTaskDues.length > 0 && (
-                  <div className="mb-2">
-                    <div className="space-y-1">
+                      {/* Task Due Dates */}
                       {dayTaskDues.slice(0, 2).map(({ project, task }) => {
                         const isOverdue = new Date(task.dueDate!) < new Date() && task.status !== 'completed';
                         
@@ -394,88 +358,89 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
                           <div
                             key={`due-${task.id}`}
                             className={cn(
-                              "flex items-center gap-1.5 px-1.5 py-1 rounded text-xs cursor-pointer hover:bg-accent/30 transition-colors border-l-2",
-                              isOverdue ? "bg-red-50/50" : "bg-orange-50/50"
+                              "flex items-center gap-2 px-2 py-1.5 rounded-md text-xs cursor-pointer transition-colors border-l-2",
+                              isOverdue 
+                                ? "bg-red-50/30 dark:bg-red-900/10 hover:bg-red-50 dark:hover:bg-red-900/20" 
+                                : "bg-orange-50/30 dark:bg-orange-900/10 hover:bg-orange-50 dark:hover:bg-orange-900/20"
                             )}
                             style={{ borderLeftColor: project.color }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              router.push(`/projects/${project.id}`);
-                            }}
+                            onClick={(e) => handleProjectClick(project.id, e)}
                             title={`${task.title} ${isOverdue ? 'is overdue' : 'due today'}`}
                           >
                             <Calendar className={cn(
-                              "w-2.5 h-2.5 flex-shrink-0",
+                              "w-3 h-3 flex-shrink-0",
                               isOverdue ? "text-red-600" : "text-orange-600"
                             )} />
                             <div 
-                              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                              className="w-2 h-2 rounded-full flex-shrink-0"
                               style={{ backgroundColor: project.color }}
                             />
                             <span className={cn(
                               "truncate font-medium flex-1",
-                              isOverdue ? "text-red-600" : "text-foreground"
+                              isOverdue ? "text-red-700 dark:text-red-300" : "text-foreground"
                             )}>
                               {task.title}
                             </span>
                           </div>
                         );
                       })}
-                      {dayTaskDues.length > 2 && (
-                        <div className={cn(
-                          "text-xs px-1.5 font-medium",
-                          dayTaskDues.some(({ task }) => new Date(task.dueDate!) < new Date()) ? "text-red-600" : "text-orange-600"
-                        )}>
-                          +{dayTaskDues.length - 2} more due
+                      
+                      {/* Project Due Dates */}
+                      {dayProjects.slice(0, 1).map(project => {
+                        const timeRemaining = formatTimeRemaining(project.endDate!);
+                        return (
+                          <div
+                            key={project.id}
+                            className="p-2 rounded-md text-xs cursor-pointer hover:shadow-sm transition-all border border-border/40"
+                            style={{ 
+                              backgroundColor: project.color + '10', 
+                              borderColor: project.color + '30',
+                              borderLeftWidth: '3px',
+                              borderLeftColor: project.color
+                            }}
+                            title={`${project.name} - ${timeRemaining.text} • ${project.progress}% complete`}
+                            onClick={(e) => handleProjectClick(project.id, e)}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="truncate font-medium text-sm flex-1">{project.name}</span>
+                              <span className="text-xs ml-2 bg-background/50 px-1.5 py-0.5 rounded">{project.progress}%</span>
+                            </div>
+                            
+                            <div className={cn(
+                              "flex items-center gap-1.5 text-xs",
+                              timeRemaining.isOverdue ? "text-red-600" : "text-muted-foreground"
+                            )}>
+                              <Clock className="w-2.5 h-2.5" />
+                              <span>{timeRemaining.text}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {/* Overflow indicators */}
+                      {(dayTaskStarts.length > 2 || dayTaskDues.length > 2 || dayProjects.length > 1) && (
+                        <div className="text-xs text-muted-foreground px-2 py-1 bg-muted/20 rounded-md">
+                          {dayTaskStarts.length > 2 && `+${dayTaskStarts.length - 2} starting`}
+                          {dayTaskDues.length > 2 && ` +${dayTaskDues.length - 2} due`}
+                          {dayProjects.length > 1 && ` +${dayProjects.length - 1} projects`}
                         </div>
                       )}
                     </div>
-                  </div>
-                )}
-                
-                {/* Project Due Dates */}
-                <div className="space-y-1">
-                  {dayProjects.slice(0, 1).map(project => {
-                    const timeRemaining = formatTimeRemaining(project.endDate!);
-                    return (
-                      <div
-                        key={project.id}
-                        className="p-1.5 rounded text-xs cursor-pointer hover:scale-[1.02] transition-all shadow-sm border"
-                        style={{ 
-                          backgroundColor: project.color + '15', 
-                          borderColor: project.color + '40',
-                          borderLeftWidth: '3px',
-                          borderLeftColor: project.color
-                        }}
-                        title={`${project.name} - ${timeRemaining.text} • ${project.progress}% complete`}
-                        onClick={() => router.push(`/projects/${project.id}`)}
-                      >
-                        <div className="flex items-center justify-between mb-0.5">
-                          <span className="truncate font-medium text-xs flex-1">{project.name}</span>
-                          <span className="text-xs ml-1">{project.progress}%</span>
-                        </div>
-                        
-                        <div className={cn(
-                          "flex items-center gap-1 text-xs",
-                          timeRemaining.isOverdue ? "text-red-600" : "text-muted-foreground"
-                        )}>
-                          <Clock className="w-2 h-2" />
-                          <span>{timeRemaining.text}</span>
+
+                    {/* Empty day indicator */}
+                    {dayProjects.length === 0 && dayTaskStarts.length === 0 && dayTaskDues.length === 0 && completedCount === 0 && isCurrentMonthDay && (
+                      <div className="text-center py-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="text-xs text-muted-foreground">
+                          Free day
                         </div>
                       </div>
-                    );
-                  })}
-                  {dayProjects.length > 1 && (
-                    <div className="text-xs text-muted-foreground px-1">
-                      +{dayProjects.length - 1} more projects due
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
     </div>
   );
 } 

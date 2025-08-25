@@ -254,7 +254,14 @@ export function useDailyPlanner() {
   }, [getNextId]);
 
   const handleDeleteTask = useCallback((taskIdToDelete: string) => {
-    setTasks(currentTasks => currentTasks.filter(task => task.id !== taskIdToDelete));
+    console.log('🗑️ HOOK DELETE DEBUG: handleDeleteTask called for taskId:', taskIdToDelete);
+    setTasks(currentTasks => {
+      const taskToDelete = currentTasks.find(task => task.id === taskIdToDelete);
+      console.log('🗑️ HOOK DELETE DEBUG: Found task to delete:', taskToDelete ? { id: taskToDelete.id, name: taskToDelete.name } : 'NOT FOUND');
+      const filteredTasks = currentTasks.filter(task => task.id !== taskIdToDelete);
+      console.log('🗑️ HOOK DELETE DEBUG: Tasks before deletion:', currentTasks.length, 'Tasks after deletion:', filteredTasks.length);
+      return filteredTasks;
+    });
   }, [setTasks]);
 
   const handleUpdateTask = useCallback((taskIdToUpdate: string, updatedFields: Partial<Omit<Task, 'id'>>) => {
@@ -441,7 +448,14 @@ export function useDailyPlanner() {
   }, [poolTasks, setTasks, setPoolTasks, getNextId]);
 
   const handleDeletePoolTask = useCallback((taskId: string) => {
-    setPoolTasks(prevPoolTasks => prevPoolTasks.filter(task => task.id !== taskId));
+    console.log('🗑️ HOOK DELETE DEBUG: handleDeletePoolTask called for taskId:', taskId);
+    setPoolTasks(prevPoolTasks => {
+      const taskToDelete = prevPoolTasks.find(task => task.id === taskId);
+      console.log('🗑️ HOOK DELETE DEBUG: Found pool task to delete:', taskToDelete ? { id: taskToDelete.id, name: taskToDelete.name } : 'NOT FOUND');
+      const filteredTasks = prevPoolTasks.filter(task => task.id !== taskId);
+      console.log('🗑️ HOOK DELETE DEBUG: Pool tasks before deletion:', prevPoolTasks.length, 'Pool tasks after deletion:', filteredTasks.length);
+      return filteredTasks;
+    });
   }, [setPoolTasks]);
 
   const clearPool = useCallback(() => {
@@ -895,12 +909,17 @@ export function useDailyPlanner() {
   }, [poolTasksByDate]);
 
   const removePoolTaskForDate = useCallback((dateKey: string, taskId: string) => {
+    console.log('🗑️ HOOK DELETE DEBUG: removePoolTaskForDate called for dateKey:', dateKey, 'taskId:', taskId);
     setPoolTasksByDate(prev => {
       const newMap = new Map(prev);
       const existingTasks = newMap.get(dateKey) || [];
+      const taskToDelete = existingTasks.find(task => task.id === taskId);
+      console.log('🗑️ HOOK DELETE DEBUG: Found date-specific pool task to delete:', taskToDelete ? { id: taskToDelete.id, name: taskToDelete.name } : 'NOT FOUND');
       const filteredTasks = existingTasks.filter(task => task.id !== taskId);
+      console.log('🗑️ HOOK DELETE DEBUG: Date-specific pool tasks before deletion:', existingTasks.length, 'after deletion:', filteredTasks.length);
       
       if (filteredTasks.length === 0) {
+        console.log('🗑️ HOOK DELETE DEBUG: No tasks left for date, removing date entry');
         newMap.delete(dateKey);
       } else {
         newMap.set(dateKey, filteredTasks);

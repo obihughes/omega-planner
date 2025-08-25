@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 import { formatTime, formatDuration } from '@/utils/formatters';
-import { Task } from '../../types/planner';
+import { Task, PinnedTask } from '../../types/planner';
 import { TaskInboxSidebar } from './TaskInboxSidebar';
 import { PinnedTasksSidebar } from './PinnedTasksSidebar';
 import { DailyEventsContainer } from './DailyEventsContainer';
@@ -38,6 +38,7 @@ import WeeklyView from './WeeklyView';
 
 import { useModalManager } from '../../hooks/useModalManager';
 import { useViewMode } from '@/app/context/ViewModeContext';
+import TaskStorage from '../../utils/storage';
 
 type TimelinePeriod = 'night' | 'morning' | 'afternoon' | 'evening';
 
@@ -147,6 +148,82 @@ export default function DailyPlanner() {
       }, 50);
     }
   }, [viewMode]);
+
+  // Developer utilities for cleaning up sample tasks
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).TaskStorage = TaskStorage;
+      (window as any).inspectTasks = TaskStorage.inspectStoredTasks;
+      (window as any).removeSampleTasks = TaskStorage.removeSampleTasks;
+      (window as any).debugPoolTasksByDate = () => {
+        console.log('🗂️ Current poolTasksByDate Map:');
+        poolTasksByDate.forEach((tasks, dateKey) => {
+          console.log(`  ${dateKey}:`, tasks.map(t => ({ id: t.id, name: t.name, baseDate: t.baseDate })));
+        });
+        console.log('📋 General pool tasks:', generalPoolTasks.map(t => ({ id: t.id, name: t.name, baseDate: t.baseDate })));
+      };
+      console.log('🛠️ Developer utilities loaded:');
+      console.log('  - inspectTasks() - See all stored tasks');
+      console.log('  - removeSampleTasks() - Remove sample tasks');
+      console.log('  - debugPoolTasksByDate() - See pool tasks by date');
+    }
+  }, [poolTasksByDate, generalPoolTasks]);
+
+  // Comprehensive delete handler for all task types
+  const handleDeleteAnyTask = useCallback((task: Task) => {
+    console.log('🗑️ DELETE DEBUG: handleDeleteAnyTask called with task:', {
+      id: task.id,
+      name: task.name,
+      startHour: task.startHour,
+      baseDate: task.baseDate,
+      poolDate: (task as any).poolDate,
+      hasStartHour: task.startHour !== undefined,
+      hasBaseDate: !!task.baseDate,
+      hasPoolDate: !!(task as any).poolDate
+    });
+
+    // Determine task type more accurately
+    const hasPoolDate = !!(task as any).poolDate;
+    const hasStartHour = task.startHour !== undefined;
+    const hasBaseDate = !!task.baseDate && task.baseDate !== '';
+    
+    // Task type classification
+    const isScheduledTask = hasStartHour && hasBaseDate && !hasPoolDate;
+    const isDateSpecificPoolTask = hasPoolDate;
+    const isGeneralPoolTask = !hasStartHour && (!hasBaseDate || task.baseDate === '') && !hasPoolDate;
+    
+    console.log('🗑️ DELETE DEBUG: Task classification:', {
+      isScheduledTask,
+      isDateSpecificPoolTask,
+      isGeneralPoolTask,
+      taskType: isScheduledTask ? 'scheduled' : isDateSpecificPoolTask ? 'date-pool' : isGeneralPoolTask ? 'general-pool' : 'unknown'
+    });
+    
+    if (isScheduledTask) {
+      console.log('🗑️ DELETE DEBUG: Deleting scheduled task via handleDeleteTask');
+      handleDeleteTask(task.id);
+    } else if (isDateSpecificPoolTask) {
+      console.log('🗑️ DELETE DEBUG: Deleting date-specific pool task via removePoolTaskForDate');
+      const poolDateKey = (task as any).poolDate;
+      removePoolTaskForDate(poolDateKey, task.id);
+    } else if (isGeneralPoolTask) {
+      console.log('🗑️ DELETE DEBUG: Deleting general pool task via handleDeletePoolTask');
+      handleDeletePoolTask(task.id);
+    } else {
+      // Fallback: try to determine the best deletion method
+      console.warn('🗑️ DELETE DEBUG: Unknown task type, using fallback logic');
+      if (hasStartHour) {
+        console.log('🗑️ DELETE DEBUG: Fallback to scheduled task deletion');
+        handleDeleteTask(task.id);
+      } else if (hasBaseDate) {
+        console.log('🗑️ DELETE DEBUG: Fallback to date-specific pool task deletion');
+        removePoolTaskForDate(task.baseDate, task.id);
+      } else {
+        console.log('🗑️ DELETE DEBUG: Fallback to general pool task deletion');
+        handleDeletePoolTask(task.id);
+      }
+    }
+  }, [handleDeleteTask, handleDeletePoolTask, removePoolTaskForDate]);
 
   const handleResizeStart = (task: Task, edge: 'start' | 'end', e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
@@ -617,10 +694,38 @@ export default function DailyPlanner() {
   }, [tasksByDate, draggingTask, resizingTask, copyingTaskData, currentTimeForMarker, handleDropCopy, openEditModal, startCopy, openViewNotesModal, renderTimeline, targetCopyDayOffset, handleDragStart]);
   
   const deleteTaskHandlerForModal = (taskId: string, isFromPool?: boolean) => {
-    if (isFromPool) {
-      if (handleDeletePoolTask) handleDeletePoolTask(taskId);
+    console.log('🗑️ MODAL DELETE DEBUG: deleteTaskHandlerForModal called with:', {
+      taskId,
+      isFromPool,
+      context: 'EditTaskModal delete button'
+    });
+
+    // Find the task to get full context for proper deletion
+    let task: Task | undefined;
+    
+    // Search in scheduled tasks by iterating through the Map
+    tasksByDate.forEach((tasksForDate, dateKey) => {
+      if (!task) {
+        task = tasksForDate.find((t: Task) => t.id === taskId);
+      }
+    });
+    
+    // If not found, search in pool tasks
+    if (!task) {
+      task = combinedPoolTasks.find((t: Task) => t.id === taskId) ||
+             currentDayPoolTasks.find((t: Task) => t.id === taskId);
+    }
+    
+    if (task) {
+      console.log('🗑️ MODAL DELETE DEBUG: Found task, using comprehensive delete handler');
+      handleDeleteAnyTask(task);
     } else {
-      handleDeleteTask(taskId);
+      console.warn('🗑️ MODAL DELETE DEBUG: Task not found, falling back to legacy logic');
+      if (isFromPool) {
+        if (handleDeletePoolTask) handleDeletePoolTask(taskId);
+      } else {
+        handleDeleteTask(taskId);
+      }
     }
   };
 
@@ -745,14 +850,15 @@ export default function DailyPlanner() {
                               e.preventDefault(); 
                               e.stopPropagation(); 
                               
-                              // Try to delete from date-specific pool first
-                              if (task.poolDate) {
-                                removePoolTaskForDate(task.poolDate, task.id);
-                              } else if (task.baseDate && task.baseDate !== '') {
-                                removePoolTaskForDate(task.baseDate, task.id);
-                              } else {
-                                handleDeletePoolTask(task.id);
-                              }
+                              console.log('🗑️ POOL DELETE DEBUG: Pool task delete button clicked for task:', {
+                                id: task.id,
+                                name: task.name,
+                                baseDate: task.baseDate,
+                                poolDate: (task as any).poolDate
+                              });
+                              
+                              // Use the comprehensive delete handler
+                              handleDeleteAnyTask(task);
                             }}
                             title="Delete Task"
                           >
@@ -949,7 +1055,12 @@ export default function DailyPlanner() {
                 onUnassignTask={handleUnassignTask}
                 onRescheduleTask={handleRescheduleTask}
                 onUpdateTask={handleUpdateTask}
-                getPoolTasksForDate={getPoolTasksForDate}
+                onDeleteTask={handleDeleteAnyTask}
+                getPoolTasksForDate={(dateKey) => {
+                  const tasks = getPoolTasksForDate(dateKey);
+                  console.log(`🔍 getPoolTasksForDate(${dateKey}):`, tasks.map(t => ({ id: t.id, name: t.name, baseDate: t.baseDate })));
+                  return tasks;
+                }}
                 openEditModal={openEditModal}
                 createPoolTask={createPoolTask}
                 onNavigateToDaily={(date) => {

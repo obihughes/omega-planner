@@ -27,6 +27,7 @@ interface YearCalendarProps extends CalendarProps {
   className?: string;
   headerLeftControls?: React.ReactNode;
   headerRightControls?: React.ReactNode;
+  isVisible?: boolean;
 }
 
 // Event/Period Details Modal Component
@@ -292,6 +293,7 @@ export function YearCalendar({
   onPeriodDelete,
   headerLeftControls,
   headerRightControls,
+  isVisible = true,
 }: YearCalendarProps) {
   const [currentYear, setCurrentYear] = useState(year);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -321,30 +323,56 @@ export function YearCalendar({
     [data.events, currentYear]
   );
 
-  // Scroll to current month on mount
+  // Scroll to current month on mount, when year changes, or when component becomes visible
   useEffect(() => {
-    const currentMonth = new Date().getMonth();
-    const currentMonthElement = document.getElementById(`month-${currentMonth}`);
-    if (currentMonthElement) {
-      currentMonthElement.scrollIntoView({ 
-        block: 'center' 
-      });
+    if (!isVisible) return; // Don't scroll if component is not visible
+    
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const actualCurrentYear = today.getFullYear();
+    
+    // Only scroll to current month if we're viewing the current year
+    if (currentYear === actualCurrentYear) {
+      const currentMonthElement = document.getElementById(`month-${currentMonth}`);
+      if (currentMonthElement) {
+        // Use a small delay to ensure the DOM is fully rendered
+        setTimeout(() => {
+          currentMonthElement.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'center' 
+          });
+        }, 100);
+      }
     }
-  }, []);
+  }, [currentYear, isVisible]); // Re-run when currentYear changes or when component becomes visible
 
   const navigateYear = (direction: 'prev' | 'next') => {
     setIsLoading(true);
     setTimeout(() => {
-      setCurrentYear(prevYear => prevYear + (direction === 'next' ? 1 : -1));
+      const newYear = currentYear + (direction === 'next' ? 1 : -1);
+      setCurrentYear(newYear);
       setIsLoading(false);
-      // Define starting position based on navigation direction
-      if (direction === 'next') {
-        // Scroll to top when navigating forward
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else {
-        // Scroll to bottom when navigating backward
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-      }
+      
+      // Small delay to ensure DOM is updated before scrolling
+      setTimeout(() => {
+        const today = new Date();
+        const actualCurrentYear = today.getFullYear();
+        
+        if (newYear === actualCurrentYear) {
+          // If returning to current year, scroll to current month
+          const currentMonth = today.getMonth();
+          const currentMonthElement = document.getElementById(`month-${currentMonth}`);
+          if (currentMonthElement) {
+            currentMonthElement.scrollIntoView({ 
+              behavior: 'smooth',
+              block: 'center' 
+            });
+          }
+        } else {
+          // For other years, scroll to top (January)
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 150);
     }, 0);
   };
 

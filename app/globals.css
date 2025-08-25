@@ -329,4 +329,55 @@ h1, h2, h3, h4, h5, h6 {
   animation: celebration-pulse 0.6s ease-in-out;
 }
 
+/* Custom task colors from hex codes */
+.task-color-kelly-green {
+  background-color: #29BF12;
+  color: white;
+}
+
+.dark .task-color-kelly-green {
+  background-color: #29BF12;
+  color: black;
+}
+
+.task-color-green-yellow {
+  background-color: #ABFF4F;
+  color: black;
+}
+
+.dark .task-color-green-yellow {
+  background-color: #ABFF4F;
+  color: black;
+}
+
+.task-color-verdigris {
+  background-color: #08BDBD;
+  color: white;
+}
+
+.dark .task-color-verdigris {
+  background-color: #08BDBD;
+  color: black;
+}
+
+.task-color-red-munsell {
+  background-color: #F21B3F;
+  color: white;
+}
+
+.dark .task-color-red-munsell {
+  background-color: #F21B3F;
+  color: black;
+}
+
+.task-color-princeton-orange {
+  background-color: #FF9914;
+  color: black;
+}
+
+.dark .task-color-princeton-orange {
+  background-color: #FF9914;
+  color: black;
+}
+
  

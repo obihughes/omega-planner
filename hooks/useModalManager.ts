@@ -129,7 +129,7 @@ export interface ModalManagerState {
   /** Opens the task edit/create modal.
    * @deprecated Use specific creation functions instead: createTimelineTask, createPoolTask, createQuickTask, editTask
    */
-  openEditModal: (task?: Task, options?: { isFromPool?: boolean; initialDayOffset?: number; initialStartHour?: number; isNew?: boolean }) => void;
+  openEditModal: (task?: Task, options?: { isFromPool?: boolean; initialDayOffset?: number; initialStartHour?: number; isNew?: boolean; targetDate?: Date }) => void;
   
   /** Closes the task edit/create modal */
   closeEditModal: () => void;
@@ -294,7 +294,8 @@ export function useModalManager({
     isFromPool?: boolean; 
     initialDayOffset?: number; 
     initialStartHour?: number; 
-    isNew?: boolean; 
+    isNew?: boolean;
+    targetDate?: Date;
   }) => {
     if (task) {
       // Task is present. It could be an existing task to edit,
@@ -310,40 +311,81 @@ export function useModalManager({
     } else {
       // This is the new logic path for when no task is provided.
       // It implies creating a new task.
-      console.log('🎯 INBOX DEBUG: openEditModal called with no task, options:', options);
+      console.log('🎯 MODAL DEBUG: openEditModal called with no task, options:', options);
       const tempId = `temp-new-${Date.now()}`;
       const today = new Date();
       today.setHours(0,0,0,0);
       
       const isFromPool = options?.isFromPool ?? false;
-      const targetDate = new Date(today);
-      const dayOffset = options?.initialDayOffset ?? topDayOffset; // Use hook's topDayOffset as a fallback
-      targetDate.setDate(targetDate.getDate() + dayOffset);
-      const targetDateKey = isFromPool ? '' : getDateKey(targetDate); // Empty baseDate for pool tasks
+      const hasTargetDate = !!options?.targetDate;
       
-      setActiveEditModalTask({
+      // Determine the target date
+      let targetDate: Date;
+      if (hasTargetDate) {
+        targetDate = new Date(options.targetDate!);
+      } else {
+        targetDate = new Date(today);
+        const dayOffset = options?.initialDayOffset ?? topDayOffset;
+        targetDate.setDate(targetDate.getDate() + dayOffset);
+      }
+      
+      // Determine task mode and properties
+      let mode: TaskCreationContext['mode'];
+      let baseDate: string;
+      let poolDate: string | undefined;
+      
+      if (isFromPool && hasTargetDate) {
+        // Creating a date-specific pool task
+        mode = 'pool-date';
+        baseDate = ''; // Empty baseDate for pool tasks
+        poolDate = getDateKey(targetDate); // Set poolDate for date-specific tasks
+      } else if (isFromPool) {
+        // Creating a general pool task
+        mode = 'pool-general';
+        baseDate = ''; // Empty baseDate for general pool tasks
+        poolDate = undefined;
+      } else {
+        // Creating a timeline task
+        mode = 'timeline';
+        baseDate = getDateKey(targetDate);
+        poolDate = undefined;
+      }
+      
+      const newTask: EnhancedActiveModalTask = {
         id: tempId,
         name: "", // Start with an empty name
         startHour: options?.initialStartHour ?? (isFromPool ? 0 : 9), // No specific start time for pool tasks
         duration: 1, // Default duration
-        baseDate: targetDateKey,
+        baseDate: baseDate,
         color: TASK_COLORS[isFromPool ? 17 : 0], // Grey for pool tasks, default color for timeline tasks
         notes: "",
         completed: false,
         isFromPool: isFromPool,
         isNew: true,
         creationContext: {
-          mode: isFromPool ? 'pool-general' : 'timeline',
+          mode: mode,
           targetDate: targetDate,
-          sourceView: isFromPool ? 'inbox' : 'daily'
+          sourceView: hasTargetDate ? 'monthly' : (isFromPool ? 'inbox' : 'daily')
         }
-      });
-      console.log('🎯 INBOX DEBUG: Active modal task set:', {
+      };
+      
+      // Add poolDate if it's a date-specific pool task
+      if (poolDate) {
+        (newTask as any).poolDate = poolDate;
+      }
+      
+      setActiveEditModalTask(newTask);
+      
+      console.log('🎯 MODAL DEBUG: Active modal task set:', {
         id: tempId,
         isFromPool,
-        baseDate: targetDateKey,
-        mode: isFromPool ? 'pool-general' : 'timeline'
+        baseDate: baseDate,
+        poolDate: poolDate,
+        mode: mode,
+        hasTargetDate: hasTargetDate,
+        targetDate: getDateKey(targetDate)
       });
+      
       setInitialDayOffsetForModal(options?.initialDayOffset);
       setInitialStartHourForModal(options?.initialStartHour);
     }

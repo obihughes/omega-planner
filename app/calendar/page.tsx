@@ -152,6 +152,7 @@ export default function CalendarPage() {
             onEventDelete={deleteEvent}
             onPeriodDelete={deletePeriod}
             className="bg-background"
+            isVisible={currentView === 'yearly'}
           />
         )}
 

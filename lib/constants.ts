@@ -30,6 +30,13 @@ export const TASK_COLORS = [
   'bg-pink-600 text-white dark:bg-pink-600 dark:text-black',     // Deep Pink
   'bg-slate-600 text-white dark:bg-slate-600 dark:text-black',    // Deep Slate
   'bg-gray-600 text-white dark:bg-gray-600 dark:text-black',     // Deep Gray
+
+  // Row 4: Custom hex colors
+  'task-color-kelly-green',      // Kelly green (#29BF12)
+  'task-color-green-yellow',     // Green Yellow (#ABFF4F) 
+  'task-color-verdigris',        // Verdigris (#08BDBD)
+  'task-color-red-munsell',      // Red (Munsell) (#F21B3F)
+  'task-color-princeton-orange', // Princeton orange (#FF9914)
 ];
 
 /** The earliest hour shown on the timeline (12 AM) */

@@ -16,6 +16,7 @@ interface TaskCardProps {
   onDragEnd: () => void;
   onTaskClick: (task: Task, isScheduled: boolean) => void;
   onUnassignTask: (task: Task) => void;
+  onDeleteTask: (task: Task) => void;
 }
 
 interface MonthlyTimelineViewProps {
@@ -26,8 +27,9 @@ interface MonthlyTimelineViewProps {
   onUnassignTask: (task: Task) => void;
   onRescheduleTask: (task: Task, newDate: Date) => void;
   onUpdateTask: (taskId: string, updatedFields: Partial<Task>) => void;
+  onDeleteTask: (task: Task) => void;
   getPoolTasksForDate: (dateKey: string) => Task[];
-  openEditModal: (task?: Task, options?: { isFromPool?: boolean; initialDayOffset?: number; initialStartHour?: number; isNew?: boolean }) => void;
+  openEditModal: (task?: Task, options?: { isFromPool?: boolean; initialDayOffset?: number; initialStartHour?: number; isNew?: boolean; targetDate?: Date }) => void;
   createPoolTask: () => void;
   onNavigateToDaily?: (date: Date) => void;
 }
@@ -39,6 +41,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
   onDragEnd,
   onTaskClick,
   onUnassignTask,
+  onDeleteTask,
 }) => {
   const isScheduled = task.startHour !== undefined;
   const isPinned = 'dueDate' in task;
@@ -72,17 +75,32 @@ const TaskCard: React.FC<TaskCardProps> = ({
             {task.name}
           </span>
         </div>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-          onClick={(e) => {
-            e.stopPropagation();
-            onTaskClick(task, isScheduled);
-          }}
-        >
-          <Edit3 className="w-2.5 h-2.5" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+            onClick={(e) => {
+              e.stopPropagation();
+              onTaskClick(task, isScheduled);
+            }}
+          >
+            <Edit3 className="w-2.5 h-2.5" />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 text-red-500 hover:text-red-600"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (confirm(`Delete "${task.name}"?`)) {
+                onDeleteTask(task);
+              }
+            }}
+          >
+            <X className="w-2.5 h-2.5" />
+          </Button>
+        </div>
       </div>
       
       <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -127,6 +145,7 @@ export function MonthlyTimelineView({
   onUnassignTask,
   onRescheduleTask,
   onUpdateTask,
+  onDeleteTask,
   getPoolTasksForDate,
   openEditModal,
   createPoolTask,
@@ -205,12 +224,14 @@ export function MonthlyTimelineView({
     return Array.from(tasksByDate.values()).sort((a, b) => a.date.getTime() - b.date.getTime());
   }, [scheduledTasks, getPoolTasksForDate, pinnedTasks, searchTerm, showCompleted, showEmptyDays]);
 
-  // Get filtered pool tasks
+  // Get filtered pool tasks (only show unassigned tasks in inbox)
   const filteredPoolTasks = useMemo(() => {
     return poolTasks.filter(task => {
       const matchesSearch = task.name.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCompleted = showCompleted || !task.completed;
-      return matchesSearch && matchesCompleted;
+      // Only show tasks that are not assigned to a specific date (general pool tasks)
+      const isUnassigned = !task.baseDate || task.baseDate === '';
+      return matchesSearch && matchesCompleted && isUnassigned;
     });
   }, [poolTasks, searchTerm, showCompleted]);
 
@@ -239,9 +260,37 @@ export function MonthlyTimelineView({
       const taskDate = new Date(task.dueDate);
       return taskDate.toDateString() === date.toDateString();
     });
-    return [...scheduled, ...pool, ...pinned].filter((task, index, self) =>
+    
+    // Enhanced debug logging
+    if (scheduled.length > 0 || pool.length > 0 || pinned.length > 0) {
+      console.log(`📅 MONTHLY VIEW DEBUG: Tasks for ${dateKey}:`, {
+        dateKey,
+        scheduled: scheduled.map(t => ({ id: t.id, name: t.name, startHour: t.startHour, baseDate: t.baseDate })),
+        pool: pool.map(t => ({ id: t.id, name: t.name, startHour: t.startHour, baseDate: t.baseDate, poolDate: (t as any).poolDate })),
+        pinned: pinned.map(t => ({ id: t.id, name: t.name, startHour: t.startHour })),
+        scheduledCount: scheduled.length,
+        poolCount: pool.length,
+        pinnedCount: pinned.length
+      });
+    }
+    
+    const allTasks = [...scheduled, ...pool, ...pinned].filter((task, index, self) =>
       index === self.findIndex((t) => t.id === task.id)
     );
+    
+    console.log(`📅 MONTHLY VIEW DEBUG: Final tasks for ${dateKey}:`, {
+      totalTasks: allTasks.length,
+      taskBreakdown: allTasks.map(t => ({ 
+        id: t.id, 
+        name: t.name, 
+        startHour: t.startHour, 
+        isScheduled: t.startHour !== undefined,
+        baseDate: t.baseDate,
+        poolDate: (t as any).poolDate
+      }))
+    });
+    
+    return allTasks;
   };
 
   // Drag and drop handlers
@@ -424,6 +473,11 @@ export function MonthlyTimelineView({
               const scheduledCount = tasksForDay.filter(t => t.startHour !== undefined).length;
               const unscheduledCount = tasksForDay.filter(t => t.startHour === undefined).length;
               
+              // Debug logging for mini calendar
+              if (unscheduledCount > 0) {
+                console.log(`📅 MINI CALENDAR DEBUG: Day ${getDateKey(day)} has ${unscheduledCount} unscheduled tasks`);
+              }
+              
               return (
                 <div
                   key={index}
@@ -520,6 +574,7 @@ export function MonthlyTimelineView({
                     console.log('🎯 INBOX DEBUG: onUnassignTask prop called for inbox task:', task);
                     onUnassignTask(task);
                   }}
+                  onDeleteTask={onDeleteTask}
                 />
               ))
             )}
@@ -659,6 +714,34 @@ export function MonthlyTimelineView({
                 const scheduledTasks = tasks.filter(t => t.startHour !== undefined);
                 const unscheduledTasks = tasks.filter(t => t.startHour === undefined);
                 
+                // Enhanced debug logging for task categorization
+                if (tasks.length > 0) {
+                  console.log(`📊 MONTHLY VIEW FILTER DEBUG: Task categorization for ${getDateKey(date)}:`, {
+                    date: getDateKey(date),
+                    total: tasks.length,
+                    scheduled: scheduledTasks.length,
+                    unscheduled: unscheduledTasks.length,
+                    scheduledDetails: scheduledTasks.map(t => ({ 
+                      id: t.id, 
+                      name: t.name, 
+                      startHour: t.startHour, 
+                      baseDate: t.baseDate,
+                      poolDate: (t as any).poolDate
+                    })),
+                    unscheduledDetails: unscheduledTasks.map(t => ({ 
+                      id: t.id, 
+                      name: t.name, 
+                      startHour: t.startHour, 
+                      baseDate: t.baseDate,
+                      poolDate: (t as any).poolDate
+                    }))
+                  });
+                  
+                  if (unscheduledTasks.length > 0) {
+                    console.log(`🎯 UNSCHEDULED TASKS FOUND for ${getDateKey(date)}:`, unscheduledTasks.length, 'tasks');
+                  }
+                }
+                
                 // Calculate workload (total scheduled hours)
                 const scheduledHours = scheduledTasks.reduce((total, task) => total + (task.duration || 0), 0);
                 const workloadIndicator = scheduledHours > 8 ? 'high' : scheduledHours > 4 ? 'medium' : 'light';
@@ -735,24 +818,25 @@ export function MonthlyTimelineView({
                             <p className="text-xs text-muted-foreground">
                               {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'}
                               {scheduledTasks.length > 0 && (
-                                <span> • {scheduledTasks.length} scheduled</span>
+                                <span> • <span className="text-blue-600 dark:text-blue-400">{scheduledTasks.length} scheduled</span></span>
                               )}
                               {unscheduledTasks.length > 0 && (
-                                <span> • {unscheduledTasks.length} unscheduled</span>
+                                <span> • <span className="text-orange-600 dark:text-orange-400 font-medium">{unscheduledTasks.length} unscheduled</span></span>
                               )}
                             </p>
                           </div>
                           <div className="flex items-center gap-1">
                             {/* Add Task Button */}
-                            <Button
+                                                        <Button
                               variant="ghost"
                               size="sm"
                               onClick={(e) => {
                                 e.stopPropagation();
+                                console.log(`📝 MONTHLY ADD TASK DEBUG: Adding task for date ${getDateKey(date)}`);
                                 openEditModal(undefined, { 
                                   isNew: true, 
                                   isFromPool: true,
- 
+                                  targetDate: date // Pass the target date
                                 });
                               }}
                               className="h-6 w-6 p-0 opacity-60 hover:opacity-100 hover:bg-primary/10"
@@ -798,6 +882,7 @@ export function MonthlyTimelineView({
                                     onDragEnd={handleDragEnd}
                                     onTaskClick={handleTaskClick}
                                     onUnassignTask={onUnassignTask}
+                                    onDeleteTask={onDeleteTask}
                                   />
                                 ))}
                             </div>
@@ -807,21 +892,31 @@ export function MonthlyTimelineView({
                         {/* Unscheduled Tasks */}
                         {unscheduledTasks.length > 0 && (
                           <div className="mb-2">
-                            <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-                              Unscheduled
+                            <h4 className="text-xs font-medium text-orange-600 dark:text-orange-400 uppercase tracking-wide mb-2 flex items-center gap-1">
+                              <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                              Unscheduled Tasks ({unscheduledTasks.length})
                             </h4>
                             <div className="grid gap-2 grid-cols-1 lg:grid-cols-2">
-                              {unscheduledTasks.map(task => (
-                                <TaskCard
-                                  key={task.id}
-                                  task={task}
-                                  isFromTimeline={true}
-                                  onDragStart={handleDragStart}
-                                  onDragEnd={handleDragEnd}
-                                  onTaskClick={handleTaskClick}
-                                  onUnassignTask={onUnassignTask}
-                                />
-                              ))}
+                              {unscheduledTasks.map(task => {
+                                console.log(`🎯 RENDERING UNSCHEDULED TASK for ${getDateKey(date)}:`, { 
+                                  id: task.id, 
+                                  name: task.name, 
+                                  startHour: task.startHour,
+                                  poolDate: (task as any).poolDate
+                                });
+                                return (
+                                  <TaskCard
+                                    key={task.id}
+                                    task={task}
+                                    isFromTimeline={false}
+                                    onDragStart={handleDragStart}
+                                    onDragEnd={handleDragEnd}
+                                    onTaskClick={handleTaskClick}
+                                    onUnassignTask={onUnassignTask}
+                                    onDeleteTask={onDeleteTask}
+                                  />
+                                );
+                              })}
                             </div>
                           </div>
                         )}
@@ -834,15 +929,16 @@ export function MonthlyTimelineView({
                               <p className="text-sm font-medium">Free Day</p>
                               <p className="text-xs">Perfect for scheduling new tasks</p>
                             </div>
-                            <Button
+                                                        <Button
                               variant="ghost"
                               size="sm"
                               onClick={(e) => {
                                 e.stopPropagation();
+                                console.log(`📝 MONTHLY ADD TASK (EMPTY DAY) DEBUG: Adding task for date ${getDateKey(date)}`);
                                 openEditModal(undefined, { 
                                   isNew: true, 
                                   isFromPool: true,
- 
+                                  targetDate: date // Pass the target date
                                 });
                               }}
                               className="h-7 text-xs flex items-center gap-1 text-muted-foreground hover:text-foreground hover:bg-primary/10"

@@ -134,7 +134,8 @@ export function Navigation() {
       active: pathname === '/projects' || pathname.startsWith('/projects/'),
       subViews: [
         { key: 'tasks', label: 'Tasks', icon: ClipboardList, active: pathname === '/projects/tasks' },
-        { key: 'active', label: 'Projects', icon: Folder, active: projectsViewMode === 'active' }
+        { key: 'active', label: 'Projects', icon: Folder, active: projectsViewMode === 'active' },
+        { key: 'calendar', label: 'Projects Calendar', icon: Calendar, active: projectsViewMode === 'calendar' }
       ]
     },
     {
@@ -242,20 +243,32 @@ export function Navigation() {
                             key={subView.key}
                             onClick={() => {
                               if (item.href === '/') {
-                                router.push(item.href);
+                                // Only push route if we're not already on the home page
+                                if (pathname !== '/') {
+                                  router.push(item.href);
+                                }
                                 setPlannerViewMode(subView.key as any);
                               } else if (item.href === '/projects') {
                                 if (subView.key === 'tasks') {
                                   router.push('/projects/tasks');
                                 } else {
-                                  router.push(item.href);
+                                  // Only push route if we're not already on the projects page
+                                  if (pathname !== '/projects') {
+                                    router.push(item.href);
+                                  }
                                   setProjectsViewMode(subView.key as any);
                                 }
                               } else if (item.href === '/calendar') {
-                                router.push(item.href);
+                                // Only push route if we're not already on the calendar page
+                                if (pathname !== '/calendar') {
+                                  router.push(item.href);
+                                }
                                 setCalendarViewMode(subView.key as any);
                               } else if (item.href === '/documents') {
-                                router.push(item.href);
+                                // Only push route if we're not already on the documents page
+                                if (pathname !== '/documents') {
+                                  router.push(item.href);
+                                }
                                 // setDocumentsViewMode(subView.key as any); // Removed as per edit hint
                               }
                             }} 
