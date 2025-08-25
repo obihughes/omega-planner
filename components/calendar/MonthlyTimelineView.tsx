@@ -892,9 +892,9 @@ export function MonthlyTimelineView({
                         {/* Unscheduled Tasks */}
                         {unscheduledTasks.length > 0 && (
                           <div className="mb-2">
-                            <h4 className="text-xs font-medium text-orange-600 dark:text-orange-400 uppercase tracking-wide mb-2 flex items-center gap-1">
-                              <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                              Unscheduled Tasks ({unscheduledTasks.length})
+                            <h4 className="text-xs font-medium text-red-600 dark:text-red-400 uppercase tracking-wide mb-2 flex items-center gap-1">
+                              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                              🚨 TEST: Unscheduled Tasks ({unscheduledTasks.length})
                             </h4>
                             <div className="grid gap-2 grid-cols-1 lg:grid-cols-2">
                               {unscheduledTasks.map(task => {
