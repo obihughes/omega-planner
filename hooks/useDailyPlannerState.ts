@@ -320,6 +320,10 @@ export function useDailyPlanner() {
 
       let conflict = false;
       for (const otherTask of otherTasksOnFinalDate) {
+        // Skip overlap check if either task is unscheduled (startHour is undefined)
+        if (finalDraggedTaskData.startHour === undefined || otherTask.startHour === undefined) {
+          continue;
+        }
         const hasOverlap = checkOverlap(finalDraggedTaskData.startHour, finalDraggedTaskData.duration, otherTask.startHour, otherTask.duration);
         if (hasOverlap) {
           conflict = true;
@@ -353,17 +357,21 @@ export function useDailyPlanner() {
       let finalStartHour = rawPreviewTask.startHour;
       let finalDuration = rawPreviewTask.duration;
 
-      // Strict snap to 15-minute intervals on mouse up
-      finalStartHour = Math.round(finalStartHour * 4) / 4;
+      // Strict snap to 15-minute intervals on mouse up (only if startHour is defined)
+      if (finalStartHour !== undefined) {
+        finalStartHour = Math.round(finalStartHour * 4) / 4;
+      }
       finalDuration = Math.round(finalDuration * 4) / 4;
       
       // Ensure minimal duration after snapping
       finalDuration = Math.max(MIN_TASK_DURATION, finalDuration);
 
-      // Boundary checks after snapping
-      finalStartHour = Math.max(TIMELINE_START_HOUR, finalStartHour);
-      finalStartHour = Math.min(TIMELINE_END_HOUR - MIN_TASK_DURATION, finalStartHour); // Ensure start hour allows min duration
-      finalDuration = Math.min(finalDuration, TIMELINE_END_HOUR - finalStartHour);
+      // Boundary checks after snapping (only for scheduled tasks)
+      if (finalStartHour !== undefined) {
+        finalStartHour = Math.max(TIMELINE_START_HOUR, finalStartHour);
+        finalStartHour = Math.min(TIMELINE_END_HOUR - MIN_TASK_DURATION, finalStartHour); // Ensure start hour allows min duration
+        finalDuration = Math.min(finalDuration, TIMELINE_END_HOUR - finalStartHour);
+      }
       finalDuration = Math.max(MIN_TASK_DURATION, finalDuration); // Re-ensure min duration after end boundary adjustment
 
       // The resizingTask.task already contains collision-resolved preview from handleMouseMoveResize.
@@ -476,8 +484,10 @@ export function useDailyPlanner() {
     
     // Add the task's start hour to this date
     // The startHour is a float (e.g., 14.5 for 2:30 PM)
-    const hours = Math.floor(taskToPin.startHour);
-    const minutes = Math.round((taskToPin.startHour - hours) * 60);
+    // For unscheduled tasks (startHour undefined), use 9 AM as default
+    const startHour = taskToPin.startHour ?? 9;
+    const hours = Math.floor(startHour);
+    const minutes = Math.round((startHour - hours) * 60);
     dueDate.setHours(hours, minutes, 0, 0);
 
     const newPinnedTask: PinnedTask = {
@@ -525,8 +535,10 @@ export function useDailyPlanner() {
       if (correspondingTimelineTask) {
         // Recalculate dueDate based on timeline task's startHour and baseDate using timezone-safe parsing
         const newDueDate = dateFromDateKey(correspondingTimelineTask.baseDate);
-        const hours = Math.floor(correspondingTimelineTask.startHour);
-        const minutes = Math.round((correspondingTimelineTask.startHour - hours) * 60);
+        // For unscheduled tasks (startHour undefined), use 9 AM as default
+        const startHour = correspondingTimelineTask.startHour ?? 9;
+        const hours = Math.floor(startHour);
+        const minutes = Math.round((startHour - hours) * 60);
         newDueDate.setHours(hours, minutes, 0, 0);
 
         // Check if an update is needed
@@ -671,8 +683,14 @@ export function useDailyPlanner() {
 
     // Handle conflicts based on strategy
     const finalTasksToApply = newClonedTasks.filter(clonedTask => {
+      // Skip conflict checking for unscheduled tasks
+      if (clonedTask.startHour === undefined) {
+        return true;
+      }
+      
       const hasConflictWithExisting = existingDestinationTasks.some(existingTask => 
-        checkOverlap(clonedTask.startHour, clonedTask.duration, existingTask.startHour, existingTask.duration)
+        existingTask.startHour !== undefined && 
+        checkOverlap(clonedTask.startHour!, clonedTask.duration, existingTask.startHour, existingTask.duration)
       );
       
       if (hasConflictWithExisting) {
@@ -683,10 +701,14 @@ export function useDailyPlanner() {
             return true; 
           case 'adjust':
             let adjustedStartHour = clonedTask.startHour;
+            if (adjustedStartHour === undefined) {
+              return true; // Don't adjust unscheduled tasks
+            }
             const maxAttempts = (TIMELINE_END_HOUR - TIMELINE_START_HOUR) * 4; // Max 15-min slots in a day
             let attempts = 0;
             while (existingDestinationTasks.some(existingTask => 
-              checkOverlap(adjustedStartHour, clonedTask.duration, existingTask.startHour, existingTask.duration)
+              existingTask.startHour !== undefined &&
+              checkOverlap(adjustedStartHour!, clonedTask.duration, existingTask.startHour, existingTask.duration)
             ) && attempts < maxAttempts) {
               adjustedStartHour += 0.25;
               if (adjustedStartHour + clonedTask.duration > TIMELINE_END_HOUR) {
@@ -885,7 +907,7 @@ export function useDailyPlanner() {
     const newTask: Task = {
       id: task.id || `pool-task-${Date.now()}-${Math.random()}`,
       name: task.name || '',
-      startHour: task.startHour || 0,
+      startHour: task.startHour ?? undefined, // Undefined for unscheduled pool tasks
       duration: task.duration || 1,
       color: task.color || '',
       baseDate: dateKey,

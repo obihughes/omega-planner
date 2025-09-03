@@ -107,7 +107,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
         <div className="flex items-center gap-1.5">
           <Clock className="w-2.5 h-2.5" />
           <span>{formatDuration(task.duration)}</span>
-          {isScheduled && (
+          {isScheduled && task.startHour !== undefined && (
             <>
               <span>•</span>
               <span>{formatTime(task.startHour)}</span>
@@ -156,6 +156,7 @@ export function MonthlyTimelineView({
   const [searchTerm, setSearchTerm] = useState('');
   const [showCompleted, setShowCompleted] = useState(false);
   const [showEmptyDays, setShowEmptyDays] = useState(false);
+  const [showPastDates, setShowPastDates] = useState(true); // Enable past dates by default
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
   const [dragOverInbox, setDragOverInbox] = useState(false);
@@ -178,15 +179,18 @@ export function MonthlyTimelineView({
     return days;
   }, [startDate]);
 
-  // Get all upcoming tasks organized by date
-  const upcomingTasksByDate = useMemo(() => {
+  // Get all tasks organized by date (past and future)
+  const tasksByDateRange = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    // Get the next 60 days for better future planning
-    const dateRange = Array.from({ length: 60 }, (_, i) => {
+    // Generate date range: past 30 days + next 60 days (or just next 60 if past is disabled)
+    const startOffset = showPastDates ? -30 : 0;
+    const totalDays = showPastDates ? 90 : 60; // 30 past + 60 future = 90 total
+    
+    const dateRange = Array.from({ length: totalDays }, (_, i) => {
       const date = new Date(today);
-      date.setDate(today.getDate() + i);
+      date.setDate(today.getDate() + startOffset + i);
       return date;
     });
 
@@ -222,7 +226,7 @@ export function MonthlyTimelineView({
     });
 
     return Array.from(tasksByDate.values()).sort((a, b) => a.date.getTime() - b.date.getTime());
-  }, [scheduledTasks, getPoolTasksForDate, pinnedTasks, searchTerm, showCompleted, showEmptyDays]);
+  }, [scheduledTasks, getPoolTasksForDate, pinnedTasks, searchTerm, showCompleted, showEmptyDays, showPastDates]);
 
   // Get filtered pool tasks (only show unassigned tasks in inbox)
   const filteredPoolTasks = useMemo(() => {
@@ -409,7 +413,7 @@ export function MonthlyTimelineView({
         element.style.boxShadow = '';
       }, 1000);
     } else {
-      const hasTasksForDate = upcomingTasksByDate.some(day => getDateKey(day.date) === dateKey);
+      const hasTasksForDate = tasksByDateRange.some(day => getDateKey(day.date) === dateKey);
       
       if (!hasTasksForDate && !showEmptyDays) {
         setShowEmptyDays(true);
@@ -589,11 +593,11 @@ export function MonthlyTimelineView({
           <div className="flex items-center justify-between mb-3">
             <div>
               <h2 className="text-xl font-bold text-foreground">
-                Upcoming Tasks & Planning
+                Tasks & Planning Timeline
               </h2>
               <div className="flex items-center gap-4 mt-1">
                 <p className="text-sm text-muted-foreground">
-                  {upcomingTasksByDate.reduce((total, day) => total + day.tasks.length, 0)} total tasks across {upcomingTasksByDate.length} days
+                  {tasksByDateRange.reduce((total, day) => total + day.tasks.length, 0)} total tasks across {tasksByDateRange.length} days
                 </p>
                 <div className="flex items-center gap-3 text-xs">
                   <div className="flex items-center gap-1.5">
@@ -669,16 +673,25 @@ export function MonthlyTimelineView({
               <CalendarIcon className="w-3 h-3" />
               <span className="text-xs">{showEmptyDays ? 'Hide' : 'Show'} Empty Days</span>
             </Button>
+            <Button
+              variant={showPastDates ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowPastDates(!showPastDates)}
+              className="flex items-center gap-1.5 h-8 px-3"
+            >
+              <ChevronLeft className="w-3 h-3" />
+              <span className="text-xs">{showPastDates ? 'Hide' : 'Show'} Past Dates</span>
+            </Button>
           </div>
         </div>
 
         {/* Timeline Content */}
         <div className="flex-1 p-4 overflow-y-auto">
-          {upcomingTasksByDate.length === 0 ? (
+          {tasksByDateRange.length === 0 ? (
             <div className="text-center text-muted-foreground py-12">
               <CalendarIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
               <h3 className="text-base font-medium mb-2">
-                {showEmptyDays ? 'No days to show' : 'No upcoming tasks'}
+                {showEmptyDays ? 'No days to show' : showPastDates ? 'No tasks found' : 'No upcoming tasks'}
               </h3>
               <p className="text-sm mb-4">
                 {showEmptyDays 
@@ -693,7 +706,7 @@ export function MonthlyTimelineView({
             </div>
           ) : (
             <div className="space-y-4">
-              {upcomingTasksByDate.map(({ date, tasks }, index) => {
+              {tasksByDateRange.map(({ date, tasks }, index) => {
                 const isToday = date.toDateString() === new Date().toDateString();
                 const isTomorrow = date.toDateString() === new Date(Date.now() + 24 * 60 * 60 * 1000).toDateString();
                 const isWeekend = date.getDay() === 0 || date.getDay() === 6;
@@ -711,8 +724,8 @@ export function MonthlyTimelineView({
                 if (isToday) dayLabel = `Today - ${dayLabel}`;
                 else if (isTomorrow) dayLabel = `Tomorrow - ${dayLabel}`;
 
-                const scheduledTasks = tasks.filter(t => t.startHour !== undefined);
-                const unscheduledTasks = tasks.filter(t => t.startHour === undefined);
+                const scheduledTasks = tasks.filter(t => t.startHour !== undefined && t.startHour > 0);
+                const unscheduledTasks = tasks.filter(t => t.startHour === undefined || t.startHour === 0);
                 
                 // Enhanced debug logging for task categorization
                 if (tasks.length > 0) {

@@ -8,8 +8,8 @@ export interface Task {
   /** Name/title of the task */
   name: string;
   
-  /** Start time in decimal hours (e.g., 8.5 for 8:30 AM) */
-  startHour: number;
+  /** Start time in decimal hours (e.g., 8.5 for 8:30 AM). Undefined for unscheduled/pool tasks */
+  startHour?: number;
   
   /** Duration in decimal hours (e.g., 1.5 for 1 hour 30 minutes) */
   duration: number;

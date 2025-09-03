@@ -354,7 +354,7 @@ export function useModalManager({
       const newTask: EnhancedActiveModalTask = {
         id: tempId,
         name: "", // Start with an empty name
-        startHour: options?.initialStartHour ?? (isFromPool ? 0 : 9), // No specific start time for pool tasks
+        startHour: options?.initialStartHour ?? (isFromPool ? undefined : 9), // No specific start time for pool tasks
         duration: 1, // Default duration
         baseDate: baseDate,
         color: TASK_COLORS[isFromPool ? 17 : 0], // Grey for pool tasks, default color for timeline tasks
@@ -441,7 +441,7 @@ export function useModalManager({
         const targetDate = dateFromDateKey(taskData.baseDate);
         onAddTask(
           targetDate,
-          taskData.startHour,
+          taskData.startHour ?? 9, // Default to 9 AM if undefined
           {
             name: taskData.name,
             duration: taskData.duration,
@@ -477,9 +477,9 @@ export function useModalManager({
               return;
             }
             const targetDate = dateFromDateKey(taskDataFromForm.baseDate);
-            onAddTask(
-              targetDate,
-              taskDataFromForm.startHour,
+                    onAddTask(
+          targetDate,
+          taskDataFromForm.startHour ?? 9, // Default to 9 AM if undefined
               {
                 name: taskDataFromForm.name,
                 duration: taskDataFromForm.duration,
@@ -595,7 +595,7 @@ export function useModalManager({
     const taskTemplate: EnhancedActiveModalTask = {
       id: tempId,
       name: "New Task",
-      startHour: 0, // No specific start time for pool tasks
+      startHour: undefined, // No specific start time for pool tasks
       duration: 1,
       baseDate: date ? getDateKey(date) : '', // Empty baseDate for general pool
       color: TASK_COLORS[17], // Default to grey for unscheduled tasks
@@ -623,7 +623,7 @@ export function useModalManager({
     setActiveEditModalTask({
       id: tempId,
       name: "New Task",
-      startHour: 0,
+      startHour: undefined, // Explicitly unscheduled
       duration: 1,
       baseDate: targetDateKey,
       color: TASK_COLORS[17], // Default to grey for unscheduled tasks

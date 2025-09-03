@@ -272,8 +272,8 @@ export default function WeeklyView({}: WeeklyViewProps) {
     const isWeekendDay = isWeekend(date);
     const dayOffset = getDayOffsetFromToday(date);
     
-    // Filter scheduled tasks
-    const scheduledTasks = dayTasks.filter(task => task.startHour !== undefined);
+    // Filter scheduled tasks (exclude unscheduled tasks with startHour 0 or undefined)
+    const scheduledTasks = dayTasks.filter(task => task.startHour !== undefined && task.startHour > 0);
     
     // Split tasks into AM (0-11.99) and PM (12-23.99)
     // Tasks that cross the AM/PM boundary should appear in both periods
