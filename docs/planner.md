@@ -222,9 +222,9 @@ The Saved Days feature allows you to save daily task configurations as reusable 
    - Choose "Replace" to replace all existing tasks with the template
 
 3. **Manage Saved Days:**
+   - **View/Edit:** Click the 📝 icon to navigate to the template's original date and edit tasks
    - **Rename:** Click the ✏️ icon to rename a saved day
    - **Delete:** Click the 🗑️ icon to delete a saved day
-   - **Edit Template:** Navigate to the original saved date and edit tasks there
 
 #### Technical Implementation
 
