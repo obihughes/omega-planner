@@ -86,8 +86,8 @@ export const DailyEventsContainer: React.FC<DailyEventsContainerProps> = ({
         </div>
       )}
 
-      {/* Content */}
-      <div className="p-3">
+      {/* Content - Fixed height container */}
+      <div className="p-2 h-10 overflow-hidden">
         {hasContent ? (
           <div className="flex flex-wrap gap-2">
             {/* Events */}
@@ -207,8 +207,10 @@ export const DailyEventsContainer: React.FC<DailyEventsContainerProps> = ({
           ))}
           </div>
         ) : (
-          /* Empty state - completely empty */
-          <div className="h-2"></div>
+          /* Empty state - show message in fixed height container */
+          <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+            No events for today
+          </div>
         )}
       </div>
     </div>

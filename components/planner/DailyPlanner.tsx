@@ -796,8 +796,8 @@ export default function DailyPlanner() {
             <div className="mb-4 bg-card border border-border shadow-sm overflow-hidden">
               {/* Collapsible Content */}
               {isTaskPoolOpen && (
-                <div className="h-20 p-2">
-                  <div className="flex gap-3 h-full overflow-x-auto overflow-y-hidden scrollbar-hide">
+                <div className="h-12 px-2 py-1">
+                  <div className="flex items-center gap-3 h-full overflow-x-auto overflow-y-hidden scrollbar-hide">
                   
                   {/* Add to Pool Button */}
                   <div className="flex items-center justify-center">
@@ -809,11 +809,10 @@ export default function DailyPlanner() {
                         currentViewDate.setDate(today.getDate() + topDayOffset);
                         createPoolTaskForDate(currentViewDate);
                       }}
-                      className="flex-shrink-0 w-12 h-16 bg-muted/30 border border-dashed border-muted-foreground/30 rounded-lg hover:bg-muted/50 hover:border-muted-foreground/50 transition-all duration-150 flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-foreground"
+                      className="flex-shrink-0 w-8 h-8 bg-muted/30 border border-dashed border-muted-foreground/30 rounded-md hover:bg-muted/50 hover:border-muted-foreground/50 transition-all duration-150 flex items-center justify-center text-muted-foreground hover:text-foreground"
                       title="Add Task to Pool"
                     >
-                      <Plus className="w-4 h-4" />
-                      <span className="text-xs font-medium">Add</span>
+                      <Plus className="w-3 h-3" />
                     </button>
                   </div>
                   
@@ -827,37 +826,33 @@ export default function DailyPlanner() {
                       onDragStart={(e) => {
                         e.dataTransfer.setData('text/plain', JSON.stringify({ ...task, source: 'pool' }));
                       }}
-                      className="relative p-2 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-16 cursor-grab active:cursor-grabbing"
+                      className="relative px-2 py-1 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 hover:shadow-md transition-all duration-150 group flex-shrink-0 h-8 min-w-[9rem] max-w-[12rem] cursor-grab active:cursor-grabbing rounded"
                     >
-                                              <div className="flex items-start justify-between gap-2 h-full">
-                          <div className="flex items-start gap-2 flex-1 min-w-0">
-                            <div className="flex flex-col flex-1 min-w-0">
-                              <p className="font-medium text-sm text-foreground truncate leading-tight">
-                                {task.name || "Untitled Task"}
-                              </p>
-                            </div>
-                          </div>
+                                              <div className="flex items-center justify-between gap-2 h-full">
+                          <p className="font-medium text-xs text-foreground truncate">
+                            {task.name || "Untitled Task"}
+                          </p>
                         {/* Action buttons */}
-                        <div className="absolute top-0.5 right-2 flex flex-col gap-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             type="button"
-                            className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                            className="h-4 w-4 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); openViewNotesModal(task); }}
                             title="View Notes"
                           >
-                            <Eye className="w-2 h-2" />
+                            <Eye className="w-3 h-3" />
                           </button>
                           <button
                             type="button"
-                            className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                            className="h-4 w-4 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEditModal(task, { isFromPool: true }); }}
                             title="Edit Task"
                           >
-                            <Edit3 className="w-2 h-2" />
+                            <Edit3 className="w-3 h-3" />
                           </button>
                           <button
                             type="button"
-                            className="h-5 w-5 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                            className="h-4 w-4 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                             onClick={(e) => { 
                               e.preventDefault(); 
                               e.stopPropagation(); 
@@ -874,7 +869,7 @@ export default function DailyPlanner() {
                             }}
                             title="Delete Task"
                           >
-                            <Trash2 className="w-2 h-2" />
+                            <Trash2 className="w-3 h-3" />
                           </button>
                         </div>
                       </div>
@@ -893,44 +888,42 @@ export default function DailyPlanner() {
                       return (
                         <div
                           key={`pinned-${task.id}`}
-                          className="relative p-2 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 hover:shadow-md transition-all duration-150 group flex-shrink-0 w-48 h-16"
+                          className="relative px-2 py-1 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 hover:shadow-md transition-all duration-150 group flex-shrink-0 h-8 min-w-[9rem] max-w-[12rem] rounded"
                         >
-                          <div className="flex items-start justify-between gap-2 h-full">
-                            <div className="flex items-start gap-2 flex-1 min-w-0">
-                              <div className="flex flex-col flex-1 min-w-0">
-                                <p className="font-medium text-sm text-foreground truncate leading-tight mb-1">
-                                  {task.name || "Untitled Task"}
-                                </p>
-                                <div className={`text-xs ${timeRemaining.isOverdue ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`}>
-                                  <span>{timeRemaining.text}</span>
-                                </div>
+                          <div className="flex items-center justify-between gap-2 h-full">
+                            <div className="min-w-0">
+                              <p className="font-medium text-xs text-foreground truncate leading-tight">
+                                {task.name || "Untitled Task"}
+                              </p>
+                              <div className={`text-[10px] ${timeRemaining.isOverdue ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`}>
+                                {timeRemaining.text}
                               </div>
                             </div>
                             {/* Action buttons */}
-                            <div className="absolute top-0.5 right-2 flex flex-col gap-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                               <button
                                 type="button"
-                                className="h-5 w-4 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                                className="h-3 w-3 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); openViewNotesModal(task); }}
                                 title="View Notes"
                               >
-                                <Eye className="w-2 h-2" />
+                                <Eye className="w-1.5 h-1.5" />
                               </button>
                               <button
                                 type="button"
-                                className="h-5 w-4 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                                className="h-3 w-3 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEditModal(task); }}
                                 title="Edit Task"
                               >
-                                <Edit3 className="w-2 h-2" />
+                                <Edit3 className="w-1.5 h-1.5" />
                               </button>
                               <button
                                 type="button"
-                                className="h-5 w-4 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                                className="h-3 w-3 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleUnpinTask(task.pinnedId); }}
                                 title="Unpin Task"
                               >
-                                <PinOff className="w-2 h-2" />
+                                <PinOff className="w-1.5 h-1.5" />
                               </button>
                             </div>
                           </div>
