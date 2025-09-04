@@ -2,8 +2,11 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Button } from "@/components/ui";
-import { Pin, Eye, Trash2, Calendar, Clock, Edit3, PinOff, Scissors, X, Plus, ChevronDown } from 'lucide-react';
+import { Pin, Eye, Trash2, Calendar, Clock, Edit3, PinOff, Scissors, X, Plus, ChevronDown, Bookmark } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import * as PopoverPrimitive from "@radix-ui/react-popover";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 import { formatTime, formatDuration } from '@/utils/formatters';
@@ -118,6 +121,11 @@ export default function DailyPlanner() {
     createPoolTaskForDate,
     createQuickTask,
     handleDropFromPool,
+    savedDays,
+    saveSavedDay,
+    deleteSavedDay,
+    renameSavedDay,
+    applySavedDay,
   } = useDailyPlanner();
 
   // Calendar data for events and periods
@@ -130,6 +138,10 @@ export default function DailyPlanner() {
 
 
   const [currentTimeForMarker, setCurrentTimeForMarker] = useState(new Date());
+  const [savingName, setSavingName] = useState('');
+  
+  // Get current date key for saved days functionality
+  const currentDateKey = useMemo(() => getCalendarDateForColumn(topDayOffset), [topDayOffset]);
 
   useEffect(() => {
       const timerId = setInterval(() => setCurrentTimeForMarker(new Date()), 60000);
@@ -990,9 +1002,123 @@ export default function DailyPlanner() {
                         </span>
                       )}
                     </div>
-                    <Button size="sm" onClick={() => openEditModal()}>
+                    <div className="flex items-center gap-2">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button size="sm" variant="outline" className="flex items-center gap-1">
+                            <Bookmark className="w-4 h-4" />
+                            Saved Days
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverPrimitive.Portal>
+                          <PopoverContent className="w-80 !z-[9999]">
+                          <div className="space-y-3">
+                            {/* Save Current Day */}
+                            <div>
+                              <div className="text-sm font-medium mb-2">Save current day as template</div>
+                              <div className="flex gap-2">
+                                <Input
+                                  placeholder="Name (e.g. Morning Routine)"
+                                  value={savingName}
+                                  onChange={(e) => setSavingName(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && savingName.trim()) {
+                                      saveSavedDay(savingName.trim(), currentDateKey);
+                                      setSavingName('');
+                                    }
+                                  }}
+                                />
+                                <Button
+                                  size="sm"
+                                  onClick={() => {
+                                    if (!savingName.trim()) return;
+                                    saveSavedDay(savingName.trim(), currentDateKey);
+                                    setSavingName('');
+                                  }}
+                                  disabled={!savingName.trim()}
+                                >
+                                  Save
+                                </Button>
+                              </div>
+                            </div>
+
+                            {/* Saved Days List */}
+                            <div>
+                              <div className="text-sm font-medium mb-2">Apply saved day</div>
+                              <div className="space-y-2 max-h-56 overflow-auto">
+                                {savedDays.length === 0 ? (
+                                  <div className="text-sm text-muted-foreground py-4 text-center">
+                                    No saved days yet
+                                  </div>
+                                ) : (
+                                  savedDays.map((savedDay) => (
+                                    <div key={savedDay.id} className="flex items-center justify-between gap-2 p-2 border border-border rounded-lg">
+                                      <div className="min-w-0 flex-1">
+                                        <div className="text-sm font-medium truncate">{savedDay.name}</div>
+                                        <div className="text-xs text-muted-foreground">
+                                          {savedDay.dateKey} • {new Date(savedDay.createdAt).toLocaleDateString()}
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        <Button
+                                          size="sm"
+                                          variant="secondary"
+                                          onClick={() => applySavedDay(savedDay.id, currentDateKey, false)}
+                                          title="Apply (add alongside existing tasks)"
+                                          className="text-xs px-2 py-1 h-auto"
+                                        >
+                                          Apply
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => applySavedDay(savedDay.id, currentDateKey, true)}
+                                          title="Replace existing tasks with this template"
+                                          className="text-xs px-2 py-1 h-auto"
+                                        >
+                                          Replace
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={() => {
+                                            const newName = prompt('Rename saved day:', savedDay.name);
+                                            if (newName && newName.trim()) {
+                                              renameSavedDay(savedDay.id, newName.trim());
+                                            }
+                                          }}
+                                          title="Rename"
+                                          className="text-xs px-1 py-1 h-auto"
+                                        >
+                                          ✏️
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={() => {
+                                            if (confirm(`Delete saved day "${savedDay.name}"?`)) {
+                                              deleteSavedDay(savedDay.id);
+                                            }
+                                          }}
+                                          title="Delete"
+                                          className="text-xs px-1 py-1 h-auto"
+                                        >
+                                          🗑️
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ))
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          </PopoverContent>
+                        </PopoverPrimitive.Portal>
+                      </Popover>
+                      <Button size="sm" onClick={() => openEditModal()}>
                         Add Task
-                    </Button>
+                      </Button>
+                    </div>
                   </div>
                   <div className="border border-border/20 rounded-b-lg overflow-hidden">
                     <div className="flex flex-col">

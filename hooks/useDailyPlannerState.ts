@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Task, PinnedTask } from '../types/planner'; // Removed PlannerMode, TaskColor, CloneConfirmationData, ModalOpenOptions
+import { Task, PinnedTask, SavedDay } from '../types/planner'; // Removed PlannerMode, TaskColor, CloneConfirmationData, ModalOpenOptions
 import TaskStorage, { DayViewSettings } from '../utils/storage'; // TaskStorage is default, DayViewSettings is named
 // import { TASK_COLORS } from '../components/planner/DailyPlanner'; // TODO: Decouple this, maybe move to a constants file
 import { formatTime, formatDuration } from '../utils/formatters'; // Ensure this is imported
@@ -47,6 +47,7 @@ export function useDailyPlanner() {
   const [poolTasks, setPoolTasks] = useState<Task[]>([]);
   const [poolTasksByDate, setPoolTasksByDate] = useState<Map<string, Task[]>>(new Map());
   const [pinnedTasks, setPinnedTasks] = useState<PinnedTask[]>([]);
+  const [savedDays, setSavedDays] = useState<SavedDay[]>([]);
   const [taskIdCounter, setTaskIdCounter] = useState<number>(-1); // Last used ID, primarily for display or effects
   const taskIdCounterRef = useRef<number>(-1); // Ref for the actual latest ID counter for generation
   const [activeSidebarTab, setActiveSidebarTab] = useState<'pool' | 'pinned'>('pinned');
@@ -730,6 +731,82 @@ export function useDailyPlanner() {
 
   }, [tasks, getNextId, cloneConflictStrategy, TIMELINE_END_HOUR, TIMELINE_START_HOUR, checkOverlap, setTasks]);
 
+  // --- Saved Days Functions ---
+
+  /**
+   * Saves the current day as a named saved day
+   * @param {string} name - Name for the saved day
+   * @param {string} dateKey - Date key (YYYY-MM-DD) to save
+   */
+  const saveSavedDay = useCallback((name: string, dateKey: string) => {
+    const existingIndex = savedDays.findIndex(s => s.dateKey === dateKey);
+    const newEntry: SavedDay = {
+      id: existingIndex >= 0 ? savedDays[existingIndex].id : nanoid(),
+      name: name.trim(),
+      dateKey,
+      createdAt: existingIndex >= 0 ? savedDays[existingIndex].createdAt : new Date().toISOString()
+    };
+    
+    let updatedSavedDays: SavedDay[];
+    if (existingIndex >= 0) {
+      // Update existing entry
+      updatedSavedDays = savedDays.map((s, i) => i === existingIndex ? newEntry : s);
+    } else {
+      // Add new entry
+      updatedSavedDays = [...savedDays, newEntry];
+    }
+    
+    setSavedDays(updatedSavedDays);
+    TaskStorage.saveSavedDays(updatedSavedDays);
+  }, [savedDays]);
+
+  /**
+   * Deletes a saved day
+   * @param {string} id - ID of the saved day to delete
+   */
+  const deleteSavedDay = useCallback((id: string) => {
+    const updatedSavedDays = savedDays.filter(s => s.id !== id);
+    setSavedDays(updatedSavedDays);
+    TaskStorage.saveSavedDays(updatedSavedDays);
+  }, [savedDays]);
+
+  /**
+   * Renames a saved day
+   * @param {string} id - ID of the saved day to rename
+   * @param {string} name - New name for the saved day
+   */
+  const renameSavedDay = useCallback((id: string, name: string) => {
+    const updatedSavedDays = savedDays.map(s => 
+      s.id === id ? { ...s, name: name.trim() } : s
+    );
+    setSavedDays(updatedSavedDays);
+    TaskStorage.saveSavedDays(updatedSavedDays);
+  }, [savedDays]);
+
+  /**
+   * Applies a saved day to a target date using existing clone functionality
+   * @param {string} savedId - ID of the saved day to apply
+   * @param {string} targetDateKey - Target date key (YYYY-MM-DD)
+   * @param {boolean} replaceExisting - Whether to replace existing tasks
+   */
+  const applySavedDay = useCallback((savedId: string, targetDateKey: string, replaceExisting = false) => {
+    const savedDay = savedDays.find(s => s.id === savedId);
+    if (!savedDay) {
+      console.warn('Saved day not found:', savedId);
+      return;
+    }
+
+    // If replacing existing tasks, remove them first
+    if (replaceExisting) {
+      setTasks(prevTasks => prevTasks.filter(task => task.baseDate !== targetDateKey));
+    }
+
+    // Use existing clone functionality
+    const sourceDate = dateFromDateKey(savedDay.dateKey);
+    const targetDate = dateFromDateKey(targetDateKey);
+    cloneDayTasks(sourceDate, targetDate);
+  }, [savedDays, cloneDayTasks, setTasks]);
+
   // For updating pool tasks from the modal
   const handleUpdatePoolTask = useCallback((taskId: string, updatedFields: Partial<Omit<Task, 'id'>>) => {
     setPoolTasks(prevPoolTasks => 
@@ -769,6 +846,9 @@ export function useDailyPlanner() {
       const sanitizedPinnedTasks = loadedPinnedTasks.map(({ dayOffset, ...task }: any) => task);
       setPinnedTasks(sanitizedPinnedTasks);
     }
+    
+    const loadedSavedDays = TaskStorage.loadSavedDays();
+    setSavedDays(loadedSavedDays);
     
     const loadedPoolTasksByDate = TaskStorage.loadPoolTasksByDate();
     setPoolTasksByDate(loadedPoolTasksByDate);
@@ -1280,5 +1360,12 @@ export function useDailyPlanner() {
     createPoolTaskForDate: modalManager.createPoolTaskForDate,
     createQuickTask: modalManager.createQuickTask,
     handleDropFromPool,
+
+    // Saved Days Functions
+    savedDays,
+    saveSavedDay,
+    deleteSavedDay,
+    renameSavedDay,
+    applySavedDay,
   };
 } 

@@ -72,4 +72,21 @@ export interface PinnedTask extends Task {
   
   /** A unique ID for this pinned instance itself */
   pinnedId: string;
+}
+
+/**
+ * Saved Day interface representing a named day template
+ */
+export interface SavedDay {
+  /** Unique identifier for the saved day */
+  id: string;
+  
+  /** Name/title of the saved day */
+  name: string;
+  
+  /** Date key in YYYY-MM-DD format */
+  dateKey: string;
+  
+  /** Timestamp when the saved day was created */
+  createdAt: string;
 } 

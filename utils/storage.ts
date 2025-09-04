@@ -2,7 +2,7 @@
 // TASK STORAGE UTILITY
 // ===================================
 
-import { Task, PinnedTask } from '@/types/planner';
+import { Task, PinnedTask, SavedDay } from '@/types/planner';
 
 // Configuration
 const STORAGE_KEY = 'daily-planner-tasks';
@@ -13,6 +13,7 @@ const STORAGE_VERSION = '2.0'; // Bumped version for YYYY-MM-DD format
 const DAY_VIEW_SETTINGS_KEY = 'daily-planner-day-view-settings';
 const TASK_ID_COUNTER_KEY = 'daily-planner-task-id-counter';
 const SIDEBAR_COLLAPSED_KEY = 'sidebarCollapsed';
+const SAVED_DAYS_KEY = 'daily-planner-saved-days';
 
 export interface DayViewSettings {
   topDayOffset: number;
@@ -420,6 +421,39 @@ const TaskStorage = {
     if (typeof window === 'undefined') return null;
     const collapsedState = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
     return collapsedState ? JSON.parse(collapsedState) : null;
+  },
+
+  // Saved Days Storage
+  /**
+   * Loads saved days from localStorage
+   * @returns {SavedDay[]} Array of saved days
+   */
+  loadSavedDays: (): SavedDay[] => {
+    if (typeof window === 'undefined') return [];
+    const savedData = localStorage.getItem(SAVED_DAYS_KEY);
+    if (!savedData) return [];
+
+    try {
+      const data = JSON.parse(savedData);
+      return Array.isArray(data) ? data as SavedDay[] : [];
+    } catch (err) {
+      console.error('Failed to parse saved days from localStorage. Data was: ', savedData, err);
+      return [];
+    }
+  },
+
+  /**
+   * Saves saved days to localStorage
+   * @param {SavedDay[]} savedDays - Array of saved days to save
+   */
+  saveSavedDays: (savedDays: SavedDay[]): void => {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      localStorage.setItem(SAVED_DAYS_KEY, JSON.stringify(savedDays));
+    } catch (err) {
+      console.error('Failed to save saved days to localStorage', err);
+    }
   },
 
   // Developer utility to remove sample tasks

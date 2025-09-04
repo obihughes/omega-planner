@@ -202,3 +202,41 @@ Common issues and solutions:
 -   `taskUtils`: Functions for task-specific logic, such as checking for overlapping tasks.
 -   `colorUtils`: Utility for handling color conversions and manipulations.
 -   `formatters`: Functions for formatting text, such as time and duration.
+
+### Saved Days (Templates)
+
+The Saved Days feature allows you to save daily task configurations as reusable templates.
+
+#### How to Use Saved Days
+
+1. **Save a Day as Template:**
+   - Navigate to a day with tasks you want to save
+   - Click the "Saved Days" button in the day header
+   - Enter a name for your template (e.g., "Morning Routine", "Work Day")
+   - Click "Save"
+
+2. **Apply a Saved Day:**
+   - Click the "Saved Days" button on any day
+   - Select a saved day from the list
+   - Choose "Apply" to add tasks alongside existing ones
+   - Choose "Replace" to replace all existing tasks with the template
+
+3. **Manage Saved Days:**
+   - **Rename:** Click the ✏️ icon to rename a saved day
+   - **Delete:** Click the 🗑️ icon to delete a saved day
+   - **Edit Template:** Navigate to the original saved date and edit tasks there
+
+#### Technical Implementation
+
+- Saved days are stored separately from tasks in localStorage
+- When applied, templates use the existing `cloneDayTasks` functionality
+- Each saved day references the original date where the template tasks are stored
+- Templates preserve task names, times, durations, colors, and notes
+- New task IDs are generated when applying templates to avoid conflicts
+
+#### Use Cases
+
+- **Daily Routines:** Save morning routines, workout schedules, or evening wind-down activities
+- **Work Templates:** Create templates for different types of work days (meetings, focus work, etc.)
+- **Event Planning:** Save template schedules for recurring events or meetings
+- **Quick Setup:** Rapidly populate new days with common task patterns
