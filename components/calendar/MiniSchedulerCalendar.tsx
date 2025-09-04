@@ -16,6 +16,8 @@ interface MiniSchedulerCalendarProps {
   className?: string;
   onDateDrop?: (date: Date, taskId: string) => void;
   tasks?: TaskWithProject[];
+  onDateSelect?: (date: Date) => void;
+  hideSelectedTasks?: boolean;
 }
 
 interface DayCell {
@@ -28,7 +30,9 @@ interface DayCell {
 export function MiniSchedulerCalendar({
   className = '',
   onDateDrop,
-  tasks = []
+  tasks = [],
+  onDateSelect,
+  hideSelectedTasks = false
 }: MiniSchedulerCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date()); // Start with today selected
@@ -92,6 +96,7 @@ export function MiniSchedulerCalendar({
 
   const handleDateClick = (date: Date) => {
     setSelectedDate(date);
+    if (onDateSelect) onDateSelect(date);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -210,7 +215,7 @@ export function MiniSchedulerCalendar({
       </div>
       
       {/* Selected Date Tasks */}
-      {selectedDate && (
+      {!hideSelectedTasks && selectedDate && (
         <div className="border-t border-border">
           <div className="p-3">
             <div className="flex items-center gap-2 mb-3">
@@ -283,11 +288,13 @@ export function MiniSchedulerCalendar({
       )}
       
       {/* Drop Zone Indicator */}
-      <div className="p-2 border-t border-border/50">
-        <div className="text-xs text-muted-foreground text-center">
-          Drag tasks here to schedule
+      {!hideSelectedTasks && (
+        <div className="p-2 border-t border-border/50">
+          <div className="text-xs text-muted-foreground text-center">
+            Drag tasks here to schedule
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 } 

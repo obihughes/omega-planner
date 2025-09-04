@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 import { formatTime, formatDuration } from '@/utils/formatters';
+import { MiniSchedulerCalendar } from '../calendar/MiniSchedulerCalendar';
 import { Task, PinnedTask } from '../../types/planner';
 import { TaskInboxSidebar } from './TaskInboxSidebar';
 import { PinnedTasksSidebar } from './PinnedTasksSidebar';
@@ -984,9 +985,33 @@ export default function DailyPlanner() {
                     <div className="flex items-center">
                       <Button variant="ghost" size="sm" onClick={() => setTopDayOffset(topDayOffset - 7)} title="Previous week">«</Button>
                       <Button variant="ghost" size="sm" onClick={() => setTopDayOffset(topDayOffset - 1)} title="Previous day">‹</Button>
-                      <span className="text-foreground font-medium text-center px-3 w-52">
-                        {isClient ? getDateLabel(topDayOffset) : "Loading..."}
-                      </span>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            className="text-foreground font-medium text-center px-3 w-52 hover:underline"
+                            title="Pick a date"
+                          >
+                            {isClient ? getDateLabel(topDayOffset) : "Loading..."}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverPrimitive.Portal>
+                          <PopoverContent className="p-0 w-auto !z-[9999]">
+                            <MiniSchedulerCalendar
+                              className="w-[280px]"
+                              hideSelectedTasks
+                              onDateSelect={(date) => {
+                                const today = new Date();
+                                today.setHours(0,0,0,0);
+                                const d = new Date(date);
+                                d.setHours(0,0,0,0);
+                                const dayOffset = Math.floor((d.getTime() - today.getTime()) / (1000*60*60*24));
+                                setTopDayOffset(dayOffset);
+                              }}
+                            />
+                          </PopoverContent>
+                        </PopoverPrimitive.Portal>
+                      </Popover>
                       <Button variant="ghost" size="sm" onClick={() => setTopDayOffset(topDayOffset + 1)} title="Next day">›</Button>
                       <Button variant="ghost" size="sm" onClick={() => setTopDayOffset(topDayOffset + 7)} title="Next week">»</Button>
                       {isClient && getRelativeDayLabel(topDayOffset) && (
@@ -1155,9 +1180,33 @@ export default function DailyPlanner() {
                     <div className="flex items-center">
                         <Button variant="ghost" size="sm" onClick={() => setBottomDayOffset(bottomDayOffset - 7)} title="Previous week">«</Button>
                         <Button variant="ghost" size="sm" onClick={() => setBottomDayOffset(bottomDayOffset - 1)} title="Previous day">‹</Button>
-                        <span className="text-foreground font-medium text-center px-3 w-52">
-                            {isClient ? getDateLabel(bottomDayOffset) : "Loading..."}
-                        </span>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              className="text-foreground font-medium text-center px-3 w-52 hover:underline"
+                              title="Pick a date"
+                            >
+                              {isClient ? getDateLabel(bottomDayOffset) : "Loading..."}
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverPrimitive.Portal>
+                            <PopoverContent className="p-0 w-auto !z-[9999]">
+                              <MiniSchedulerCalendar
+                                className="w-[280px]"
+                                hideSelectedTasks
+                                onDateSelect={(date) => {
+                                  const today = new Date();
+                                  today.setHours(0,0,0,0);
+                                  const d = new Date(date);
+                                  d.setHours(0,0,0,0);
+                                  const dayOffset = Math.floor((d.getTime() - today.getTime()) / (1000*60*60*24));
+                                  setBottomDayOffset(dayOffset);
+                                }}
+                              />
+                            </PopoverContent>
+                          </PopoverPrimitive.Portal>
+                        </Popover>
                         <Button variant="ghost" size="sm" onClick={() => setBottomDayOffset(bottomDayOffset + 1)} title="Next day">›</Button>
                         <Button variant="ghost" size="sm" onClick={() => setBottomDayOffset(bottomDayOffset + 7)} title="Next week">»</Button>
                         {isClient && getRelativeDayLabel(bottomDayOffset) && (
