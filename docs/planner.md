@@ -240,3 +240,11 @@ The Saved Days feature allows you to save daily task configurations as reusable 
 - **Work Templates:** Create templates for different types of work days (meetings, focus work, etc.)
 - **Event Planning:** Save template schedules for recurring events or meetings
 - **Quick Setup:** Rapidly populate new days with common task patterns
+
+### Calendar Views (under Daily Planner)
+The Monthly and Yearly calendar views are accessible from the main navigation under `Daily Planner`:
+- Monthly Planner: the planner's own monthly mode
+- Monthly Calendar View: the full calendar page's monthly mode; includes a compact grid and an Events/Periods list under the calendar for the selected month
+- Yearly Calendar: the full calendar page's yearly mode
+
+Note: The in-page monthly/yearly/timeline toggle in `app/calendar/page.tsx` has been removed. Use the main sidebar navigation to switch views.

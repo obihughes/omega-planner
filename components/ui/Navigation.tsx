@@ -119,12 +119,15 @@ export function Navigation() {
       href: '/',
       label: 'Daily Planner',
       icon: Calendar,
-      active: pathname === '/' || pathname === '/inbox',
+      active: pathname === '/' || pathname === '/inbox' || pathname === '/calendar',
       subViews: [
 
-        { key: 'daily', label: 'Daily', icon: CalendarCheck, active: plannerViewMode === 'daily' },
-        { key: 'weekly', label: 'Week Overview', icon: CalendarDays, active: plannerViewMode === 'weekly' },
-        { key: 'monthly', label: 'Monthly', icon: CalendarRange, active: plannerViewMode === 'monthly' }
+        { key: 'planner-daily', type: 'planner', mode: 'daily', label: 'Daily', icon: CalendarCheck, active: pathname === '/' && plannerViewMode === 'daily' },
+        { key: 'planner-weekly', type: 'planner', mode: 'weekly', label: 'Week Overview', icon: CalendarDays, active: pathname === '/' && plannerViewMode === 'weekly' },
+        { key: 'planner-monthly', type: 'planner', mode: 'monthly', label: 'Monthly Planner', icon: CalendarRange, active: pathname === '/' && plannerViewMode === 'monthly' },
+        // Calendar views placed under Daily Planner
+        { key: 'calendar-monthly', type: 'calendar', mode: 'monthly', label: 'Monthly Calendar View', icon: Calendar, active: pathname === '/calendar' && calendarViewMode === 'monthly' },
+        { key: 'calendar-yearly', type: 'calendar', mode: 'yearly', label: 'Yearly Calendar', icon: CalendarDays, active: pathname === '/calendar' && calendarViewMode === 'yearly' }
       ]
     },
     {
@@ -136,16 +139,6 @@ export function Navigation() {
         { key: 'tasks', label: 'Tasks', icon: ClipboardList, active: pathname === '/projects/tasks' },
         { key: 'active', label: 'Projects', icon: Folder, active: projectsViewMode === 'active' },
         { key: 'calendar', label: 'Projects Calendar', icon: Calendar, active: projectsViewMode === 'calendar' }
-      ]
-    },
-    {
-      href: '/calendar',
-      label: 'Calendar',
-      icon: CalendarDays,
-      active: pathname === '/calendar',
-      subViews: [
-        { key: 'yearly', label: 'Yearly', icon: CalendarDays, active: calendarViewMode === 'yearly' },
-        { key: 'monthly', label: 'Monthly', icon: Calendar, active: calendarViewMode === 'monthly' }
       ]
     },
     {
@@ -243,11 +236,18 @@ export function Navigation() {
                             key={subView.key}
                             onClick={() => {
                               if (item.href === '/') {
-                                // Only push route if we're not already on the home page
-                                if (pathname !== '/') {
-                                  router.push(item.href);
+                                if ((subView as any).type === 'calendar') {
+                                  if (pathname !== '/calendar') {
+                                    router.push('/calendar');
+                                  }
+                                  setCalendarViewMode((subView as any).mode as any);
+                                } else {
+                                  // planner subview
+                                  if (pathname !== '/') {
+                                    router.push(item.href);
+                                  }
+                                  setPlannerViewMode((subView as any).mode as any);
                                 }
-                                setPlannerViewMode(subView.key as any);
                               } else if (item.href === '/projects') {
                                 if (subView.key === 'tasks') {
                                   router.push('/projects/tasks');
@@ -258,12 +258,6 @@ export function Navigation() {
                                   }
                                   setProjectsViewMode(subView.key as any);
                                 }
-                              } else if (item.href === '/calendar') {
-                                // Only push route if we're not already on the calendar page
-                                if (pathname !== '/calendar') {
-                                  router.push(item.href);
-                                }
-                                setCalendarViewMode(subView.key as any);
                               } else if (item.href === '/documents') {
                                 // Only push route if we're not already on the documents page
                                 if (pathname !== '/documents') {

@@ -245,6 +245,7 @@ Left sidebar navigation component.
 - Theme toggle functionality
 - Active state indicators
 - Branded header section
+- Calendar Monthly and Yearly views available under `Daily Planner` subviews
 
 ### Button, Input, Card, etc. (`components/ui/`)
 Reusable UI primitives built with consistent styling.
@@ -263,7 +264,7 @@ File Updated:
 ## Calendar Components
 
 ### YearCalendar (`components/calendar/YearCalendar.tsx`)
-Full year calendar view with event management.
+Full year calendar view with event management. Accessible under Daily Planner → Yearly Calendar.
 
 **Key Features:**
 - Month-by-month navigation

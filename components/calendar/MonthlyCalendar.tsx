@@ -83,6 +83,25 @@ export function MonthlyCalendar({
     return days;
   }, [startDate, currentDate, data]);
 
+  // Month-level lists (events and periods)
+  const monthEvents = useMemo(() => {
+    const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const monthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0, 23, 59, 59, 999);
+    return data.events
+      .filter(e => e.date >= monthStart && e.date <= monthEnd)
+      .slice()
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
+  }, [data.events, currentDate]);
+
+  const monthPeriods = useMemo(() => {
+    const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const monthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0, 23, 59, 59, 999);
+    return data.periods
+      .filter(p => p.startDate <= monthEnd && p.endDate >= monthStart)
+      .slice()
+      .sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+  }, [data.periods, currentDate]);
+
   // Removed auto-scroll functionality to improve navigation
 
 
@@ -223,13 +242,13 @@ export function MonthlyCalendar({
               <div className="bg-card overflow-hidden border border-border/50 rounded-lg">
         {/* Day Headers - Fixed */}
         <div className="grid grid-cols-7 border-b border-border/40 text-center font-semibold text-muted-foreground bg-card sticky top-0 z-10">
-          <div className="p-4 text-sm">Sun</div>
-          <div className="p-4 text-sm">Mon</div>
-          <div className="p-4 text-sm">Tue</div>
-          <div className="p-4 text-sm">Wed</div>
-          <div className="p-4 text-sm">Thu</div>
-          <div className="p-4 text-sm">Fri</div>
-          <div className="p-4 text-sm">Sat</div>
+          <div className="p-3 text-xs">Sun</div>
+          <div className="p-3 text-xs">Mon</div>
+          <div className="p-3 text-xs">Tue</div>
+          <div className="p-3 text-xs">Wed</div>
+          <div className="p-3 text-xs">Thu</div>
+          <div className="p-3 text-xs">Fri</div>
+          <div className="p-3 text-xs">Sat</div>
         </div>
         
         {/* Calendar Days Container */}
@@ -273,7 +292,7 @@ export function MonthlyCalendar({
               <div
                 key={index}
                 className={cn(
-                  "min-h-[120px] border-r border-b border-border/30 last:border-r-0 transition-all duration-200 cursor-pointer relative group",
+                  "min-h-[100px] border-r border-b border-border/30 last:border-r-0 transition-all duration-200 cursor-pointer relative group",
                   "hover:bg-accent/10",
                   !day.isCurrentMonth && "text-muted-foreground/50",
                   isPast && "opacity-50",
@@ -302,7 +321,7 @@ export function MonthlyCalendar({
                 )}
                 
                 {/* Content Layer */}
-                <div className="relative z-10 p-3 h-full">
+                <div className="relative z-10 p-2 h-full">
                 <div className={cn(
                   "text-sm font-medium mb-2 transition-colors duration-200 relative z-10",
                   !day.isCurrentMonth && !periodStyle.color && "text-muted-foreground",
@@ -323,7 +342,7 @@ export function MonthlyCalendar({
                   {day.events.slice(0, 3).map(event => (
                     <div
                       key={event.id}
-                      className="h-6 px-2 py-1 text-xs cursor-pointer hover:opacity-90 transition-opacity duration-200 border group relative flex items-center justify-between bg-opacity-90"
+                      className="h-5 px-1.5 py-0.5 text-xs cursor-pointer hover:opacity-90 transition-opacity duration-200 border group relative flex items-center justify-between bg-opacity-90"
                       style={{ 
                         backgroundColor: event.color,
                         borderColor: event.color,
@@ -353,6 +372,59 @@ export function MonthlyCalendar({
           })}
         </div>
       </div>
+
+      {/* Events and Periods list for the month (similar to yearly view) */}
+      {(monthEvents.length > 0 || monthPeriods.length > 0) && (
+        <div className="mt-4 space-y-3">
+          {monthEvents.length > 0 && (
+            <div>
+              <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Events</h4>
+              <div className="flex flex-wrap gap-x-2 gap-y-1">
+                {monthEvents.map(event => (
+                  <div
+                    key={event.id}
+                    className="group flex items-center gap-1.5 text-xs px-2 py-1.5 border bg-card/30 hover:border-accent/50 hover:bg-accent/40 cursor-pointer transition-all duration-200"
+                    onClick={(e) => handleEventClick(event, e)}
+                    title={event.title}
+                  >
+                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: event.color }} />
+                    <div className="flex items-center gap-1 flex-1 min-w-0">
+                      <span className="text-foreground truncate font-medium">{event.title}</span>
+                      <span className="text-muted-foreground/60 text-[10px] whitespace-nowrap">
+                        {event.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {monthPeriods.length > 0 && (
+            <div>
+              <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Periods</h4>
+              <div className="flex flex-wrap gap-x-2 gap-y-1">
+                {monthPeriods.map(period => (
+                  <div
+                    key={period.id}
+                    className="group flex items-center gap-1.5 text-xs px-2 py-1.5 border bg-card/30 hover:border-accent/50 hover:bg-accent/40 cursor-pointer transition-all duration-200"
+                    onClick={(e) => handlePeriodClick(period, e)}
+                    title={period.title}
+                  >
+                    <div className="w-4 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: period.color }} />
+                    <span className="text-foreground truncate flex-1 font-medium">{period.title}</span>
+                    <span className="text-muted-foreground/60 text-[10px] whitespace-nowrap">
+                      {period.startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      {' - '}
+                      {period.endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
 
       {/* Event Modal */}
