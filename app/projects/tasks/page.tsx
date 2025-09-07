@@ -1278,9 +1278,6 @@ export default function ProjectsTasksPage() {
                 <MonthlyTaskScheduler
                   tasks={allTasks}
                   onDateDrop={handleTaskSchedule}
-                  onDateSelect={(date) => {
-                    updatePreferences({ allTasksFilters: { ...allTasksFilters, dueDate: 'today' } });
-                  }}
                 />
               </div>
             )}
