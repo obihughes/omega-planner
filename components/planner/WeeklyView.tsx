@@ -626,7 +626,8 @@ export default function WeeklyView({}: WeeklyViewProps) {
         <div style={{ minWidth: `${WEEKLY_DAY_COLUMN_WIDTH + (WEEKLY_PIXELS_PER_HOUR * HOURS_PER_ROW)}px` }}>
           {weekDates.map((date, index) => (
             <div key={getDateKey(date)} className={cn(
-              "border-b border-border/40",
+              "border-b-2 border-border/60",
+              index === 0 && "border-t-2",
               "relative"
             )}>
               {renderDayRows(date, index)}
