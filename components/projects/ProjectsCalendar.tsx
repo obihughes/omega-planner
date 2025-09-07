@@ -6,7 +6,7 @@ import { Project, ProjectTask } from '@/types';
 import { ChevronLeft, ChevronRight, Clock, Folder, CheckCircle, Play, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { getDateKey } from '@/utils/dateUtils';
+import { getDateKey, dateFromDateKey, getTodayDateKey } from '@/utils/dateUtils';
 
 interface ProjectsCalendarProps {
   projects: Project[];
@@ -157,6 +157,19 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
     return taskCompletionsByDate[dateKey] || 0;
   };
 
+  const getCompletedTitlesForDate = (date: Date) => {
+    const dateKey = getDateKey(date);
+    const titles: string[] = [];
+    filteredProjects
+      .filter(project => !project.isDeleted)
+      .forEach(project => {
+        project.tasks
+          .filter(task => task.status === 'completed' && task.completedAt && getDateKey(task.completedAt) === dateKey)
+          .forEach(task => titles.push(task.title));
+      });
+    return titles;
+  };
+
   const handleDayClick = (date: Date) => {
     // Navigate to projects view with date-specific focus
     router.push('/projects');
@@ -176,17 +189,22 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
   };
 
   const formatTimeRemaining = (dueDate: string): { text: string; isOverdue: boolean } => {
-    const now = new Date();
-    const due = new Date(dueDate);
-    due.setHours(23, 59, 59, 999);
+    // Normalize to date keys and compare day-only
+    const todayKey = getTodayDateKey();
+    const dueKey = getDateKey(dueDate);
 
-    const diffMs = due.getTime() - now.getTime();
-    const dayMs = 1000 * 60 * 60 * 24;
-    const diffDays = diffMs >= 0 ? Math.floor(diffMs / dayMs) : Math.ceil(diffMs / dayMs);
+    if (dueKey < todayKey) {
+      // Compute absolute days overdue
+      const due = dateFromDateKey(dueKey);
+      const today = dateFromDateKey(todayKey);
+      const diffDays = Math.ceil((today.getTime() - due.getTime()) / (1000 * 60 * 60 * 24));
+      return { text: `${diffDays}d overdue`, isOverdue: true };
+    }
+    if (dueKey === todayKey) return { text: 'Due today', isOverdue: false };
 
-    if (diffDays < -1) return { text: `${Math.abs(diffDays)}d overdue`, isOverdue: true };
-    if (diffDays === -1) return { text: `1d overdue`, isOverdue: true };
-    if (diffDays === 0) return { text: 'Due today', isOverdue: false };
+    const due = dateFromDateKey(dueKey);
+    const today = dateFromDateKey(todayKey);
+    const diffDays = Math.floor((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     if (diffDays === 1) return { text: 'Due tomorrow', isOverdue: false };
     return { text: `${diffDays}d left`, isOverdue: false };
   };
@@ -322,7 +340,10 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
                       
                       {/* Completed count badge */}
                       {completedCount > 0 && (
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 rounded-full">
+                        <div
+                          className="flex items-center gap-1.5 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 rounded-full"
+                          title={getCompletedTitlesForDate(date).join('\n')}
+                        >
                           <CheckCircle className="w-3 h-3 text-green-600" />
                           <span className="text-xs text-green-700 dark:text-green-300 font-medium">{completedCount}</span>
                         </div>
@@ -352,7 +373,8 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
 
                       {/* Task Due Dates */}
                       {dayTaskDues.slice(0, 2).map(({ project, task }) => {
-                        const isOverdue = new Date(task.dueDate!) < new Date() && task.status !== 'completed';
+                        const dueKey = getDateKey(task.dueDate!);
+                        const isOverdue = (dueKey < getTodayDateKey()) && task.status !== 'completed';
                         
                         return (
                           <div

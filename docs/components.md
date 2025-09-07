@@ -370,6 +370,11 @@ Custom time selection component.
 ## Recent Updates
 
 ### Advanced Task Management Features (Latest Update)
+### Workspace Tasks Enhancements (Inline Due Date, Done-by-day, Calendar Tooltip)
+- Inline due date editing in `components/projects/CompactTaskCard.tsx` using a native date input. Saves on blur/Enter, cancels on Escape. Dates normalized to YYYY-MM-DD.
+- New grouping in `app/projects/tasks/page.tsx`: select "Done by day" to group tasks by `completedAt` date.
+- `components/projects/ProjectsCalendar.tsx`: completed-count badge now shows a tooltip with the titles of tasks completed on that day. Overdue/remaining time uses normalized date keys.
+
 **Comprehensive enhancement of task and project management capabilities**
 
 **TaskListView Enhancements:**

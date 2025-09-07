@@ -12,7 +12,7 @@ import { useProjects } from '@/hooks/useProjects';
 import { Calendar, List, Plus, Clock, CheckCircle2, Filter, SortAsc, CheckSquare2, Square, Edit3, X, ChevronDown, ChevronRight, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProjectTask } from '@/types/projects';
-import { getDateKey, getTodayDateKey, formatDueDate } from '@/utils/dateUtils';
+import { getDateKey, getTodayDateKey, formatDueDate, dateFromDateKey } from '@/utils/dateUtils';
 import { ProjectTaskFormModal } from '@/components/modals/ProjectTaskFormModal';
 import { ProjectFormModal } from '@/components/modals/ProjectFormModal';
 import { Project } from '@/types/projects';
@@ -28,7 +28,7 @@ interface TasksViewPreferences {
     status: string;
     dueDate: string;
   };
-  allTasksGroupBy: 'none' | 'project' | 'status' | 'dueDate';
+  allTasksGroupBy: 'none' | 'project' | 'status' | 'dueDate' | 'completedDate';
   allTasksSubGroupBy: string;
   allTasksSortBy: 'dueDate' | 'created' | 'completion' | 'title';
   sortOrder: 'asc' | 'desc';
@@ -317,28 +317,27 @@ export default function ProjectsTasksPage() {
       filtered = filtered.filter(task => task.status === allTasksFilters.status);
     }
 
-    // Apply due date filter
+    // Apply due date filter (normalized via date utils)
     if (allTasksFilters.dueDate !== 'all') {
-      const today = new Date();
-      const todayStr = today.toISOString().split('T')[0];
-      
+      const todayKey = getTodayDateKey();
+      const today = dateFromDateKey(todayKey);
+      const weekFromNow = new Date(today);
+      weekFromNow.setDate(today.getDate() + 7);
+
       filtered = filtered.filter(task => {
-        if (!task.dueDate) return allTasksFilters.dueDate === 'none';
-        
-        const dueDate = new Date(task.dueDate);
-        const dueDateStr = task.dueDate;
-        
+        const hasDue = !!task.dueDate;
+        const dueKey = hasDue ? getDateKey(task.dueDate as string) : '';
+        const dueDateOnly = hasDue ? dateFromDateKey(dueKey) : null;
+
         switch (allTasksFilters.dueDate) {
           case 'overdue':
-            return dueDateStr < todayStr;
+            return hasDue ? dueKey < todayKey : false;
           case 'today':
-            return dueDateStr === todayStr;
+            return hasDue ? dueKey === todayKey : false;
           case 'thisWeek':
-            const weekFromNow = new Date(today);
-            weekFromNow.setDate(today.getDate() + 7);
-            return dueDate >= today && dueDate <= weekFromNow;
+            return hasDue ? (dueDateOnly!.getTime() >= today.getTime() && dueDateOnly!.getTime() <= weekFromNow.getTime()) : false;
           case 'none':
-            return false;
+            return !hasDue;
           default:
             return true;
         }
@@ -417,30 +416,46 @@ export default function ProjectsTasksPage() {
 
         case 'dueDate':
           // Handle due date filtering logic
-          const today = new Date();
-          const todayStr = today.toISOString().split('T')[0];
+          const todayKey = getTodayDateKey();
+          const today = dateFromDateKey(todayKey);
+          const weekFromNow = new Date(today);
+          weekFromNow.setDate(today.getDate() + 7);
           tasksToGroup = filteredAllTasks.filter(task => {
             if (allTasksSubGroupBy === 'none') return !task.dueDate;
-            if (allTasksSubGroupBy === 'overdue') return task.dueDate && task.dueDate < todayStr;
-            if (allTasksSubGroupBy === 'today') return task.dueDate === todayStr;
-            if (allTasksSubGroupBy === 'thisWeek') {
-              if (!task.dueDate) return false;
-              const dueDate = new Date(task.dueDate);
-              const weekFromNow = new Date(today);
-              weekFromNow.setDate(today.getDate() + 7);
-              return dueDate >= today && dueDate <= weekFromNow;
-            }
-            if (allTasksSubGroupBy === 'later') {
-              if (!task.dueDate) return false;
-              const dueDate = new Date(task.dueDate);
-              const weekFromNow = new Date(today);
-              weekFromNow.setDate(today.getDate() + 7);
-              return dueDate > weekFromNow;
-            }
+            const hasDue = !!task.dueDate;
+            if (!hasDue) return false;
+            const dueKey = getDateKey(task.dueDate as string);
+            const dueDateOnly = dateFromDateKey(dueKey);
+            if (allTasksSubGroupBy === 'overdue') return dueKey < todayKey;
+            if (allTasksSubGroupBy === 'today') return dueKey === todayKey;
+            if (allTasksSubGroupBy === 'thisWeek') return dueDateOnly.getTime() >= today.getTime() && dueDateOnly.getTime() <= weekFromNow.getTime();
+            if (allTasksSubGroupBy === 'later') return dueDateOnly.getTime() > weekFromNow.getTime();
             return true;
           });
           break;
+        case 'completedDate':
+          // No subgroup filtering applied for completedDate grouping
+          break;
       }
+    }
+
+    // Special grouping for completed tasks by completion date
+    if (allTasksGroupBy === 'completedDate') {
+      const groups = new Map<string, TaskWithProject[]>();
+      tasksToGroup.forEach(task => {
+        if (task.status === 'completed' && task.completedAt) {
+          const key = getDateKey(task.completedAt);
+          if (!groups.has(key)) groups.set(key, []);
+          groups.get(key)!.push(task);
+        }
+      });
+      const todayKey2 = getTodayDateKey();
+      const entries = Array.from(groups.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+      return entries.map(([dateKey, tasks]) => ({
+        id: dateKey,
+        name: dateKey === todayKey2 ? 'Completed Today' : dateFromDateKey(dateKey).toLocaleDateString(),
+        tasks: sortTasks(tasks, allTasksSortBy, sortOrder)
+      }));
     }
 
     // Group tasks
@@ -465,17 +480,19 @@ export default function ProjectsTasksPage() {
             groupKey = 'none';
             groupName = 'No Due Date';
           } else {
-            const today = new Date();
-            const dueDate = new Date(task.dueDate);
-            const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-            
-            if (diffDays < 0) {
+            const todayKey = getTodayDateKey();
+            const today = dateFromDateKey(todayKey);
+            const weekFromNow = new Date(today);
+            weekFromNow.setDate(today.getDate() + 7);
+            const dueKey = getDateKey(task.dueDate as string);
+            const dueDateOnly = dateFromDateKey(dueKey);
+            if (dueKey < todayKey) {
               groupKey = 'overdue';
               groupName = 'Overdue';
-            } else if (diffDays === 0) {
+            } else if (dueKey === todayKey) {
               groupKey = 'today';
               groupName = 'Due Today';
-            } else if (diffDays <= 7) {
+            } else if (dueDateOnly.getTime() <= weekFromNow.getTime()) {
               groupKey = 'thisWeek';
               groupName = 'This Week';
             } else {
@@ -936,6 +953,7 @@ export default function ProjectsTasksPage() {
                       <option value="project">Project</option>
                       <option value="status">Status</option>
                       <option value="dueDate">Due Date</option>
+                      <option value="completedDate">Done by day</option>
                     </select>
                   </div>
 

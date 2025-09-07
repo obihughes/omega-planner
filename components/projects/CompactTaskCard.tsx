@@ -11,7 +11,7 @@ import {
   X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatDueDate } from '@/utils/dateUtils';
+import { formatDueDate, normalizeDueDate } from '@/utils/dateUtils';
 
 interface TaskWithProject extends ProjectTask {
   projectId: string;
@@ -44,6 +44,8 @@ export function CompactTaskCard({
   const [isDragging, setIsDragging] = useState(false); // For drag state
   const [isFadingOut, setIsFadingOut] = useState(false); // For fade-out animation
   const [pendingStatusChange, setPendingStatusChange] = useState<{ taskId: string; status: ProjectTask['status'] } | null>(null);
+  const [isEditingDueDate, setIsEditingDueDate] = useState(false);
+  const [dueDateValue, setDueDateValue] = useState('');
 
   const dueInfo = formatDueDate(task.dueDate);
 
@@ -138,6 +140,27 @@ export function CompactTaskCard({
         setIsFadingOut(false);
       }, 300);
     }
+  };
+
+  // Inline due date editing
+  const startEditingDueDate = () => {
+    setIsEditingDueDate(true);
+    setDueDateValue(task.dueDate || '');
+  };
+
+  const saveDueDate = () => {
+    if (!onUpdateTask) {
+      setIsEditingDueDate(false);
+      return;
+    }
+    const normalized = normalizeDueDate(dueDateValue);
+    onUpdateTask(task.id, { dueDate: normalized });
+    setIsEditingDueDate(false);
+  };
+
+  const cancelDueDate = () => {
+    setIsEditingDueDate(false);
+    setDueDateValue('');
   };
 
   // Create confetti particles animation
@@ -339,13 +362,43 @@ export function CompactTaskCard({
 
         {/* Column 6: Due date - Fixed width */}
         <div className="w-40 flex-shrink-0">
-          {task.dueDate && dueInfo && (
-            <div className="flex items-center gap-1" title={`Due: ${new Date(task.dueDate).toLocaleDateString()}`}>
+          {isEditingDueDate ? (
+            <div className="flex items-center gap-1">
+              <Clock className="w-3 h-3 text-muted-foreground/50" />
+              <input
+                type="date"
+                value={dueDateValue}
+                onChange={(e) => setDueDateValue(e.target.value)}
+                onBlur={saveDueDate}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') saveDueDate();
+                  if (e.key === 'Escape') cancelDueDate();
+                }}
+                className="text-xs bg-transparent border border-primary rounded px-1 py-0.5 focus:outline-none"
+                autoFocus
+              />
+            </div>
+          ) : task.dueDate && dueInfo ? (
+            <button
+              type="button"
+              onClick={startEditingDueDate}
+              className="flex items-center gap-1 hover:opacity-90"
+              title={`Due: ${new Date(task.dueDate).toLocaleDateString()}`}
+            >
               <Clock className="w-3 h-3 text-muted-foreground/50" />
               <span className="text-xs font-medium text-muted-foreground/70 truncate">
                 {dueInfo.text} ({new Date(task.dueDate).toLocaleDateString()})
               </span>
-            </div>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={startEditingDueDate}
+              className="text-xs text-muted-foreground/60 hover:text-foreground px-2 py-0.5 border border-dashed border-border rounded"
+              title="Add due date"
+            >
+              Add date
+            </button>
           )}
         </div>
 
