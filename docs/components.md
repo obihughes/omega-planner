@@ -371,6 +371,11 @@ Custom time selection component.
 
 ### Advanced Task Management Features (Latest Update)
 ### Workspace Tasks Enhancements (Inline Due Date, Done-by-day, Calendar Tooltip)
+### Monthly Scheduling View and Unlimited Dots
+- `components/projects/MonthlyTaskScheduler.tsx`: monthly grid for scheduling tasks via drag-and-drop; shows unlimited project-colored dots per day with wrapping and a selected-day task list.
+- `app/projects/tasks/page.tsx`: added Schedule/List toggle in header. When in Schedule, the right mini calendar sidebar is hidden and the monthly grid is shown.
+- `components/calendar/MiniSchedulerCalendar.tsx`: replaced single badge with unlimited wrapping dots at bottom of cells, colored by project.
+
 - Inline due date editing in `components/projects/CompactTaskCard.tsx` using a native date input. Saves on blur/Enter, cancels on Escape. Dates normalized to YYYY-MM-DD.
 - New grouping in `app/projects/tasks/page.tsx`: select "Done by day" to group tasks by `completedAt` date.
 - `components/projects/ProjectsCalendar.tsx`: completed-count badge now shows a tooltip with the titles of tasks completed on that day. Overdue/remaining time uses normalized date keys.

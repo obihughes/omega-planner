@@ -205,9 +205,15 @@ export function MiniSchedulerCalendar({
                 {day.date.getDate()}
               </span>
               
-              {/* Task count indicator */}
+              {/* Unlimited dots: wrap along bottom center */}
               {day.taskCount > 0 && (
-                <div className="absolute top-0 right-0 w-2 h-2 bg-primary" />
+                <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex flex-wrap gap-0.5 max-w-full px-1 justify-center">
+                  {tasks
+                    .filter(t => t.dueDate && t.dueDate === formatDateForComparison(day.date))
+                    .map(t => (
+                      <span key={t.id} className="inline-block w-1 h-1 rounded-full" style={{ backgroundColor: t.projectColor }} />
+                    ))}
+                </div>
               )}
             </div>
           ))}

@@ -5,6 +5,7 @@ import { TaskListView } from '@/components/projects/TaskListView';
 import { CompactTaskCard } from '@/components/projects/CompactTaskCard';
 import { DraggableTaskCard } from '@/components/projects/DraggableTaskCard';
 import { MiniSchedulerCalendar } from '@/components/calendar/MiniSchedulerCalendar';
+import { MonthlyTaskScheduler } from '@/components/projects/MonthlyTaskScheduler';
 import { AppLayout } from '@/components/ui/AppLayout';
 import { Button } from '@/components/ui/button';
 import { useViewMode } from '@/app/context/ViewModeContext';
@@ -112,7 +113,7 @@ interface TaskWithProject extends ProjectTask {
 // Removed ViewMode type - all functionality will be in a single view
 
 export default function ProjectsTasksPage() {
-  const { /* isSchedulingMode, setIsSchedulingMode */ } = useViewMode(); // Keep useViewMode for potential future use or if other components still rely on it
+  const { isSchedulingMode, setIsSchedulingMode } = useViewMode();
   const { projects, folders, updateTaskInProject, addTaskToProject, updateProject, deleteProject } = useProjects();
   
   // Initialize with default preferences to prevent hydration mismatch
@@ -858,6 +859,15 @@ export default function ProjectsTasksPage() {
               <Plus className="w-4 h-4" />
               Add Task
             </Button>
+            <Button
+              onClick={() => setIsSchedulingMode(!isSchedulingMode)}
+              size="sm"
+              variant={isSchedulingMode ? 'secondary' : 'outline'}
+              className="flex items-center gap-2"
+              title={isSchedulingMode ? 'Switch to list view' : 'Open monthly scheduling'}
+            >
+              {isSchedulingMode ? 'List' : 'Schedule'}
+            </Button>
           </div>
         </div>
 
@@ -912,10 +922,11 @@ export default function ProjectsTasksPage() {
         {/* Persistent Header */}
         <TasksHeader />
 
-        {/* Content Area - Always All Tasks View */}
+        {/* Content Area: List or Monthly Scheduling */}
         <div className="flex-1 overflow-hidden flex">
           <div className="container mx-auto px-6 py-6 h-full overflow-y-auto flex-1">
             {/* Filtering and Grouping Controls */}
+            {!isSchedulingMode && (
             <div className="mb-6">
               {/* Filter Controls - Restructured into two clear rows */}
               <div className="p-4 bg-muted/20 rounded-lg space-y-4">
@@ -1156,8 +1167,10 @@ export default function ProjectsTasksPage() {
                 </div>
               </div>
             </div>
+            )}
 
             {/* Tasks List */}
+            {!isSchedulingMode ? (
             <div className="max-w-5xl mx-auto space-y-6">
               {filteredAllTasks.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
@@ -1260,16 +1273,29 @@ export default function ProjectsTasksPage() {
                 })
               )}
             </div>
+            ) : (
+              <div className="max-w-6xl mx-auto">
+                <MonthlyTaskScheduler
+                  tasks={allTasks}
+                  onDateDrop={handleTaskSchedule}
+                  onDateSelect={(date) => {
+                    updatePreferences({ allTasksFilters: { ...allTasksFilters, dueDate: 'today' } });
+                  }}
+                />
+              </div>
+            )}
           </div>
 
           {/* Scheduling Calendar Sidebar */}
-          <div className="w-80 flex-shrink-0 border-l border-border/20 p-6 overflow-y-auto">
-            <MiniSchedulerCalendar
-              onDateDrop={handleTaskSchedule}
-              tasks={allTasks} // Pass all tasks for calendar context
-              className="sticky top-0"
-            />
-          </div>
+          {!isSchedulingMode && (
+            <div className="w-80 flex-shrink-0 border-l border-border/20 p-6 overflow-y-auto">
+              <MiniSchedulerCalendar
+                onDateDrop={handleTaskSchedule}
+                tasks={allTasks}
+                className="sticky top-0"
+              />
+            </div>
+          )}
         </div>
 
         {/* Add Task Modal */}
