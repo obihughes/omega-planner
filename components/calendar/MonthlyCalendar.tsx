@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { CalendarEvent, CalendarPeriod, CalendarData, CalendarProps } from '@/types/calendar';
-import { ChevronLeft, ChevronRight, Plus, Eye, CalendarDays } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Eye, CalendarDays, Trash2, X, Edit2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { EventModal } from './EventModal';
@@ -43,6 +43,7 @@ export function MonthlyCalendar({
   compact = false,
 }: MonthlyCalendarProps) {
   const [currentDate, setCurrentDate] = useState(initialDate || new Date());
+  const [showDayDetails, setShowDayDetails] = useState(false);
 
   useEffect(() => {
     if (initialDate) {
@@ -129,6 +130,7 @@ export function MonthlyCalendar({
 
   const handleDateClick = (date: Date) => {
     setSelectedDate(date);
+    setShowDayDetails(true);
   };
 
   const handleDateDoubleClick = (date: Date) => {
@@ -176,6 +178,7 @@ export function MonthlyCalendar({
     setEditingEvent(null);
     setEditingPeriod(null);
     setSelectedDate(null);
+    setShowDayDetails(false);
   };
 
   const handleEventDelete = () => {
@@ -194,6 +197,86 @@ export function MonthlyCalendar({
 
   return (
     <div className={cn("space-y-6", className)}>
+      {/* Day Details Modal (click-to-open summary) */}
+      {showDayDetails && selectedDate && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background border shadow-lg max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold">
+                {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+              </h3>
+              <Button variant="ghost" size="sm" onClick={() => setShowDayDetails(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="p-4 space-y-4">
+              {(() => {
+                const dayEvents = data.events.filter(e => e.date.toDateString() === selectedDate.toDateString());
+                const dayPeriods = data.periods.filter(p => {
+                  const d = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+                  const s = new Date(p.startDate.getFullYear(), p.startDate.getMonth(), p.startDate.getDate());
+                  const e = new Date(p.endDate.getFullYear(), p.endDate.getMonth(), p.endDate.getDate());
+                  return d >= s && d <= e;
+                });
+                return (
+                  <>
+                    {dayEvents.length === 0 && dayPeriods.length === 0 && (
+                      <p className="text-muted-foreground text-center py-8">No events or intervals on this day</p>
+                    )}
+                    {dayEvents.length > 0 && (
+                      <div>
+                        <h4 className="font-medium mb-2 text-sm text-muted-foreground uppercase tracking-wide">Events</h4>
+                        <div className="space-y-2">
+                          {dayEvents.map(event => (
+                            <div key={event.id} className="flex items-center gap-3 p-3 border cursor-pointer transition-colors" onClick={() => { setEditingEvent(event); setShowEventModal(true); setShowDayDetails(false); }}>
+                              <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: event.color }} />
+                              <div className="flex-1">
+                                <div className="font-medium">{event.title}</div>
+                                {(event.notes || event.description) && (
+                                  <div className="text-sm text-foreground mt-1 p-2 bg-muted/50 rounded-md whitespace-pre-wrap border border-border max-h-24 overflow-y-auto">{event.notes || event.description}</div>
+                                )}
+                              </div>
+                              {onEventDelete && (
+                                <Button variant="destructive" size="sm" onClick={(e) => { e.stopPropagation(); onEventDelete(event.id); }}>
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {dayPeriods.length > 0 && (
+                      <div>
+                        <h4 className="font-medium mb-2 text-sm text-muted-foreground uppercase tracking-wide">Intervals</h4>
+                        <div className="space-y-2">
+                          {dayPeriods.map(period => (
+                            <div key={period.id} className="flex items-center gap-3 p-3 border cursor-pointer transition-colors" onClick={() => { setEditingPeriod(period); setShowPeriodModal(true); setShowDayDetails(false); }}>
+                              <div className="w-6 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: period.color }} />
+                              <div className="flex-1">
+                                <div className="font-medium">{period.title}</div>
+                                <div className="text-sm text-muted-foreground">{period.startDate.toLocaleDateString()} - {period.endDate.toLocaleDateString()}</div>
+                                {(period.notes || period.description) && (
+                                  <div className="text-sm text-foreground mt-1 p-2 bg-muted/50 rounded-md whitespace-pre-wrap border border-border max-h-24 overflow-y-auto">{period.notes || period.description}</div>
+                                )}
+                              </div>
+                              {onPeriodDelete && (
+                                <Button variant="destructive" size="sm" onClick={(e) => { e.stopPropagation(); onPeriodDelete(period.id); }}>
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
       {/* Header with Navigation */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -307,7 +390,6 @@ export function MonthlyCalendar({
                 className={cn(
                   compact ? "min-h-[80px]" : "min-h-[100px]",
                   "border-r border-b border-border/30 last:border-r-0 transition-all duration-200 cursor-pointer relative group",
-                  "hover:bg-accent/10",
                   !day.isCurrentMonth && "text-muted-foreground/50",
                   isPast && "opacity-50",
                   day.isToday && "border-primary border-2 bg-primary/10 ring-2 ring-primary/30",
@@ -331,8 +413,7 @@ export function MonthlyCalendar({
                   !day.isCurrentMonth && "bg-muted/20",
                   day.isCurrentMonth && "bg-background",
                   day.isToday && "bg-primary/15",
-                  selectedDate && day.date.toDateString() === selectedDate.toDateString() && "bg-accent/20",
-                  "group-hover:bg-accent/40"
+                  selectedDate && day.date.toDateString() === selectedDate.toDateString() && "bg-accent/20"
                 )} />
                 
                 {/* Period Background Layer */}
@@ -377,7 +458,7 @@ export function MonthlyCalendar({
                         borderLeftColor: event.color
                       }}
                       onClick={(e) => handleEventClick(event, e)}
-                      title={`${event.title}${event.description ? ` - ${event.description}` : ''}`}
+                      title={`${event.title}${(event.notes || event.description) ? ` - ${event.notes || event.description}` : ''}`}
                     >
                       <div className="flex items-center gap-1.5 flex-1 min-w-0">
                         <span className={cn("truncate font-medium text-gray-800 dark:text-gray-800", compact ? "text-[10px]" : "text-xs")}>

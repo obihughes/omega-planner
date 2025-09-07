@@ -12,13 +12,12 @@ import {
   getPeriodSegmentsForMonth,
   isSameDay
 } from '@/utils/calendar';
-import { ChevronLeft, ChevronRight, Plus, Edit2, X, Eraser } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Edit2, X, Eraser, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EventModal } from './EventModal';
 import { PeriodModal } from './PeriodModal';
 import { cn } from '@/lib/utils';
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+// Removed hover-based summary UI in favor of click-to-open details
 import { getContrastColor } from '@/utils/colorUtils';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -37,12 +36,16 @@ function EventPeriodDetailsModal({
   event,
   period,
   onEdit,
+  onDeleteEvent,
+  onDeletePeriod,
 }: {
   isOpen: boolean;
   onClose: () => void;
   event?: CalendarEvent | null;
   period?: CalendarPeriod | null;
   onEdit?: () => void;
+  onDeleteEvent?: (eventId: string) => void;
+  onDeletePeriod?: (periodId: string) => void;
 }) {
   if (!isOpen || (!event && !period)) return null;
 
@@ -87,19 +90,11 @@ function EventPeriodDetailsModal({
             </p>
           </div>
 
-          {/* Description */}
-          {item!.description && (
+          {/* Details (prefer notes, fallback to description) */}
+          {(item!.notes || item!.description) && (
             <div>
-              <p className="text-sm text-muted-foreground mb-1">Description</p>
-              <p className="text-sm">{item!.description}</p>
-            </div>
-          )}
-
-          {/* Notes */}
-          {item!.notes && (
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">Notes</p>
-              <div className="text-sm p-3 bg-muted/50 whitespace-pre-wrap border border-border max-h-32 overflow-y-auto">{item!.notes}</div>
+              <p className="text-sm text-muted-foreground mb-1">Details</p>
+              <div className="text-sm p-3 bg-muted/50 whitespace-pre-wrap border border-border max-h-32 overflow-y-auto">{item!.notes || item!.description}</div>
             </div>
           )}
         </div>
@@ -111,6 +106,16 @@ function EventPeriodDetailsModal({
           <Button size="sm" onClick={onEdit}>
             <Edit2 className="w-4 h-4 mr-2" /> Edit
           </Button>
+          {event && onDeleteEvent && (
+            <Button size="sm" variant="destructive" onClick={() => onDeleteEvent(event.id)}>
+              <Trash2 className="w-4 h-4 mr-2" /> Delete
+            </Button>
+          )}
+          {period && onDeletePeriod && (
+            <Button size="sm" variant="destructive" onClick={() => onDeletePeriod(period.id)}>
+              <Trash2 className="w-4 h-4 mr-2" /> Delete
+            </Button>
+          )}
         </div>
       </div>
     </div>
@@ -128,6 +133,8 @@ function DayDetailsModal({
   onPeriodClick,
   onAddEventRequest,
   onAddPeriodRequest,
+  onEventDelete,
+  onPeriodDelete,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -138,6 +145,8 @@ function DayDetailsModal({
   onPeriodClick?: (period: CalendarPeriod) => void;
   onAddEventRequest?: () => void;
   onAddPeriodRequest?: () => void;
+  onEventDelete?: (eventId: string) => void;
+  onPeriodDelete?: (periodId: string) => void;
 }) {
   if (!isOpen || !date) return null;
 
@@ -170,7 +179,7 @@ function DayDetailsModal({
                     {events.map(event => (
                       <div 
                         key={event.id}
-                        className="flex items-center gap-3 p-3 border hover:bg-accent/50 cursor-pointer transition-colors"
+                        className="flex items-center gap-3 p-3 border cursor-pointer transition-colors"
                         onClick={() => onEventClick?.(event)}
                       >
                         <div 
@@ -179,14 +188,15 @@ function DayDetailsModal({
                         />
                         <div className="flex-1">
                           <div className="font-medium">{event.title}</div>
-                          {event.description && (
-                            <div className="text-sm text-muted-foreground">{event.description}</div>
-                          )}
-                          {event.notes && (
-                            <div className="text-sm text-foreground mt-1 p-2 bg-muted/50 rounded-md whitespace-pre-wrap border border-border max-h-24 overflow-y-auto">{event.notes}</div>
+                          {(event.notes || event.description) && (
+                            <div className="text-sm text-foreground mt-1 p-2 bg-muted/50 rounded-md whitespace-pre-wrap border border-border max-h-24 overflow-y-auto">{event.notes || event.description}</div>
                           )}
                         </div>
-                        <Edit2 className="w-4 h-4 text-muted-foreground" />
+                        {onEventDelete && (
+                          <Button variant="destructive" size="sm" onClick={(e) => { e.stopPropagation(); onEventDelete(event.id); }}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -200,7 +210,7 @@ function DayDetailsModal({
                     {periods.map(period => (
                       <div 
                         key={period.id}
-                        className="flex items-center gap-3 p-3 border hover:bg-accent/50 cursor-pointer transition-colors"
+                        className="flex items-center gap-3 p-3 border cursor-pointer transition-colors"
                         onClick={() => onPeriodClick?.(period)}
                       >
                         <div 
@@ -212,14 +222,15 @@ function DayDetailsModal({
                           <div className="text-sm text-muted-foreground">
                             {period.startDate.toLocaleDateString()} - {period.endDate.toLocaleDateString()}
                           </div>
-                          {period.description && (
-                            <div className="text-sm text-muted-foreground">{period.description}</div>
-                          )}
-                          {period.notes && (
-                            <div className="text-sm text-foreground mt-1 p-2 bg-muted/50 rounded-md whitespace-pre-wrap border border-border max-h-24 overflow-y-auto">{period.notes}</div>
+                          {(period.notes || period.description) && (
+                            <div className="text-sm text-foreground mt-1 p-2 bg-muted/50 rounded-md whitespace-pre-wrap border border-border max-h-24 overflow-y-auto">{period.notes || period.description}</div>
                           )}
                         </div>
-                        <Edit2 className="w-4 h-4 text-muted-foreground" />
+                        {onPeriodDelete && (
+                          <Button variant="destructive" size="sm" onClick={(e) => { e.stopPropagation(); onPeriodDelete(period.id); }}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -749,9 +760,7 @@ export function YearCalendar({
               return <div key={date.toISOString()} className="h-8" />;
             }
 
-            const isHovered = hoveredItemId && 
-              (dayInfo.events.some(e => e.id === hoveredItemId) || 
-               dayInfo.periods.some(p => p.id === hoveredItemId));
+            // Hover highlighting disabled
 
             // Remove the old border-style event indicator - replaced with color circles
             
@@ -791,25 +800,20 @@ export function YearCalendar({
             const isDragTarget = dragMode && draggedPeriod && dayInfo.periods.some(p => p.id === draggedPeriod.id);
 
             return (
-              <HoverCard>
-                <HoverCardTrigger asChild>
-                  <div
+              <div
                     key={date.toISOString()}
                     data-date={date.toISOString()}
                     className={cn(`
                       relative h-8 flex items-center justify-center text-xs border transition-all duration-200`,
                       isPast 
                         ? 'text-muted-foreground/40 cursor-default border-border/20' 
-                        : 'text-foreground cursor-pointer border-border/40 hover:border-border/60',
-                      !periodStyle.backgroundColor && !isPast && 'bg-card hover:bg-accent/20',
+                        : 'text-foreground cursor-pointer border-border/40',
+                      !periodStyle.backgroundColor && !isPast && 'bg-card',
                       !dayInfo.isCurrentMonth && 'bg-muted/10 border-border/10',
                       dayInfo.isToday && 'bg-primary/20 text-primary-foreground font-bold border-primary/60 shadow-md ring-2 ring-primary/40 ring-offset-1 ring-offset-background',
                       selectedDate && isSameDay(date, selectedDate) && !periodStyle.backgroundColor && 'bg-accent/30 border-accent-foreground/40',
-                      isHovered && !periodStyle.backgroundColor && 'bg-accent/40 ring-2 ring-accent-foreground/30 ring-offset-1 ring-offset-background',
-                      isHovered && periodStyle.backgroundColor && 'ring-2 ring-yellow-400/60 ring-offset-1 ring-offset-background shadow-lg', // Enhanced highlighting for periods
-                      isDragTarget && 'ring-2 ring-blue-400/60 shadow-lg scale-105', // Visual feedback for drag
-                      dragMode && dayInfo.periods.length > 0 && 'cursor-grabbing',
-                      !dragMode && dayInfo.periods.length > 0 && !isPast && 'hover:shadow-md hover:scale-[1.02] cursor-grab transition-transform duration-200' // Indicate draggable
+                      isDragTarget && 'ring-2 ring-blue-400/60 shadow-lg',
+                      dragMode && dayInfo.periods.length > 0 && 'cursor-grabbing'
                     )}
                     style={{ ...periodStyle }}
                     onClick={() => !isPast && handleDateClick(date)}
@@ -830,40 +834,6 @@ export function YearCalendar({
                     </span>
                     {renderEventCircles(dayInfo.events)}
                   </div>
-                </HoverCardTrigger>
-                <HoverCardContent className="w-64 p-3">
-                  <div className="text-sm font-semibold mb-2">
-                    {date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                  </div>
-                  <div className="space-y-2">
-                    {dayInfo.events.length > 0 && (
-                      <div>
-                        <h4 className="text-xs font-bold uppercase text-muted-foreground mb-1">Events</h4>
-                        {dayInfo.events.map(event => (
-                          <div key={event.id} className="flex items-center gap-2 text-xs">
-                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: event.color }} />
-                            <span>{event.title}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {dayInfo.periods.length > 0 && (
-                      <div>
-                        <h4 className="text-xs font-bold uppercase text-muted-foreground mb-1">Periods</h4>
-                        {dayInfo.periods.map(period => (
-                          <div key={period.id} className="flex items-center gap-2 text-xs">
-                            <div className="w-2 h-1 rounded-full" style={{ backgroundColor: period.color }} />
-                            <span>{period.title}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {dayInfo.events.length === 0 && dayInfo.periods.length === 0 && (
-                      <p className="text-xs text-muted-foreground">No events or periods.</p>
-                    )}
-                  </div>
-                </HoverCardContent>
-              </HoverCard>
             );
           })}
         </div>
@@ -1088,6 +1058,8 @@ export function YearCalendar({
         event={viewingEvent}
         period={viewingPeriod}
         onEdit={handleDetailsEdit}
+        onDeleteEvent={onEventDelete}
+        onDeletePeriod={onPeriodDelete}
       />
 
       <DayDetailsModal
@@ -1117,6 +1089,8 @@ export function YearCalendar({
           setDayDetailsOpen(false);
           handleAddPeriod();
         }}
+        onEventDelete={onEventDelete}
+        onPeriodDelete={onPeriodDelete}
       />
 
       {actionPopup && (

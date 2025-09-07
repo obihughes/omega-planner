@@ -49,7 +49,6 @@ export function PeriodModal({
   initialDate 
 }: PeriodModalProps) {
   const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
   const [notes, setNotes] = useState('');
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date>(new Date());
@@ -60,14 +59,12 @@ export function PeriodModal({
   useEffect(() => {
     if (period) {
       setTitle(period.title);
-      setDescription(period.description || '');
-      setNotes(period.notes || '');
+      setNotes(period.notes || period.description || '');
       setStartDate(new Date(period.startDate));
       setEndDate(new Date(period.endDate));
       setColor(period.color);
     } else {
       setTitle('');
-      setDescription('');
       setNotes('');
       const start = initialDate || new Date();
       const end = new Date(start);
@@ -84,7 +81,6 @@ export function PeriodModal({
 
     onSave({
       title: title.trim(),
-      description: description.trim(),
       notes: notes.trim(),
       startDate,
       endDate,
@@ -226,21 +222,7 @@ export function PeriodModal({
             </div>
           </div>
 
-          {/* Description */}
-          <div>
-            <label className="text-xs font-medium text-foreground mb-2 block">
-              Description (optional)
-            </label>
-            <Textarea
-              value={description}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
-              placeholder="Interval description"
-              className="w-full text-sm"
-              rows={2}
-            />
-          </div>
-
-          {/* Notes */}
+          {/* Notes (single details field) */}
           <div>
             <label className="text-xs font-medium text-foreground mb-2 block">
               Notes
@@ -250,7 +232,7 @@ export function PeriodModal({
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Add detailed notes..."
               className="w-full text-sm resize-none"
-              rows={3}
+              rows={4}
             />
           </div>
 
