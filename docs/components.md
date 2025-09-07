@@ -15,6 +15,10 @@ Location: `components/projects/ProjectsTimeline.tsx`
 
 This document provides detailed information about the components used in the Daily Planner application.
 
+Projects Calendar compact sizing
+- Reduced header font and padding to align with monthly calendar compact style
+- Reduced day cell min-height to 80px, tighter paddings, smaller text for entries and badges
+
 ## Table of Contents
 
 1. [Planner Components](#planner-components)
