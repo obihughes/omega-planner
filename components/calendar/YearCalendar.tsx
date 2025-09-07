@@ -388,19 +388,10 @@ export function YearCalendar({
   };
 
   const handleDateClick = (date: Date) => {
-    if (longPressTriggered.current) {
-      return;
-    }
-    const dayInfo = getDayInfo(date, date.getMonth(), data.events, data.periods, []);
-    
-    if (dayInfo.events.length > 0 || dayInfo.periods.length > 0) {
-      // Show day details if there are events or periods
-      setSelectedDate(date);
-      setDayDetailsOpen(true);
-    } else {
-      // Just select the date if empty
-      setSelectedDate(date);
-    }
+    if (longPressTriggered.current) return;
+    // Always open day details to show what's scheduled (or empty message)
+    setSelectedDate(date);
+    setDayDetailsOpen(true);
   };
 
   const handleDateDoubleClick = (date: Date) => {

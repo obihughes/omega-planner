@@ -619,6 +619,7 @@ This ensures consistency across the application and maintains the sharp, profess
 - `EventModal` and `PeriodModal` simplified to a single Notes field; `description` is no longer edited separately.
 - Summaries and tooltips prefer `notes` when present, otherwise display `description`.
 - Daily view "Back to Calendar" now routes to monthly calendar (`/calendar?view=monthly`) and preserves last date when available via `lastCalendarDate`.
+- Yearly view: clicking any date opens a Day Details modal (shows events/intervals or an empty message), even for past dates.
 
 Affected files:
 - `components/calendar/YearCalendar.tsx`
