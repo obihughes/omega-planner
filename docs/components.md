@@ -610,3 +610,17 @@ The Omega Planner uses a **sharp, clean design system** with minimal rounded edg
 ```
 
 This ensures consistency across the application and maintains the sharp, professional appearance that defines the Omega Planner design language. 
+
+## Calendar Updates (2025-09-07)
+
+- Hover-based summaries disabled across `YearCalendar` and `MonthlyCalendar` date cells.
+- Clicking a date now opens a summary modal listing events/periods for that day.
+- Day summaries show Details (prefer `notes`, fallback to `description`) and include a Delete button for each item.
+- `EventModal` and `PeriodModal` simplified to a single Notes field; `description` is no longer edited separately.
+- Summaries and tooltips prefer `notes` when present, otherwise display `description`.
+
+Affected files:
+- `components/calendar/YearCalendar.tsx`
+- `components/calendar/MonthlyCalendar.tsx`
+- `components/calendar/EventModal.tsx`
+- `components/calendar/PeriodModal.tsx` 
