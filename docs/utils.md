@@ -13,7 +13,7 @@ Functions:
 - Number formatting
 - Other data transformation utilities
 
-### Storage (`/utils/storage.ts`)
+### Storage (`/utils/storage.ts` and calendar storage)
 Contains utilities for handling data storage and persistence.
 
 Functions:
@@ -131,7 +131,7 @@ Gets today's date in YYYY-MM-DD format.
 #### `getCalendarDateForColumn(columnDayOffset): string`
 Helper for getting date keys for timeline columns.
 
-**Important:** All date utilities are timezone-safe and use consistent formatting to prevent date-related bugs in drag and drop operations.
+**Important:** All date utilities are timezone-safe and use consistent formatting to prevent date-related bugs in drag and drop operations. The calendar now also persists dates as YYYY-MM-DD keys (`dateKey`, `startDateKey`, `endDateKey`) and reconstructs `Date` objects at runtime to match the daily planner's `baseDate` convention.
 
 ## Storage Utilities (`utils/storage.ts`)
 

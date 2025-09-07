@@ -3,7 +3,10 @@ export interface CalendarEvent {
   title: string;
   description?: string;
   notes?: string;
+  // UI/runtime representation
   date: Date;
+  // Storage-friendly representation (YYYY-MM-DD); optional for backward compatibility
+  dateKey?: string;
   color: string;
   type: 'event';
 }
@@ -13,8 +16,12 @@ export interface CalendarPeriod {
   title: string;
   description?: string;
   notes?: string;
+  // UI/runtime representation
   startDate: Date;
   endDate: Date;
+  // Storage-friendly representation (YYYY-MM-DD); optional for backward compatibility
+  startDateKey?: string;
+  endDateKey?: string;
   color: string;
   type: 'period';
 }

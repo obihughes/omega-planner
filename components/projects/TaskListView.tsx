@@ -444,8 +444,11 @@ export function TaskListView({ className }: TaskListViewProps) {
   const [fullTaskForm, setFullTaskForm] = useState({
     title: '',
     description: '',
-    dueDate: '',
     projectId: '',
+    status: 'todo' as ProjectTask['status'],
+    priority: 'medium' as ProjectTask['priority'],
+    startDate: '',
+    dueDate: '',
     estimatedHours: ''
   });
   
@@ -752,8 +755,11 @@ export function TaskListView({ className }: TaskListViewProps) {
     setFullTaskForm({
       title: '',
       description: '',
-      dueDate: '',
       projectId: '',
+      status: 'todo',
+      priority: 'medium',
+      startDate: '',
+      dueDate: '',
       estimatedHours: ''
     });
     setIsFullTaskModalOpen(true);
@@ -769,10 +775,11 @@ export function TaskListView({ className }: TaskListViewProps) {
     const taskData = {
       title: fullTaskForm.title.trim(),
       description: fullTaskForm.description.trim() || undefined,
-      priority: 'medium' as const,
+      priority: fullTaskForm.priority,
+      status: fullTaskForm.status,
+      startDate: fullTaskForm.startDate || undefined,
       dueDate: fullTaskForm.dueDate || undefined,
       estimatedHours: fullTaskForm.estimatedHours ? parseInt(fullTaskForm.estimatedHours) : undefined,
-      status: 'todo' as const
     };
 
     if (fullTaskForm.projectId && fullTaskForm.projectId !== 'unassigned') {
@@ -1138,8 +1145,11 @@ export function TaskListView({ className }: TaskListViewProps) {
                           setFullTaskForm({
                             title: '',
                             description: '',
-                            dueDate: '',
                             projectId: group.id,
+                            status: 'todo',
+                            priority: 'medium',
+                            startDate: '',
+                            dueDate: '',
                             estimatedHours: ''
                           });
                           setIsFullTaskModalOpen(true);
@@ -1241,15 +1251,19 @@ export function TaskListView({ className }: TaskListViewProps) {
       {/* Full Task Creation Modal */}
       {isFullTaskModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-card border border-border rounded-lg p-6 w-full max-w-md mx-4">
+          <form
+            className="bg-card border border-border rounded-lg p-6 w-full max-w-md mx-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleFullTaskSubmit();
+            }}
+          >
             <h3 className="text-lg font-semibold text-foreground mb-4">Create New Task</h3>
             
             <div className="space-y-4">
-              {/* Task Title */}
+              {/* Title */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Task Title *
-                </label>
+                <label className="block text-sm font-medium text-foreground mb-1">Task Title *</label>
                 <Input
                   type="text"
                   value={fullTaskForm.title}
@@ -1260,81 +1274,129 @@ export function TaskListView({ className }: TaskListViewProps) {
                 />
               </div>
 
+              {/* Project and Status */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">Project</label>
+                  <div className="relative">
+                    {(() => {
+                      const selected = projects.find(p => p.id === fullTaskForm.projectId);
+                      return selected ? (
+                        <span
+                          className="absolute left-2 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full"
+                          style={{ backgroundColor: selected.color }}
+                        />
+                      ) : null;
+                    })()}
+                    <select
+                      value={fullTaskForm.projectId}
+                      onChange={(e) => setFullTaskForm(prev => ({ ...prev, projectId: e.target.value }))}
+                      className="w-full p-2 pl-5 border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
+                    >
+                      <option value="">Select a project...</option>
+                      {projects.filter(p => !p.isDeleted).map(project => (
+                        <option key={project.id} value={project.id}>{project.name}</option>
+                      ))}
+                      <option value="unassigned">Unassigned</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">Status</label>
+                  <select
+                    value={fullTaskForm.status}
+                    onChange={(e) => setFullTaskForm(prev => ({ ...prev, status: e.target.value as ProjectTask['status'] }))}
+                    className="w-full p-2 border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="todo">To Do</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="blocked">Blocked</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Priority and Estimated Hours */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">Priority</label>
+                  <select
+                    value={fullTaskForm.priority}
+                    onChange={(e) => setFullTaskForm(prev => ({ ...prev, priority: e.target.value as ProjectTask['priority'] }))}
+                    className="w-full p-2 border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">Estimated Hours</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    value={fullTaskForm.estimatedHours}
+                    onChange={(e) => setFullTaskForm(prev => ({ ...prev, estimatedHours: e.target.value }))}
+                    placeholder="Optional"
+                    className="w-full"
+                  />
+                </div>
+              </div>
+
+              {/* Dates */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">Start Date</label>
+                  <Input
+                    type="date"
+                    value={fullTaskForm.startDate}
+                    onChange={(e) => setFullTaskForm(prev => ({ ...prev, startDate: e.target.value }))}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">Due Date</label>
+                  <Input
+                    type="date"
+                    value={fullTaskForm.dueDate}
+                    onChange={(e) => setFullTaskForm(prev => ({ ...prev, dueDate: e.target.value }))}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Description
-                </label>
+                <label className="block text-sm font-medium text-foreground mb-1">Description</label>
                 <textarea
                   value={fullTaskForm.description}
                   onChange={(e) => setFullTaskForm(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Optional description..."
+                  placeholder="Add task description..."
                   className="w-full p-2 border border-border rounded resize-none focus:outline-none focus:ring-1 focus:ring-primary"
                   rows={3}
-                />
-              </div>
-
-              {/* Project Selection */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Project
-                </label>
-                <select
-                  value={fullTaskForm.projectId}
-                  onChange={(e) => setFullTaskForm(prev => ({ ...prev, projectId: e.target.value }))}
-                  className="w-full p-2 border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
-                >
-                  <option value="">Select a project...</option>
-                  {projects.filter(p => !p.isDeleted).map(project => (
-                    <option key={project.id} value={project.id}>{project.name}</option>
-                  ))}
-                  <option value="unassigned">Unassigned</option>
-                </select>
-              </div>
-
-              {/* Due Date */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Due Date
-                </label>
-                <Input
-                  type="date"
-                  value={fullTaskForm.dueDate}
-                  onChange={(e) => setFullTaskForm(prev => ({ ...prev, dueDate: e.target.value }))}
-                  className="w-full"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Estimated Hours
-                </label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.5"
-                  value={fullTaskForm.estimatedHours}
-                  onChange={(e) => setFullTaskForm(prev => ({ ...prev, estimatedHours: e.target.value }))}
-                  placeholder="Optional"
-                  className="w-full"
                 />
               </div>
             </div>
 
             {/* Modal Actions */}
-            <div className="flex items-center justify-end gap-3 mt-6">
-              <Button variant="ghost" onClick={closeFullTaskModal}>
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleFullTaskSubmit}
-                disabled={!fullTaskForm.title.trim()}
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
-              >
-                Create Task
-              </Button>
+            <div className="flex items-center justify-between gap-3 mt-6">
+              <span className="text-xs text-muted-foreground">Press Ctrl+Enter to save quickly</span>
+              <div className="flex items-center gap-3">
+                <Button variant="ghost" type="button" onClick={closeFullTaskModal}>
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit"
+                  disabled={!fullTaskForm.title.trim()}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  Create Task
+                </Button>
+              </div>
             </div>
-          </div>
+          </form>
         </div>
       )}
       {/* Project Edit Modal */}

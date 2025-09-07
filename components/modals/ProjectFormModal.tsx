@@ -40,6 +40,7 @@ const PROJECT_STATUSES: { value: Project['status']; label: string; color: string
 
 export function ProjectFormModal({ isOpen, onClose, project, folders = [], onSave, onDelete }: ProjectFormModalProps) {
   const isNewProject = !project;
+  const isSystemUnassigned = project?.id === 'unassigned';
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<Project['status']>('planning');
@@ -131,7 +132,7 @@ export function ProjectFormModal({ isOpen, onClose, project, folders = [], onSav
 
   const handleDelete = () => {
     if (project && onDelete) {
-      if (confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
+      if (confirm('Archive this project? You can restore it later from the Archived view.')) {
         onDelete(project.id);
         onClose();
       }
@@ -160,7 +161,16 @@ export function ProjectFormModal({ isOpen, onClose, project, folders = [], onSav
           </button>
         </div>
 
-        <form onSubmit={handleSave} className="space-y-4">
+        <form 
+          onSubmit={handleSave} 
+          className="space-y-4"
+          onKeyDown={(e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+              e.preventDefault();
+              handleSave(e as unknown as React.FormEvent);
+            }
+          }}
+        >
           {/* Project Name */}
           <div>
             <label htmlFor="project-name" className="block text-sm font-medium text-foreground mb-2">
@@ -175,7 +185,11 @@ export function ProjectFormModal({ isOpen, onClose, project, folders = [], onSav
               className="w-full p-3 bg-background border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-ring outline-none text-foreground"
               placeholder="Enter project name..."
               required
+              disabled={isSystemUnassigned}
             />
+            {isSystemUnassigned && (
+              <p className="mt-1 text-xs text-muted-foreground">This is the system project for tasks without a project. It cannot be renamed or deleted.</p>
+            )}
           </div>
 
           {/* Description */}
@@ -225,6 +239,7 @@ export function ProjectFormModal({ isOpen, onClose, project, folders = [], onSav
                 value={folderId || ''}
                 onChange={(e) => setFolderId(e.target.value || undefined)}
                 className="w-full p-3 bg-background border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-ring outline-none text-foreground"
+                disabled={isSystemUnassigned}
               >
                 <option value="">Unsorted Projects (No Folder)</option>
                 {folders.map((folder) => (
@@ -339,14 +354,14 @@ export function ProjectFormModal({ isOpen, onClose, project, folders = [], onSav
           {/* Action Buttons */}
           <div className="flex justify-between items-center pt-4 border-t border-border">
             <div>
-              {!isNewProject && onDelete && (
+              {!isNewProject && onDelete && !isSystemUnassigned && (
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handleDelete}
                   className="text-red-600 border-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                 >
-                  Delete Project
+                  Archive Project
                 </Button>
               )}
             </div>

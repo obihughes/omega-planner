@@ -1189,36 +1189,36 @@ export default function ProjectsTasksPage() {
                           </div>
                           {/* Add/Edit Project Buttons - Only for project groups */}
                           {isProjectGroup && (
-                            <Button
-                              onClick={(e) => {
-                                e.stopPropagation(); // Prevent group collapse/expand
-                                setEditingTask(null);
-                                setIsAddTaskModalOpen(true);
-                                // Pre-select the project by setting a temporary project ID
-                                (window as any).selectedProjectId = group.id;
-                              }}
-                              variant="ghost"
-                              size="sm"
-                              className="text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
-                            >
-                              <Plus className="w-4 h-4" />
-                            </Button>
-                          )}
-                          {isProjectGroup && (
-                            <Button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const proj = projects.find(p => p.id === group.id) || null;
-                                setEditingProject(proj);
-                                setIsProjectModalOpen(!!proj);
-                              }}
-                              variant="ghost"
-                              size="sm"
-                              className="text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
-                              title="Edit project"
-                            >
-                              <Edit3 className="w-4 h-4" />
-                            </Button>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                onClick={(e) => {
+                                  e.stopPropagation(); // Prevent group collapse/expand
+                                  setEditingTask(null);
+                                  setIsAddTaskModalOpen(true);
+                                  // Pre-select the project by setting a temporary project ID
+                                  (window as any).selectedProjectId = group.id;
+                                }}
+                                variant="ghost"
+                                size="sm"
+                                className="text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+                              >
+                                <Plus className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const proj = projects.find(p => p.id === group.id) || null;
+                                  setEditingProject(proj);
+                                  setIsProjectModalOpen(!!proj);
+                                }}
+                                variant="ghost"
+                                size="sm"
+                                className="text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+                                title="Edit project"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </Button>
+                            </div>
                           )}
                         </div>
                       )}
