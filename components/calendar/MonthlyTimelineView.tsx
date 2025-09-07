@@ -9,6 +9,8 @@ import { cn } from '@/lib/utils';
 import { formatDuration, formatTime } from '@/utils/formatters';
 import { getDateKey } from '@/utils/dateUtils';
 import { MiniDailyTimeline } from '../planner/MiniDailyTimeline';
+import { DailyEventsContainer } from '../planner/DailyEventsContainer';
+import { useCalendarData } from '../../hooks/useCalendarData';
 
 interface TaskCardProps {
   task: Task;
@@ -154,6 +156,7 @@ export function MonthlyTimelineView({
 }: MonthlyTimelineViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const { data: calendarData } = useCalendarData();
   // Removed unused state variables for search and filters since we're using mini timeline now
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
@@ -509,16 +512,78 @@ export function MonthlyTimelineView({
         </div>
       </div>
 
-      {/* Right Side - Mini Daily Timeline */}
-      <div className="flex-1 border-r border-border bg-card/30">
-        <MiniDailyTimeline
-          selectedDate={selectedDate}
-          tasksByDate={scheduledTasks}
+      {/* Right Side - Date Header + Events + Task Pool + Mini Daily Timeline */}
+      <div className="flex-1 bg-background p-3 pt-2 overflow-hidden flex flex-col">
+        {/* Date header above events/pool per request */}
+        <div className="p-2 border-b border-border/60 bg-card/40 rounded-lg mb-2">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold">
+              {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}
+            </h3>
+            <div className="text-xs text-muted-foreground">Now: {new Date().toLocaleTimeString('en-US', { hour: 'numeric' })}</div>
+              </div>
+            </div>
+            
+        {/* Events/Periods strip like Daily view */}
+        <DailyEventsContainer
+          events={calendarData.events}
+          periods={calendarData.periods}
+          currentDate={selectedDate}
+          eventsOnly={false}
+          showHeader={false}
+        />
+
+        {/* Compact Task Pool row (general + selected-date pool) */}
+        <div className="mb-3 bg-card/40 border border-border/60 shadow-sm rounded-lg overflow-hidden">
+          <div className="h-10 px-2 py-1 flex items-center gap-2 overflow-x-auto overflow-y-hidden">
+                                                        <Button
+                              variant="ghost"
+                              size="sm"
+              className="h-7 w-7 p-0 flex-shrink-0"
+              onClick={() => openEditModal(undefined, { isNew: true, isFromPool: true, targetDate: selectedDate })}
+              title="Add Task to Pool"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </Button>
+            {(() => {
+              const dateKey = getDateKey(selectedDate);
+              const datePool = getPoolTasksForDate(dateKey) || [];
+              const generalPool = poolTasks.filter(t => !t.baseDate || t.baseDate === '');
+              const map = new Map<string, Task>();
+              [...datePool, ...generalPool].forEach(t => map.set(t.id, t));
+              const pooled = Array.from(map.values());
+              return pooled.length === 0 ? (
+                <div className="text-xs text-muted-foreground">No pool tasks</div>
+              ) : (
+                pooled.map(task => (
+                  <div
+                    key={`pool-mini-${task.id}`}
+                    className="relative px-2 py-1 bg-muted/30 border border-muted-foreground/30 hover:bg-muted/40 transition-colors rounded flex-shrink-0 h-7 min-w-[9rem] max-w-[12rem] cursor-pointer"
+                    title={task.name}
+                    onClick={() => openEditModal(task, { isFromPool: true })}
+                  >
+                    <span className="text-[11px] font-medium truncate block">{task.name || 'Untitled Task'}</span>
+                          </div>
+                ))
+              );
+            })()}
+                        </div>
+                      </div>
+
+        {/* Mini Daily Timeline fills remaining space */}
+        <div className="flex-1 min-h-0">
+          <MiniDailyTimeline
+            selectedDate={selectedDate}
+            tasksByDate={scheduledTasks}
                                     onTaskClick={handleTaskClick}
                                     onDeleteTask={onDeleteTask}
-          onUpdateTask={onUpdateTask}
-          openEditModal={openEditModal}
-        />
+            onUpdateTask={onUpdateTask}
+            openEditModal={openEditModal}
+            showHeader={false}
+            showUnscheduled={false}
+            fitContainer={true}
+          />
+        </div>
       </div>
     </div>
   );

@@ -63,7 +63,7 @@ export const DailyEventsContainer: React.FC<DailyEventsContainerProps> = ({
   };
 
   return (
-    <div className="mb-4 bg-card border border-border shadow-sm rounded-lg overflow-hidden">
+    <div className="mb-3 bg-card/40 border border-border/60 shadow-sm rounded-lg overflow-hidden">
       {/* Header - conditionally rendered */}
       {showHeader && (
         <div className="flex items-center justify-between p-3 border-b border-border bg-muted/20">
@@ -87,7 +87,7 @@ export const DailyEventsContainer: React.FC<DailyEventsContainerProps> = ({
       )}
 
       {/* Content - Fixed height container */}
-      <div className="p-2 h-10 overflow-hidden">
+      <div className="px-2 py-1.5 h-9 overflow-hidden">
         {hasContent ? (
           <div className="flex flex-wrap gap-2">
             {/* Events */}

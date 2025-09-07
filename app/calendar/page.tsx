@@ -102,7 +102,8 @@ export default function CalendarPage() {
             onPeriodEdit={handlePeriodEdit}
             onEventDelete={deleteEvent}
             onPeriodDelete={deletePeriod}
-            className="bg-background"
+            className="bg-background max-w-5xl mx-auto"
+            compact
             onNavigateToDaily={(date) => {
               // Navigate to home page daily planner for the selected date using query param
               const d = new Date(date);

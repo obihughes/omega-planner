@@ -15,6 +15,8 @@ interface MonthlyCalendarProps extends CalendarProps {
   headerRightControls?: React.ReactNode;
   onNavigateToDaily?: (date: Date) => void;
   initialDate?: Date;
+  /** When true, renders a denser, smaller monthly calendar */
+  compact?: boolean;
 }
 
 interface DayCell {
@@ -38,6 +40,7 @@ export function MonthlyCalendar({
   headerRightControls,
   onNavigateToDaily,
   initialDate,
+  compact = false,
 }: MonthlyCalendarProps) {
   const [currentDate, setCurrentDate] = useState(initialDate || new Date());
 
@@ -200,12 +203,12 @@ export function MonthlyCalendar({
               variant="outline"
               size="icon"
               onClick={() => navigateMonth('prev')}
-              className="h-10 w-10 hover:bg-accent transition-colors border border-border/50"
+              className={cn(compact ? "h-8 w-8" : "h-10 w-10", "hover:bg-accent transition-colors border border-border/50")}
             >
               <ChevronLeft className="w-5 h-5" />
             </Button>
             
-            <h2 className="text-2xl font-bold text-foreground min-w-[240px] text-center">
+            <h2 className={cn(compact ? "text-xl min-w-[200px]" : "text-2xl min-w-[240px]", "font-bold text-foreground text-center")}>
               {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
             </h2>
             
@@ -213,7 +216,7 @@ export function MonthlyCalendar({
               variant="outline"
               size="icon"
               onClick={() => navigateMonth('next')}
-              className="h-10 w-10 hover:bg-accent transition-colors border border-border/50"
+              className={cn(compact ? "h-8 w-8" : "h-10 w-10", "hover:bg-accent transition-colors border border-border/50")}
             >
               <ChevronRight className="w-5 h-5" />
             </Button>
@@ -252,13 +255,13 @@ export function MonthlyCalendar({
               <div className="bg-card overflow-hidden border border-border/50 rounded-lg">
         {/* Day Headers - Fixed */}
         <div className="grid grid-cols-7 border-b border-border/40 text-center font-semibold text-muted-foreground bg-card sticky top-0 z-10">
-          <div className="p-3 text-xs">Sun</div>
-          <div className="p-3 text-xs">Mon</div>
-          <div className="p-3 text-xs">Tue</div>
-          <div className="p-3 text-xs">Wed</div>
-          <div className="p-3 text-xs">Thu</div>
-          <div className="p-3 text-xs">Fri</div>
-          <div className="p-3 text-xs">Sat</div>
+          <div className={cn(compact ? "p-2 text-[10px]" : "p-3 text-xs")}>Sun</div>
+          <div className={cn(compact ? "p-2 text-[10px]" : "p-3 text-xs")}>Mon</div>
+          <div className={cn(compact ? "p-2 text-[10px]" : "p-3 text-xs")}>Tue</div>
+          <div className={cn(compact ? "p-2 text-[10px]" : "p-3 text-xs")}>Wed</div>
+          <div className={cn(compact ? "p-2 text-[10px]" : "p-3 text-xs")}>Thu</div>
+          <div className={cn(compact ? "p-2 text-[10px]" : "p-3 text-xs")}>Fri</div>
+          <div className={cn(compact ? "p-2 text-[10px]" : "p-3 text-xs")}>Sat</div>
         </div>
         
         {/* Calendar Days Container */}
@@ -302,7 +305,8 @@ export function MonthlyCalendar({
               <div
                 key={index}
                 className={cn(
-                  "min-h-[100px] border-r border-b border-border/30 last:border-r-0 transition-all duration-200 cursor-pointer relative group",
+                  compact ? "min-h-[80px]" : "min-h-[100px]",
+                  "border-r border-b border-border/30 last:border-r-0 transition-all duration-200 cursor-pointer relative group",
                   "hover:bg-accent/10",
                   !day.isCurrentMonth && "text-muted-foreground/50",
                   isPast && "opacity-50",
@@ -340,9 +344,10 @@ export function MonthlyCalendar({
                 )}
                 
                 {/* Content Layer */}
-                <div className="relative z-10 p-2 h-full">
+                <div className={cn("relative z-10 h-full", compact ? "p-1" : "p-2")}>
                 <div className={cn(
-                  "text-sm font-medium mb-2 transition-colors duration-200 relative z-10",
+                  compact ? "text-xs mb-1" : "text-sm mb-2",
+                  "font-medium transition-colors duration-200 relative z-10",
                   !day.isCurrentMonth && !periodStyle.color && "text-muted-foreground",
                   day.isToday && !periodStyle.color && "text-primary font-bold"
                 )}>
@@ -361,7 +366,10 @@ export function MonthlyCalendar({
                   {day.events.slice(0, 3).map(event => (
                     <div
                       key={event.id}
-                      className="h-5 px-1.5 py-0.5 text-xs cursor-pointer hover:opacity-90 transition-opacity duration-200 border group relative flex items-center justify-between bg-opacity-90"
+                      className={cn(
+                        compact ? "h-4 px-1 py-0.5 text-[10px]" : "h-5 px-1.5 py-0.5 text-xs",
+                        "cursor-pointer hover:opacity-90 transition-opacity duration-200 border group relative flex items-center justify-between bg-opacity-90"
+                      )}
                       style={{ 
                         backgroundColor: event.color,
                         borderColor: event.color,
@@ -372,15 +380,15 @@ export function MonthlyCalendar({
                       title={`${event.title}${event.description ? ` - ${event.description}` : ''}`}
                     >
                       <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                        <span className="truncate font-medium text-xs text-gray-800 dark:text-gray-800">
+                        <span className={cn("truncate font-medium text-gray-800 dark:text-gray-800", compact ? "text-[10px]" : "text-xs")}>
                           {event.title}
                         </span>
                       </div>
-                      <Eye className="w-3 h-3 text-gray-700 opacity-60 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0" />
+                      <Eye className={cn("text-gray-700 opacity-60 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0", compact ? "w-2.5 h-2.5" : "w-3 h-3")} />
                     </div>
                   ))}
                   {day.events.length > 3 && (
-                    <div className="text-xs text-muted-foreground p-1 font-medium">
+                    <div className={cn(compact ? "text-[10px]" : "text-xs", "text-muted-foreground p-1 font-medium")}>
                       +{day.events.length - 3} more events
                     </div>
                   )}

@@ -39,6 +39,11 @@ The main daily planning interface with timeline views and task management.
 - Weekly: Weekly overview of scheduled and inbox tasks across all seven days
 - Scheduling: Full calendar for task assignment and scheduling
 
+### **MiniDailyTimeline**
+**Location**: `components/planner/MiniDailyTimeline.tsx`
+
+Compact clone of the Daily view timeline used on the right side of the Scheduling View. It reuses the `TimelineColumn` logic and supports responsive scaling via `pixelsPerHour` and `columnHeightPx` so the hours grid, current-time marker, and task widths remain proportional in smaller layouts.
+
 **Daily View Components:**
 - Inbox/Pinned task sidebar with tabs
 - Dual-day timeline view with navigation
