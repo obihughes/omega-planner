@@ -1,5 +1,18 @@
 # Component Documentation
 
+## Projects Timeline (Preview)
+
+Location: `components/projects/ProjectsTimeline.tsx`
+
+- Purpose: Visual, read-only month view of all projects in swimlanes (Gantt-like).
+- Access: Route `app/projects/timeline/page.tsx` → `/projects/timeline`. A "Timeline" link is also added under Workspace in the main navigation.
+- Rendering: SVG-based. Each project is a row; tasks render as:
+  - Bars for tasks with both `startDate` and `dueDate`.
+  - Dots for tasks with only one of `startDate` or `dueDate`.
+  - Color coding by task `status` (todo/in-progress/completed/blocked).
+- Interactions: Month navigation (prev/next). The prototype is read-only; no drag/reschedule yet.
+- Defaults: Month scale by day; empty space between bars indicates gaps between tasks.
+
 This document provides detailed information about the components used in the Daily Planner application.
 
 ## Table of Contents

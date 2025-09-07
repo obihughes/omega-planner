@@ -138,7 +138,8 @@ export function Navigation() {
       subViews: [
         { key: 'tasks', label: 'Tasks', icon: ClipboardList, active: pathname === '/projects/tasks' },
         { key: 'active', label: 'Projects', icon: Folder, active: projectsViewMode === 'active' },
-        { key: 'calendar', label: 'Projects Calendar', icon: Calendar, active: projectsViewMode === 'calendar' }
+        { key: 'calendar', label: 'Projects Calendar', icon: Calendar, active: projectsViewMode === 'calendar' },
+        { key: 'timeline', label: 'Timeline', icon: Clock, active: pathname === '/projects/timeline' }
       ]
     },
     {
@@ -251,6 +252,10 @@ export function Navigation() {
                               } else if (item.href === '/projects') {
                                 if (subView.key === 'tasks') {
                                   router.push('/projects/tasks');
+                                } else if (subView.key === 'timeline') {
+                                  if (pathname !== '/projects/timeline') {
+                                    router.push('/projects/timeline');
+                                  }
                                 } else {
                                   // Only push route if we're not already on the projects page
                                   if (pathname !== '/projects') {

@@ -6,3 +6,4 @@ export { DraggableTaskCard } from './DraggableTaskCard';
 export { FolderCard } from './FolderCard';
 export { FolderBreadcrumb } from './FolderBreadcrumb'; 
 export { MonthlyTaskScheduler } from './MonthlyTaskScheduler';
+export { default as ProjectsTimeline } from './ProjectsTimeline';

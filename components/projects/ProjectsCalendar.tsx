@@ -302,7 +302,7 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
             {/* Day Headers */}
             <div className="grid grid-cols-7 border-b border-border/20 bg-muted/10">
               {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day) => (
-                <div key={day} className="py-3 px-2 text-center font-medium text-muted-foreground text-sm border-r border-border/20 last:border-r-0">
+                <div key={day} className="py-2 px-1 text-center font-medium text-muted-foreground text-xs border-r border-border/20 last:border-r-0">
                   {day}
                 </div>
               ))}
@@ -322,16 +322,16 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
                   <div
                     key={index}
                     className={cn(
-                      "min-h-[140px] p-3 border-b border-border/20 hover:bg-accent/30 transition-all duration-200 cursor-pointer group",
+                      "min-h-[80px] p-1.5 border-b border-border/20 hover:bg-accent/10 transition-all duration-200 cursor-pointer group",
                       !isCurrentMonthDay && "bg-muted/20 text-muted-foreground/60",
                       isTodayDate && "bg-primary/5 border-primary/20 border-l-2 border-l-primary"
                     )}
                     onClick={() => handleDayClick(date)}
                     title="Click to view tasks for this day"
                   >
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center justify-between mb-1.5">
                       <div className={cn(
-                        "text-sm font-semibold",
+                        "text-xs font-semibold",
                         !isCurrentMonthDay && "text-muted-foreground",
                         isTodayDate && "text-primary"
                       )}>
@@ -350,12 +350,12 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
                       )}
                     </div>
                     
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       {/* Task Start Dates */}
                       {dayTaskStarts.slice(0, 2).map(({ project, task }) => (
                         <div
                           key={`start-${task.id}`}
-                          className="flex items-center gap-2 px-2 py-1.5 rounded-md text-xs cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors border-l-2 bg-blue-50/30 dark:bg-blue-900/10"
+                          className="flex items-center gap-1.5 px-1.5 py-1 rounded-md text-[11px] cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors border-l-2 bg-blue-50/30 dark:bg-blue-900/10"
                           style={{ borderLeftColor: project.color }}
                           onClick={(e) => handleProjectClick(project.id, e)}
                           title={`${task.title} starts today`}
@@ -380,7 +380,7 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
                           <div
                             key={`due-${task.id}`}
                             className={cn(
-                              "flex items-center gap-2 px-2 py-1.5 rounded-md text-xs cursor-pointer transition-colors border-l-2",
+                              "flex items-center gap-1.5 px-1.5 py-1 rounded-md text-[11px] cursor-pointer transition-colors border-l-2",
                               isOverdue 
                                 ? "bg-red-50/30 dark:bg-red-900/10 hover:bg-red-50 dark:hover:bg-red-900/20" 
                                 : "bg-orange-50/30 dark:bg-orange-900/10 hover:bg-orange-50 dark:hover:bg-orange-900/20"
@@ -413,7 +413,7 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
                         return (
                           <div
                             key={project.id}
-                            className="p-2 rounded-md text-xs cursor-pointer hover:shadow-sm transition-all border border-border/40"
+                            className="p-1.5 rounded-md text-[11px] cursor-pointer hover:shadow-sm transition-all border border-border/40"
                             style={{ 
                               backgroundColor: project.color + '10', 
                               borderColor: project.color + '30',
@@ -423,13 +423,13 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
                             title={`${project.name} - ${timeRemaining.text} • ${project.progress}% complete`}
                             onClick={(e) => handleProjectClick(project.id, e)}
                           >
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="truncate font-medium text-sm flex-1">{project.name}</span>
-                              <span className="text-xs ml-2 bg-background/50 px-1.5 py-0.5 rounded">{project.progress}%</span>
+                            <div className="flex items-center justify-between mb-0.5">
+                              <span className="truncate font-medium text-xs flex-1">{project.name}</span>
+                              <span className="text-[10px] ml-2 bg-background/50 px-1 py-0.5 rounded">{project.progress}%</span>
                             </div>
                             
                             <div className={cn(
-                              "flex items-center gap-1.5 text-xs",
+                              "flex items-center gap-1 text-[11px]",
                               timeRemaining.isOverdue ? "text-red-600" : "text-muted-foreground"
                             )}>
                               <Clock className="w-2.5 h-2.5" />
@@ -441,7 +441,7 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
 
                       {/* Overflow indicators */}
                       {(dayTaskStarts.length > 2 || dayTaskDues.length > 2 || dayProjects.length > 1) && (
-                        <div className="text-xs text-muted-foreground px-2 py-1 bg-muted/20 rounded-md">
+                        <div className="text-[11px] text-muted-foreground px-1.5 py-0.5 bg-muted/20 rounded-md">
                           {dayTaskStarts.length > 2 && `+${dayTaskStarts.length - 2} starting`}
                           {dayTaskDues.length > 2 && ` +${dayTaskDues.length - 2} due`}
                           {dayProjects.length > 1 && ` +${dayProjects.length - 1} projects`}
@@ -451,8 +451,8 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
 
                     {/* Empty day indicator */}
                     {dayProjects.length === 0 && dayTaskStarts.length === 0 && dayTaskDues.length === 0 && completedCount === 0 && isCurrentMonthDay && (
-                      <div className="text-center py-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="text-xs text-muted-foreground">
+                      <div className="text-center py-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="text-[11px] text-muted-foreground">
                           Free day
                         </div>
                       </div>
