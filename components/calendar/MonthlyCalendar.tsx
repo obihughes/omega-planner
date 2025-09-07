@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { CalendarEvent, CalendarPeriod, CalendarData, CalendarProps } from '@/types/calendar';
-import { ChevronLeft, ChevronRight, Plus, Eye } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Eye, CalendarDays } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { EventModal } from './EventModal';
@@ -13,6 +13,8 @@ interface MonthlyCalendarProps extends CalendarProps {
   className?: string;
   headerLeftControls?: React.ReactNode;
   headerRightControls?: React.ReactNode;
+  onNavigateToDaily?: (date: Date) => void;
+  initialDate?: Date;
 }
 
 interface DayCell {
@@ -34,8 +36,16 @@ export function MonthlyCalendar({
   onPeriodDelete,
   headerLeftControls,
   headerRightControls,
+  onNavigateToDaily,
+  initialDate,
 }: MonthlyCalendarProps) {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(initialDate || new Date());
+
+  useEffect(() => {
+    if (initialDate) {
+      setCurrentDate(initialDate);
+    }
+  }, [initialDate]);
   const [showEventModal, setShowEventModal] = useState(false);
   const [showPeriodModal, setShowPeriodModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
@@ -302,6 +312,15 @@ export function MonthlyCalendar({
                 onClick={() => handleDateClick(day.date)}
                 onDoubleClick={() => handleDateDoubleClick(day.date)}
               >
+                {onNavigateToDaily && (
+                  <button
+                    className="absolute top-1 right-1 z-20 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-background border border-border text-muted-foreground hover:text-foreground p-1"
+                    title="Open this day in Daily View"
+                    onClick={(e) => { e.stopPropagation(); onNavigateToDaily(day.date); }}
+                  >
+                    <CalendarDays className="w-3 h-3" />
+                  </button>
+                )}
                 {/* Default Background Layer */}
                 <div className={cn(
                   "absolute inset-0",

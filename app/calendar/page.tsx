@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { AppLayout } from '@/components/ui/AppLayout';
 import { YearCalendar, MonthlyCalendar, MonthlyTimelineView } from '@/components/calendar';
 import { useCalendarData } from '@/hooks/useCalendarData';
@@ -8,6 +8,7 @@ import { CalendarEvent, CalendarPeriod } from '@/types/calendar';
 import { Settings, Download, RefreshCw, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCalendarView } from '@/app/context/CalendarViewContext';
+import { useSearchParams } from 'next/navigation';
 import { useDailyPlanner } from '@/hooks/useDailyPlannerState';
 
 type CalendarView = 'yearly' | 'monthly' | 'timeline';
@@ -45,6 +46,15 @@ export default function CalendarPage() {
 
   const [showSettings, setShowSettings] = useState(false);
   const { viewMode: currentView, setViewMode: setCurrentView } = useCalendarView();
+  const params = useSearchParams();
+  const initialDateFromQuery = useMemo(() => {
+    const d = params?.get('date');
+    if (d) {
+      const parsed = new Date(d);
+      if (!isNaN(parsed.getTime())) return parsed;
+    }
+    return undefined;
+  }, [params]);
 
   const handleEventAdd = (eventData: Omit<CalendarEvent, 'id'>) => {
     addEvent(eventData);
@@ -93,6 +103,14 @@ export default function CalendarPage() {
             onEventDelete={deleteEvent}
             onPeriodDelete={deletePeriod}
             className="bg-background"
+            onNavigateToDaily={(date) => {
+              // Navigate to home page daily planner for the selected date using query param
+              const d = new Date(date);
+              d.setHours(0,0,0,0);
+              const iso = d.toISOString().slice(0,10);
+              window.location.href = `/?date=${iso}`;
+            }}
+            initialDate={initialDateFromQuery}
           />
         ) : currentView === 'timeline' ? (
           isClient && (

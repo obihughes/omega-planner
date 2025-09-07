@@ -244,7 +244,7 @@ export default function DailyPlanner() {
     cancelCopy(); 
     setDraggingTask(null); 
     document.body.style.cursor = 'col-resize';
-    if (task) {
+    if (task && task.startHour !== undefined) {
         setResizingTask({ 
              task: { ...task }, 
              edge,
@@ -408,6 +408,26 @@ export default function DailyPlanner() {
     document.body.style.cursor = '';
   }, [draggingTask, resizingTask, saveTaskFromModal, setDraggingTask, setResizingTask]);
 
+  // Listen for cross-navigation requests (from calendar pages)
+  useEffect(() => {
+    const handler = (e: any) => {
+      const date: Date | undefined = e?.detail?.date;
+      if (!date) return;
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const target = new Date(date);
+      target.setHours(0,0,0,0);
+      const dayOffset = Math.floor((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      setTopDayOffset(dayOffset);
+      setBottomDayOffset(dayOffset);
+      setViewMode('daily');
+      // store last calendar context for back navigation
+      try { localStorage.setItem('lastCalendarDate', target.toISOString()); } catch {}
+    };
+    window.addEventListener('planner:navigate-to-date', handler);
+    return () => window.removeEventListener('planner:navigate-to-date', handler);
+  }, [setTopDayOffset, setBottomDayOffset, setViewMode]);
+
   useEffect(() => {
     const onMouseMove = (event: MouseEvent) => {
       if (resizingTask) {
@@ -551,7 +571,7 @@ export default function DailyPlanner() {
       task: { ...task }, 
       offsetX,
       initialMouseY: e.clientY,
-      initialStartHour: task.startHour,
+      initialStartHour: task.startHour ?? APP_TIMELINE_START_HOUR,
       taskElement: null,
       originalBaseDate: task.baseDate // Store the original date when drag starts
     });
@@ -600,7 +620,8 @@ export default function DailyPlanner() {
     }
     
     const tasksToRender = tasksToDisplay.filter(t => {
-        const taskStart = t.startHour;
+        if (t.startHour === undefined) return false; // Only scheduled tasks render in timeline grid
+        const taskStart = t.startHour as number;
         const taskEnd = taskStart + t.duration;
         return taskEnd > startHour && taskStart < endHour;
     });
@@ -666,8 +687,9 @@ export default function DailyPlanner() {
               const isBeingResized = resizingTask?.task.id === displayTask.id;
               const isBeingCopied = copyingTaskData?.id === displayTask.id;
               
-              const taskStartRelativeToSection = Math.max(0, displayTask.startHour - startHour);
-              const taskEndRelativeToSection = Math.min(endHour - startHour, (displayTask.startHour + displayTask.duration) - startHour);
+              const startHourVal = (displayTask.startHour ?? startHour);
+              const taskStartRelativeToSection = Math.max(0, startHourVal - startHour);
+              const taskEndRelativeToSection = Math.min(endHour - startHour, (startHourVal + displayTask.duration) - startHour);
               const renderLeft = taskStartRelativeToSection * APP_PIXELS_PER_HOUR;
               const renderWidth = (taskEndRelativeToSection - taskStartRelativeToSection) * APP_PIXELS_PER_HOUR;
               
@@ -1014,6 +1036,29 @@ export default function DailyPlanner() {
                       </Popover>
                       <Button variant="ghost" size="sm" onClick={() => setTopDayOffset(topDayOffset + 1)} title="Next day">›</Button>
                       <Button variant="ghost" size="sm" onClick={() => setTopDayOffset(topDayOffset + 7)} title="Next week">»</Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        title="Back to Calendar"
+                        onClick={() => {
+                          // return to calendar monthly view preserving last month viewed
+                          try {
+                            const last = localStorage.getItem('lastCalendarDate');
+                            if (last) {
+                              const d = new Date(last);
+                              const iso = d.toISOString().slice(0,10);
+                              window.location.href = `/calendar?date=${iso}&view=monthly`;
+                            } else {
+                              window.location.href = `/calendar?view=monthly`;
+                            }
+                          } catch {
+                            window.location.href = `/calendar?view=monthly`;
+                          }
+                        }}
+                        className="ml-2"
+                      >
+                        Back to Calendar
+                      </Button>
                       {isClient && getRelativeDayLabel(topDayOffset) && (
                         <span className="text-xs text-muted-foreground ml-2 px-1.5 py-0.5 bg-muted rounded-sm">
                           {getRelativeDayLabel(topDayOffset)}

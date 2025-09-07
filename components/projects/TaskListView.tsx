@@ -47,6 +47,7 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { ProjectFormModal } from '@/components/modals/ProjectFormModal';
 
 // Storage key for task list preferences
 const TASK_LIST_PREFERENCES_KEY = 'omega-planner-task-list-preferences';
@@ -352,7 +353,7 @@ function SortableTaskItem({
 }
 
 export function TaskListView({ className }: TaskListViewProps) {
-  const { projects, updateTaskInProject, deleteTaskFromProject, addTaskToProject, createUnassignedTask, reorderTasksInProject } = useProjects();
+  const { projects, folders, updateProject, deleteProject, updateTaskInProject, deleteTaskFromProject, addTaskToProject, createUnassignedTask, reorderTasksInProject } = useProjects();
   
   // Initialize with default preferences to prevent hydration mismatch
   const [preferences, setPreferences] = useState<TaskListPreferences>(defaultPreferences);
@@ -373,6 +374,9 @@ export function TaskListView({ className }: TaskListViewProps) {
   // Drag and drop state
   const [activeTaskId, setActiveTaskId] = useState<UniqueIdentifier | null>(null);
   const [draggedTask, setDraggedTask] = useState<TaskWithProject | null>(null);
+  // Project editing modal state
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
   
   // Drag and drop sensors
   const sensors = useSensors(
@@ -1147,6 +1151,22 @@ export function TaskListView({ className }: TaskListViewProps) {
                         <Plus className="w-4 h-4" />
                       </Button>
                     )}
+                    {groupBy === 'project' && (
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const proj = projects.find(p => p.id === group.id) || null;
+                          setEditingProject(proj);
+                          setIsProjectModalOpen(!!proj);
+                        }}
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+                        title="Edit project"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
                 </button>
               )}
@@ -1316,6 +1336,28 @@ export function TaskListView({ className }: TaskListViewProps) {
             </div>
           </div>
         </div>
+      )}
+      {/* Project Edit Modal */}
+      {isProjectModalOpen && (
+        <ProjectFormModal
+          isOpen={isProjectModalOpen}
+          onClose={() => {
+            setIsProjectModalOpen(false);
+            setEditingProject(null);
+          }}
+          project={editingProject}
+          folders={folders}
+          onSave={(projectData, isNew) => {
+            if (!isNew && editingProject) {
+              updateProject(editingProject.id, projectData);
+            }
+          }}
+          onDelete={(projectId) => {
+            deleteProject(projectId);
+            setIsProjectModalOpen(false);
+            setEditingProject(null);
+          }}
+        />
       )}
     </div>
   );

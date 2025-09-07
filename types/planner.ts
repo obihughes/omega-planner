@@ -29,6 +29,12 @@ export interface Task {
   /** Indicates whether the task is completed */
   completed: boolean;
   
+  /** ISO timestamp when the task (or pool entry) was created */
+  createdAt?: string;
+  
+  /** Whether this inbox task should automatically roll over to today */
+  autoRollover?: boolean;
+  
   /** Indicates whether the task is new */
   isNew?: boolean;
   

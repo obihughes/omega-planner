@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Task, PinnedTask } from '@/types/planner';
 import { ChevronLeft, ChevronRight, Clock, Calendar as CalendarIcon, Edit3, Pin, Plus, CalendarDays, X, Filter, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -162,6 +162,24 @@ export function MonthlyTimelineView({
   const [dragOverInbox, setDragOverInbox] = useState(false);
   const dragLeaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const dayElementsRef = useRef<Map<string, HTMLElement>>(new Map());
+  
+  // Carry-over digest: show when there are unscheduled tasks carried from previous days
+  const todayKey = useMemo(() => getDateKey(new Date()), []);
+  const carryOverCount = useMemo(() => {
+    const tasksForTodayPool = getPoolTasksForDate(todayKey) || [];
+    const today = new Date(); today.setHours(0,0,0,0);
+    return tasksForTodayPool.filter(t => !t.completed && !!t.createdAt && new Date(t.createdAt).setHours(0,0,0,0) < today.getTime()).length;
+  }, [getPoolTasksForDate, todayKey]);
+  const [showDigest, setShowDigest] = useState(false);
+  useEffect(() => {
+    try {
+      const dismissedKey = `carryoverDigestDismissed:${todayKey}`;
+      const dismissed = localStorage.getItem(dismissedKey) === 'true';
+      setShowDigest(!dismissed && carryOverCount > 0);
+    } catch {
+      setShowDigest(carryOverCount > 0);
+    }
+  }, [carryOverCount, todayKey]);
 
   // Calculate month dates for mini calendar
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -590,6 +608,37 @@ export function MonthlyTimelineView({
       <div className="flex-1 flex flex-col">
         {/* Timeline Header */}
         <div className="p-4 border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-10">
+          {showDigest && (
+            <div className="mb-3 border border-amber-300/60 bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-200 px-3 py-2 rounded flex items-center justify-between">
+              <div className="text-sm">
+                Carry-over: <span className="font-semibold">{carryOverCount}</span> unscheduled task{carryOverCount !== 1 ? 's' : ''} moved to today
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7"
+                  onClick={() => {
+                    setSelectedDate(new Date());
+                    scrollToDate(new Date());
+                  }}
+                >
+                  Review
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7"
+                  onClick={() => {
+                    try { localStorage.setItem(`carryoverDigestDismissed:${todayKey}`, 'true'); } catch {}
+                    setShowDigest(false);
+                  }}
+                >
+                  Dismiss
+                </Button>
+              </div>
+            </div>
+          )}
           <div className="flex items-center justify-between mb-3">
             <div>
               <h2 className="text-xl font-bold text-foreground">

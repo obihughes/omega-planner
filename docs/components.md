@@ -363,6 +363,7 @@ Custom time selection component.
 - **Multi-Criteria Sorting**: Implemented simultaneous sorting by multiple fields (e.g., completion status + title)
 - **Custom Order with Drag & Drop**: Added visual task reordering with persistence
 - **Project-Specific Task Creation**: "Add Task" buttons within project groups that pre-select the project
+- **Project Editing from Tasks View**: When grouped by project, an edit button in each group header opens the Project editor. You can edit details or archive (soft-delete). Archived projects are hidden from Tasks and filters auto-reset if a deleted project was selected.
 - **Enhanced Sort Controls**: UI for configuring up to 4 simultaneous sort criteria
 - **Drag Mode Indicators**: Visual feedback when in custom order mode
 
@@ -380,6 +381,7 @@ Custom time selection component.
 
 **Files Added/Modified:**
 - `components/projects/TaskListView.tsx` - Complete rewrite with advanced features
+- `app/projects/tasks/page.tsx` - Project filter dropdown and project edit modal integration
 - `app/projects/page.tsx` - Added sorting controls and custom order indicators
 - New drag-and-drop task management system
 - Enhanced user experience with visual feedback and intuitive controls

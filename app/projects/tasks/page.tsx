@@ -14,6 +14,8 @@ import { cn } from '@/lib/utils';
 import { ProjectTask } from '@/types/projects';
 import { getDateKey, getTodayDateKey, formatDueDate } from '@/utils/dateUtils';
 import { ProjectTaskFormModal } from '@/components/modals/ProjectTaskFormModal';
+import { ProjectFormModal } from '@/components/modals/ProjectFormModal';
+import { Project } from '@/types/projects';
 
 // Storage key for tasks view preferences
 const TASKS_VIEW_PREFERENCES_KEY = 'omega-planner-tasks-view-preferences';
@@ -111,7 +113,7 @@ interface TaskWithProject extends ProjectTask {
 
 export default function ProjectsTasksPage() {
   const { /* isSchedulingMode, setIsSchedulingMode */ } = useViewMode(); // Keep useViewMode for potential future use or if other components still rely on it
-  const { projects, updateTaskInProject, addTaskToProject } = useProjects();
+  const { projects, folders, updateTaskInProject, addTaskToProject, updateProject, deleteProject } = useProjects();
   
   // Initialize with default preferences to prevent hydration mismatch
   const [preferences, setPreferences] = useState<TasksViewPreferences>(defaultTasksPreferences);
@@ -170,6 +172,10 @@ export default function ProjectsTasksPage() {
   // Add task modal state
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
 
+  // Project edit modal state
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+
   // Get all tasks with project info
   const allTasks = useMemo((): TaskWithProject[] => {
     return projects
@@ -202,6 +208,16 @@ export default function ProjectsTasksPage() {
       }
     }
   }, [allTasksGroupBy, isClient, allTasks, collapsedProjectGroups.length, updatePreferences]);
+
+  // Ensure project filter remains valid if a project is archived/deleted or removed
+  useEffect(() => {
+    if (allTasksFilters.project && allTasksFilters.project !== 'all') {
+      const exists = projects.some(p => !p.isDeleted && p.id === allTasksFilters.project);
+      if (!exists) {
+        updatePreferences({ allTasksFilters: { ...allTasksFilters, project: 'all' } });
+      }
+    }
+  }, [projects, allTasksFilters.project]);
 
   // Filter tasks for Today Mode (rich functionality) - Retained for logic within main filter
   const todayTasks = useMemo(() => {
@@ -923,6 +939,21 @@ export default function ProjectsTasksPage() {
                     </select>
                   </div>
 
+                  {/* Project Filter */}
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-muted-foreground">Project:</label>
+                    <select
+                      value={allTasksFilters.project}
+                      onChange={(e) => updatePreferences({ allTasksFilters: { ...allTasksFilters, project: e.target.value } })}
+                      className="px-3 py-2 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    >
+                      <option value="all">All Projects</option>
+                      {projects.filter(p => !p.isDeleted).map(project => (
+                        <option key={project.id} value={project.id}>{project.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
                   {/* Subgrouping - Only show if main grouping is selected */}
                   {allTasksGroupBy !== 'none' && (
                     <div className="flex items-center gap-2">
@@ -1156,7 +1187,7 @@ export default function ProjectsTasksPage() {
                               </span>
                             </h2>
                           </div>
-                          {/* Add Task Button - Only for project groups */}
+                          {/* Add/Edit Project Buttons - Only for project groups */}
                           {isProjectGroup && (
                             <Button
                               onClick={(e) => {
@@ -1171,6 +1202,22 @@ export default function ProjectsTasksPage() {
                               className="text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
                             >
                               <Plus className="w-4 h-4" />
+                            </Button>
+                          )}
+                          {isProjectGroup && (
+                            <Button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const proj = projects.find(p => p.id === group.id) || null;
+                                setEditingProject(proj);
+                                setIsProjectModalOpen(!!proj);
+                              }}
+                              variant="ghost"
+                              size="sm"
+                              className="text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+                              title="Edit project"
+                            >
+                              <Edit3 className="w-4 h-4" />
                             </Button>
                           )}
                         </div>
@@ -1254,6 +1301,29 @@ export default function ProjectsTasksPage() {
             }}
             onSave={handleSaveEditedTask}
             taskToEdit={editingTask}
+          />
+        )}
+
+        {/* Edit Project Modal */}
+        {isProjectModalOpen && (
+          <ProjectFormModal
+            isOpen={isProjectModalOpen}
+            onClose={() => {
+              setIsProjectModalOpen(false);
+              setEditingProject(null);
+            }}
+            project={editingProject}
+            folders={folders}
+            onSave={(projectData, isNew) => {
+              if (!isNew && editingProject) {
+                updateProject(editingProject.id, projectData);
+              }
+            }}
+            onDelete={(projectId) => {
+              deleteProject(projectId);
+              setIsProjectModalOpen(false);
+              setEditingProject(null);
+            }}
           />
         )}
       </div>

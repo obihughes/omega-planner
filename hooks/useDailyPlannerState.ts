@@ -421,7 +421,9 @@ export function useDailyPlanner() {
       startHour: 0, // Not relevant for pool
       baseDate: getTodayDateKey(), // Add base date for pool tasks in YYYY-MM-DD format
       notes: "",
-      completed: false
+      completed: false,
+      createdAt: new Date().toISOString(),
+      autoRollover: true
     };
     setPoolTasks(prevPoolTasks => [...prevPoolTasks, newPoolTask]);
   }, [getNextId, setPoolTasks]);
@@ -851,7 +853,28 @@ export function useDailyPlanner() {
     setSavedDays(loadedSavedDays);
     
     const loadedPoolTasksByDate = TaskStorage.loadPoolTasksByDate();
-    setPoolTasksByDate(loadedPoolTasksByDate);
+    // Auto-rollover: move incomplete inbox tasks from past dates to today (opt-out via autoRollover=false)
+    const todayKey = getTodayDateKey();
+    const todayTasks = loadedPoolTasksByDate.get(todayKey) || [];
+    const newMap = new Map(loadedPoolTasksByDate);
+    let moved = 0;
+    newMap.forEach((tasksForDate, dateKey) => {
+      if (dateKey === todayKey) return;
+      const date = dateFromDateKey(dateKey);
+      const today = dateFromDateKey(todayKey);
+      if (date < today) {
+        const carry = tasksForDate.filter(t => !t.completed && (t.autoRollover !== false));
+        const keep = tasksForDate.filter(t => !( !t.completed && (t.autoRollover !== false)) );
+        if (carry.length > 0) {
+          const movedTasks = carry.map(t => ({ ...t, poolDate: todayKey }));
+          newMap.set(dateKey, keep);
+          newMap.set(todayKey, [...todayTasks, ...movedTasks]);
+          moved += movedTasks.length;
+        }
+      }
+    });
+    setPoolTasksByDate(newMap);
+    if (moved > 0) TaskStorage.savePoolTasksByDate(newMap);
 
     // Initialize taskIdCounter and taskIdCounterRef
     const allLoadedTasksForIdCalc = [
@@ -993,7 +1016,9 @@ export function useDailyPlanner() {
       baseDate: dateKey,
       notes: task.notes || '',
       completed: false,
-      poolDate: dateKey
+      poolDate: dateKey,
+      createdAt: task.createdAt || new Date().toISOString(),
+      autoRollover: task.autoRollover !== undefined ? task.autoRollover : true
     };
 
     setPoolTasksByDate(prev => {
