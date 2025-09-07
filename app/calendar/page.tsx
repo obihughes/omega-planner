@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { AppLayout } from '@/components/ui/AppLayout';
 import { YearCalendar, MonthlyCalendar, MonthlyTimelineView } from '@/components/calendar';
 import { useCalendarData } from '@/hooks/useCalendarData';
@@ -47,6 +47,14 @@ export default function CalendarPage() {
   const [showSettings, setShowSettings] = useState(false);
   const { viewMode: currentView, setViewMode: setCurrentView } = useCalendarView();
   const params = useSearchParams();
+  
+  // Respect ?view=monthly|yearly|timeline from query params
+  useEffect(() => {
+    const v = params?.get('view');
+    if (v === 'monthly' || v === 'yearly' || v === 'timeline') {
+      setCurrentView(v as CalendarView);
+    }
+  }, [params, setCurrentView]);
   const initialDateFromQuery = useMemo(() => {
     const d = params?.get('date');
     if (d) {

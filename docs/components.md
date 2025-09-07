@@ -618,6 +618,7 @@ This ensures consistency across the application and maintains the sharp, profess
 - Day summaries show Details (prefer `notes`, fallback to `description`) and include a Delete button for each item.
 - `EventModal` and `PeriodModal` simplified to a single Notes field; `description` is no longer edited separately.
 - Summaries and tooltips prefer `notes` when present, otherwise display `description`.
+- Daily view "Back to Calendar" now routes to monthly calendar (`/calendar?view=monthly`) and preserves last date when available via `lastCalendarDate`.
 
 Affected files:
 - `components/calendar/YearCalendar.tsx`
