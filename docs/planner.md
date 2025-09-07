@@ -243,7 +243,7 @@ The Saved Days feature allows you to save daily task configurations as reusable 
 
 ### Calendar Views (under Daily Planner)
 The Monthly and Yearly calendar views are accessible from the main navigation under `Daily Planner`:
-- Monthly Planner: the planner's own monthly mode
+- Scheduling View: the planner's own monthly mode
 - Monthly Calendar View: the full calendar page's monthly mode; includes a compact grid and an Events/Periods list under the calendar for the selected month
 - Yearly Calendar: the full calendar page's yearly mode
 

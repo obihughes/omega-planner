@@ -9,10 +9,10 @@ This directory contains all components related to the daily planning functionali
 **Purpose**: Main orchestrating component with page-level view mode navigation
 
 **Features:**
-- **Page-Level View Modes**: Toggle between Daily, Weekly, and Monthly views
+- **Page-Level View Modes**: Toggle between Daily, Weekly, and Scheduling views
   - Daily View: Timeline-based planning with Pool/Pinned sidebar
   - Weekly View: Weekly overview of scheduled and inbox tasks
-  - Monthly View: Full-page calendar for task assignment and inbox management
+  - Scheduling View: Full-page calendar for task assignment and inbox management
 - Timeline visualization across 4 periods (night, morning, afternoon, evening)
 - Dual-day view with independent navigation
 - Task management (create, edit, delete, move, resize)
@@ -29,7 +29,7 @@ This directory contains all components related to the daily planning functionali
    - Weekly overview showing scheduled and inbox tasks
    - Separate sections for scheduled tasks and inbox tasks per day
    
-3. **Monthly View**:
+3. **Scheduling View** (Monthly):
    - Full TaskAssignmentCalendar component
    - Visual month grid for task assignment
    - Inbox tasks management with "Add Task" functionality

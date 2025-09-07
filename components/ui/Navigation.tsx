@@ -124,7 +124,7 @@ export function Navigation() {
 
         { key: 'planner-daily', type: 'planner', mode: 'daily', label: 'Daily', icon: CalendarCheck, active: pathname === '/' && plannerViewMode === 'daily' },
         { key: 'planner-weekly', type: 'planner', mode: 'weekly', label: 'Week Overview', icon: CalendarDays, active: pathname === '/' && plannerViewMode === 'weekly' },
-        { key: 'planner-monthly', type: 'planner', mode: 'monthly', label: 'Monthly Planner', icon: CalendarRange, active: pathname === '/' && plannerViewMode === 'monthly' },
+        { key: 'planner-monthly', type: 'planner', mode: 'monthly', label: 'Scheduling View', icon: CalendarRange, active: pathname === '/' && plannerViewMode === 'monthly' },
         // Calendar views placed under Daily Planner
         { key: 'calendar-monthly', type: 'calendar', mode: 'monthly', label: 'Monthly Calendar View', icon: Calendar, active: pathname === '/calendar' && calendarViewMode === 'monthly' },
         { key: 'calendar-yearly', type: 'calendar', mode: 'yearly', label: 'Yearly Calendar', icon: CalendarDays, active: pathname === '/calendar' && calendarViewMode === 'yearly' }

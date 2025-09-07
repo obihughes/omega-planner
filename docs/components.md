@@ -20,10 +20,10 @@ This document provides detailed information about the components used in the Dai
 The main daily planning interface with timeline views and task management.
 
 **Key Features:**
-- **Page-Level View Modes**: Toggle between Daily View, Weekly View, and Monthly View
+- **Page-Level View Modes**: Toggle between Daily View, Weekly View, and Scheduling View
   - **Daily View**: Traditional timeline-based planning with Pool/Pinned sidebar
   - **Weekly View**: Weekly overview showing scheduled and inbox tasks across all days
-  - **Monthly View**: Full-page calendar for task assignment and scheduling
+  - **Scheduling View**: Full-page calendar for task assignment and scheduling
 - **Timeline System**: 4 time periods (night, morning, afternoon, evening) across two days
 - **Task Inbox Integration**: Unscheduled tasks in collapsible sidebar
 - **Pinned Tasks**: Important tasks with due date tracking
@@ -33,11 +33,11 @@ The main daily planning interface with timeline views and task management.
 
 **View Mode Navigation:**
 - Located above the sidebar area
-- Three active buttons: "Daily" (default), "Weekly", and "Monthly"
+- Three active buttons: "Daily" (default), "Weekly", and "Scheduling"
 - Completely switches the page layout and functionality
 - Daily: Timeline + sidebar for detailed time-based planning
 - Weekly: Weekly overview of scheduled and inbox tasks across all seven days
-- Monthly: Full calendar for task assignment and scheduling
+- Scheduling: Full calendar for task assignment and scheduling
 
 **Daily View Components:**
 - Inbox/Pinned task sidebar with tabs

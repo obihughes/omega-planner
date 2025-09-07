@@ -8,4 +8,5 @@ export { default as WeeklyView } from './WeeklyView';
 export { WeeklyTaskCard, MemoizedWeeklyTaskCard } from './WeeklyTaskCard';
 export { DailyEventsContainer } from './DailyEventsContainer';
 export { WeeklyEventsDisplay } from './WeeklyEventsDisplay';
+export { MiniDailyTimeline } from './MiniDailyTimeline';
  
