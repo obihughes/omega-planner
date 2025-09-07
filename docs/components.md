@@ -10,8 +10,11 @@ Location: `components/projects/ProjectsTimeline.tsx`
   - Bars for tasks with both `startDate` and `dueDate`.
   - Dots for tasks with only one of `startDate` or `dueDate`.
   - Color coding by task `status` (todo/in-progress/completed/blocked).
-- Interactions: Month navigation (prev/next). The prototype is read-only; no drag/reschedule yet.
-- Defaults: Month scale by day; empty space between bars indicates gaps between tasks.
+- Compact defaults:
+  - Week separators only (labels on Mondays), ultra-subtle weekend shading.
+  - Bar labels only when width > 80px; otherwise tooltip on hover.
+  - Lighter visuals, more spacing per lane, minimal legend.
+- Interactions: Month navigation (prev/next). Read-only prototype.
 
 This document provides detailed information about the components used in the Daily Planner application.
 
