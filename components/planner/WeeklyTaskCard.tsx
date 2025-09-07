@@ -29,6 +29,8 @@ export const WeeklyTaskCard: React.FC<WeeklyTaskCardProps> = ({
   const isSquareFormat = height >= 50; // More square layout for weekly view
   const useSmallTimeFont = task.duration >= 1; // Use smaller font for 1+ hour tasks
 
+  const timeLabel = `${formatTime(task.startHour)}${showDuration ? ` - ${formatTime(endTime)}` : ''}`;
+
   const handleEditClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -56,6 +58,8 @@ export const WeeklyTaskCard: React.FC<WeeklyTaskCardProps> = ({
         cursor-pointer
         font-medium
         shadow-sm
+        rounded-md
+        ring-1 ring-black/0 dark:ring-white/0
       `}
       style={{ 
         height: `${height}px`,
@@ -65,14 +69,14 @@ export const WeeklyTaskCard: React.FC<WeeklyTaskCardProps> = ({
       onClick={handleViewClick}
     >
       {/* Content Container */}
-      <div className={`h-full ${isSquareFormat ? 'flex flex-col justify-center px-1 py-0.5' : `flex items-center ${isVeryCompact ? 'px-0.5' : 'px-1'}`} relative`}>
+      <div className={`h-full ${isSquareFormat ? 'flex flex-col justify-center px-1.5 py-1' : `flex items-center ${isVeryCompact ? 'px-1' : 'px-2'}`} relative`}>
         {/* Task Text */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0" title={timeLabel}>
           <div 
             className={`
               font-bold 
-              ${isSquareFormat ? 'text-sm' : isVeryCompact ? 'text-xs' : 'text-sm'} 
-              ${isSquareFormat ? 'leading-snug text-center' : 'leading-tight truncate'}
+              ${isSquareFormat ? 'text-[13px]' : isVeryCompact ? 'text-xs' : 'text-sm'} 
+              ${isSquareFormat ? 'leading-snug text-center' : 'leading-tight line-clamp-1'}
               tracking-tight
               drop-shadow-sm
             `}

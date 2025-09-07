@@ -53,6 +53,14 @@ The main daily planning interface with timeline views and task management.
 - Current time marker for today
 - Week navigation controls with relative labels
 
+Recent visual refinements:
+- Cleaner header with subtle borders and compact labels
+- Softer hour dividers with clearer 6-hour marks
+- Gentle primary tint for today; muted tint for weekends
+- Slim red “Now” line with glow and small badge
+- Task cards show a compact time label, tighter padding, clearer hover actions
+- Events column has consistent styling and a "+N more" overflow indicator
+
 **Monthly View Components:**
 - Full TaskAssignmentCalendar component
 - Inbox tasks display for assignment

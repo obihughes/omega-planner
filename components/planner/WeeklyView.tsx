@@ -218,14 +218,14 @@ export default function WeeklyView({}: WeeklyViewProps) {
     const hours = Array.from({ length: HOURS_PER_ROW }, (_, i) => baseHour + i);
     
     return (
-      <div className="flex border-b border-border/5 bg-muted/5" style={{ height: `${WEEKLY_TIMELINE_HEADER_HEIGHT}px` }}>
+      <div className="flex border-b border-border/20 bg-card/80" style={{ height: `${WEEKLY_TIMELINE_HEADER_HEIGHT}px` }}>
         {/* Empty spacer for day column */}
-        <div className="flex-shrink-0 border-r border-border/30 bg-card/50" style={{ width: `${WEEKLY_DAY_COLUMN_WIDTH}px` }}>
+        <div className="flex-shrink-0 border-r border-border/30 bg-card" style={{ width: `${WEEKLY_DAY_COLUMN_WIDTH}px` }}>
         </div>
         
         {/* Events column header */}
-        <div className="flex-shrink-0 border-r border-border/30 bg-card/30 flex items-center justify-center" style={{ width: `${WEEKLY_EVENTS_COLUMN_WIDTH}px` }}>
-          <span className="text-xs font-medium text-muted-foreground/70">Events</span>
+        <div className="flex-shrink-0 border-r border-border/30 bg-card flex items-center justify-center" style={{ width: `${WEEKLY_EVENTS_COLUMN_WIDTH}px` }}>
+          <span className="text-[11px] font-medium text-muted-foreground/80 tracking-wide">Events</span>
         </div>
         
         {/* Timeline hours for this period */}
@@ -233,10 +233,10 @@ export default function WeeklyView({}: WeeklyViewProps) {
           {hours.map((hour) => (
             <div
               key={hour}
-              className="flex-none border-r border-border/5 flex items-center justify-start pl-1 bg-muted/5"
+              className="flex-none border-r border-border/10 flex items-center justify-start pl-1 bg-muted/5"
               style={{ width: `${WEEKLY_PIXELS_PER_HOUR}px` }}
             >
-              <div className={`text-xs font-normal ${hour % 6 === 0 ? 'text-foreground/40' : 'text-muted-foreground/30'}`}>
+              <div className={`text-[11px] font-medium ${hour % 6 === 0 ? 'text-foreground/60' : 'text-muted-foreground/40'}`}>
                 {formatTime(hour)}
               </div>
             </div>
@@ -273,12 +273,15 @@ export default function WeeklyView({}: WeeklyViewProps) {
     const dayOffset = getDayOffsetFromToday(date);
     
     // Filter scheduled tasks (exclude unscheduled tasks with startHour 0 or undefined)
-    const scheduledTasks = dayTasks.filter(task => task.startHour !== undefined && task.startHour > 0);
+    type ScheduledTask = Task & { startHour: number };
+    const isScheduled = (t: Task): t is ScheduledTask =>
+      typeof t.startHour === 'number' && t.startHour > 0;
+    const scheduledTasks: ScheduledTask[] = dayTasks.filter(isScheduled);
     
     // Split tasks into AM (0-11.99) and PM (12-23.99)
     // Tasks that cross the AM/PM boundary should appear in both periods
-    const amTasks = scheduledTasks.filter(task => task.startHour < 12);
-    const pmTasks = scheduledTasks.filter(task => 
+    const amTasks: ScheduledTask[] = scheduledTasks.filter(task => task.startHour < 12);
+    const pmTasks: ScheduledTask[] = scheduledTasks.filter(task => 
       task.startHour >= 12 || (task.startHour < 12 && task.startHour + task.duration > 12)
     );
     
@@ -298,18 +301,24 @@ export default function WeeklyView({}: WeeklyViewProps) {
       
       return (
         <div 
-          className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-50 pointer-events-none" 
+          className="absolute top-0 bottom-0 w-[2px] bg-red-500/70 z-50 pointer-events-none"
           style={{ left: `${markerLeft}px` }}
         >
-          <div className="absolute top-0 left-[-3px] w-0 h-0 border-l-[3px] border-r-[3px] border-t-[4px] border-transparent border-t-red-500" />
+          {/* Glow */}
+          <div className="absolute inset-y-0 -left-[2px] -right-[2px] bg-red-500/10" />
+          {/* Dot and label */}
+          <div className="absolute -top-1 -left-1 w-2 h-2 rounded-full bg-red-500 ring-2 ring-red-500/30" />
+          <div className="absolute top-0 left-2 text-[10px] px-1 py-0.5 rounded bg-background/80 backdrop-blur border border-border/50 text-foreground/80">
+            Now
+          </div>
         </div>
       );
     };
     
     // Render tasks for a specific period (AM or PM)
-    const renderTasks = (tasks: any[], isAM: boolean) => {
+    const renderTasks = (tasks: ScheduledTask[], isAM: boolean) => {
       return tasks.map((task) => {
-        const taskStartHour = task.startHour;
+        const taskStartHour: number = task.startHour; // guaranteed by type guard
         const taskEndHour = Math.min(isAM ? 12 : 24, task.startHour + task.duration);
         
         // Calculate position within the 12-hour period
@@ -367,52 +376,46 @@ export default function WeeklyView({}: WeeklyViewProps) {
             key={`${dateKey}-${periodLabel}`} 
             className={cn(
               "flex",
-              !isAM && "border-t border-border/20" // Increased separator thickness for PM row
+              !isAM && "border-t border-border/20"
             )}
           >
           {/* Day label column */}
           <div 
             className={cn(
-              "flex-shrink-0 border-r border-border/30 px-3 py-2 flex flex-col justify-center sticky left-0 z-50 relative",
-              index % 2 === 0 ? "bg-background" : "bg-muted/70", // Alternating background per day
-              isCurrentDay && "bg-muted/20" // Gentle highlight for today
+              "flex-shrink-0 border-r border-border/30 px-3 py-2 flex flex-col justify-center sticky left-0 z-50 relative bg-card",
+              isCurrentDay && "after:absolute after:inset-y-0 after:left-0 after:w-1 after:bg-primary"
             )}
             style={{ 
               width: `${WEEKLY_DAY_COLUMN_WIDTH}px`, 
-              height: `${WEEKLY_ROW_HEIGHT}px`,
-              boxShadow: '2px 0 4px rgba(0,0,0,0.1)' // Add shadow for better visual separation
+              height: `${WEEKLY_ROW_HEIGHT}px`
             }}
           >
             <div className="text-center">
               {isAM ? (
                 <>
                   <div className={cn(
-                    "text-xs font-medium uppercase tracking-wide mb-1.5",
-                    isCurrentDay && "text-foreground font-semibold",
-                    !isCurrentDay && "text-muted-foreground"
+                    "text-[11px] font-medium uppercase tracking-wide mb-1",
+                    isCurrentDay ? "text-foreground" : "text-muted-foreground"
                   )}>
                     {isSameDayView ? getFullDayName(selectedDayOfWeek).slice(0, 3).toUpperCase() : getDayName(date).toUpperCase()}
                   </div>
                   
                   <div className={cn(
-                    "text-2xl font-bold leading-none mb-1.5",
-                    isCurrentDay && "text-foreground font-bold",
-                    !isCurrentDay && "text-foreground"
+                    "text-2xl font-extrabold leading-none mb-1",
+                    "text-foreground"
                   )}>
                     {date.getDate()}
                   </div>
                   
                   <div className={cn(
-                    "text-xs font-medium",
-                    isCurrentDay && "text-muted-foreground font-semibold",
-                    !isCurrentDay && "text-muted-foreground"
+                    "text-[11px] font-medium text-muted-foreground",
                   )}>
                     {date.toLocaleDateString('en-US', { month: 'short' })}
                   </div>
                 </>
               ) : (
                 <div className={cn(
-                  "text-sm font-medium text-muted-foreground/80",
+                  "text-[12px] font-medium text-muted-foreground",
                 )}>
                   {periodLabel}
                 </div>
@@ -422,7 +425,10 @@ export default function WeeklyView({}: WeeklyViewProps) {
 
           {/* Events Column */}
           <div 
-            className="flex-shrink-0 border-r border-border/30 relative bg-background"
+            className={cn(
+              "flex-shrink-0 border-r border-border/30 relative",
+              isCurrentDay ? "bg-primary/5" : isWeekendDay ? "bg-muted/30" : "bg-background"
+            )}
             style={{ 
               width: `${WEEKLY_EVENTS_COLUMN_WIDTH}px`,
               height: `${WEEKLY_ROW_HEIGHT}px`
@@ -441,7 +447,10 @@ export default function WeeklyView({}: WeeklyViewProps) {
 
           {/* 12-hour Timeline */}
           <div 
-            className="relative bg-background hover:bg-muted/20 transition-colors duration-200 cursor-pointer"
+            className={cn(
+              "relative transition-colors duration-200 cursor-pointer",
+              isCurrentDay ? "bg-primary/5 hover:bg-primary/10" : isWeekendDay ? "bg-muted/30 hover:bg-muted/40" : "bg-background hover:bg-muted/10"
+            )}
             style={{ 
               width: `${WEEKLY_PIXELS_PER_HOUR * HOURS_PER_ROW}px`,
               height: `${WEEKLY_ROW_HEIGHT}px`
@@ -452,7 +461,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
             {Array.from({ length: HOURS_PER_ROW }, (_, i) => (
               <div 
                 key={`grid-${i}`} 
-                className={`absolute h-full ${i % 6 === 0 ? 'border-l border-border/30' : 'border-l border-border/10'} pointer-events-none`}
+                className={`absolute h-full ${i % 6 === 0 ? 'border-l border-border/40' : 'border-l border-border/10'} pointer-events-none`}
                 style={{ left: `${i * WEEKLY_PIXELS_PER_HOUR}px` }} 
               />
             ))}

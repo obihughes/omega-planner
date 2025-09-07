@@ -39,10 +39,10 @@ export const WeeklyEventsDisplay: React.FC<WeeklyEventsDisplayProps> = ({
 
   return (
     <div className={cn("w-full h-full overflow-hidden", className)}>
-      {dayEvents.slice(0, 3).map((event, index) => ( // Increased to 3 events for dedicated column
+      {dayEvents.slice(0, 3).map((event, index) => (
         <div
           key={event.id}
-          className="mb-1 last:mb-0 p-1.5 bg-card/95 border border-border/60 rounded-md text-xs hover:bg-accent/30 transition-colors shadow-sm"
+          className="mb-1 last:mb-0 p-1.5 bg-card border border-border/50 rounded-md text-xs hover:bg-accent/30 transition-colors shadow-sm"
           title={`${event.title}${event.description ? ` - ${event.description}` : ''}`}
         >
           {/* Event indicator and title */}
