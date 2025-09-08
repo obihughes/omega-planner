@@ -10,9 +10,14 @@ Location: `components/projects/ProjectsTimeline.tsx`
   - Bars for tasks with both `startDate` and `dueDate`.
   - Dots for tasks with only one of `startDate` or `dueDate`.
   - Color coding by task `status` (todo/in-progress/completed/blocked).
+- Layout & Responsiveness:
+  - Day width is now responsive to the available container width, with sensible min/max bounds. This uses all empty space on the right and adapts to different screen sizes.
+  - Today indicator and week separators scale with the computed layout.
+- Dark Mode:
+  - All SVG labels and helper lines use theme CSS variables (e.g. `hsl(var(--foreground))`, `hsl(var(--muted-foreground) / 0.35)`) for proper contrast in dark mode.
 - Compact defaults:
   - Week separators only (labels on Mondays), ultra-subtle weekend shading.
-  - Bar labels only when width > 80px; otherwise tooltip on hover.
+  - Bar labels show when width allows; hover tooltips remain available.
   - Lighter visuals, more spacing per lane, minimal legend.
 - Interactions: Month navigation (prev/next). Read-only prototype.
 

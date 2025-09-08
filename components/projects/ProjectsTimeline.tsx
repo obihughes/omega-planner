@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useProjects } from '@/hooks/useProjects';
 import { getContrastColor } from '@/utils/colorUtils';
 import { ChevronLeft, ChevronRight, Calendar, Filter, Eye, EyeOff, ZoomIn, ZoomOut } from 'lucide-react';
@@ -70,7 +70,32 @@ export default function ProjectsTimeline() {
 
   // Layout constants (compact)
   const labelColumnWidth = 220;
-  const dayWidth = 28; // px per day
+
+  // Measure container width to compute a responsive day width so we use all available space
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState<number>(0);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerWidth(entry.contentRect.width);
+      }
+    });
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  const dayWidth: number = useMemo(() => {
+    const numDays = Math.max(1, dayTicks.length);
+    const minDayWidth = 24;  // Prevent labels/handles from getting too cramped
+    const maxDayWidth = 64;  // Avoid comically large bars on ultra-wide screens
+    if (!containerWidth) return 28; // SSR/initial fallback
+    const available = Math.max(0, containerWidth - labelColumnWidth);
+    const computed = Math.floor(available / numDays);
+    return Math.min(Math.max(computed, minDayWidth), maxDayWidth);
+  }, [containerWidth, dayTicks.length]);
+
   const rowHeight = 44;
   const rowGap = 10;
   const headerHeight = 40;
@@ -254,7 +279,7 @@ export default function ProjectsTimeline() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto">
+      <div ref={containerRef} className="flex-1 overflow-auto">
         <svg width={contentWidth} height={headerHeight + visibleProjects.length * (rowHeight + rowGap)}>
           {/* Header background */}
           <rect x={0} y={0} width={contentWidth} height={headerHeight} fill="transparent" />
@@ -274,7 +299,7 @@ export default function ProjectsTimeline() {
                 y={headerHeight}
                 width={dayWidth}
                 height={visibleProjects.length * (rowHeight + rowGap)}
-                fill={'rgba(148,163,184,0.06)'}
+                fill={'hsl(var(--muted-foreground) / 0.06)'}
               />
             );
           })}
@@ -285,15 +310,15 @@ export default function ProjectsTimeline() {
             const x = labelColumnWidth + idx * dayWidth;
             return (
               <g key={`wk-${tick.key}`}>
-                <line x1={x} x2={x} y1={0} y2={headerHeight + visibleProjects.length * (rowHeight + rowGap)} stroke="rgba(148,163,184,0.35)" strokeWidth={0.75} />
-                <text x={x + 2} y={headerHeight / 2 + 4} textAnchor="start" fontSize={11} fill="var(--foreground, #6b7280)">
+                <line x1={x} x2={x} y1={0} y2={headerHeight + visibleProjects.length * (rowHeight + rowGap)} stroke="hsl(var(--muted-foreground) / 0.35)" strokeWidth={0.75} />
+                <text x={x + 2} y={headerHeight / 2 + 4} textAnchor="start" fontSize={11} fill="hsl(var(--foreground))">
                   {tick.date.getDate()}
                 </text>
               </g>
             );
           })}
           {/* Rightmost border line */}
-          <line x1={labelColumnWidth + dayTicks.length * dayWidth} x2={labelColumnWidth + dayTicks.length * dayWidth} y1={0} y2={headerHeight + visibleProjects.length * (rowHeight + rowGap)} stroke="rgba(148,163,184,0.4)" strokeWidth={0.5} />
+          <line x1={labelColumnWidth + dayTicks.length * dayWidth} x2={labelColumnWidth + dayTicks.length * dayWidth} y1={0} y2={headerHeight + visibleProjects.length * (rowHeight + rowGap)} stroke="hsl(var(--muted-foreground) / 0.4)" strokeWidth={0.5} />
 
           {/* Today indicator line */}
           {todayX && (
@@ -329,15 +354,15 @@ export default function ProjectsTimeline() {
             return (
               <g key={project.id}>
                 {/* Row separator */}
-                <line x1={0} x2={contentWidth} y1={yBase + rowHeight + rowGap / 2} y2={yBase + rowHeight + rowGap / 2} stroke="rgba(148,163,184,0.25)" strokeWidth={0.5} />
+                <line x1={0} x2={contentWidth} y1={yBase + rowHeight + rowGap / 2} y2={yBase + rowHeight + rowGap / 2} stroke="hsl(var(--muted-foreground) / 0.25)" strokeWidth={0.5} />
 
                 {/* Project label with enhanced info */}
                 <g className="cursor-pointer" onClick={() => toggleProjectVisibility(project.id)}>
                   <circle cx={20} cy={yBase + rowHeight / 2} r={6} fill={project.color || '#64748b'} />
-                  <text x={34} y={yBase + rowHeight / 2 - 2} fontSize={12} fill="var(--foreground)" fontWeight="bold">
+                  <text x={34} y={yBase + rowHeight / 2 - 2} fontSize={12} fill="hsl(var(--foreground))" fontWeight="bold">
                     {project.name}
                   </text>
-                  <text x={34} y={yBase + rowHeight / 2 + 12} fontSize={10} fill="var(--muted-foreground)">
+                  <text x={34} y={yBase + rowHeight / 2 + 12} fontSize={10} fill="hsl(var(--muted-foreground))">
                     {stats.total > 0 ? `${stats.completed}/${stats.total} tasks` : 'No tasks'}
                     {stats.inProgress > 0 && ` • ${stats.inProgress} in progress`}
                   </text>
@@ -345,7 +370,7 @@ export default function ProjectsTimeline() {
                   {/* Progress bar */}
                   {stats.total > 0 && (
                     <g>
-                      <rect x={34} y={yBase + rowHeight / 2 + 16} width={100} height={2} fill="rgba(148,163,184,0.3)" rx={1} />
+                      <rect x={34} y={yBase + rowHeight / 2 + 16} width={100} height={2} fill="hsl(var(--muted-foreground) / 0.3)" rx={1} />
                       <rect 
                         x={34} 
                         y={yBase + rowHeight / 2 + 16} 
@@ -450,7 +475,7 @@ export default function ProjectsTimeline() {
                                 r={isHovered ? 7 : 5} 
                                 fill={color} 
                                 opacity={isHovered ? 1 : 0.9}
-                                stroke={isHovered ? '#fff' : 'none'}
+                                stroke={isHovered ? 'hsl(var(--background))' : 'none'}
                                 strokeWidth={isHovered ? 2 : 0}
                               />
                               {isHovered && (
@@ -458,7 +483,7 @@ export default function ProjectsTimeline() {
                                   x={x + 12} 
                                   y={dotY + 4} 
                                   fontSize={10} 
-                                  fill="var(--foreground)" 
+                                  fill="hsl(var(--foreground))" 
                                   fontWeight="bold"
                                 >
                                   {task.title}
@@ -494,10 +519,10 @@ export default function ProjectsTimeline() {
           {visibleProjects.length === 0 && (
             <g>
               <rect x={0} y={headerHeight} width={contentWidth} height={120} fill="rgba(148,163,184,0.05)" />
-              <text x={contentWidth / 2} y={headerHeight + 50} textAnchor="middle" fontSize={14} fill="var(--muted-foreground)">
+              <text x={contentWidth / 2} y={headerHeight + 50} textAnchor="middle" fontSize={14} fill="hsl(var(--muted-foreground))">
                 No projects found
               </text>
-              <text x={contentWidth / 2} y={headerHeight + 75} textAnchor="middle" fontSize={12} fill="var(--muted-foreground)" opacity={0.7}>
+              <text x={contentWidth / 2} y={headerHeight + 75} textAnchor="middle" fontSize={12} fill="hsl(var(--muted-foreground))" opacity={0.7}>
                 {filterMode !== 'all' ? `Try changing the filter to see more projects` : 'Create a project to see it on the timeline'}
               </text>
             </g>
