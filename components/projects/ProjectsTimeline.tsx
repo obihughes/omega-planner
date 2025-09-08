@@ -38,7 +38,8 @@ export default function ProjectsTimeline() {
   const [monthCursor, setMonthCursor] = useState<Date>(startOfMonth(new Date()));
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
-  const [hiddenProjects, setHiddenProjects] = useState<Set<string>>(new Set());
+  // Collapsed state hides tasks but keeps the project row visible so it can be expanded again
+  const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(new Set());
   const [hoveredTask, setHoveredTask] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<{task: ProjectTask, projectId: string} | null>(null);
 
@@ -125,26 +126,20 @@ export default function ProjectsTimeline() {
   };
 
   const visibleProjects = useMemo(() => {
-    let filtered = projects.filter(p => !p.isDeleted && !hiddenProjects.has(p.id));
-    
+    let filtered = projects.filter(p => !p.isDeleted);
     if (filterMode === 'active') {
       filtered = filtered.filter(p => p.status === 'active' || p.status === 'planning');
     } else if (filterMode === 'completed') {
       filtered = filtered.filter(p => p.status === 'completed');
     }
-    
     return filtered;
-  }, [projects, hiddenProjects, filterMode]);
+  }, [projects, filterMode]);
 
-  const toggleProjectVisibility = (projectId: string) => {
-    setHiddenProjects(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(projectId)) {
-        newSet.delete(projectId);
-      } else {
-        newSet.add(projectId);
-      }
-      return newSet;
+  const toggleProjectCollapsed = (projectId: string) => {
+    setCollapsedProjects(prev => {
+      const next = new Set(prev);
+      if (next.has(projectId)) next.delete(projectId); else next.add(projectId);
+      return next;
     });
   };
 
@@ -357,7 +352,7 @@ export default function ProjectsTimeline() {
                 <line x1={0} x2={contentWidth} y1={yBase + rowHeight + rowGap / 2} y2={yBase + rowHeight + rowGap / 2} stroke="hsl(var(--muted-foreground) / 0.25)" strokeWidth={0.5} />
 
                 {/* Project label with enhanced info */}
-                <g className="cursor-pointer" onClick={() => toggleProjectVisibility(project.id)}>
+                <g className="cursor-pointer" onClick={() => toggleProjectCollapsed(project.id)}>
                   <circle cx={20} cy={yBase + rowHeight / 2} r={6} fill={project.color || '#64748b'} />
                   <text x={34} y={yBase + rowHeight / 2 - 2} fontSize={12} fill="hsl(var(--foreground))" fontWeight="bold">
                     {project.name}
@@ -384,12 +379,18 @@ export default function ProjectsTimeline() {
                 </g>
 
                 {/* Tasks */}
-                {(project.tasks || []).map((task, taskIdx) => {
+                {!collapsedProjects.has(project.id) && (project.tasks || []).map((task, taskIdx) => {
                   const hasSpan = task.startDate && task.dueDate;
                   const hasDueOnly = !task.startDate && task.dueDate;
                   const hasStartOnly = task.startDate && !task.dueDate;
 
                   if (hasSpan) {
+                    // Range filter: render only if the span overlaps the current view range
+                    const startOnly = new Date(new Date(task.startDate!).getFullYear(), new Date(task.startDate!).getMonth(), new Date(task.startDate!).getDate());
+                    const endOnly = new Date(new Date(task.dueDate!).getFullYear(), new Date(task.dueDate!).getMonth(), new Date(task.dueDate!).getDate());
+                    if (endOnly < rangeStart || startOnly > rangeEnd) {
+                      return null; // completely outside the visible range
+                    }
                     const start = dateToX(new Date(task.startDate!));
                     // include the end day fully by +1 day
                     const endX = dateToX(new Date(new Date(task.dueDate!).getFullYear(), new Date(task.dueDate!).getMonth(), new Date(task.dueDate!).getDate() + 1));
@@ -454,6 +455,10 @@ export default function ProjectsTimeline() {
 
                   if (hasDueOnly || hasStartOnly) {
                     const d = new Date(hasDueOnly ? task.dueDate! : task.startDate!);
+                    // Range filter: single-day markers must fall within the visible range
+                    if (d < rangeStart || d > rangeEnd) {
+                      return null;
+                    }
                     const x = dateToX(d) + dayWidth / 2;
                     const dotY = yBase + rowHeight / 2;
                     const color = statusColor[task.status || 'todo'];

@@ -10,6 +10,7 @@ Location: `components/projects/ProjectsTimeline.tsx`
   - Bars for tasks with both `startDate` and `dueDate`.
   - Dots for tasks with only one of `startDate` or `dueDate`.
   - Color coding by task `status` (todo/in-progress/completed/blocked).
+  - View range culling: tasks render only if their date (or date span) overlaps the current visible range to prevent duplicate appearances across months.
 - Layout & Responsiveness:
   - Day width is now responsive to the available container width, with sensible min/max bounds. This uses all empty space on the right and adapts to different screen sizes.
   - Today indicator and week separators scale with the computed layout.
@@ -19,6 +20,9 @@ Location: `components/projects/ProjectsTimeline.tsx`
   - Week separators only (labels on Mondays), ultra-subtle weekend shading.
   - Bar labels show when width allows; hover tooltips remain available.
   - Lighter visuals, more spacing per lane, minimal legend.
+
+Interactions
+- Clicking a project name now toggles a collapsed state that hides its tasks but keeps the label visible so you can click again to expand.
 - Interactions: Month navigation (prev/next). Read-only prototype.
 
 This document provides detailed information about the components used in the Daily Planner application.
