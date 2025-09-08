@@ -113,11 +113,18 @@ export default function CalendarPage() {
             className="bg-background max-w-5xl mx-auto"
             compact
             onNavigateToDaily={(date) => {
-              // Navigate to home page daily planner for the selected date using query param
-              const d = new Date(date);
-              d.setHours(0,0,0,0);
-              const iso = d.toISOString().slice(0,10);
-              window.location.href = `/?date=${iso}`;
+              // Navigate to home page daily planner with a local-safe YYYY-MM-DD date key
+              try {
+                const d = new Date(date);
+                d.setHours(0, 0, 0, 0);
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                const dateKey = `${year}-${month}-${day}`;
+                window.location.href = `/?date=${dateKey}`;
+              } catch {
+                window.location.href = `/`;
+              }
             }}
             initialDate={initialDateFromQuery}
           />

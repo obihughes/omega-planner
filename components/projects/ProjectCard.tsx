@@ -87,6 +87,11 @@ interface ProjectCardProps {
   attributes?: Record<string, any>;
   setNodeRef?: (node: HTMLElement | null) => void;
   dragOverlayStyle?: React.CSSProperties;
+  // New quick action callbacks (optional)
+  onQuickAddTask?: (projectId: string) => void;
+  onQuickChangeStatus?: (projectId: string, status: Project['status']) => void;
+  onQuickChangeColor?: (projectId: string, color: string) => void;
+  onQuickChangeDueDate?: (projectId: string, endDate: string | undefined) => void;
 }
 
 function ProjectCardComponent({ 
@@ -105,7 +110,11 @@ function ProjectCardComponent({
   listeners,
   attributes,
   setNodeRef,
-  dragOverlayStyle
+  dragOverlayStyle,
+  onQuickAddTask,
+  onQuickChangeStatus,
+  onQuickChangeColor,
+  onQuickChangeDueDate
 }: ProjectCardProps) {
 
   const getStatusColor = (status: Project['status']) => {
@@ -296,6 +305,73 @@ function ProjectCardComponent({
           </div>
         {!isArchived && (
           <div className="flex items-center">
+            {/* Quick actions */}
+            <div className="hidden md:flex items-center gap-1 mr-2">
+              {onQuickAddTask && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2"
+                  title="Add task"
+                  onClick={(e) => { e.stopPropagation(); onQuickAddTask(project.id); }}
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              )}
+              {onQuickChangeStatus && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-7 px-2" title="Change status" onClick={(e) => e.stopPropagation()}>
+                      <Briefcase className="w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-40 p-1">
+                    {(['planning','active','on-hold','completed','cancelled'] as Project['status'][]).map(s => (
+                      <button key={s} onClick={(e) => { e.stopPropagation(); onQuickChangeStatus(project.id, s); }} className="w-full px-2 py-1 text-left text-xs hover:bg-accent rounded">
+                        {s.charAt(0).toUpperCase() + s.slice(1).replace('-', ' ')}
+                      </button>
+                    ))}
+                  </PopoverContent>
+                </Popover>
+              )}
+              {onQuickChangeColor && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-7 px-2" title="Change color" onClick={(e) => e.stopPropagation()}>
+                      <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: project.color }} />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-44 p-2">
+                    <div className="grid grid-cols-8 gap-1">
+                      {['#3B82F6','#8B5CF6','#06B6D4','#10B981','#F59E0B','#EF4444','#84CC16','#F97316','#EC4899','#6B7280'].map(c => (
+                        <button key={c} className="w-5 h-5 rounded-sm border border-border" style={{ backgroundColor: c }} onClick={(e) => { e.stopPropagation(); onQuickChangeColor(project.id, c); }} title={c} />
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+              {onQuickChangeDueDate && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-7 px-2" title="Change due date" onClick={(e) => e.stopPropagation()}>
+                      <Clock className="w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-56 p-2">
+                    <input
+                      type="date"
+                      defaultValue={project.endDate?.slice(0,10)}
+                      className="w-full text-xs bg-background border border-border rounded px-2 py-1"
+                      onChange={(e) => onQuickChangeDueDate(project.id, e.target.value || undefined)}
+                    />
+                    <div className="text-right mt-2">
+                      <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => onQuickChangeDueDate(project.id, undefined)}>Clear</Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+            </div>
+
             <div 
               className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing p-1 rounded-md hover:bg-accent transition-opacity"
               {...listeners}
@@ -392,6 +468,30 @@ function ProjectCardComponent({
               </button>
             </PopoverContent>
                       </Popover>
+          </div>
+        )}
+        {isArchived && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 px-2"
+              onClick={handleRestore}
+              title="Restore project"
+            >
+              <RotateCcw className="w-4 h-4 mr-1" />
+              Restore
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              className="h-7 px-2"
+              onClick={handlePermanentlyDelete}
+              title="Delete permanently"
+            >
+              <Trash2 className="w-4 h-4 mr-1" />
+              Delete
+            </Button>
           </div>
         )}
         </div>

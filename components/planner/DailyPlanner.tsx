@@ -421,8 +421,14 @@ export default function DailyPlanner() {
       setTopDayOffset(dayOffset);
       setBottomDayOffset(dayOffset);
       setViewMode('daily');
-      // store last calendar context for back navigation
-      try { localStorage.setItem('lastCalendarDate', target.toISOString()); } catch {}
+      // store last calendar context for back navigation as YYYY-MM-DD key
+      try {
+        const year = target.getFullYear();
+        const month = String(target.getMonth() + 1).padStart(2, '0');
+        const day = String(target.getDate()).padStart(2, '0');
+        const dateKey = `${year}-${month}-${day}`;
+        localStorage.setItem('lastCalendarDate', dateKey);
+      } catch {}
     };
     window.addEventListener('planner:navigate-to-date', handler);
     return () => window.removeEventListener('planner:navigate-to-date', handler);
@@ -1044,10 +1050,8 @@ export default function DailyPlanner() {
                           // return to calendar monthly view preserving last month viewed
                           try {
                             const last = localStorage.getItem('lastCalendarDate');
-                            if (last) {
-                              const d = new Date(last);
-                              const iso = d.toISOString().slice(0,10);
-                              window.location.href = `/calendar?date=${iso}&view=monthly`;
+                            if (last && /^\d{4}-\d{2}-\d{2}$/.test(last)) {
+                              window.location.href = `/calendar?date=${last}&view=monthly`;
                             } else {
                               window.location.href = `/calendar?view=monthly`;
                             }

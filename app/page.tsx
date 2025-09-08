@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AppLayout } from '@/components/ui/AppLayout';
+import { dateFromDateKey } from '@/utils/dateUtils';
 
 export default function Home() {
   const [DailyPlanner, setDailyPlanner] = useState<React.ComponentType | null>(null);
@@ -68,8 +69,15 @@ function DailyPlannerWrapper({ Component, paramsDate }: { Component: React.Compo
   useEffect(() => {
     if (!paramsDate) return;
     try {
-      const date = new Date(paramsDate);
-      if (!isNaN(date.getTime())) {
+      let date: Date | null = null;
+      // If YYYY-MM-DD, build a local date to avoid UTC shift
+      if (/^\d{4}-\d{2}-\d{2}$/.test(paramsDate)) {
+        date = dateFromDateKey(paramsDate);
+      } else {
+        const parsed = new Date(paramsDate);
+        if (!isNaN(parsed.getTime())) date = parsed;
+      }
+      if (date) {
         window.dispatchEvent(new CustomEvent('planner:navigate-to-date', { detail: { date } }));
       }
     } catch {}

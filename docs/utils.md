@@ -117,13 +117,13 @@ Resolves conflicts when dragging tasks to new positions, ensuring proper placeme
 ## Date Utilities (`utils/dateUtils.ts`)
 
 ### Date Key Management
-All date utilities use consistent YYYY-MM-DD format for reliable date operations.
+All date utilities use consistent YYYY-MM-DD format for reliable date operations. Always prefer passing date keys (YYYY-MM-DD) between pages and parsing them using local-safe helpers to avoid UTC off-by-one shifts.
 
 #### `getDateKeyFromOffset(dayOffset): string`
 Generates date key for today + offset days.
 
 #### `dateFromDateKey(dateKey): Date`
-Converts YYYY-MM-DD string to Date object (local timezone).
+Converts YYYY-MM-DD string to Date object using a noon-time construction to avoid timezone shifts.
 
 #### `getTodayDateKey(): string`
 Gets today's date in YYYY-MM-DD format.
@@ -132,6 +132,11 @@ Gets today's date in YYYY-MM-DD format.
 Helper for getting date keys for timeline columns.
 
 **Important:** All date utilities are timezone-safe and use consistent formatting to prevent date-related bugs in drag and drop operations. The calendar now also persists dates as YYYY-MM-DD keys (`dateKey`, `startDateKey`, `endDateKey`) and reconstructs `Date` objects at runtime to match the daily planner's `baseDate` convention.
+
+### Navigation Best Practices
+- When navigating from monthly calendar to daily planner, build `?date=` using a local-safe YYYY-MM-DD string, not `toISOString()`.
+- When reading `?date=` on the home page, detect YYYY-MM-DD and parse with `dateFromDateKey`.
+- For cross-view persistence like "Back to Calendar", store `lastCalendarDate` as a YYYY-MM-DD key and reuse it directly in URLs.
 
 ## Storage Utilities (`utils/storage.ts`)
 

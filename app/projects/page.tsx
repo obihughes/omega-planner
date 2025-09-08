@@ -65,7 +65,11 @@ function SortableProjectCard({
   onClick, 
   isArchived,
   folders,
-  onMoveToFolder
+  onMoveToFolder,
+  onQuickAddTask,
+  onQuickChangeStatus,
+  onQuickChangeColor,
+  onQuickChangeDueDate
 }: {
   project: Project;
   onEdit: (project: Project) => void;
@@ -77,6 +81,10 @@ function SortableProjectCard({
   isArchived?: boolean;
   folders?: ProjectFolder[];
   onMoveToFolder?: (projectId: string, folderId: string | undefined) => void;
+  onQuickAddTask?: (projectId: string) => void;
+  onQuickChangeStatus?: (projectId: string, status: Project['status']) => void;
+  onQuickChangeColor?: (projectId: string, color: string) => void;
+  onQuickChangeDueDate?: (projectId: string, endDate: string | undefined) => void;
 }) {
   const {
     attributes,
@@ -104,6 +112,10 @@ function SortableProjectCard({
       listeners={listeners}
       attributes={attributes}
       setNodeRef={setNodeRef}
+      onQuickAddTask={onQuickAddTask}
+      onQuickChangeStatus={onQuickChangeStatus}
+      onQuickChangeColor={onQuickChangeColor}
+      onQuickChangeDueDate={onQuickChangeDueDate}
     />
   );
 }
@@ -452,6 +464,27 @@ function ProjectsPageContent() {
 
   const activeProject = activeId ? projects.find(p => p.id === activeId) : null;
 
+  const handleQuickAddTask = (projectId: string) => {
+    addTaskToProject(projectId, {
+      title: 'New task',
+      description: '',
+      status: 'todo',
+      priority: 'medium'
+    });
+  };
+
+  const handleQuickChangeStatus = (projectId: string, status: Project['status']) => {
+    updateProject(projectId, { status });
+  };
+
+  const handleQuickChangeColor = (projectId: string, color: string) => {
+    updateProject(projectId, { color });
+  };
+
+  const handleQuickChangeDueDate = (projectId: string, endDate: string | undefined) => {
+    updateProject(projectId, { endDate });
+  };
+
   return (
     <AppLayout>
       <div className="container mx-auto px-6 py-6">
@@ -666,6 +699,11 @@ function ProjectsPageContent() {
                           isArchived={false}
                           folders={folders}
                           onMoveToFolder={moveProjectToFolder}
+                          // Quick actions
+                          onQuickAddTask={handleQuickAddTask}
+                          onQuickChangeStatus={handleQuickChangeStatus}
+                          onQuickChangeColor={handleQuickChangeColor}
+                          onQuickChangeDueDate={handleQuickChangeDueDate}
                         />
                       ))}
                     </div>

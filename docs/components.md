@@ -415,6 +415,14 @@ Custom time selection component.
 - **Custom Order Mode**: Visual indicators and drag-to-reorder functionality for projects
 - **Sort Direction Controls**: Ascending/descending toggle with icon indicators
 - **Enhanced View Controls**: Improved popover interface for sorting and filtering options
+- **Archived View Actions**: In the Archived tab, each project card now shows explicit actions:
+  - Restore: returns the project to Active (uses `restoreProject()`)
+  - Delete: permanently removes the project (uses `permanentlyDeleteProject()`)
+- **Project Card Quick Actions (Active view)**:
+  - Quick Add Task: instantly adds a placeholder task to the project
+  - Quick Status: change project status from the card
+  - Quick Color: change project color from a compact palette
+  - Quick Due Date: set/clear project due date with a date input
 
 **Technical Improvements:**
 - **SortableTaskItem Component**: New reusable component for drag-and-drop task items

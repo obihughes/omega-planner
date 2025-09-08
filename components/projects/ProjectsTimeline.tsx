@@ -4,6 +4,11 @@ import React, { useMemo, useState } from 'react';
 import { useProjects } from '@/hooks/useProjects';
 import { getContrastColor } from '@/utils/colorUtils';
 import { ChevronLeft, ChevronRight, Calendar, Filter, Eye, EyeOff, ZoomIn, ZoomOut } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+import { ProjectTaskFormModal } from '@/components/modals/ProjectTaskFormModal';
+import { ProjectTask } from '@/types';
+
 
 type DayTick = { date: Date; key: string };
 
@@ -29,12 +34,13 @@ type ViewMode = 'week' | 'month' | 'quarter';
 type FilterMode = 'all' | 'active' | 'completed';
 
 export default function ProjectsTimeline() {
-  const { projects } = useProjects();
+  const { projects, updateTaskInProject } = useProjects();
   const [monthCursor, setMonthCursor] = useState<Date>(startOfMonth(new Date()));
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
   const [hiddenProjects, setHiddenProjects] = useState<Set<string>>(new Set());
   const [hoveredTask, setHoveredTask] = useState<string | null>(null);
+  const [editingTask, setEditingTask] = useState<{task: ProjectTask, projectId: string} | null>(null);
 
   const { rangeStart, rangeEnd } = useMemo(() => {
     if (viewMode === 'week') {
@@ -146,6 +152,21 @@ export default function ProjectsTimeline() {
     } else {
       return rangeStart.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
     }
+  };
+
+  const handleTaskClick = (task: ProjectTask, projectId: string) => {
+    setEditingTask({ task, projectId });
+  };
+
+  const handleCloseModal = () => {
+    setEditingTask(null);
+  };
+
+  const handleSaveTask = (taskData: Partial<ProjectTask>, isNew: boolean) => {
+    if (editingTask && !isNew) {
+      updateTaskInProject(editingTask.projectId, editingTask.task.id, taskData);
+    }
+    setEditingTask(null);
   };
 
   return (
@@ -357,33 +378,51 @@ export default function ProjectsTimeline() {
                         className="cursor-pointer"
                         onMouseEnter={() => setHoveredTask(task.id)}
                         onMouseLeave={() => setHoveredTask(null)}
-                        onClick={() => console.log('Task clicked:', task)}
+                        onClick={() => handleTaskClick(task, project.id)}
                       >
-                        <title>{`${task.title || ''}${task.startDate ? ` • ${new Date(task.startDate).toLocaleDateString()}` : ''}${task.dueDate ? ` → ${new Date(task.dueDate).toLocaleDateString()}` : ''} • ${task.status || 'todo'}`}</title>
-                        <rect 
-                          x={start} 
-                          y={barY} 
-                          width={width} 
-                          height={12} 
-                          rx={4} 
-                          ry={4} 
-                          fill={color} 
-                          opacity={isHovered ? 0.9 : 0.75}
-                          stroke={isHovered ? color : 'none'}
-                          strokeWidth={isHovered ? 1 : 0}
-                        />
-                        {(width > 60 || isHovered) && (
-                          <text 
-                            x={start + 6} 
-                            y={barY + 9.5} 
-                            fontSize={10} 
-                            fill="#111827" 
-                            opacity={0.9}
-                            fontWeight={isHovered ? 'bold' : 'normal'}
-                          >
-                            {task.title}
-                          </text>
-                        )}
+                        <HoverCard>
+                          <HoverCardTrigger asChild>
+                            <g>
+                              <rect 
+                                x={start} 
+                                y={barY} 
+                                width={width} 
+                                height={12} 
+                                rx={4} 
+                                ry={4} 
+                                fill={color} 
+                                opacity={isHovered ? 0.9 : 0.75}
+                                stroke={isHovered ? color : 'none'}
+                                strokeWidth={isHovered ? 1 : 0}
+                              />
+                              {(width > 30 || isHovered) && (
+                                <text 
+                                  x={start + 6} 
+                                  y={barY + 9.5} 
+                                  fontSize={10} 
+                                  fill={getContrastColor(color)} 
+                                  opacity={0.9}
+                                  fontWeight={isHovered ? 'bold' : 'normal'}
+                                  style={{ pointerEvents: 'none' }}
+                                >
+                                  {task.title}
+                                </text>
+                              )}
+                            </g>
+                          </HoverCardTrigger>
+                          <HoverCardContent className="w-80">
+                            <div className="flex justify-between space-x-4">
+                              <div className="space-y-1">
+                                <h4 className="text-sm font-semibold">{task.title}</h4>
+                                <p className="text-sm">
+                                  Status: <span className="font-medium" style={{color: color}}>{task.status}</span>
+                                </p>
+                                {task.startDate && <p className="text-xs text-muted-foreground">Start: {new Date(task.startDate).toLocaleDateString()}</p>}
+                                {task.dueDate && <p className="text-xs text-muted-foreground">Due: {new Date(task.dueDate).toLocaleDateString()}</p>}
+                              </div>
+                            </div>
+                          </HoverCardContent>
+                        </HoverCard>
                       </g>
                     );
                   }
@@ -400,29 +439,47 @@ export default function ProjectsTimeline() {
                         className="cursor-pointer"
                         onMouseEnter={() => setHoveredTask(task.id)}
                         onMouseLeave={() => setHoveredTask(null)}
-                        onClick={() => console.log('Task clicked:', task)}
+                        onClick={() => handleTaskClick(task, project.id)}
                       >
-                        <title>{`${task.title || ''} • ${d.toLocaleDateString()} • ${task.status || 'todo'}`}</title>
-                        <circle 
-                          cx={x} 
-                          cy={dotY} 
-                          r={isHovered ? 7 : 5} 
-                          fill={color} 
-                          opacity={isHovered ? 1 : 0.9}
-                          stroke={isHovered ? '#fff' : 'none'}
-                          strokeWidth={isHovered ? 2 : 0}
-                        />
-                        {isHovered && (
-                          <text 
-                            x={x + 12} 
-                            y={dotY + 4} 
-                            fontSize={10} 
-                            fill="var(--foreground)" 
-                            fontWeight="bold"
-                          >
-                            {task.title}
-                          </text>
-                        )}
+                        <HoverCard>
+                          <HoverCardTrigger asChild>
+                            <g>
+                              <circle 
+                                cx={x} 
+                                cy={dotY} 
+                                r={isHovered ? 7 : 5} 
+                                fill={color} 
+                                opacity={isHovered ? 1 : 0.9}
+                                stroke={isHovered ? '#fff' : 'none'}
+                                strokeWidth={isHovered ? 2 : 0}
+                              />
+                              {isHovered && (
+                                <text 
+                                  x={x + 12} 
+                                  y={dotY + 4} 
+                                  fontSize={10} 
+                                  fill="var(--foreground)" 
+                                  fontWeight="bold"
+                                >
+                                  {task.title}
+                                </text>
+                              )}
+                            </g>
+                          </HoverCardTrigger>
+                          <HoverCardContent className="w-80">
+                            <div className="flex justify-between space-x-4">
+                               <div className="space-y-1">
+                                <h4 className="text-sm font-semibold">{task.title}</h4>
+                                <p className="text-sm">
+                                  Status: <span className="font-medium" style={{color: color}}>{task.status}</span>
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Date: {new Date(d).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+                          </HoverCardContent>
+                        </HoverCard>
                       </g>
                     );
                   }
@@ -447,6 +504,15 @@ export default function ProjectsTimeline() {
           )}
         </svg>
       </div>
+
+      {editingTask && (
+        <ProjectTaskFormModal
+          isOpen={!!editingTask}
+          onClose={handleCloseModal}
+          taskToEdit={editingTask.task}
+          onSave={handleSaveTask}
+        />
+      )}
     </div>
   );
 }
