@@ -72,7 +72,7 @@ export function FolderCard({
       onClick={handleClick}
     >
       {/* Folder Card */}
-      <div className="bg-card border border-border/60 rounded-lg p-4 hover:border-border transition-all duration-200 hover:shadow-sm h-32 flex flex-col">
+      <div className="bg-card border border-border/60 rounded-lg p-4 hover:border-border transition-all duration-200 hover:shadow-sm aspect-square flex flex-col">
         {/* Header with folder icon and menu */}
         <div className="flex items-start justify-between mb-3 flex-shrink-0">
           <div className="flex items-center gap-2 min-w-0 flex-1">
