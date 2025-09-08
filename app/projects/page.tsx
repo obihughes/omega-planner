@@ -3,7 +3,7 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useProjects } from '@/hooks/useProjects';
-import { Project, ProjectFolder } from '@/types';
+import { Project, ProjectFolder, ProjectTask } from '@/types';
 import { ProjectCard } from '@/components/projects/ProjectCard';
 import { ProjectsCalendar } from '@/components/projects/ProjectsCalendar';
 import { FolderCard } from '@/components/projects/FolderCard';
@@ -53,6 +53,7 @@ import {
 // Lazy load the modals to reduce initial bundle size
 const ProjectFormModal = lazy(() => import('@/components/modals/ProjectFormModal').then(module => ({ default: module.ProjectFormModal })));
 const ProjectFolderFormModal = lazy(() => import('@/components/modals/ProjectFolderFormModal').then(module => ({ default: module.ProjectFolderFormModal })));
+const ProjectTaskFormModal = lazy(() => import('@/components/modals/ProjectTaskFormModal').then(module => ({ default: module.ProjectTaskFormModal })));
 
 // Sortable Project Card wrapper
 function SortableProjectCard({ 
@@ -153,6 +154,11 @@ function ProjectsPageContent() {
   // Project form modal state
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+
+  // Task modal state
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [taskProjectId, setTaskProjectId] = useState<string | null>(null);
+  const [editingTask, setEditingTask] = useState<ProjectTask | null>(null);
   
   // Folder form modal state
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
@@ -465,11 +471,27 @@ function ProjectsPageContent() {
   const activeProject = activeId ? projects.find(p => p.id === activeId) : null;
 
   const handleQuickAddTask = (projectId: string) => {
-    addTaskToProject(projectId, {
-      title: 'New task',
-      description: '',
-      status: 'todo',
-      priority: 'medium'
+    // Open the full task form modal for creation instead of auto-adding
+    setTaskProjectId(projectId);
+    setEditingTask(null);
+    setIsTaskModalOpen(true);
+  };
+
+  const handleSaveTask = (taskData: Partial<ProjectTask>, isNew: boolean) => {
+    if (!taskProjectId) return;
+    // Persist the newly created task to the selected project
+    addTaskToProject(taskProjectId, {
+      title: taskData.title || 'New task',
+      description: taskData.description || '',
+      status: taskData.status || 'todo',
+      priority: taskData.priority || 'medium',
+      startDate: taskData.startDate,
+      dueDate: taskData.dueDate,
+      estimatedHours: taskData.estimatedHours,
+      actualHours: taskData.actualHours,
+      tags: taskData.tags,
+      assignedTo: taskData.assignedTo,
+      completedAt: taskData.completedAt,
     });
   };
 
@@ -780,6 +802,18 @@ function ProjectsPageContent() {
             onSave={handleSaveProject}
             project={editingProject}
             folders={folders}
+          />
+        )}
+      </Suspense>
+
+      {/* Project Task Form Modal */}
+      <Suspense fallback={null}>
+        {isTaskModalOpen && (
+          <ProjectTaskFormModal
+            isOpen={isTaskModalOpen}
+            onClose={() => setIsTaskModalOpen(false)}
+            taskToEdit={editingTask || undefined}
+            onSave={handleSaveTask}
           />
         )}
       </Suspense>

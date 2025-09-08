@@ -428,7 +428,7 @@ Custom time selection component.
   - Restore: returns the project to Active (uses `restoreProject()`)
   - Delete: permanently removes the project (uses `permanentlyDeleteProject()`)
 - **Project Card Quick Actions (Active view)**:
-  - Quick Add Task: instantly adds a placeholder task to the project
+  - Quick Add Task: opens the full task form modal to enter details before creating
   - Quick Status: change project status from the card
   - Quick Color: change project color from a compact palette
   - Quick Due Date: set/clear project due date with a date input

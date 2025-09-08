@@ -214,62 +214,31 @@ function ProjectCardComponent({
     }
   };
 
-  const renderProgressCircles = () => {
+  const renderProgressIndicator = () => {
     if (totalTasks === 0) {
       return (
-        <div className="flex items-center justify-center py-2 px-3 bg-muted/10 border border-dashed border-muted-foreground/20 rounded">
-          <div className="flex items-center space-x-1 text-muted-foreground text-xs">
-            <Plus className="w-3 h-3" />
-            <span>Add tasks</span>
-          </div>
+        <div className="flex items-center justify-center py-1 text-muted-foreground text-xs">
+          No tasks
         </div>
       );
     }
 
-    // Show circles for up to 20 tasks, then switch to progress bar
-    if (totalTasks > 20) {
-      const progressPercentage = Math.round((completedTasks / totalTasks) * 100);
-      return (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">
-              {completedTasks}/{totalTasks} tasks
-            </span>
-            <span className="text-xs font-medium text-muted-foreground">
-              {progressPercentage}%
-            </span>
-          </div>
-          <div className="w-full bg-muted-foreground/20 rounded-full h-1.5">
-            <div 
-              className="bg-green-500 h-1.5 rounded-full transition-all duration-300" 
-              style={{ width: `${progressPercentage}%` }}
-            />
-          </div>
-        </div>
-      );
-    }
-
-    // Show circles for 20 or fewer tasks
+    const progressPercentage = Math.round((completedTasks / totalTasks) * 100);
     return (
-      <div className="space-y-2">
+      <div className="space-y-1">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             {completedTasks}/{totalTasks} tasks
           </span>
+          <span className="text-xs font-medium text-foreground">
+            {progressPercentage}%
+          </span>
         </div>
-        <div className="flex flex-wrap gap-1 items-center">
-          {Array.from({ length: totalTasks }, (_, i) => {
-            const isCompleted = i < completedTasks;
-            return (
-              <div
-                key={i}
-                className={cn(
-                  "w-1.5 h-1.5 rounded-full transition-all duration-200 flex-shrink-0",
-                  isCompleted ? "bg-green-500" : "bg-muted-foreground/30"
-                )}
-              />
-            );
-          })}
+        <div className="w-full bg-muted rounded-full h-1.5">
+          <div 
+            className="bg-green-500 h-1.5 rounded-full transition-all duration-300" 
+            style={{ width: `${progressPercentage}%` }}
+          />
         </div>
       </div>
     );
@@ -286,17 +255,20 @@ function ProjectCardComponent({
       onClick={handleCardClick}
       {...attributes}
     >
-      <div className="bg-card border border-border/60 p-3 hover:border-border transition-all duration-200 hover:shadow-sm aspect-square flex flex-col">
+      <div className="bg-card border border-border/60 rounded-lg p-4 hover:border-border transition-all duration-200 hover:shadow-sm h-32 flex flex-col">
         {/* Header */}
-        <div className="flex items-start justify-between mb-3 flex-shrink-0">
+        <div className="flex items-start justify-between mb-2 flex-shrink-0">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <div 
               className="w-3 h-3 rounded-sm flex-shrink-0"
               style={{ backgroundColor: project.color }}
             />
             <div className="min-w-0 flex-1">
-              <h3 className="font-medium text-foreground truncate text-sm">
-                {project.name}
+              <h3
+                className="font-semibold text-sm text-foreground truncate whitespace-nowrap leading-tight"
+                title={project.name && project.name.trim() ? project.name : 'Untitled Project'}
+              >
+                {project.name && project.name.trim() ? project.name : 'Untitled Project'}
               </h3>
               <p className="text-xs text-muted-foreground">
                 {project.progress}% complete
@@ -305,75 +277,8 @@ function ProjectCardComponent({
           </div>
         {!isArchived && (
           <div className="flex items-center">
-            {/* Quick actions */}
-            <div className="hidden md:flex items-center gap-1 mr-2">
-              {onQuickAddTask && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 px-2"
-                  title="Add task"
-                  onClick={(e) => { e.stopPropagation(); onQuickAddTask(project.id); }}
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              )}
-              {onQuickChangeStatus && (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-7 px-2" title="Change status" onClick={(e) => e.stopPropagation()}>
-                      <Briefcase className="w-4 h-4" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent align="end" className="w-40 p-1">
-                    {(['planning','active','on-hold','completed','cancelled'] as Project['status'][]).map(s => (
-                      <button key={s} onClick={(e) => { e.stopPropagation(); onQuickChangeStatus(project.id, s); }} className="w-full px-2 py-1 text-left text-xs hover:bg-accent rounded">
-                        {s.charAt(0).toUpperCase() + s.slice(1).replace('-', ' ')}
-                      </button>
-                    ))}
-                  </PopoverContent>
-                </Popover>
-              )}
-              {onQuickChangeColor && (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-7 px-2" title="Change color" onClick={(e) => e.stopPropagation()}>
-                      <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: project.color }} />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent align="end" className="w-44 p-2">
-                    <div className="grid grid-cols-8 gap-1">
-                      {['#3B82F6','#8B5CF6','#06B6D4','#10B981','#F59E0B','#EF4444','#84CC16','#F97316','#EC4899','#6B7280'].map(c => (
-                        <button key={c} className="w-5 h-5 rounded-sm border border-border" style={{ backgroundColor: c }} onClick={(e) => { e.stopPropagation(); onQuickChangeColor(project.id, c); }} title={c} />
-                      ))}
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              )}
-              {onQuickChangeDueDate && (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-7 px-2" title="Change due date" onClick={(e) => e.stopPropagation()}>
-                      <Clock className="w-4 h-4" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent align="end" className="w-56 p-2">
-                    <input
-                      type="date"
-                      defaultValue={project.endDate?.slice(0,10)}
-                      className="w-full text-xs bg-background border border-border rounded px-2 py-1"
-                      onChange={(e) => onQuickChangeDueDate(project.id, e.target.value || undefined)}
-                    />
-                    <div className="text-right mt-2">
-                      <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => onQuickChangeDueDate(project.id, undefined)}>Clear</Button>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              )}
-            </div>
-
             <div 
-              className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing p-1 rounded-md hover:bg-accent transition-opacity"
+              className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing p-1 rounded-md hover:bg-accent transition-opacity mr-1"
               {...listeners}
               title="Drag to reorder"
               onClick={(e) => e.stopPropagation()}
@@ -496,9 +401,9 @@ function ProjectCardComponent({
         )}
         </div>
 
-              {/* Task Completion Indicators */}
+              {/* Task Progress Indicator */}
         <div className="mt-auto">
-          {renderProgressCircles()}
+          {renderProgressIndicator()}
         </div>
       </div>
     </div>
