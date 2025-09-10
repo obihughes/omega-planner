@@ -152,6 +152,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
     
     if (isNew) {
       addTaskToProject(project.id, taskData as Omit<ProjectTask, 'id' | 'createdAt' | 'updatedAt' | 'order'>);
+      setNewTaskTitle('');
     } else if (editingTask) {
       updateTaskInProject(project.id, editingTask.id, taskData);
     }
@@ -435,6 +436,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
             onSave={handleSaveTask}
             onDelete={handleDeleteTask}
             taskToEdit={editingTask}
+            initialTitle={newTaskTitle}
           />
         )}
       </Suspense>

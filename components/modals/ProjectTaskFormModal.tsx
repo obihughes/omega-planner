@@ -15,6 +15,11 @@ export interface ProjectTaskFormModalProps {
   taskToEdit?: ProjectTask | null;
   onSave: (taskData: Partial<ProjectTask>, isNew: boolean) => void;
   onDelete?: (taskId: string) => void;
+  /**
+   * Optional initial title to prefill when creating a new task.
+   * Ignored when editing an existing task.
+   */
+  initialTitle?: string;
 }
 
 export const ProjectTaskFormModal: React.FC<ProjectTaskFormModalProps> = ({
@@ -23,6 +28,7 @@ export const ProjectTaskFormModal: React.FC<ProjectTaskFormModalProps> = ({
   taskToEdit,
   onSave,
   onDelete,
+  initialTitle,
 }) => {
   const isNewTask = !taskToEdit;
   const [title, setTitle] = useState("");
@@ -40,14 +46,14 @@ export const ProjectTaskFormModal: React.FC<ProjectTaskFormModalProps> = ({
       setStartDate(taskToEdit.startDate || "");
       setDueDate(taskToEdit.dueDate || "");
     } else {
-      // Reset for new task
-      setTitle("");
+      // Reset for new task, optionally prefill from initialTitle
+      setTitle(initialTitle ? initialTitle : "");
       setDescription("");
       setStatus('todo');
       setStartDate("");
       setDueDate("");
     }
-  }, [taskToEdit, isOpen]);
+  }, [taskToEdit, isOpen, initialTitle]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

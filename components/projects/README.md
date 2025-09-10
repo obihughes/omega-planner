@@ -7,6 +7,9 @@ This directory contains components for project management functionality.
 ### ProjectCard
 Displays individual project cards with progress indicators, status, and management actions.
 
+Notes:
+- The click target is limited to the visible card surface to avoid accidental opens when clicking empty grid space.
+
 ### TaskItem  
 Shows individual project tasks within project detail views, with drag-and-drop support.
 
@@ -76,5 +79,10 @@ Main navigation structure under Task Manager:
 - Projects (`/projects`)
 - Tasks (`/projects/tasks`) 
 - Calendar View (`/projects` with calendar view)
+
+## Projects Page
+
+- A "New Folder" button is available in the header to create folders using the folder modal.
+- Folders and projects can be shown together in a grid; folder cards use a square aspect to align heights with project cards.
 
 This provides a dedicated space for task-focused workflows while maintaining easy access to project management features. 
