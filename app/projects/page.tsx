@@ -27,7 +27,8 @@ import {
   Grid3X3,
   List,
   Home,
-  GripVertical
+  GripVertical,
+  FolderPlus
 } from 'lucide-react';
 
 // Drag and drop imports
@@ -598,6 +599,14 @@ function ProjectsPageContent() {
                 </div>
               </PopoverContent>
             </Popover>
+
+            <button
+              onClick={handleCreateFolder}
+              className="px-3 py-2 rounded-md border border-border/60 hover:border-border text-sm transition-colors flex items-center space-x-2"
+            >
+              <FolderPlus className="w-4 h-4" />
+              <span>New Folder</span>
+            </button>
 
             <button
               onClick={handleCreateProject}
