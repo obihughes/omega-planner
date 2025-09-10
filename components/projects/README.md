@@ -9,6 +9,7 @@ Displays individual project cards with progress indicators, status, and manageme
 
 Notes:
 - The click target is limited to the visible card surface to avoid accidental opens when clicking empty grid space.
+- Archived view: action buttons (Restore/Delete) are rendered below the header so the project name has full width and never gets truncated by actions. On small screens the actions show icons-only; labels appear from `lg` breakpoint and up.
 
 ### TaskItem  
 Shows individual project tasks within project detail views, with drag-and-drop support.

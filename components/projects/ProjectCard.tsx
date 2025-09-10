@@ -374,33 +374,35 @@ function ProjectCardComponent({
                       </Popover>
           </div>
         )}
+        {isArchived && null}
+        </div>
+
+              {/* Task Progress Indicator */}
         {isArchived && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mt-1">
             <Button
               variant="outline"
               size="sm"
-              className="h-7 px-2"
+              className="h-7 px-1 md:px-2"
               onClick={handleRestore}
               title="Restore project"
             >
-              <RotateCcw className="w-4 h-4 mr-1" />
-              Restore
+              <RotateCcw className="w-4 h-4 mr-0 lg:mr-1" />
+              <span className="hidden lg:inline">Restore</span>
             </Button>
             <Button
               variant="destructive"
               size="sm"
-              className="h-7 px-2"
+              className="h-7 px-1 md:px-2"
               onClick={handlePermanentlyDelete}
               title="Delete permanently"
             >
-              <Trash2 className="w-4 h-4 mr-1" />
-              Delete
+              <Trash2 className="w-4 h-4 mr-0 lg:mr-1" />
+              <span className="hidden lg:inline">Delete</span>
             </Button>
           </div>
         )}
-        </div>
-
-              {/* Task Progress Indicator */}
+        
         <div className="mt-auto">
           {renderProgressIndicator()}
         </div>
