@@ -227,6 +227,17 @@ Advanced task management interface with powerful sorting, filtering, and organiz
 - **Inline Task Creation**: Add tasks directly within project groups using "Add Task" buttons
 - **Quick Task Entry**: Fast task creation with project selection
 - **Real-time Editing**: Inline editing of task titles, descriptions, and due dates
+### **Project Detail Inline Editing**
+**Location**: `app/projects/[id]/page.tsx` with `components/projects/TaskItem.tsx`
+
+Project detail view now supports the same inline editing UX as the unified Tasks view:
+- **Title**: Click task title to edit inline. Press Enter to save, Escape to cancel, or blur to save.
+- **Description**: Click description (or the placeholder) to edit inline. Press Ctrl+Enter to save, Escape to cancel, or blur to save.
+- **Due Date**: Click the due date chip to edit with a native date input. Press Enter or blur to save; Escape cancels. Clear with the × button.
+- **Status**: Click the checkbox to toggle completion with celebratory feedback.
+
+Dates are normalized to YYYY-MM-DD and formatted using the centralized `formatDueDate` utility.
+
 - **Drag & Drop Reordering**: Visual reordering of tasks when in custom order mode
 - **Task Status Management**: Toggle completion status with visual celebrations
 - **Multi-Sort Interface**: Configure multiple sorting criteria with drag-to-reorder priority

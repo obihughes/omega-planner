@@ -19,6 +19,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { formatDueDate, normalizeDueDate } from '@/utils/dateUtils';
 
 interface TaskItemProps {
   id: string;
@@ -119,6 +120,14 @@ export function TaskItem({
   const [isEditingTitle, setIsEditingTitle] = React.useState(false);
   const [editingValue, setEditingValue] = React.useState('');
   const editInputRef = useRef<HTMLInputElement>(null);
+  // Description inline editing
+  const [isEditingDescription, setIsEditingDescription] = React.useState(false);
+  const [editingDescription, setEditingDescription] = React.useState('');
+  const descTextareaRef = useRef<HTMLTextAreaElement>(null);
+  // Due date inline editing
+  const [isEditingDueDate, setIsEditingDueDate] = React.useState(false);
+  const [editingDueDate, setEditingDueDate] = React.useState('');
+  const dueInputRef = useRef<HTMLInputElement>(null);
   
   const {
     attributes,
@@ -236,6 +245,70 @@ export function TaskItem({
       editInputRef.current.select();
     }
   }, [isEditingTitle]);
+
+  // Focus description when editing starts
+  useEffect(() => {
+    if (isEditingDescription && descTextareaRef.current) {
+      descTextareaRef.current.focus();
+      descTextareaRef.current.select();
+    }
+  }, [isEditingDescription]);
+
+  // Focus due date when editing starts
+  useEffect(() => {
+    if (isEditingDueDate && dueInputRef.current) {
+      dueInputRef.current.focus();
+    }
+  }, [isEditingDueDate]);
+
+  // Due date formatted info
+  const dueInfo = useMemo(() => formatDueDate(task.dueDate || undefined), [task.dueDate]);
+
+  // Description editing handlers
+  const startEditingDescription = () => {
+    setIsEditingDescription(true);
+    setEditingDescription(task.description || '');
+  };
+
+  const saveEditDescription = () => {
+    if (!onUpdateTask) {
+      setIsEditingDescription(false);
+      return;
+    }
+    const trimmed = editingDescription.trim();
+    const newValue = trimmed === '' ? undefined : trimmed;
+    if (newValue !== (task.description || undefined)) {
+      onUpdateTask(task.id, { description: newValue });
+    }
+    setIsEditingDescription(false);
+  };
+
+  const cancelEditDescription = () => {
+    setIsEditingDescription(false);
+    setEditingDescription('');
+  };
+
+  // Due date editing handlers
+  const startEditingDueDate = () => {
+    setIsEditingDueDate(true);
+    setEditingDueDate(normalizeDueDate(task.dueDate) || '');
+  };
+
+  const saveEditDueDate = () => {
+    if (!onUpdateTask) {
+      setIsEditingDueDate(false);
+      return;
+    }
+    const normalized = normalizeDueDate(editingDueDate) || undefined;
+    if (normalized !== (normalizeDueDate(task.dueDate) || undefined)) {
+      onUpdateTask(task.id, { dueDate: normalized });
+    }
+    setIsEditingDueDate(false);
+  };
+
+  const clearDueDate = () => {
+    if (onUpdateTask) onUpdateTask(task.id, { dueDate: undefined });
+  };
 
   // Create confetti particles animation
   const createConfettiParticles = (button: HTMLElement) => {
@@ -379,9 +452,34 @@ export function TaskItem({
                 </h4>
               )}
               
-              {task.description && (
-                <p className="text-sm text-muted-foreground break-words leading-snug">
-                  {task.description}
+              {/* Description display / editing */}
+              {isEditingDescription ? (
+                <div className="mt-1">
+                  <textarea
+                    ref={descTextareaRef}
+                    value={editingDescription}
+                    onChange={(e) => setEditingDescription(e.target.value)}
+                    onBlur={saveEditDescription}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) saveEditDescription();
+                      if (e.key === 'Escape') cancelEditDescription();
+                    }}
+                    placeholder="Add description..."
+                    className="w-full text-sm bg-transparent border border-border rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                    rows={2}
+                  />
+                  <div className="text-xs text-muted-foreground mt-1">Press Ctrl+Enter to save, Escape to cancel</div>
+                </div>
+              ) : (
+                <p
+                  className={cn(
+                    "text-sm break-words leading-snug",
+                    task.description ? "text-muted-foreground" : "text-muted-foreground/70 italic cursor-text hover:text-foreground/80"
+                  )}
+                  onClick={startEditingDescription}
+                  title={task.description ? "Click to edit description" : "Click to add description"}
+                >
+                  {task.description ? task.description : 'Add description...'}
                 </p>
               )}
               
@@ -404,8 +502,47 @@ export function TaskItem({
               )}
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-4">
+            {/* Due date and actions */}
+            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity ml-4">
+              {/* Due Date Chip / Editor */}
+              {isEditingDueDate ? (
+                <input
+                  ref={dueInputRef}
+                  type="date"
+                  value={editingDueDate}
+                  onChange={(e) => setEditingDueDate(e.target.value)}
+                  onBlur={saveEditDueDate}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') saveEditDueDate();
+                    if (e.key === 'Escape') setIsEditingDueDate(false);
+                  }}
+                  className="text-xs bg-transparent border border-primary rounded px-1 py-0.5 focus:outline-none"
+                />
+              ) : (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    startEditingDueDate();
+                  }}
+                  className={cn(
+                    "text-xs px-2 py-1 rounded-full border",
+                    dueInfo?.isOverdue ? "border-red-500 text-red-600 bg-red-50" : "border-border text-muted-foreground hover:text-foreground hover:bg-accent/40"
+                  )}
+                  title={task.dueDate ? "Click to edit due date" : "Click to set due date"}
+                >
+                  {task.dueDate ? (dueInfo?.text || 'Due date') : 'Add due date'}
+                </button>
+              )}
+              {task.dueDate && !isEditingDueDate && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); clearDueDate(); }}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                  title="Clear due date"
+                >
+                  ×
+                </button>
+              )}
+
               {/* Expand/Collapse Subtasks */}
               {(task.subtasks && task.subtasks.length > 0) && (
                 <button
