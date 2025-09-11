@@ -418,7 +418,7 @@ Custom time selection component.
 
 - Inline due date editing in `components/projects/CompactTaskCard.tsx` using a native date input. Saves on blur/Enter, cancels on Escape. Dates normalized to YYYY-MM-DD.
 - New grouping in `app/projects/tasks/page.tsx`: select "Done by day" to group tasks by `completedAt` date.
-- `components/projects/ProjectsCalendar.tsx`: completed-count badge now shows a tooltip with the titles of tasks completed on that day. Overdue/remaining time uses normalized date keys.
+- `components/projects/ProjectsCalendar.tsx`: completed-count badge now shows a tooltip with the titles of tasks completed on that day, and the day cell lists up to 2 completed task titles with an overflow indicator like "+N completed". Overdue/remaining time uses normalized date keys.
 
 **Comprehensive enhancement of task and project management capabilities**
 
@@ -575,7 +575,7 @@ These now use Math.floor for upcoming dates and Math.ceil for overdue.
 - Guards conditional renders that depend on localStorage data with `isClient` flag
 
 ### Date Logic Fix (Projects Today/Tasks)
-**Issue**: Tasks scheduled for today were incorrectly showing as "Overdue" instead of "Today".
+**Issue**: Tasks scheduled for today were incorrectly showing as "Overdue" instead of "Today"; overdue items hid the actual due date.
 
 **Root Cause**: Date comparison logic in `formatDueDate` functions was comparing exact timestamps instead of calendar dates. Tasks due "today" but created earlier in the day would show as overdue because the current time had passed the task's creation timestamp.
 
@@ -595,6 +595,7 @@ These now use Math.floor for upcoming dates and Math.ceil for overdue.
 **Technical Details**:
 - Uses `getDateKey()` and `getTodayDateKey()` for timezone-safe date comparison
 - String comparison of YYYY-MM-DD format ensures accurate calendar date matching
+- Overdue tasks now display their actual due date (via `formatDueDate`), while non-overdue dates keep friendly text (Today/Tomorrow/3 days)
 - Eliminates time-based calculation errors that caused today's tasks to appear overdue
 
 ### Styling Fixes
