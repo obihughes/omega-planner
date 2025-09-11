@@ -152,6 +152,20 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
     return taskDueDatesByDate[dateKey] || [];
   };
 
+  // Get completed tasks for a date (by completion date)
+  const getCompletedTasksForDate = (date: Date) => {
+    const dateKey = getDateKey(date);
+    const results: { project: Project; task: ProjectTask }[] = [];
+    filteredProjects
+      .filter(project => !project.isDeleted)
+      .forEach(project => {
+        project.tasks
+          .filter(task => task.status === 'completed' && task.completedAt && getDateKey(task.completedAt) === dateKey)
+          .forEach(task => results.push({ project, task }));
+      });
+    return results;
+  };
+
   const getCompletedCountForDate = (date: Date) => {
     const dateKey = getDateKey(date);
     return taskCompletionsByDate[dateKey] || 0;
@@ -315,6 +329,7 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
                 const dayTaskStarts = getTaskStartsForDate(date);
                 const dayTaskDues = getTaskDuesForDate(date);
                 const completedCount = getCompletedCountForDate(date);
+                const completedTasks = completedCount > 0 ? getCompletedTasksForDate(date) : [];
                 const isCurrentMonthDay = isCurrentMonth(date);
                 const isTodayDate = isToday(date);
                 
@@ -351,6 +366,25 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
                     </div>
                     
                     <div className="space-y-1.5">
+                      {/* Completed Tasks */}
+                      {completedTasks.slice(0, 2).map(({ project, task }) => (
+                        <div
+                          key={`completed-${task.id}`}
+                          className="flex items-center gap-1.5 px-1.5 py-1 rounded-md text-[11px] cursor-pointer transition-colors border-l-2 bg-green-50/30 dark:bg-green-900/10 hover:bg-green-50 dark:hover:bg-green-900/20"
+                          style={{ borderLeftColor: project.color }}
+                          onClick={(e) => handleProjectClick(project.id, e)}
+                          title={`${task.title} completed`}
+                        >
+                          <CheckCircle className="w-3 h-3 text-green-600 flex-shrink-0" />
+                          <div 
+                            className="w-2 h-2 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: project.color }}
+                          />
+                          <span className="truncate font-medium text-foreground/80 flex-1 line-through">
+                            {task.title}
+                          </span>
+                        </div>
+                      ))}
                       {/* Task Start Dates */}
                       {dayTaskStarts.slice(0, 2).map(({ project, task }) => (
                         <div
@@ -440,9 +474,10 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
                       })}
 
                       {/* Overflow indicators */}
-                      {(dayTaskStarts.length > 2 || dayTaskDues.length > 2 || dayProjects.length > 1) && (
+                      {(completedTasks.length > 2 || dayTaskStarts.length > 2 || dayTaskDues.length > 2 || dayProjects.length > 1) && (
                         <div className="text-[11px] text-muted-foreground px-1.5 py-0.5 bg-muted/20 rounded-md">
-                          {dayTaskStarts.length > 2 && `+${dayTaskStarts.length - 2} starting`}
+                          {completedTasks.length > 2 && `+${completedTasks.length - 2} completed`}
+                          {dayTaskStarts.length > 2 && `${completedTasks.length > 2 ? ' ' : ''}+${dayTaskStarts.length - 2} starting`}
                           {dayTaskDues.length > 2 && ` +${dayTaskDues.length - 2} due`}
                           {dayProjects.length > 1 && ` +${dayProjects.length - 1} projects`}
                         </div>

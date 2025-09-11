@@ -387,7 +387,7 @@ export function CompactTaskCard({
             >
               <Clock className="w-3 h-3 text-muted-foreground/50" />
               <span className="text-xs font-medium text-muted-foreground/70 truncate">
-                {dueInfo.text} ({new Date(task.dueDate).toLocaleDateString()})
+                {dueInfo.isOverdue ? new Date(task.dueDate).toLocaleDateString() : dueInfo.text}
               </span>
             </button>
           ) : (
