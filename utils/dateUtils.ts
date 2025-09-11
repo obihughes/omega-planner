@@ -163,7 +163,11 @@ export const formatDueDate = (dueDate?: string): { text: string; isOverdue: bool
 
   
   // Compare date keys directly (string comparison works for YYYY-MM-DD format)
-  if (dueDateKey < todayKey) return { text: '', isOverdue: true }; // Don't show overdue text
+  if (dueDateKey < todayKey) {
+    // Show the actual due date when overdue
+    const overdueDate = dateFromDateKey(dueDateKey);
+    return { text: overdueDate.toLocaleDateString(), isOverdue: true };
+  }
   if (dueDateKey === todayKey) return { text: 'Today', isOverdue: false };
   
   // Calculate days difference for future dates
