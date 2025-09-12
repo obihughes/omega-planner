@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useShopping } from '@/hooks/useShopping';
@@ -12,6 +12,7 @@ export const ShoppingListSidebar: React.FC<{ dateKey: string }> = ({ dateKey }) 
   const { items, add, remove, toggle, clearChecked } = useShopping();
   const { getMeals } = useMeals();
   const { missingFor } = usePantry();
+  const [inputValue, setInputValue] = useState('');
 
   const missingToday = useMemo(() => {
     const slots: MealSlot[] = ['breakfast', 'lunch', 'dinner'];
@@ -43,6 +44,9 @@ export const ShoppingListSidebar: React.FC<{ dateKey: string }> = ({ dateKey }) 
                 + {n}
               </Button>
             ))}
+            {missingToday.length > 0 && (
+              <Button variant="ghost" size="sm" onClick={() => missingToday.forEach(n => add(n))}>Add all</Button>
+            )}
           </div>
         </div>
 
@@ -51,6 +55,10 @@ export const ShoppingListSidebar: React.FC<{ dateKey: string }> = ({ dateKey }) 
             <div className="text-xs text-muted-foreground">List</div>
             <Button variant="ghost" size="sm" onClick={clearChecked}>Clear checked</Button>
           </div>
+          <form className="flex gap-1 mb-2" onSubmit={(e) => { e.preventDefault(); const v = inputValue.trim(); if (!v) return; add(v); setInputValue(''); }}>
+            <input value={inputValue} onChange={(e) => setInputValue(e.target.value)} className="flex-1 border px-2 py-1 bg-background" placeholder="Add item..." autoComplete="off" />
+            <Button type="submit" variant="ghost" size="sm">Add</Button>
+          </form>
           <ul className="space-y-1">
             {items.map(i => (
               <li key={i.id} className="flex items-center justify-between text-sm">

@@ -8,9 +8,9 @@ import { useMeals } from '@/hooks/useMeals';
 import { MealSlot } from '@/types/meals';
 
 export const PantrySidebar: React.FC<{ dateKey: string }> = ({ dateKey }) => {
-  const { items, addItem, removeItem } = usePantry();
+  const { items, addItem, removeItem, canCook } = usePantry();
   const { getMeals } = useMeals();
-  const [inputOpen, setInputOpen] = useState(false);
+  const [inputValue, setInputValue] = useState('');
 
   const todayMeals = useMemo(() => {
     const slots: MealSlot[] = ['breakfast', 'lunch', 'dinner'];
@@ -26,28 +26,17 @@ export const PantrySidebar: React.FC<{ dateKey: string }> = ({ dateKey }) => {
       </div>
       <CardContent className="p-3 space-y-4">
         <div>
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-xs text-muted-foreground">Available Ingredients</div>
-            {!inputOpen && (
-              <Button variant="ghost" size="sm" onClick={() => setInputOpen(true)}>+ Add</Button>
-            )}
-          </div>
-          {inputOpen && (
-            <form className="flex gap-1 mb-2" onSubmit={(e) => {
-              e.preventDefault();
-              const input = e.currentTarget.elements.namedItem('name') as HTMLInputElement | null;
-              if (!input) return;
-              const value = input.value.trim();
-              if (!value) return;
-              addItem(value);
-              input.value = '';
-              setInputOpen(false);
-            }}>
-              <input name="name" className="flex-1 border px-2 py-1 bg-background" placeholder="e.g., eggs" autoComplete="off" />
-              <Button type="submit" variant="ghost" size="sm">Save</Button>
-              <Button type="button" variant="ghost" size="sm" onClick={() => setInputOpen(false)}>Cancel</Button>
-            </form>
-          )}
+          <div className="text-xs text-muted-foreground mb-2">Available Ingredients</div>
+          <form className="flex gap-1 mb-2" onSubmit={(e) => {
+            e.preventDefault();
+            const val = inputValue.trim();
+            if (!val) return;
+            addItem(val);
+            setInputValue('');
+          }}>
+            <input value={inputValue} onChange={(e) => setInputValue(e.target.value)} className="flex-1 border px-2 py-1 bg-background" placeholder="e.g., eggs" autoComplete="off" />
+            <Button type="submit" variant="ghost" size="sm">Add</Button>
+          </form>
           <ul className="space-y-1">
             {items.map(i => (
               <li key={i.id} className="group flex items-center justify-between text-sm">
