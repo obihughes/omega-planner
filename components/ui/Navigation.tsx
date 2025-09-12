@@ -143,12 +143,19 @@ export function Navigation() {
       ]
     },
     {
+      href: '/focus',
+      label: 'Focus',
+      icon: Clock,
+      active: pathname === '/focus',
+      subViews: []
+    },
+    {
       href: '/documents',
       label: 'Text Canvas',
       icon: FileText,
       active: pathname === '/documents',
       subViews: [
-        { key: 'documents', label: 'Documents', icon: Files, active: true } // Documents view is now always active
+        { key: 'documents', label: 'Documents', icon: Files, active: true }
       ]
     } 
   ];
