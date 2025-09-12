@@ -514,6 +514,13 @@ UI compactness:
 - Inputs are hidden by default; click "+ Add" to toggle inline add.
 - Empty-state text is removed to reduce visual noise.
 - Remove buttons appear on hover only.
+- Per-meal Ingredients: inline editor to add comma-separated ingredients; cookable badge when pantry has all items; otherwise shows missing items.
+### PantrySidebar (`components/meals/PantrySidebar.tsx`)
+Location: `components/meals/PantrySidebar.tsx`
+
+- Purpose: Manage available ingredients and see cookable suggestions for today's meals.
+- Features: quick-add ingredient input, removable list items, and a suggestions list derived from meals that list ingredients and are fully covered by the pantry.
+- Integrated on `/meals` as a right sidebar.
 
 Props: none (MVP). Future: persistence, recipes integration.
 

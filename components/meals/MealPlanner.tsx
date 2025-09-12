@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { addDaysToDateKey, dateFromDateKey, getDateKeyFromOffset, getTodayDateKey } from '@/utils/dateUtils';
 import { useMeals } from '@/hooks/useMeals';
 import type { MealSlot } from '@/types/meals';
+import { usePantry } from '@/hooks/usePantry';
 
 type DayPlan = {
   dateKey: string;
@@ -35,8 +36,10 @@ function formatDayHeader(dateKey: string): string {
 
 export const MealPlanner: React.FC = () => {
   const [anchorDateKey, setAnchorDateKey] = useState<string>(getTodayDateKey());
-  const { getMeals, addMeal, removeMeal } = useMeals();
+  const { getMeals, addMeal, removeMeal, updateMeal } = useMeals();
+  const { canCook, missingFor } = usePantry();
   const [openEditorKey, setOpenEditorKey] = useState<string | null>(null);
+  const [editingIngredientsId, setEditingIngredientsId] = useState<string | null>(null);
 
   const week = useMemo<DayPlan[]>(() => {
     const mondayKey = getWeekStart(anchorDateKey);
@@ -64,6 +67,23 @@ export const MealPlanner: React.FC = () => {
     addMeal(dateKey, slot, value);
     input.value = '';
     setOpenEditorKey(null);
+  };
+
+  const handleSaveIngredients = (
+    dateKey: string,
+    slot: MealSlot,
+    id: string,
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
+    e.preventDefault();
+    const input = (e.currentTarget.elements.namedItem('ings') as HTMLInputElement) || null;
+    if (!input) return;
+    const parts = input.value
+      .split(',')
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+    updateMeal(dateKey, slot, id, { ingredients: parts });
+    setEditingIngredientsId(null);
   };
 
   return (
@@ -118,20 +138,59 @@ export const MealPlanner: React.FC = () => {
                           </div>
                         )}
                         <ul className="space-y-1">
-                          {items.map(item => (
-                            <li key={item.id} className="group flex items-center justify-between text-sm">
-                              <span className="truncate pr-2">{item.name}</span>
-                              <Button
-                                variant="ghost"
-                                onClick={() => removeMeal(dateKey, slot, item.id)}
-                                size="sm"
-                                className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                aria-label="Remove"
-                              >
-                                Remove
-                              </Button>
-                            </li>
-                          ))}
+                          {items.map(item => {
+                            const cookable = canCook(item);
+                            const missing = cookable ? [] : missingFor(item);
+                            return (
+                              <li key={item.id} className="group text-sm">
+                                <div className="flex items-center justify-between">
+                                  <span className="truncate pr-2">
+                                    {item.name}
+                                    {item.ingredients && item.ingredients.length > 0 && (
+                                      <span className="ml-2 text-xs text-muted-foreground">[{item.ingredients.join(', ')}]</span>
+                                    )}
+                                  </span>
+                                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => setEditingIngredientsId(item.id)}
+                                    >
+                                      Ingredients
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => removeMeal(dateKey, slot, item.id)}
+                                      aria-label="Remove"
+                                    >
+                                      Remove
+                                    </Button>
+                                  </div>
+                                </div>
+                                <div className="mt-1">
+                                  {cookable ? (
+                                    <span className="text-xs text-green-600 dark:text-green-400">Cookable</span>
+                                  ) : item.ingredients && item.ingredients.length > 0 ? (
+                                    <span className="text-xs text-muted-foreground">Missing: {missing.join(', ') || '—'}</span>
+                                  ) : null}
+                                </div>
+                                {editingIngredientsId === item.id && (
+                                  <form className="mt-2 flex gap-1" onSubmit={(e) => handleSaveIngredients(dateKey, slot, item.id, e)}>
+                                    <input
+                                      name="ings"
+                                      defaultValue={(item.ingredients || []).join(', ')}
+                                      placeholder="comma-separated: eggs, milk, flour"
+                                      className="flex-1 border px-2 py-1 bg-background"
+                                      autoComplete="off"
+                                    />
+                                    <Button type="submit" variant="ghost" size="sm">Save</Button>
+                                    <Button type="button" variant="ghost" size="sm" onClick={() => setEditingIngredientsId(null)}>Cancel</Button>
+                                  </form>
+                                )}
+                              </li>
+                            );
+                          })}
                         </ul>
                       </div>
                     );

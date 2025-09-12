@@ -34,4 +34,9 @@ export type {
   MealsBySlot,
   MealsStorageData,
   MealSlot
-} from './meals'; 
+} from './meals';
+
+export type {
+  PantryItem,
+  PantryStorageData
+} from './pantry'; 

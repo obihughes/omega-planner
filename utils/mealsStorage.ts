@@ -66,6 +66,9 @@ export const MealsStorage = {
       notes: typeof item.notes === 'string' ? item.notes : undefined,
       url: typeof item.url === 'string' ? item.url : undefined,
       calories: typeof item.calories === 'number' ? item.calories : undefined,
+      ingredients: Array.isArray(item.ingredients)
+        ? item.ingredients.map((x: any) => String(x || '').trim()).filter((s: string) => s.length > 0)
+        : [],
       createdAt: String(item.createdAt || new Date().toISOString()),
       updatedAt: String(item.updatedAt || new Date().toISOString())
     };

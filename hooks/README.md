@@ -93,3 +93,13 @@ function MealsExample() {
   );
 }
 ```
+
+### usePantry
+
+LocalStorage-backed pantry list with helper functions to determine if meals are cookable.
+
+**API:**
+- `items`: current pantry items
+- `addItem(name, quantity?, category?)`
+- `removeItem(id)` / `updateItem(id, updates)`
+- `canCook(meal)` and `missingFor(meal)`

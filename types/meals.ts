@@ -6,6 +6,7 @@ export interface MealItem {
   notes?: string;
   url?: string;
   calories?: number;
+  ingredients?: string[];
   createdAt: string;
   updatedAt: string;
 }
