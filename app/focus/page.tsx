@@ -38,32 +38,16 @@ function formatHMS(totalSeconds: number) {
 }
 
 export default function FocusPage() {
-  const [state, setState] = useState<FocusState>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw) as Partial<FocusState>;
-          return {
-            elapsedSeconds: parsed.elapsedSeconds ?? 0,
-            isRunning: parsed.isRunning ?? false,
-            sessionStartedAt: parsed.sessionStartedAt ?? null,
-            planned: parsed.planned ?? [],
-            completed: parsed.completed ?? [],
-            backlog: parsed.backlog ?? [],
-          };
-        }
-      } catch {}
-    }
-    return {
-      elapsedSeconds: 0,
-      isRunning: false,
-      sessionStartedAt: null,
-      planned: [],
-      completed: [],
-      backlog: [],
-    };
-  });
+  const defaultState: FocusState = {
+    elapsedSeconds: 0,
+    isRunning: false,
+    sessionStartedAt: null,
+    planned: [],
+    completed: [],
+    backlog: [],
+  };
+  const [state, setState] = useState<FocusState>(defaultState);
+  const [loaded, setLoaded] = useState(false);
 
   const [newBacklogTitle, setNewBacklogTitle] = useState('');
   const [newPlannedTitle, setNewPlannedTitle] = useState('');
@@ -78,15 +62,38 @@ export default function FocusPage() {
     durationSeconds: number;
     completed: FocusTask[];
   };
-  const [sessions, setSessions] = useState<FocusSession[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const raw = localStorage.getItem(SESSIONS_KEY);
-        if (raw) return JSON.parse(raw) as FocusSession[];
-      } catch {}
-    }
-    return [];
-  });
+  const [sessions, setSessions] = useState<FocusSession[]>([]);
+  const [sessionsLoaded, setSessionsLoaded] = useState(false);
+
+  // Load persisted state after mount to avoid hydration mismatch
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<FocusState>;
+        setState(prev => ({
+          elapsedSeconds: typeof parsed.elapsedSeconds === 'number' ? parsed.elapsedSeconds : prev.elapsedSeconds,
+          isRunning: typeof parsed.isRunning === 'boolean' ? parsed.isRunning : prev.isRunning,
+          sessionStartedAt: typeof parsed.sessionStartedAt === 'string' ? parsed.sessionStartedAt : prev.sessionStartedAt,
+          planned: Array.isArray(parsed.planned) ? parsed.planned as FocusTask[] : prev.planned,
+          completed: Array.isArray(parsed.completed) ? parsed.completed as FocusTask[] : prev.completed,
+          backlog: Array.isArray(parsed.backlog) ? parsed.backlog as FocusTask[] : prev.backlog,
+        }));
+      }
+    } catch {}
+    setLoaded(true);
+  }, []);
+
+  // Load sessions after mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem(SESSIONS_KEY);
+      if (raw) setSessions(JSON.parse(raw) as FocusSession[]);
+    } catch {}
+    setSessionsLoaded(true);
+  }, []);
 
   // --- Session editing state ---
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
@@ -345,7 +352,7 @@ export default function FocusPage() {
               <h1 className="text-2xl font-bold">Focus</h1>
             </div>
             <div className="text-sm text-muted-foreground">
-              {state.sessionStartedAt ? new Date(state.sessionStartedAt).toLocaleString() : 'No active session'}
+              {!loaded ? '\u00A0' : (state.sessionStartedAt ? new Date(state.sessionStartedAt).toLocaleString() : 'No active session')}
             </div>
           </div>
         </div>
@@ -356,7 +363,7 @@ export default function FocusPage() {
           <div className="flex items-center justify-center mb-6">
             <div className="flex items-center gap-4 p-4 border border-border rounded-lg bg-card/50">
               <Clock className="w-5 h-5 text-muted-foreground" />
-              <div className="font-mono text-3xl">{formatHMS(state.elapsedSeconds)}</div>
+              <div className="font-mono text-3xl">{loaded ? formatHMS(state.elapsedSeconds) : '00:00'}</div>
               <div className="flex items-center gap-2">
                 {!state.isRunning ? (
                   <Button size="sm" onClick={start} className="flex items-center gap-1">
@@ -522,7 +529,9 @@ export default function FocusPage() {
           {/* Sessions History */}
           <div className="mt-8">
             <h3 className="text-sm font-semibold mb-2">Past Sessions</h3>
-            {sessions.length === 0 ? (
+            {!sessionsLoaded ? (
+              <div className="text-xs text-muted-foreground">Loading sessions…</div>
+            ) : sessions.length === 0 ? (
               <div className="text-xs text-muted-foreground">No sessions recorded yet.</div>
             ) : (
               <div className="space-y-2">
