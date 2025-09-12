@@ -56,6 +56,7 @@ export default function FocusPage() {
   const [newBacklogTitle, setNewBacklogTitle] = useState('');
   const [newPlannedTitle, setNewPlannedTitle] = useState('');
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [dragOverZone, setDragOverZone] = useState<'planned' | 'backlog' | null>(null);
 
   // Persist
   useEffect(() => {
@@ -161,6 +162,38 @@ export default function FocusPage() {
 
   const isOver = state.secondsRemaining === 0;
 
+  // --- Drag & Drop (native HTML5) ---
+  const handleTaskDragStart = (source: 'planned' | 'backlog', taskId: string) => (e: React.DragEvent) => {
+    e.dataTransfer.setData('application/x-focus-task', JSON.stringify({ source, taskId }));
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (zone: 'planned' | 'backlog') => (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverZone !== zone) setDragOverZone(zone);
+  };
+
+  const handleDragLeave = (zone: 'planned' | 'backlog') => () => {
+    if (dragOverZone === zone) setDragOverZone(null);
+  };
+
+  const handleDropTo = (zone: 'planned' | 'backlog') => (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOverZone(null);
+    const raw = e.dataTransfer.getData('application/x-focus-task');
+    if (!raw) return;
+    try {
+      const { source, taskId } = JSON.parse(raw) as { source: 'planned' | 'backlog'; taskId: string };
+      if (!taskId || source === zone) return;
+      if (source === 'backlog' && zone === 'planned') {
+        moveBacklogToPlanned(taskId);
+      } else if (source === 'planned' && zone === 'backlog') {
+        returnPlannedToBacklog(taskId);
+      }
+    } catch {}
+  };
+
   return (
     <AppLayout>
       <div className="h-full flex flex-col">
@@ -226,12 +259,26 @@ export default function FocusPage() {
                   <Button size="sm" onClick={addPlanned} className="h-8 px-2"><Plus className="w-4 h-4" /></Button>
                 </div>
               </div>
-              <div className="p-3 space-y-2">
+              <div
+                className={cn(
+                  "p-3 space-y-2 transition-colors",
+                  dragOverZone === 'planned' && 'ring-2 ring-primary/40 rounded-lg bg-primary/5'
+                )}
+                onDragOver={handleDragOver('planned')}
+                onDragEnter={handleDragOver('planned')}
+                onDragLeave={handleDragLeave('planned')}
+                onDrop={handleDropTo('planned')}
+              >
                 {state.planned.length === 0 && (
                   <div className="text-xs text-muted-foreground">No planned tasks. Add or pull from backlog →</div>
                 )}
                 {state.planned.map(t => (
-                  <div key={t.id} className="flex items-center justify-between p-2 border border-border/40 bg-background rounded">
+                  <div
+                    key={t.id}
+                    className="flex items-center justify-between p-2 border border-border/40 bg-background rounded"
+                    draggable
+                    onDragStart={handleTaskDragStart('planned', t.id)}
+                  >
                     <div className="flex items-center gap-2 min-w-0">
                       <GripVertical className="w-3 h-3 text-muted-foreground" />
                       <span className="text-sm truncate">{t.title}</span>
@@ -292,12 +339,26 @@ export default function FocusPage() {
                   <Button size="sm" onClick={addBacklog} className="h-8 px-2"><Plus className="w-4 h-4" /></Button>
                 </div>
               </div>
-              <div className="p-3 space-y-2">
+              <div
+                className={cn(
+                  "p-3 space-y-2 transition-colors",
+                  dragOverZone === 'backlog' && 'ring-2 ring-primary/40 rounded-lg bg-primary/5'
+                )}
+                onDragOver={handleDragOver('backlog')}
+                onDragEnter={handleDragOver('backlog')}
+                onDragLeave={handleDragLeave('backlog')}
+                onDrop={handleDropTo('backlog')}
+              >
                 {state.backlog.length === 0 && (
                   <div className="text-xs text-muted-foreground">No backlog yet. Add ideas here.</div>
                 )}
                 {state.backlog.map(t => (
-                  <div key={t.id} className="flex items-center justify-between p-2 border border-border/40 bg-background rounded">
+                  <div
+                    key={t.id}
+                    className="flex items-center justify-between p-2 border border-border/40 bg-background rounded"
+                    draggable
+                    onDragStart={handleTaskDragStart('backlog', t.id)}
+                  >
                     <div className="flex items-center gap-2 min-w-0">
                       <GripVertical className="w-3 h-3 text-muted-foreground" />
                       <span className="text-sm truncate">{t.title}</span>
