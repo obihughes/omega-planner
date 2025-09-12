@@ -517,9 +517,9 @@ UI compactness:
 - Per-meal Ingredients: inline editor to add comma-separated ingredients; cookable badge when pantry has all items; otherwise shows missing items.
 
 Layout:
-- Full-width responsive grid: days render in 1–7 columns based on screen size (`grid-cols-1` → `2xl:grid-cols-7`).
-- Sidebars on `/meals` use a 12-column page grid; they stack on small screens and occupy narrow columns on large screens.
- - Second row shows Pantry and Shopping List side by side; both have always-visible add inputs and a one-click "Add all missing today" into the shopping list.
+- 3-day sliding view: shows 3 days at a time with "Prev 3 days" / "Next 3 days" controls to slide through the week.
+- 3-column grid layout for displayed days with full-width usage.
+- Second row shows Pantry and Shopping List side by side; both have always-visible add inputs and a one-click "Add all missing today" into the shopping list.
 ### PantrySidebar (`components/meals/PantrySidebar.tsx`)
 Location: `components/meals/PantrySidebar.tsx`
 

@@ -36,12 +36,13 @@ function formatDayHeader(dateKey: string): string {
 
 export const MealPlanner: React.FC = () => {
   const [anchorDateKey, setAnchorDateKey] = useState<string>(getTodayDateKey());
+  const [dayStartOffset, setDayStartOffset] = useState<number>(0); // 0 = Mon-Wed, 1 = Thu-Sat, 2 = Sun-Tue
   const { getMeals, addMeal, removeMeal, updateMeal } = useMeals();
   const { canCook, missingFor } = usePantry();
   const [openEditorKey, setOpenEditorKey] = useState<string | null>(null);
   const [editingIngredientsId, setEditingIngredientsId] = useState<string | null>(null);
 
-  const week = useMemo<DayPlan[]>(() => {
+  const allWeekDays = useMemo<DayPlan[]>(() => {
     const mondayKey = getWeekStart(anchorDateKey);
     return Array.from({ length: 7 }).map((_, idx) => {
       const dateKey = addDaysToDateKey(mondayKey, idx);
@@ -51,6 +52,14 @@ export const MealPlanner: React.FC = () => {
       };
     });
   }, [anchorDateKey]);
+
+  const displayedDays = useMemo<DayPlan[]>(() => {
+    // Show 3 days at a time starting from dayStartOffset
+    return allWeekDays.slice(dayStartOffset, dayStartOffset + 3);
+  }, [allWeekDays, dayStartOffset]);
+
+  const canGoPrev = dayStartOffset > 0;
+  const canGoNext = dayStartOffset < 4; // Max offset is 4 (Sun-Tue)
 
   const handleQuickAdd = (
     dateKey: string,
@@ -95,18 +104,26 @@ export const MealPlanner: React.FC = () => {
             <p className="text-sm text-muted-foreground mt-1">Plan your meals for the week at a glance.</p>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setDayStartOffset(Math.max(0, dayStartOffset - 3))} disabled={!canGoPrev}>
+              ← Prev 3 days
+            </Button>
+            <Button variant="outline" onClick={() => setDayStartOffset(Math.min(4, dayStartOffset + 3))} disabled={!canGoNext}>
+              Next 3 days →
+            </Button>
+            <div className="border-l pl-2 ml-2">
             <Button variant="outline" onClick={() => setAnchorDateKey(addDaysToDateKey(anchorDateKey, -7))}>Prev week</Button>
             <Button variant="outline" onClick={() => setAnchorDateKey(getDateKeyFromOffset(0))}>Today</Button>
             <Button variant="outline" onClick={() => setAnchorDateKey(addDaysToDateKey(anchorDateKey, 7))}>Next week</Button>
+            </div>
           </div>
         </div>
       </header>
 
       <div className="px-6 pb-6 pt-4 flex-1 overflow-auto">
         <div>
-          {/* Responsive grid that can show 1–7 columns across available width */}
-          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-7">
-            {week.map(({ dateKey, label }) => (
+          {/* 3-column grid for the 3 displayed days */}
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+            {displayedDays.map(({ dateKey, label }) => (
               <Card key={dateKey} className={cn('border bg-card min-h-[360px] flex flex-col')}>
                 <div className={cn('px-3 py-2 border-b flex items-center justify-between')}>
                   <div className="text-sm font-medium truncate">{label}</div>
