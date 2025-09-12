@@ -29,12 +29,38 @@ type FocusState = {
 const STORAGE_KEY = 'omega-planner-focus-state-v1';
 const SESSIONS_KEY = 'omega-planner-focus-sessions-v1';
 
-const defaultDurationMinutes = 25;
-
 function formatHMS(totalSeconds: number) {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+function formatTimeRangeParts(startIso: string, endIso: string): { time: string; dayLabel: string } {
+  const start = new Date(startIso);
+  const end = new Date(endIso);
+  const timeOptions: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit' };
+  const time = `${start.toLocaleTimeString([], timeOptions)} – ${end.toLocaleTimeString([], timeOptions)}`;
+
+  const isSameDay = (a: Date, b: Date) => (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+
+  let dayLabel = '';
+  const now = new Date();
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+
+  if (isSameDay(start, end)) {
+    if (isSameDay(start, now)) dayLabel = 'Today';
+    else if (isSameDay(start, yesterday)) dayLabel = 'Yesterday';
+    else dayLabel = start.toLocaleDateString();
+  } else {
+    dayLabel = `${start.toLocaleDateString()} → ${end.toLocaleDateString()}`;
+  }
+
+  return { time, dayLabel };
 }
 
 export default function FocusPage() {
@@ -541,22 +567,33 @@ export default function FocusPage() {
                     {editingSessionId !== ses.id ? (
                       <>
                         <div className="flex items-center justify-between">
-                          <div className="text-sm">
-                            <span className="font-medium">{new Date(ses.startedAt).toLocaleString()}</span>
-                            <span className="text-muted-foreground"> → {new Date(ses.endedAt).toLocaleString()}</span>
+                          <div>
+                            {(() => { const p = formatTimeRangeParts(ses.startedAt, ses.endedAt); return (
+                              <>
+                                <div className="text-sm font-semibold">{formatHMS(ses.durationSeconds)}</div>
+                                <div className="text-xs text-muted-foreground">{p.time}</div>
+                                <div className="text-[10px] text-muted-foreground/80">{p.dayLabel}</div>
+                              </>
+                            ); })()}
                           </div>
                           <div className="flex items-center gap-2">
-                            <div className="text-sm font-mono">{formatHMS(ses.durationSeconds)}</div>
                             <Button size="sm" variant="ghost" onClick={() => beginEditSession(ses)} className="h-7 px-2">Edit</Button>
                             <Button size="sm" variant="ghost" onClick={() => deleteSession(ses.id)} className="h-7 px-2 text-destructive">Delete</Button>
                           </div>
                         </div>
-                        <div className="mt-1 text-xs text-muted-foreground">
-                          {ses.completed.length} task{ses.completed.length === 1 ? '' : 's'} completed
+                        <div className="mt-2">
+                          <div className="text-xs text-muted-foreground">
+                            {ses.completed.length} task{ses.completed.length === 1 ? '' : 's'} completed
+                          </div>
                           {ses.completed.length > 0 && (
-                            <span className="block mt-1 text-foreground">
-                              {ses.completed.slice(0, 5).map(t => t.title).join(', ')}{ses.completed.length > 5 ? '…' : ''}
-                            </span>
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {ses.completed.slice(0, 6).map(t => (
+                                <span key={t.id} className="px-1.5 py-0.5 text-xs bg-accent/40 border border-border/50 rounded">{t.title}</span>
+                              ))}
+                              {ses.completed.length > 6 && (
+                                <span className="px-1.5 py-0.5 text-xs text-muted-foreground">+{ses.completed.length - 6} more</span>
+                              )}
+                            </div>
                           )}
                         </div>
                       </>

@@ -104,9 +104,10 @@ export const MealPlanner: React.FC = () => {
 
       <div className="px-6 pb-6 pt-4 flex-1 overflow-auto">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-7 gap-2">
+          {/* Horizontal scroll list of fixed-width day cards to prevent compression */}
+          <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollSnapType: 'x proximity' }}>
             {week.map(({ dateKey, label }) => (
-              <Card key={dateKey} className={cn('border bg-card min-h-[360px] flex flex-col')}>
+              <Card key={dateKey} className={cn('border bg-card min-h-[360px] flex-shrink-0 w-[320px] flex flex-col')} style={{ scrollSnapAlign: 'start' }}>
                 <div className={cn('px-3 py-2 border-b flex items-center justify-between')}>
                   <div className="text-sm font-medium truncate">{label}</div>
                 </div>

@@ -12,17 +12,19 @@ export default function MealsPage() {
     <AppLayout>
       <div className="h-full p-4">
         <div className="max-w-7xl mx-auto h-full grid grid-cols-12 gap-4">
-          <div className="col-span-8">
+          {/* Main content spans more on wide screens; full width on small */}
+          <div className="col-span-12 lg:col-span-8">
             <Suspense fallback={<div className="text-muted-foreground">Loading meals...</div>}>
               <MealsContent />
             </Suspense>
           </div>
-          <div className="col-span-2 space-y-4">
+          {/* Sidebars stack on small screens */}
+          <div className="col-span-12 sm:col-span-6 lg:col-span-2 space-y-4">
             <Suspense fallback={<div className="text-muted-foreground">Loading pantry...</div>}>
               <PantrySidebar dateKey={new Date().toISOString().slice(0,10)} />
             </Suspense>
           </div>
-          <div className="col-span-2">
+          <div className="col-span-12 sm:col-span-6 lg:col-span-2">
             <Suspense fallback={<div className="text-muted-foreground">Loading shopping list...</div>}>
               <ShoppingListSidebar dateKey={new Date().toISOString().slice(0,10)} />
             </Suspense>

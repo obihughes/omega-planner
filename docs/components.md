@@ -515,6 +515,10 @@ UI compactness:
 - Empty-state text is removed to reduce visual noise.
 - Remove buttons appear on hover only.
 - Per-meal Ingredients: inline editor to add comma-separated ingredients; cookable badge when pantry has all items; otherwise shows missing items.
+
+Layout:
+- Day cards render as fixed-width (320px) tiles in a horizontally scrollable row to prevent compression.
+- Pantry and Shopping List sidebars stack on small screens and occupy narrow columns on large screens.
 ### PantrySidebar (`components/meals/PantrySidebar.tsx`)
 Location: `components/meals/PantrySidebar.tsx`
 
