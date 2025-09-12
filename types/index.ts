@@ -33,10 +33,16 @@ export type {
   MealItem,
   MealsBySlot,
   MealsStorageData,
-  MealSlot
+  MealSlot,
+  IngredientDetail
 } from './meals';
 
 export type {
   PantryItem,
   PantryStorageData
-} from './pantry'; 
+} from './pantry';
+
+export type {
+  ShoppingItem,
+  ShoppingStorageData
+} from './shopping'; 

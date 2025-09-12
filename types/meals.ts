@@ -7,6 +7,7 @@ export interface MealItem {
   url?: string;
   calories?: number;
   ingredients?: string[];
+  ingredientsDetail?: IngredientDetail[];
   createdAt: string;
   updatedAt: string;
 }
@@ -30,5 +31,10 @@ export const MEAL_SLOT_LABELS: Record<MealSlot, string> = {
   lunch: 'Lunch',
   dinner: 'Dinner'
 };
+
+export interface IngredientDetail {
+  name: string;
+  quantity?: string;
+}
 
 

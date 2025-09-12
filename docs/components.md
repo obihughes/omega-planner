@@ -522,6 +522,12 @@ Location: `components/meals/PantrySidebar.tsx`
 - Features: quick-add ingredient input, removable list items, and a suggestions list derived from meals that list ingredients and are fully covered by the pantry.
 - Integrated on `/meals` as a right sidebar.
 
+### ShoppingListSidebar (`components/meals/ShoppingListSidebar.tsx`)
+Location: `components/meals/ShoppingListSidebar.tsx`
+
+- Purpose: Centralized shopping list with checkboxes and quick-add of missing ingredients for today.
+- Features: de-duplicated missing ingredients chips to add to the list, check/uncheck items, clear checked.
+
 Props: none (MVP). Future: persistence, recipes integration.
 
 #### Data & State

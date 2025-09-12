@@ -15,4 +15,5 @@ export {
 } from './useModalManager';
 
 export { useMeals } from './useMeals';
-export { usePantry } from './usePantry'; 
+export { usePantry } from './usePantry';
+export { useShopping } from './useShopping'; 

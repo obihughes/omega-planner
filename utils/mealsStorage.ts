@@ -1,4 +1,4 @@
-import { MealsBySlot, MealsStorageData, MealItem, MealSlot, MEAL_SLOTS } from '@/types/meals';
+import { MealsBySlot, MealsStorageData, MealItem, MealSlot, MEAL_SLOTS, IngredientDetail } from '@/types/meals';
 
 const STORAGE_KEY = 'omega-planner-meals';
 const STORAGE_VERSION = '1.0';
@@ -69,6 +69,12 @@ export const MealsStorage = {
       ingredients: Array.isArray(item.ingredients)
         ? item.ingredients.map((x: any) => String(x || '').trim()).filter((s: string) => s.length > 0)
         : [],
+      ingredientsDetail: Array.isArray(item.ingredientsDetail)
+        ? item.ingredientsDetail.map((e: any) => ({
+            name: String((e?.name ?? '')).trim(),
+            quantity: typeof e?.quantity === 'string' ? e.quantity : undefined
+          })).filter((e: IngredientDetail) => e.name.length > 0)
+        : undefined,
       createdAt: String(item.createdAt || new Date().toISOString()),
       updatedAt: String(item.updatedAt || new Date().toISOString())
     };

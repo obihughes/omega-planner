@@ -103,3 +103,9 @@ LocalStorage-backed pantry list with helper functions to determine if meals are 
 - `addItem(name, quantity?, category?)`
 - `removeItem(id)` / `updateItem(id, updates)`
 - `canCook(meal)` and `missingFor(meal)`
+
+### useShopping
+
+LocalStorage-backed shopping list state.
+
+**API:** `items`, `add(name, quantity?)`, `remove(id)`, `toggle(id)`, `update(id, updates)`, `clearChecked()`
