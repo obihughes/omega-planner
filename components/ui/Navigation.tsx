@@ -143,6 +143,15 @@ export function Navigation() {
       ]
     },
     {
+      href: '/documents',
+      label: 'Text Canvas',
+      icon: FileText,
+      active: pathname === '/documents',
+      subViews: [
+        { key: 'documents', label: 'Documents', icon: Files, active: true }
+      ]
+    },
+    {
       href: '/focus',
       label: 'Focus',
       icon: Clock,
@@ -155,16 +164,7 @@ export function Navigation() {
       icon: ClipboardList,
       active: pathname === '/meals',
       subViews: []
-    },
-    {
-      href: '/documents',
-      label: 'Text Canvas',
-      icon: FileText,
-      active: pathname === '/documents',
-      subViews: [
-        { key: 'documents', label: 'Documents', icon: Files, active: true }
-      ]
-    } 
+    }
   ];
 
   return (

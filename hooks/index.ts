@@ -12,4 +12,6 @@ export {
   type CloneConfirmationData,
   type UseModalManagerProps,
   type ModalManagerState 
-} from './useModalManager'; 
+} from './useModalManager';
+
+export { useMeals } from './useMeals'; 

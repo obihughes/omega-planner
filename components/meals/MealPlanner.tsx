@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { addDaysToDateKey, dateFromDateKey, getDateKeyFromOffset, getTodayDateKey } from '@/utils/dateUtils';
+import { useMeals } from '@/hooks/useMeals';
+import type { MealSlot } from '@/types/meals';
 
 type DayPlan = {
   dateKey: string;
@@ -33,6 +35,7 @@ function formatDayHeader(dateKey: string): string {
 
 export const MealPlanner: React.FC = () => {
   const [anchorDateKey, setAnchorDateKey] = useState<string>(getTodayDateKey());
+  const { getMeals, addMeal, removeMeal } = useMeals();
 
   const week = useMemo<DayPlan[]>(() => {
     const mondayKey = getWeekStart(anchorDateKey);
@@ -44,6 +47,18 @@ export const MealPlanner: React.FC = () => {
       };
     });
   }, [anchorDateKey]);
+
+  const handleQuickAdd = (dateKey: string, slotLabel: typeof MEAL_SLOTS[number], e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const input = form.elements.namedItem('item') as HTMLInputElement | null;
+    if (!input) return;
+    const value = input.value.trim();
+    if (!value) return;
+    const slot: MealSlot = slotLabel.toLowerCase() as MealSlot;
+    addMeal(dateKey, slot, value);
+    input.value = '';
+  };
 
   return (
     <div className="h-full flex flex-col">
@@ -70,12 +85,40 @@ export const MealPlanner: React.FC = () => {
                   <div className="text-sm font-medium truncate">{label}</div>
                 </div>
                 <CardContent className="p-0 divide-y">
-                  {MEAL_SLOTS.map((slot) => (
-                    <div key={slot} className="p-3">
-                      <div className="text-xs text-muted-foreground mb-2">{slot}</div>
-                      <div className="text-sm text-muted-foreground">Add items...</div>
-                    </div>
-                  ))}
+                  {MEAL_SLOTS.map((slotLabel) => {
+                    const slot = slotLabel.toLowerCase() as MealSlot;
+                    const items = getMeals(dateKey, slot);
+                    return (
+                      <div key={slotLabel} className="p-3">
+                        <div className="text-xs text-muted-foreground mb-2">{slotLabel}</div>
+                        <form className="flex gap-2 mb-2" onSubmit={(e) => handleQuickAdd(dateKey, slotLabel, e)}>
+                          <input
+                            name="item"
+                            placeholder={`Add to ${slotLabel.toLowerCase()}...`}
+                            className="flex-1 border px-2 py-1 bg-background"
+                          />
+                          <Button type="submit" variant="outline">Add</Button>
+                        </form>
+                        <ul className="space-y-1">
+                          {items.length === 0 && (
+                            <li className="text-sm text-muted-foreground">No items</li>
+                          )}
+                          {items.map(item => (
+                            <li key={item.id} className="flex items-center justify-between text-sm">
+                              <span className="truncate pr-2">{item.name}</span>
+                              <Button
+                                variant="outline"
+                                onClick={() => removeMeal(dateKey, slot, item.id)}
+                                size="sm"
+                              >
+                                Remove
+                              </Button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })}
                 </CardContent>
               </Card>
             ))}

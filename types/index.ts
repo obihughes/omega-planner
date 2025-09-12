@@ -27,4 +27,11 @@ export type {
   DayInfo,
   PeriodPosition,
   CalendarProps
-} from './calendar'; 
+} from './calendar';
+
+export type {
+  MealItem,
+  MealsBySlot,
+  MealsStorageData,
+  MealSlot
+} from './meals'; 

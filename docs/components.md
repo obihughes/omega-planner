@@ -301,6 +301,9 @@ Left sidebar navigation component.
 - Branded header section
 - Calendar Monthly and Yearly views available under `Daily Planner` subviews
 
+**Order Update (2025-09-12):**
+- Main order is now: `Daily Planner`, `Workspace`, `Text Canvas`, then `Focus` and `Meals` at the bottom per UX preference.
+
 ### Button, Input, Card, etc. (`components/ui/`)
 Reusable UI primitives built with consistent styling.
 
