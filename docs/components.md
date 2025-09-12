@@ -512,6 +512,10 @@ Location: `components/meals/MealPlanner.tsx`
 
 Props: none (MVP). Future: persistence, recipes integration.
 
+#### Data & State
+- Uses `useMeals` hook for localStorage-backed persistence.
+- Quick-add input per slot; items render beneath with Remove action.
+
 ### Pinned Tasks Time Display Fix
 **Issue**: Pinned tasks were displaying incorrect times and showing everything as minutes instead of converting to hours/days.
 

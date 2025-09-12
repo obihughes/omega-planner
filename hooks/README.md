@@ -62,3 +62,34 @@ function YourComponent() {
   // Use the modal functions in your component
 }
 ``` 
+
+### useMeals
+
+`useMeals` provides localStorage-backed state for weekly meal planning.
+
+**Features:**
+- Add, remove, and update items per date and meal slot
+- Automatic persistence and simple IDs
+- Slot types: `breakfast | lunch | dinner`
+
+**Usage:**
+```tsx
+import { useMeals } from '@/hooks';
+
+function MealsExample() {
+  const { getMeals, addMeal, removeMeal } = useMeals();
+  const dateKey = '2025-09-12';
+  const breakfast = getMeals(dateKey, 'breakfast');
+  return (
+    <div>
+      <button onClick={() => addMeal(dateKey, 'breakfast', 'Oatmeal')}>Add</button>
+      {breakfast.map(i => (
+        <div key={i.id}>
+          {i.name}
+          <button onClick={() => removeMeal(dateKey, 'breakfast', i.id)}>x</button>
+        </div>
+      ))}
+    </div>
+  );
+}
+```

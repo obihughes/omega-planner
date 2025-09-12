@@ -13,13 +13,18 @@ Functions:
 - Number formatting
 - Other data transformation utilities
 
-### Storage (`/utils/storage.ts` and calendar storage)
+### Storage (`/utils/storage.ts` and calendar/meals storage)
 Contains utilities for handling data storage and persistence.
 
 Functions:
 - Local storage operations
 - Data caching
 - State persistence helpers
+
+### Meals Storage (`/utils/mealsStorage.ts`)
+- Persists meal plans per date with three slots: breakfast, lunch, dinner.
+- Structure: `MealsStorageData` with `mealsByDate: Record<string, MealsBySlot>`.
+- Helpers: `ensureMealsForDate()` to initialize per-date structure safely.
 
 ## Usage Guidelines
 
