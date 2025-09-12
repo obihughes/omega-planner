@@ -510,6 +510,11 @@ Location: `components/meals/MealPlanner.tsx`
 - Layout: 7-column grid (Mon–Sun), compact headers, sharp cards following the design system.
 - Navigation: Prev week, Today, Next week controls using timezone-safe date utilities.
 
+UI compactness:
+- Inputs are hidden by default; click "+ Add" to toggle inline add.
+- Empty-state text is removed to reduce visual noise.
+- Remove buttons appear on hover only.
+
 Props: none (MVP). Future: persistence, recipes integration.
 
 #### Data & State
