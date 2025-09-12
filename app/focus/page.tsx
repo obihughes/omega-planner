@@ -14,9 +14,10 @@ type FocusTask = {
 };
 
 type FocusState = {
-  secondsRemaining: number;
-  durationSeconds: number;
+  // Stopwatch-based session timing
+  elapsedSeconds: number;
   isRunning: boolean;
+  sessionStartedAt: string | null; // ISO
   // Planned for this session
   planned: FocusTask[];
   // Completed during this session
@@ -26,6 +27,7 @@ type FocusState = {
 };
 
 const STORAGE_KEY = 'omega-planner-focus-state-v1';
+const SESSIONS_KEY = 'omega-planner-focus-sessions-v1';
 
 const defaultDurationMinutes = 25;
 
@@ -40,13 +42,23 @@ export default function FocusPage() {
     if (typeof window !== 'undefined') {
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) return JSON.parse(raw) as FocusState;
+        if (raw) {
+          const parsed = JSON.parse(raw) as Partial<FocusState>;
+          return {
+            elapsedSeconds: parsed.elapsedSeconds ?? 0,
+            isRunning: parsed.isRunning ?? false,
+            sessionStartedAt: parsed.sessionStartedAt ?? null,
+            planned: parsed.planned ?? [],
+            completed: parsed.completed ?? [],
+            backlog: parsed.backlog ?? [],
+          };
+        }
       } catch {}
     }
     return {
-      secondsRemaining: defaultDurationMinutes * 60,
-      durationSeconds: defaultDurationMinutes * 60,
+      elapsedSeconds: 0,
       isRunning: false,
+      sessionStartedAt: null,
       planned: [],
       completed: [],
       backlog: [],
@@ -55,8 +67,26 @@ export default function FocusPage() {
 
   const [newBacklogTitle, setNewBacklogTitle] = useState('');
   const [newPlannedTitle, setNewPlannedTitle] = useState('');
+  const [newCompletedTitle, setNewCompletedTitle] = useState('');
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const [dragOverZone, setDragOverZone] = useState<'planned' | 'backlog' | null>(null);
+
+  type FocusSession = {
+    id: string;
+    startedAt: string; // ISO
+    endedAt: string;   // ISO
+    durationSeconds: number;
+    completed: FocusTask[];
+  };
+  const [sessions, setSessions] = useState<FocusSession[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem(SESSIONS_KEY);
+        if (raw) return JSON.parse(raw) as FocusSession[];
+      } catch {}
+    }
+    return [];
+  });
 
   // Persist
   useEffect(() => {
@@ -65,38 +95,60 @@ export default function FocusPage() {
     }
   }, [state]);
 
-  // Timer
+  // Stopwatch timer
   useEffect(() => {
     if (!state.isRunning) return;
     intervalRef.current && clearInterval(intervalRef.current);
     intervalRef.current = setInterval(() => {
-      setState(prev => {
-        if (!prev.isRunning) return prev;
-        if (prev.secondsRemaining <= 1) {
-          // Stop at zero
-          return { ...prev, isRunning: false, secondsRemaining: 0 };
-        }
-        return { ...prev, secondsRemaining: prev.secondsRemaining - 1 };
-      });
+      setState(prev => ({
+        ...prev,
+        elapsedSeconds: prev.elapsedSeconds + 1,
+      }));
     }, 1000);
     return () => {
       intervalRef.current && clearInterval(intervalRef.current);
     };
   }, [state.isRunning]);
 
-  const start = () => setState(s => ({ ...s, isRunning: true }));
+  const start = () => setState(s => ({ ...s, isRunning: true, sessionStartedAt: s.sessionStartedAt ?? new Date().toISOString() }));
   const pause = () => setState(s => ({ ...s, isRunning: false }));
-  const reset = () => setState(s => ({ ...s, isRunning: false, secondsRemaining: s.durationSeconds }));
+  const endSession = () => {
+    setState(s => {
+      if (!s.sessionStartedAt) {
+        return { ...s, isRunning: false };
+      }
+      const session: FocusSession = {
+        id: crypto.randomUUID(),
+        startedAt: s.sessionStartedAt,
+        endedAt: new Date().toISOString(),
+        durationSeconds: s.elapsedSeconds,
+        completed: [...s.completed],
+      };
+      const nextSessions = [session, ...sessions].sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+      setSessions(nextSessions);
+      if (typeof window !== 'undefined') {
+        try { localStorage.setItem(SESSIONS_KEY, JSON.stringify(nextSessions)); } catch {}
+      }
+      return {
+        ...s,
+        isRunning: false,
+        sessionStartedAt: null,
+        elapsedSeconds: 0,
+        // keep planned/backlog as-is; completed resets for next session
+        completed: [],
+      };
+    });
+  };
 
-  const setDurationMinutes = (m: number) => {
-    const clamped = Math.max(1, Math.min(180, Math.floor(m)));
-    const seconds = clamped * 60;
+  // Add completed directly (ad-hoc done item)
+  const addCompleted = () => {
+    const title = newCompletedTitle.trim();
+    if (!title) return;
     setState(s => ({
       ...s,
-      durationSeconds: seconds,
-      secondsRemaining: seconds,
-      isRunning: false,
+      completed: [{ id: crypto.randomUUID(), title, done: true }, ...s.completed],
     }));
+    setNewCompletedTitle('');
   };
 
   const addBacklog = () => {
@@ -204,27 +256,19 @@ export default function FocusPage() {
               <ListChecks className="w-5 h-5 text-muted-foreground" />
               <h1 className="text-2xl font-bold">Focus</h1>
             </div>
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                min={1}
-                max={180}
-                value={Math.floor(state.durationSeconds / 60)}
-                onChange={(e) => setDurationMinutes(parseInt(e.target.value || '25', 10))}
-                className="w-20 text-sm"
-              />
-              <span className="text-sm text-muted-foreground">min</span>
+            <div className="text-sm text-muted-foreground">
+              {state.sessionStartedAt ? new Date(state.sessionStartedAt).toLocaleString() : 'No active session'}
             </div>
           </div>
         </div>
 
         {/* Content */}
         <div className="container mx-auto px-6 py-6 flex-1 overflow-y-auto">
-          {/* Timer */}
+          {/* Timer / Controls */}
           <div className="flex items-center justify-center mb-6">
             <div className="flex items-center gap-4 p-4 border border-border rounded-lg bg-card/50">
               <Clock className="w-5 h-5 text-muted-foreground" />
-              <div className={cn("font-mono text-3xl", isOver ? 'text-red-600' : 'text-foreground')}>{formatHMS(state.secondsRemaining)}</div>
+              <div className="font-mono text-3xl">{formatHMS(state.elapsedSeconds)}</div>
               <div className="flex items-center gap-2">
                 {!state.isRunning ? (
                   <Button size="sm" onClick={start} className="flex items-center gap-1">
@@ -235,8 +279,8 @@ export default function FocusPage() {
                     <Pause className="w-4 h-4" /> Pause
                   </Button>
                 )}
-                <Button size="sm" variant="outline" onClick={reset} className="flex items-center gap-1">
-                  <RotateCcw className="w-4 h-4" /> Reset
+                <Button size="sm" variant="outline" onClick={endSession} className="flex items-center gap-1">
+                  <RotateCcw className="w-4 h-4" /> End Session
                 </Button>
               </div>
             </div>
@@ -303,6 +347,16 @@ export default function FocusPage() {
             <div className="border border-border rounded-lg bg-card/50">
               <div className="p-3 border-b border-border/40 flex items-center justify-between">
                 <h2 className="text-sm font-semibold">Completed this session</h2>
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={newCompletedTitle}
+                    onChange={(e) => setNewCompletedTitle(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') addCompleted(); }}
+                    placeholder="Add thing you just did..."
+                    className="h-8 text-sm"
+                  />
+                  <Button size="sm" onClick={addCompleted} className="h-8 px-2"><Plus className="w-4 h-4" /></Button>
+                </div>
               </div>
               <div className="p-3 space-y-2">
                 {state.completed.length === 0 && (
@@ -375,6 +429,36 @@ export default function FocusPage() {
                 ))}
               </div>
             </div>
+          </div>
+
+          {/* Sessions History */}
+          <div className="mt-8">
+            <h3 className="text-sm font-semibold mb-2">Past Sessions</h3>
+            {sessions.length === 0 ? (
+              <div className="text-xs text-muted-foreground">No sessions recorded yet.</div>
+            ) : (
+              <div className="space-y-2">
+                {sessions.map(ses => (
+                  <div key={ses.id} className="p-3 border border-border rounded bg-card/50">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm">
+                        <span className="font-medium">{new Date(ses.startedAt).toLocaleString()}</span>
+                        <span className="text-muted-foreground"> → {new Date(ses.endedAt).toLocaleString()}</span>
+                      </div>
+                      <div className="text-sm font-mono">{formatHMS(ses.durationSeconds)}</div>
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      {ses.completed.length} task{ses.completed.length === 1 ? '' : 's'} completed
+                      {ses.completed.length > 0 && (
+                        <span className="block mt-1 text-foreground">
+                          {ses.completed.slice(0, 5).map(t => t.title).join(', ')}{ses.completed.length > 5 ? '…' : ''}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
