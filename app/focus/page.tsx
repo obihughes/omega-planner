@@ -88,6 +88,94 @@ export default function FocusPage() {
     return [];
   });
 
+  // --- Session editing state ---
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [sessionEditStarted, setSessionEditStarted] = useState<string>(''); // datetime-local
+  const [sessionEditEnded, setSessionEditEnded] = useState<string>('');     // datetime-local
+  const [sessionEditCompleted, setSessionEditCompleted] = useState<FocusTask[]>([]);
+  const [sessionEditNewCompletedTitle, setSessionEditNewCompletedTitle] = useState<string>('');
+
+  const toLocalDateTimeInput = (iso: string): string => {
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const mm = pad(d.getMonth() + 1);
+    const dd = pad(d.getDate());
+    const hh = pad(d.getHours());
+    const mi = pad(d.getMinutes());
+    return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+  };
+
+  const fromLocalDateTimeInputToISO = (local: string): string | null => {
+    if (!local) return null;
+    // local is in user's timezone; create Date then toISOString
+    const d = new Date(local);
+    if (isNaN(d.getTime())) return null;
+    return d.toISOString();
+  };
+
+  const beginEditSession = (ses: FocusSession) => {
+    setEditingSessionId(ses.id);
+    setSessionEditStarted(toLocalDateTimeInput(ses.startedAt));
+    setSessionEditEnded(toLocalDateTimeInput(ses.endedAt));
+    setSessionEditCompleted(ses.completed.map(t => ({ ...t })));
+    setSessionEditNewCompletedTitle('');
+  };
+
+  const cancelEditSession = () => {
+    setEditingSessionId(null);
+    setSessionEditStarted('');
+    setSessionEditEnded('');
+    setSessionEditCompleted([]);
+    setSessionEditNewCompletedTitle('');
+  };
+
+  const saveEditSession = () => {
+    if (!editingSessionId) return;
+    const isoStart = fromLocalDateTimeInputToISO(sessionEditStarted);
+    const isoEnd = fromLocalDateTimeInputToISO(sessionEditEnded);
+    if (!isoStart || !isoEnd) {
+      cancelEditSession();
+      return;
+    }
+    const startMs = new Date(isoStart).getTime();
+    const endMs = new Date(isoEnd).getTime();
+    const durationSeconds = Math.max(0, Math.floor((endMs - startMs) / 1000));
+    const next = sessions.map(s => s.id === editingSessionId
+      ? { ...s, startedAt: isoStart, endedAt: isoEnd, durationSeconds, completed: sessionEditCompleted }
+      : s
+    ).sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+    setSessions(next);
+    if (typeof window !== 'undefined') {
+      try { localStorage.setItem(SESSIONS_KEY, JSON.stringify(next)); } catch {}
+    }
+    cancelEditSession();
+  };
+
+  const deleteSession = (id: string) => {
+    const next = sessions.filter(s => s.id !== id);
+    setSessions(next);
+    if (typeof window !== 'undefined') {
+      try { localStorage.setItem(SESSIONS_KEY, JSON.stringify(next)); } catch {}
+    }
+    if (editingSessionId === id) cancelEditSession();
+  };
+
+  const addCompletedToEditingSession = () => {
+    const title = sessionEditNewCompletedTitle.trim();
+    if (!title) return;
+    setSessionEditCompleted(prev => [{ id: crypto.randomUUID(), title, done: true }, ...prev]);
+    setSessionEditNewCompletedTitle('');
+  };
+
+  const updateEditingCompletedTitle = (taskId: string, title: string) => {
+    setSessionEditCompleted(prev => prev.map(t => t.id === taskId ? { ...t, title } : t));
+  };
+
+  const removeEditingCompletedTask = (taskId: string) => {
+    setSessionEditCompleted(prev => prev.filter(t => t.id !== taskId));
+  };
+
   // Persist
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -440,21 +528,78 @@ export default function FocusPage() {
               <div className="space-y-2">
                 {sessions.map(ses => (
                   <div key={ses.id} className="p-3 border border-border rounded bg-card/50">
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm">
-                        <span className="font-medium">{new Date(ses.startedAt).toLocaleString()}</span>
-                        <span className="text-muted-foreground"> → {new Date(ses.endedAt).toLocaleString()}</span>
+                    {/* Read mode */}
+                    {editingSessionId !== ses.id ? (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm">
+                            <span className="font-medium">{new Date(ses.startedAt).toLocaleString()}</span>
+                            <span className="text-muted-foreground"> → {new Date(ses.endedAt).toLocaleString()}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="text-sm font-mono">{formatHMS(ses.durationSeconds)}</div>
+                            <Button size="sm" variant="ghost" onClick={() => beginEditSession(ses)} className="h-7 px-2">Edit</Button>
+                            <Button size="sm" variant="ghost" onClick={() => deleteSession(ses.id)} className="h-7 px-2 text-destructive">Delete</Button>
+                          </div>
+                        </div>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          {ses.completed.length} task{ses.completed.length === 1 ? '' : 's'} completed
+                          {ses.completed.length > 0 && (
+                            <span className="block mt-1 text-foreground">
+                              {ses.completed.slice(0, 5).map(t => t.title).join(', ')}{ses.completed.length > 5 ? '…' : ''}
+                            </span>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      /* Edit mode */
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 text-sm">
+                            <label className="text-muted-foreground">Start</label>
+                            <Input type="datetime-local" value={sessionEditStarted} onChange={(e) => setSessionEditStarted(e.target.value)} className="h-8" />
+                            <label className="text-muted-foreground">End</label>
+                            <Input type="datetime-local" value={sessionEditEnded} onChange={(e) => setSessionEditEnded(e.target.value)} className="h-8" />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button size="sm" variant="secondary" onClick={saveEditSession} className="h-8 px-3">Save</Button>
+                            <Button size="sm" variant="ghost" onClick={cancelEditSession} className="h-8 px-3">Cancel</Button>
+                          </div>
+                        </div>
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-sm font-medium">Completed tasks</h4>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                value={sessionEditNewCompletedTitle}
+                                onChange={(e) => setSessionEditNewCompletedTitle(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === 'Enter') addCompletedToEditingSession(); }}
+                                placeholder="Add completed task..."
+                                className="h-8 text-sm"
+                              />
+                              <Button size="sm" onClick={addCompletedToEditingSession} className="h-8 px-2"><Plus className="w-4 h-4" /></Button>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            {sessionEditCompleted.length === 0 && (
+                              <div className="text-xs text-muted-foreground">No completed tasks recorded.</div>
+                            )}
+                            {sessionEditCompleted.map(t => (
+                              <div key={t.id} className="flex items-center justify-between p-2 border border-border/40 bg-background rounded">
+                                <Input
+                                  value={t.title}
+                                  onChange={(e) => updateEditingCompletedTitle(t.id, e.target.value)}
+                                  className="h-8 text-sm flex-1 mr-2"
+                                />
+                                <Button size="sm" variant="ghost" onClick={() => removeEditingCompletedTask(t.id)} className="h-7 w-7 p-0 text-destructive">
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-sm font-mono">{formatHMS(ses.durationSeconds)}</div>
-                    </div>
-                    <div className="mt-1 text-xs text-muted-foreground">
-                      {ses.completed.length} task{ses.completed.length === 1 ? '' : 's'} completed
-                      {ses.completed.length > 0 && (
-                        <span className="block mt-1 text-foreground">
-                          {ses.completed.slice(0, 5).map(t => t.title).join(', ')}{ses.completed.length > 5 ? '…' : ''}
-                        </span>
-                      )}
-                    </div>
+                    )}
                   </div>
                 ))}
               </div>
