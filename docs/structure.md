@@ -21,6 +21,12 @@ Contains the Next.js 13+ app router pages and layouts. This is where the main ap
 
 #### `/components`
 Reusable React components used throughout the application. These components are organized by feature or functionality.
+Current notable feature folders include:
+- `components/planner` – Daily/Weekly scheduling
+- `components/projects` – Workspace views
+- `components/documents` – Text canvas editor
+- `components/calendar` – Calendars and modals
+- `components/meals` – Meal planning components (see `MealPlanner`)
 
 #### `/lib`
 Core library code and utilities that are fundamental to the application's functionality. This includes database configurations, authentication setup, and other core services.

@@ -13,3 +13,4 @@ export * from './projects';
 export * from './planner';
 export * from './primitives';
 export * from './documents'; 
+export * from './meals';

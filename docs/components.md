@@ -38,8 +38,9 @@ Projects Calendar compact sizing
 3. [UI Components](#ui-components)
 4. [Calendar Components](#calendar-components)
 5. [Documents Components](#documents-components)
-6. [Primitives Components](#primitives-components)
-7. [Recent Updates](#recent-updates)
+6. [Meals Components](#meals-components)
+7. [Primitives Components](#primitives-components)
+8. [Recent Updates](#recent-updates)
 
 ## Planner Components
 
@@ -495,6 +496,18 @@ Custom time selection component.
 - `docs/components.md` - Enhanced component documentation
 
 **Result**: Clean, professional text editing interface with predictable behavior and no layout issues.
+
+## Meals Components
+
+### MealPlanner (`components/meals/MealPlanner.tsx`)
+Location: `components/meals/MealPlanner.tsx`
+
+- Purpose: Weekly meal planning grid with Breakfast/Lunch/Dinner slots for each day.
+- Access: Route `app/meals/page.tsx` → `/meals`. A "Meals" link is added in the main navigation.
+- Layout: 7-column grid (Mon–Sun), compact headers, sharp cards following the design system.
+- Navigation: Prev week, Today, Next week controls using timezone-safe date utilities.
+
+Props: none (MVP). Future: persistence, recipes integration.
 
 ### Pinned Tasks Time Display Fix
 **Issue**: Pinned tasks were displaying incorrect times and showing everything as minutes instead of converting to hours/days.

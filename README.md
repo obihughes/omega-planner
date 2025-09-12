@@ -65,6 +65,7 @@ npm run dev:clean
 - `/app` - Next.js application routes and pages
 - `/components` - React components organized by functionality
   - `/components/planner` - Main planner-specific components
+  - `/components/meals` - Meal planning components
   - `/components/ui` - Reusable UI components
   - `/components/ErrorBoundary.tsx` - Global error boundary for stability
 - `/hooks` - Custom React hooks for state management and logic
@@ -156,6 +157,10 @@ npm test
 - **Modal Management**: Added dedicated `useModalManager` hook to centralize modal state and functions
 - **Documentation**: Added JSDoc comments and README files across the codebase
 - **Improved Type Safety**: Enhanced TypeScript type definitions and interfaces
+
+### New: Meals Page
+- Added weekly Meal Planner at `/meals` with a 7-column grid and Breakfast/Lunch/Dinner slots.
+- Navigation link "Meals" added to the sidebar.
 
 ## Troubleshooting
 

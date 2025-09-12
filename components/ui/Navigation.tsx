@@ -150,6 +150,13 @@ export function Navigation() {
       subViews: []
     },
     {
+      href: '/meals',
+      label: 'Meals',
+      icon: ClipboardList,
+      active: pathname === '/meals',
+      subViews: []
+    },
+    {
       href: '/documents',
       label: 'Text Canvas',
       icon: FileText,
