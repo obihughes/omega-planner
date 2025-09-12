@@ -11,7 +11,7 @@ export default function MealsPage() {
   return (
     <AppLayout>
       <div className="h-full p-4">
-        <div className="max-w-7xl mx-auto h-full grid grid-cols-12 gap-4">
+        <div className="h-full grid grid-cols-12 gap-4">
           {/* Main content spans more on wide screens; full width on small */}
           <div className="col-span-12 lg:col-span-8">
             <Suspense fallback={<div className="text-muted-foreground">Loading meals...</div>}>

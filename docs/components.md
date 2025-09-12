@@ -517,8 +517,8 @@ UI compactness:
 - Per-meal Ingredients: inline editor to add comma-separated ingredients; cookable badge when pantry has all items; otherwise shows missing items.
 
 Layout:
-- Day cards render as fixed-width (320px) tiles in a horizontally scrollable row to prevent compression.
-- Pantry and Shopping List sidebars stack on small screens and occupy narrow columns on large screens.
+- Full-width responsive grid: days render in 1–7 columns based on screen size (`grid-cols-1` → `2xl:grid-cols-7`).
+- Sidebars on `/meals` use a 12-column page grid; they stack on small screens and occupy narrow columns on large screens.
 ### PantrySidebar (`components/meals/PantrySidebar.tsx`)
 Location: `components/meals/PantrySidebar.tsx`
 
