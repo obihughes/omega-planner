@@ -16,4 +16,5 @@ export {
 
 export { useMeals } from './useMeals';
 export { usePantry } from './usePantry';
-export { useShopping } from './useShopping'; 
+export { useShopping } from './useShopping';
+export { useRecipes } from './useRecipes'; 

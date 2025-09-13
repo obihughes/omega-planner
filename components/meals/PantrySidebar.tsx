@@ -17,7 +17,7 @@ export const PantrySidebar: React.FC<{ dateKey: string }> = ({ dateKey }) => {
     return slots.flatMap(slot => getMeals(dateKey, slot));
   }, [dateKey, getMeals]);
 
-  const cookableMeals = todayMeals.filter(m => (m.ingredients || []).length > 0);
+  const cookableMeals = todayMeals.filter(m => canCook(m));
 
   return (
     <Card className="border bg-card">

@@ -109,3 +109,21 @@ LocalStorage-backed pantry list with helper functions to determine if meals are 
 LocalStorage-backed shopping list state.
 
 **API:** `items`, `add(name, quantity?)`, `remove(id)`, `toggle(id)`, `update(id, updates)`, `clearChecked()`
+
+### useRecipes
+
+LocalStorage-backed recipe management with smart ingredient matching.
+
+**Features:**
+- CRUD operations for recipes with full metadata (ingredients, instructions, cook time, servings, categories)
+- Smart suggestion system based on available pantry ingredients
+- Integration with meal planning system
+- Default starter recipes for new users
+
+**API:**
+- `recipes`: current recipe collection
+- `addRecipe(name, description?, ingredients?, instructions?, cookTime?, servings?, category?, tags?)`
+- `removeRecipe(id)`, `updateRecipe(id, updates)`
+- `getCookableRecipes(availableIngredients)`: recipes that can be fully made
+- `getRecipeSuggestions(availableIngredients, minMatch)`: recipes with partial matches
+- `canMakeRecipe(recipe, availableIngredients)`, `getMissingIngredients(recipe, availableIngredients)`

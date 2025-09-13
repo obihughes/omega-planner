@@ -519,7 +519,7 @@ UI compactness:
 Layout:
 - 3-day sliding view: shows 3 days at a time with "Prev 3 days" / "Next 3 days" controls to slide through the week.
 - 3-column grid layout for displayed days with full-width usage.
-- Second row shows Pantry and Shopping List side by side; both have always-visible add inputs and a one-click "Add all missing today" into the shopping list.
+- Second row shows Pantry, Shopping List, and Recipes in a 3-column layout (1 column on mobile, 2 on tablet, 3 on desktop).
 ### PantrySidebar (`components/meals/PantrySidebar.tsx`)
 Location: `components/meals/PantrySidebar.tsx`
 
@@ -534,6 +534,19 @@ Location: `components/meals/ShoppingListSidebar.tsx`
 - Features: de-duplicated missing ingredients chips to add to the list, check/uncheck items, clear checked.
 
 Props: none (MVP). Future: persistence, recipes integration.
+
+### RecipesSidebar (`components/meals/RecipesSidebar.tsx`)
+Location: `components/meals/RecipesSidebar.tsx`
+
+- Purpose: Manage recipes and get meal suggestions based on available pantry ingredients.
+- Features: 
+  - Recipe creation form with name, description, ingredients, cook time, servings, and category
+  - "Can Make Now" section showing recipes that can be fully prepared with current pantry items
+  - "Suggested" section showing recipes with 60%+ ingredient matches from pantry
+  - Quick-add buttons (B/L/D) to add recipes directly to breakfast, lunch, or dinner slots
+  - All recipes list with remove functionality
+- Default recipes: Includes starter recipes (Scrambled Eggs, Pasta with Garlic Oil, Chicken Stir Fry) for new users
+- Integration: Uses pantry data to calculate cookable and suggested recipes in real-time
 
 #### Data & State
 - Uses `useMeals` hook for localStorage-backed persistence.

@@ -45,4 +45,9 @@ export type {
 export type {
   ShoppingItem,
   ShoppingStorageData
-} from './shopping'; 
+} from './shopping';
+
+export type {
+  Recipe,
+  RecipesStorageData
+} from './recipes'; 
