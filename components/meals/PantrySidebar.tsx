@@ -4,11 +4,13 @@ import React, { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { usePantry } from '@/hooks/usePantry';
+import { useShopping } from '@/hooks/useShopping';
 import { useMeals } from '@/hooks/useMeals';
 import { MealSlot } from '@/types/meals';
 
 export const PantrySidebar: React.FC<{ dateKey: string }> = ({ dateKey }) => {
-  const { items, addItem, removeItem, canCook } = usePantry();
+  const { items, addItem, removeItem, canCook, missingFor } = usePantry();
+  const { add: addToShopping } = useShopping();
   const { getMeals } = useMeals();
   const [inputValue, setInputValue] = useState('');
 
@@ -18,6 +20,9 @@ export const PantrySidebar: React.FC<{ dateKey: string }> = ({ dateKey }) => {
   }, [dateKey, getMeals]);
 
   const cookableMeals = todayMeals.filter(m => canCook(m));
+  const missingMeals = todayMeals
+    .filter(m => (m.ingredients || []).length > 0 && !canCook(m))
+    .map(m => ({ meal: m, missing: missingFor(m) }));
 
   return (
     <Card className="border bg-card">
@@ -48,13 +53,31 @@ export const PantrySidebar: React.FC<{ dateKey: string }> = ({ dateKey }) => {
         </div>
 
         <div>
-          <div className="text-xs text-muted-foreground mb-2">Suggestions (today)</div>
+          <div className="text-xs text-muted-foreground mb-2">Cookable now (today)</div>
           <ul className="space-y-1">
             {cookableMeals.length === 0 && (
-              <li className="text-sm text-muted-foreground">Add ingredients to see suggestions</li>
+              <li className="text-sm text-muted-foreground">No meals are fully covered yet</li>
             )}
             {cookableMeals.map(m => (
               <li key={m.id} className="text-sm truncate">{m.name}</li>
+            ))}
+          </ul>
+        </div>
+
+        <div>
+          <div className="text-xs text-muted-foreground mb-2">Almost there (missing items)</div>
+          <ul className="space-y-2">
+            {missingMeals.length === 0 && (
+              <li className="text-sm text-muted-foreground">Nothing missing for today's planned meals</li>
+            )}
+            {missingMeals.map(({ meal, missing }) => (
+              <li key={meal.id} className="text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="truncate pr-2">{meal.name}</span>
+                  <Button variant="ghost" size="sm" onClick={() => missing.forEach(n => addToShopping(n))}>Add missing</Button>
+                </div>
+                <div className="text-xs text-muted-foreground truncate">Missing: {missing.join(', ')}</div>
+              </li>
             ))}
           </ul>
         </div>

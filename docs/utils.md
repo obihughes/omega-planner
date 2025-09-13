@@ -26,21 +26,6 @@ Functions:
 - Structure: `MealsStorageData` with `mealsByDate: Record<string, MealsBySlot>`.
 - Helpers: `ensureMealsForDate()` to initialize per-date structure safely.
 
-### Pantry Storage (`/utils/pantryStorage.ts`)
-- Persists pantry ingredients with quantities and categories.
-- Structure: `PantryStorageData` with `items: PantryItem[]`.
-- Functions: `save(items)`, `load()` with localStorage handling.
-
-### Shopping Storage (`/utils/shoppingStorage.ts`)
-- Persists shopping list items with check/uncheck state.
-- Structure: `ShoppingStorageData` with shopping items and metadata.
-- Functions: `save(items)`, `load()` with localStorage handling.
-
-### Recipes Storage (`/utils/recipesStorage.ts`)
-- Persists recipe collection with ingredients, instructions, and metadata.
-- Structure: `RecipesStorageData` with `recipes: Recipe[]`.
-- Functions: `save(recipes)`, `load()` with localStorage handling and version management.
-
 ## Usage Guidelines
 
 ### Best Practices

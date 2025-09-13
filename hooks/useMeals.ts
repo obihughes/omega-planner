@@ -8,7 +8,7 @@ import { getTodayDateKey } from '@/utils/dateUtils';
 export interface UseMealsState {
   mealsByDate: Record<string, MealsBySlot>;
   getMeals(dateKey: string, slot: MealSlot): MealItem[];
-  addMeal(dateKey: string, slot: MealSlot, name: string, notes?: string, ingredients?: string[]): MealItem | null;
+  addMeal(dateKey: string, slot: MealSlot, name: string): MealItem | null;
   removeMeal(dateKey: string, slot: MealSlot, id: string): void;
   updateMeal(dateKey: string, slot: MealSlot, id: string, updates: Partial<Omit<MealItem, 'id'>>): void;
   clearDay(dateKey: string): void;
@@ -39,15 +39,13 @@ export function useMeals(): UseMealsState {
     return d[slot] || [];
   }, [mealsByDate]);
 
-  const addMeal = useCallback((dateKey: string, slot: MealSlot, name: string, notes?: string, ingredients?: string[]): MealItem | null => {
+  const addMeal = useCallback((dateKey: string, slot: MealSlot, name: string): MealItem | null => {
     const trimmed = name.trim();
     if (!trimmed) return null;
     const now = new Date().toISOString();
     const item: MealItem = {
       id: generateId(),
       name: trimmed,
-      notes: notes?.trim() || undefined,
-      ingredients: ingredients || undefined,
       createdAt: now,
       updatedAt: now
     };

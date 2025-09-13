@@ -51,13 +51,13 @@ export function usePantry() {
   const itemNames = useMemo(() => new Set(items.map(i => i.name.toLowerCase())), [items]);
 
   function canCook(meal: MealItem): boolean {
-    const req = (meal.ingredients || []).map(s => s.trim().toLowerCase());
+    const req = (meal.ingredients || []).map(s => s.toLowerCase());
     if (req.length === 0) return false;
     return req.every(r => itemNames.has(r));
   }
 
   function missingFor(meal: MealItem): string[] {
-    const req = (meal.ingredients || []).map(s => s.trim().toLowerCase());
+    const req = (meal.ingredients || []).map(s => s.toLowerCase());
     return req.filter(r => !itemNames.has(r));
   }
 

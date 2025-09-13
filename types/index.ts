@@ -43,11 +43,12 @@ export type {
 } from './pantry';
 
 export type {
-  ShoppingItem,
-  ShoppingStorageData
-} from './shopping';
+  RecipeItem,
+  RecipeIngredient,
+  RecipesStorageData
+} from './recipes';
 
 export type {
-  Recipe,
-  RecipesStorageData
-} from './recipes'; 
+  ShoppingItem,
+  ShoppingStorageData
+} from './shopping'; 

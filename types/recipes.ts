@@ -1,19 +1,24 @@
-export interface Recipe {
+export interface RecipeIngredient {
+  name: string;
+  quantity?: string;
+}
+
+export interface RecipeItem {
   id: string;
   name: string;
   description?: string;
-  ingredients: string[];
-  instructions?: string[];
-  cookTime?: number; // in minutes
+  ingredients: RecipeIngredient[];
+  cookTimeMinutes?: number;
   servings?: number;
-  category?: string; // e.g., "breakfast", "lunch", "dinner", "snack", "dessert"
-  tags?: string[]; // e.g., ["vegetarian", "quick", "healthy"]
+  category?: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface RecipesStorageData {
   version: string;
-  recipes: Recipe[];
+  recipes: RecipeItem[];
   lastUpdated: string;
 }
+
+
