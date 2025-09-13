@@ -538,8 +538,16 @@ Props: none (MVP). Future: persistence, recipes integration.
 ### RecipesSidebar (`components/meals/RecipesSidebar.tsx`)
 Location: `components/meals/RecipesSidebar.tsx`
 
-- Purpose: Manage recipes and get suggestions based on pantry.
-- Features: add recipe (name + comma-separated ingredients), lists "Can make now" and "Suggested" (>=60% match vs pantry), quick remove.
+- Purpose: Manage recipes and get meal suggestions based on pantry ingredients.
+- Features: 
+  - Recipe creation form with name and comma-separated ingredients
+  - "Can Make Now" section showing recipes that can be fully prepared with current pantry items
+  - Quick-add buttons (B/L/D) to add recipes directly to breakfast, lunch, or dinner slots
+  - "Suggested" section showing recipes with 60%+ ingredient matches from pantry
+  - "Add missing" button to add missing ingredients to shopping list
+  - All recipes list with remove functionality
+- Default recipes: Includes starter recipes (Scrambled Eggs, Pasta with Garlic Oil, Chicken Stir Fry, Grilled Cheese, Pancakes) for new users
+- Integration: Uses pantry data to calculate cookable and suggested recipes in real-time
 - Storage: localStorage via `utils/recipesStorage.ts` and `hooks/useRecipes.ts` with computed `cookable` and `suggested` lists.
 
 #### Data & State

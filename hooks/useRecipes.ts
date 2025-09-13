@@ -12,7 +12,25 @@ export function useRecipes() {
   const loaded = useRef(false);
   const { items } = usePantry();
 
-  useEffect(() => { setRecipes(RecipesStorage.load()); loaded.current = true; }, []);
+  useEffect(() => { 
+    const loadedRecipes = RecipesStorage.load(); 
+    if (loadedRecipes.length === 0) {
+      // Add starter recipes
+      const starters = [
+        { name: 'Scrambled Eggs', ingredients: [{ name: 'eggs' }, { name: 'butter' }, { name: 'salt' }] },
+        { name: 'Pasta with Garlic Oil', ingredients: [{ name: 'pasta' }, { name: 'garlic' }, { name: 'olive oil' }] },
+        { name: 'Chicken Stir Fry', ingredients: [{ name: 'chicken' }, { name: 'vegetables' }, { name: 'soy sauce' }] },
+        { name: 'Grilled Cheese', ingredients: [{ name: 'bread' }, { name: 'cheese' }, { name: 'butter' }] },
+        { name: 'Pancakes', ingredients: [{ name: 'flour' }, { name: 'eggs' }, { name: 'milk' }, { name: 'sugar' }] }
+      ];
+      const now = new Date().toISOString();
+      const starterRecipes = starters.map(s => ({ ...s, id: rid(), createdAt: now, updatedAt: now }));
+      setRecipes(starterRecipes);
+    } else {
+      setRecipes(loadedRecipes);
+    }
+    loaded.current = true; 
+  }, []);
   useEffect(() => { if (loaded.current) RecipesStorage.save(recipes); }, [recipes]);
 
   const pantrySet = useMemo(() => new Set(items.map(i => i.name.toLowerCase())), [items]);
