@@ -13,7 +13,7 @@ import { useProjects } from '@/hooks/useProjects';
 import { Calendar, List, Plus, Clock, CheckCircle2, Filter, SortAsc, CheckSquare2, Square, Edit3, X, ChevronDown, ChevronRight, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProjectTask } from '@/types/projects';
-import { getDateKey, getTodayDateKey, formatDueDate, dateFromDateKey } from '@/utils/dateUtils';
+import { getDateKey, getTodayDateKey, formatDueDate, dateFromDateKey, normalizeDueDate } from '@/utils/dateUtils';
 import { ProjectTaskFormModal } from '@/components/modals/ProjectTaskFormModal';
 import { ProjectFormModal } from '@/components/modals/ProjectFormModal';
 import { Project } from '@/types/projects';
@@ -725,6 +725,17 @@ export default function ProjectsTasksPage() {
     };
 
     const dueInfo = formatDueDate(task.dueDate);
+    const fullDueTitle = React.useMemo(() => {
+      if (!task.dueDate) return undefined;
+      const normalized = normalizeDueDate(task.dueDate);
+      if (!normalized) return undefined;
+      const d = dateFromDateKey(normalized);
+      const weekday = d.toLocaleDateString('en-US', { weekday: 'long' });
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const yyyy = String(d.getFullYear());
+      return `${weekday} ${dd}/${mm}/${yyyy}`;
+    }, [task.dueDate]);
 
     return (
       <div
@@ -812,7 +823,7 @@ export default function ProjectsTasksPage() {
               {dueInfo && (
                 <>
                   <span>•</span>
-                  <span className="font-medium text-muted-foreground">
+                  <span className="font-medium text-muted-foreground" title={fullDueTitle}>
                     {dueInfo.text}
                   </span>
                 </>

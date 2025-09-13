@@ -25,7 +25,7 @@ import {
   GripVertical
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatDueDate as formatDueDateUtil } from '@/utils/dateUtils';
+import { formatDueDate as formatDueDateUtil, normalizeDueDate, dateFromDateKey } from '@/utils/dateUtils';
 
 // Drag and drop imports
 import {
@@ -177,6 +177,19 @@ function SortableTaskItem({
     transition,
   };
 
+  // Full date string for hover tooltip: Weekday DD/MM/YYYY
+  const fullDueTitle = React.useMemo(() => {
+    if (!task.dueDate) return undefined;
+    const normalized = normalizeDueDate(task.dueDate);
+    if (!normalized) return undefined;
+    const d = dateFromDateKey(normalized);
+    const weekday = d.toLocaleDateString('en-US', { weekday: 'long' });
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = String(d.getFullYear());
+    return `${weekday} ${dd}/${mm}/${yyyy}`;
+  }, [task.dueDate]);
+
   return (
     <div 
       ref={setNodeRef}
@@ -289,6 +302,7 @@ function SortableTaskItem({
                     setEditingField('dueDate');
                     setEditingValue(task.dueDate || '');
                   }}
+                  title={fullDueTitle}
                 >
                   {dueInfo.text}
                 </span>

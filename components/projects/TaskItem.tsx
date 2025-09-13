@@ -19,7 +19,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { formatDueDate, normalizeDueDate } from '@/utils/dateUtils';
+import { formatDueDate, normalizeDueDate, dateFromDateKey } from '@/utils/dateUtils';
 
 interface TaskItemProps {
   id: string;
@@ -264,6 +264,19 @@ export function TaskItem({
   // Due date formatted info
   const dueInfo = useMemo(() => formatDueDate(task.dueDate || undefined), [task.dueDate]);
 
+  // Full date string for hover tooltip: Weekday DD/MM/YYYY
+  const fullDueHoverTitle = useMemo(() => {
+    if (!task.dueDate) return undefined;
+    const normalized = normalizeDueDate(task.dueDate);
+    if (!normalized) return undefined;
+    const d = dateFromDateKey(normalized);
+    const weekday = d.toLocaleDateString('en-US', { weekday: 'long' });
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = String(d.getFullYear());
+    return `${weekday} ${dd}/${mm}/${yyyy}`;
+  }, [task.dueDate]);
+
   // Description editing handlers
   const startEditingDescription = () => {
     setIsEditingDescription(true);
@@ -502,9 +515,9 @@ export function TaskItem({
               )}
             </div>
 
-            {/* Due date and actions */}
-            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity ml-4">
-              {/* Due Date Chip / Editor */}
+            {/* Due date (always visible) and actions (on hover) */}
+            <div className="flex items-center gap-2 ml-4">
+              {/* Due Date Chip / Editor (always visible) */}
               {isEditingDueDate ? (
                 <input
                   ref={dueInputRef}
@@ -528,56 +541,60 @@ export function TaskItem({
                     "text-xs px-2 py-1 rounded-full border",
                     dueInfo?.isOverdue ? "border-red-500 text-red-600 bg-red-50" : "border-border text-muted-foreground hover:text-foreground hover:bg-accent/40"
                   )}
-                  title={task.dueDate ? "Click to edit due date" : "Click to set due date"}
+                  title={task.dueDate ? (fullDueHoverTitle || "Click to edit due date") : "Click to set due date"}
                 >
                   {task.dueDate ? (dueInfo?.text || 'Due date') : 'Add due date'}
                 </button>
               )}
-              {task.dueDate && !isEditingDueDate && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); clearDueDate(); }}
-                  className="text-xs text-muted-foreground hover:text-foreground"
-                  title="Clear due date"
-                >
-                  ×
-                </button>
-              )}
 
-              {/* Expand/Collapse Subtasks */}
-              {(task.subtasks && task.subtasks.length > 0) && (
+              {/* Action buttons (hidden until hover) */}
+              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                {task.dueDate && !isEditingDueDate && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); clearDueDate(); }}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                    title="Clear due date"
+                  >
+                    ×
+                  </button>
+                )}
+
+                {/* Expand/Collapse Subtasks */}
+                {(task.subtasks && task.subtasks.length > 0) && (
+                  <button
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="p-2 hover:bg-accent rounded-md transition-colors"
+                    title={isExpanded ? "Collapse subtasks" : "Expand subtasks"}
+                  >
+                    {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  </button>
+                )}
+                
+                {/* Add Subtask */}
                 <button
-                  onClick={() => setIsExpanded(!isExpanded)}
+                  onClick={() => setShowAddSubtask(!showAddSubtask)}
                   className="p-2 hover:bg-accent rounded-md transition-colors"
-                  title={isExpanded ? "Collapse subtasks" : "Expand subtasks"}
+                  title="Add subtask"
                 >
-                  {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  <Plus className="w-4 h-4" />
                 </button>
-              )}
-              
-              {/* Add Subtask */}
-              <button
-                onClick={() => setShowAddSubtask(!showAddSubtask)}
-                className="p-2 hover:bg-accent rounded-md transition-colors"
-                title="Add subtask"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-              
-              <button
-                onClick={() => onEdit(task)}
-                className="p-2 hover:bg-accent rounded-md transition-colors"
-                title="Edit task"
-              >
-                <Edit className="w-4 h-4" />
-              </button>
-              
-              <button
-                onClick={() => onDelete(task.id)}
-                className="p-2 hover:bg-accent rounded-md transition-colors text-destructive"
-                title="Delete task"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+                
+                <button
+                  onClick={() => onEdit(task)}
+                  className="p-2 hover:bg-accent rounded-md transition-colors"
+                  title="Edit task"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+                
+                <button
+                  onClick={() => onDelete(task.id)}
+                  className="p-2 hover:bg-accent rounded-md transition-colors text-destructive"
+                  title="Delete task"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         </div>

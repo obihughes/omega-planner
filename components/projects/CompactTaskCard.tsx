@@ -11,7 +11,7 @@ import {
   X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatDueDate, normalizeDueDate } from '@/utils/dateUtils';
+import { formatDueDate, normalizeDueDate, dateFromDateKey } from '@/utils/dateUtils';
 
 interface TaskWithProject extends ProjectTask {
   projectId: string;
@@ -48,6 +48,17 @@ export function CompactTaskCard({
   const [dueDateValue, setDueDateValue] = useState('');
 
   const dueInfo = formatDueDate(task.dueDate);
+  const fullDueTitle = React.useMemo(() => {
+    if (!task.dueDate) return undefined;
+    const normalized = normalizeDueDate(task.dueDate);
+    if (!normalized) return undefined;
+    const d = dateFromDateKey(normalized);
+    const weekday = d.toLocaleDateString('en-US', { weekday: 'long' });
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = String(d.getFullYear());
+    return `${weekday} ${dd}/${mm}/${yyyy}`;
+  }, [task.dueDate]);
 
   // Handle title editing
   const startEditingTitle = () => {
@@ -383,7 +394,7 @@ export function CompactTaskCard({
               type="button"
               onClick={startEditingDueDate}
               className="flex items-center gap-1 hover:opacity-90"
-              title={`Due: ${new Date(task.dueDate).toLocaleDateString()}`}
+              title={fullDueTitle}
             >
               <Clock className="w-3 h-3 text-muted-foreground/50" />
               <span className="text-xs font-medium text-muted-foreground/70 truncate">

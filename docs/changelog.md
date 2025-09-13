@@ -3,6 +3,11 @@
 - Navigation
   - Re-enable `Meals` in the main sidebar by default. Toggle visibility via `SHOW_MEALS_IN_NAV` in `lib/constants.ts` (default: true). Code and route remain intact.
 
+- Projects / Tasks
+  - Project task rows now always show the due date/time-until-due inline next to the task name. Hover is no longer required to see due information. Editing the due date remains a click on the chip; action buttons (clear date, expand subtasks, add subtask, edit, delete) still appear on hover to keep the layout minimal.
+  - Files affected: `components/projects/TaskItem.tsx`, `utils/dateUtils.ts` (reuse only)
+  - Due chip now shows the full formatted date on hover as `Weekday DD/MM/YYYY` (e.g., `Tuesday 15/05/2025`).
+
 - Meals/Recipes
   - Added `RecipeFormModal` for creating/editing recipes with structured ingredient entry (name + quantity fields).
   - Integrated modal into `components/meals/RecipesSidebar.tsx` and enabled editing by clicking recipe names.

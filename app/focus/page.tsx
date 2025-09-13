@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AppLayout } from '@/components/ui/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -333,7 +333,7 @@ export default function FocusPage() {
   const deletePlanned = (taskId: string) => setState(s => ({ ...s, planned: s.planned.filter(t => t.id !== taskId) }));
   const deleteCompleted = (taskId: string) => setState(s => ({ ...s, completed: s.completed.filter(t => t.id !== taskId) }));
 
-  const isOver = state.secondsRemaining === 0;
+  
 
   // --- Drag & Drop (native HTML5) ---
   const handleTaskDragStart = (source: 'planned' | 'backlog', taskId: string) => (e: React.DragEvent) => {
@@ -552,105 +552,107 @@ export default function FocusPage() {
             </div>
           </div>
 
-          {/* Sessions History */}
-          <div className="mt-8">
-            <h3 className="text-sm font-semibold mb-2">Past Sessions</h3>
-            {!sessionsLoaded ? (
-              <div className="text-xs text-muted-foreground">Loading sessions…</div>
-            ) : sessions.length === 0 ? (
-              <div className="text-xs text-muted-foreground">No sessions recorded yet.</div>
-            ) : (
-              <div className="space-y-2">
-                {sessions.map(ses => (
-                  <div key={ses.id} className="p-3 border border-border rounded bg-card/50">
-                    {/* Read mode */}
-                    {editingSessionId !== ses.id ? (
-                      <>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            {(() => { const p = formatTimeRangeParts(ses.startedAt, ses.endedAt); return (
-                              <>
-                                <div className="text-sm font-semibold">{formatHMS(ses.durationSeconds)}</div>
-                                <div className="text-xs text-muted-foreground">{p.time}</div>
-                                <div className="text-[10px] text-muted-foreground/80">{p.dayLabel}</div>
-                              </>
-                            ); })()}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button size="sm" variant="ghost" onClick={() => beginEditSession(ses)} className="h-7 px-2">Edit</Button>
-                            <Button size="sm" variant="ghost" onClick={() => deleteSession(ses.id)} className="h-7 px-2 text-destructive">Delete</Button>
-                          </div>
-                        </div>
-                        <div className="mt-2">
-                          <div className="text-xs text-muted-foreground">
-                            {ses.completed.length} task{ses.completed.length === 1 ? '' : 's'} completed
-                          </div>
-                          {ses.completed.length > 0 && (
-                            <div className="mt-1 flex flex-wrap gap-1">
-                              {ses.completed.slice(0, 6).map(t => (
-                                <span key={t.id} className="px-1.5 py-0.5 text-xs bg-accent/40 border border-border/50 rounded">{t.title}</span>
-                              ))}
-                              {ses.completed.length > 6 && (
-                                <span className="px-1.5 py-0.5 text-xs text-muted-foreground">+{ses.completed.length - 6} more</span>
-                              )}
+          {/* Sessions History (hidden during an active session) */}
+          {!state.sessionStartedAt && (
+            <div className="mt-8">
+              <h3 className="text-sm font-semibold mb-2">Past Sessions</h3>
+              {!sessionsLoaded ? (
+                <div className="text-xs text-muted-foreground">Loading sessions…</div>
+              ) : sessions.length === 0 ? (
+                <div className="text-xs text-muted-foreground">No sessions recorded yet.</div>
+              ) : (
+                <div className="space-y-2">
+                  {sessions.map(ses => (
+                    <div key={ses.id} className="p-3 border border-border rounded bg-card/50">
+                      {/* Read mode */}
+                      {editingSessionId !== ses.id ? (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              {(() => { const p = formatTimeRangeParts(ses.startedAt, ses.endedAt); return (
+                                <>
+                                  <div className="text-sm font-semibold">{formatHMS(ses.durationSeconds)}</div>
+                                  <div className="text-xs text-muted-foreground">{p.time}</div>
+                                  <div className="text-[10px] text-muted-foreground/80">{p.dayLabel}</div>
+                                </>
+                              ); })()}
                             </div>
-                          )}
-                        </div>
-                      </>
-                    ) : (
-                      /* Edit mode */
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 text-sm">
-                            <label className="text-muted-foreground">Start</label>
-                            <Input type="datetime-local" value={sessionEditStarted} onChange={(e) => setSessionEditStarted(e.target.value)} className="h-8" />
-                            <label className="text-muted-foreground">End</label>
-                            <Input type="datetime-local" value={sessionEditEnded} onChange={(e) => setSessionEditEnded(e.target.value)} className="h-8" />
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button size="sm" variant="secondary" onClick={saveEditSession} className="h-8 px-3">Save</Button>
-                            <Button size="sm" variant="ghost" onClick={cancelEditSession} className="h-8 px-3">Cancel</Button>
-                          </div>
-                        </div>
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className="text-sm font-medium">Completed tasks</h4>
                             <div className="flex items-center gap-2">
-                              <Input
-                                value={sessionEditNewCompletedTitle}
-                                onChange={(e) => setSessionEditNewCompletedTitle(e.target.value)}
-                                onKeyDown={(e) => { if (e.key === 'Enter') addCompletedToEditingSession(); }}
-                                placeholder="Add completed task..."
-                                className="h-8 text-sm"
-                              />
-                              <Button size="sm" onClick={addCompletedToEditingSession} className="h-8 px-2"><Plus className="w-4 h-4" /></Button>
+                              <Button size="sm" variant="ghost" onClick={() => beginEditSession(ses)} className="h-7 px-2">Edit</Button>
+                              <Button size="sm" variant="ghost" onClick={() => deleteSession(ses.id)} className="h-7 px-2 text-destructive">Delete</Button>
                             </div>
                           </div>
-                          <div className="space-y-2">
-                            {sessionEditCompleted.length === 0 && (
-                              <div className="text-xs text-muted-foreground">No completed tasks recorded.</div>
-                            )}
-                            {sessionEditCompleted.map(t => (
-                              <div key={t.id} className="flex items-center justify-between p-2 border border-border/40 bg-background rounded">
-                                <Input
-                                  value={t.title}
-                                  onChange={(e) => updateEditingCompletedTitle(t.id, e.target.value)}
-                                  className="h-8 text-sm flex-1 mr-2"
-                                />
-                                <Button size="sm" variant="ghost" onClick={() => removeEditingCompletedTask(t.id)} className="h-7 w-7 p-0 text-destructive">
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
+                          <div className="mt-2">
+                            <div className="text-xs text-muted-foreground">
+                              {ses.completed.length} task{ses.completed.length === 1 ? '' : 's'} completed
+                            </div>
+                            {ses.completed.length > 0 && (
+                              <div className="mt-1 flex flex-wrap gap-1">
+                                {ses.completed.slice(0, 6).map(t => (
+                                  <span key={t.id} className="px-1.5 py-0.5 text-xs bg-accent/40 border border-border/50 rounded">{t.title}</span>
+                                ))}
+                                {ses.completed.length > 6 && (
+                                  <span className="px-1.5 py-0.5 text-xs text-muted-foreground">+{ses.completed.length - 6} more</span>
+                                )}
                               </div>
-                            ))}
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        /* Edit mode */
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 text-sm">
+                              <label className="text-muted-foreground">Start</label>
+                              <Input type="datetime-local" value={sessionEditStarted} onChange={(e) => setSessionEditStarted(e.target.value)} className="h-8" />
+                              <label className="text-muted-foreground">End</label>
+                              <Input type="datetime-local" value={sessionEditEnded} onChange={(e) => setSessionEditEnded(e.target.value)} className="h-8" />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button size="sm" variant="secondary" onClick={saveEditSession} className="h-8 px-3">Save</Button>
+                              <Button size="sm" variant="ghost" onClick={cancelEditSession} className="h-8 px-3">Cancel</Button>
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="text-sm font-medium">Completed tasks</h4>
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  value={sessionEditNewCompletedTitle}
+                                  onChange={(e) => setSessionEditNewCompletedTitle(e.target.value)}
+                                  onKeyDown={(e) => { if (e.key === 'Enter') addCompletedToEditingSession(); }}
+                                  placeholder="Add completed task..."
+                                  className="h-8 text-sm"
+                                />
+                                <Button size="sm" onClick={addCompletedToEditingSession} className="h-8 px-2"><Plus className="w-4 h-4" /></Button>
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              {sessionEditCompleted.length === 0 && (
+                                <div className="text-xs text-muted-foreground">No completed tasks recorded.</div>
+                              )}
+                              {sessionEditCompleted.map(t => (
+                                <div key={t.id} className="flex items-center justify-between p-2 border border-border/40 bg-background rounded">
+                                  <Input
+                                    value={t.title}
+                                    onChange={(e) => updateEditingCompletedTitle(t.id, e.target.value)}
+                                    className="h-8 text-sm flex-1 mr-2"
+                                  />
+                                  <Button size="sm" variant="ghost" onClick={() => removeEditingCompletedTask(t.id)} className="h-7 w-7 p-0 text-destructive">
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </AppLayout>

@@ -234,7 +234,7 @@ Advanced task management interface with powerful sorting, filtering, and organiz
 Project detail view now supports the same inline editing UX as the unified Tasks view:
 - **Title**: Click task title to edit inline. Press Enter to save, Escape to cancel, or blur to save.
 - **Description**: Click description (or the placeholder) to edit inline. Press Ctrl+Enter to save, Escape to cancel, or blur to save.
-- **Due Date**: Click the due date chip to edit with a native date input. Press Enter or blur to save; Escape cancels. Clear with the × button.
+- **Due Date (visible inline)**: Due date/time-remaining is now always visible as a compact chip next to the task name. Hovering the chip shows the full date as `Weekday DD/MM/YYYY` (e.g., `Tuesday 15/05/2025`). Click the chip to edit with a native date input. Press Enter or blur to save; Escape cancels. Clear with the × button. Other actions remain hover-only to preserve a minimal layout.
 - **Status**: Click the checkbox to toggle completion with celebratory feedback.
 
 Dates are normalized to YYYY-MM-DD and formatted using the centralized `formatDueDate` utility.
