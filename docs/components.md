@@ -524,7 +524,11 @@ Layout:
 Location: `components/meals/PantrySidebar.tsx`
 
 - Purpose: Manage available ingredients and see cookable suggestions for today's meals.
-- Features: quick-add ingredient input, removable list items, and a suggestions list derived from meals that list ingredients and are fully covered by the pantry.
+- Features:
+  - Structured input fields: name, quantity (optional), category (optional)
+  - Inline editing of pantry items with Save/Cancel
+  - Deduplicated add behavior: adding an existing ingredient name updates quantity/category
+  - Real-time cookability and missing items for today's meals
 - Integrated on `/meals` as a right sidebar.
 
 ### ShoppingListSidebar (`components/meals/ShoppingListSidebar.tsx`)
@@ -539,15 +543,24 @@ Props: none (MVP). Future: persistence, recipes integration.
 Location: `components/meals/RecipesSidebar.tsx`
 
 - Purpose: Manage recipes and get meal suggestions based on pantry ingredients.
-- Features: 
-  - Recipe creation form with name and comma-separated ingredients
-  - "Can Make Now" section showing recipes that can be fully prepared with current pantry items
-  - Quick-add buttons (B/L/D) to add recipes directly to breakfast, lunch, or dinner slots
-  - "Suggested" section showing recipes with 60%+ ingredient matches from pantry
-  - "Add missing" button to add missing ingredients to shopping list
-  - All recipes list with remove functionality
+- Features:
+  - **Structured Recipe Modal**: `RecipeFormModal` with individual ingredient rows (name + quantity), pantry-based autocomplete, add/remove ingredients
+  - **"Can Make Now" section**: Recipes fully covered by pantry items with quick-add meal buttons (B/L/D)
+  - **Tiered Suggestions**: Multi-level suggestions based on ingredient match percentage:
+    - "Almost Ready" (75%+ match) - green indicator
+    - "Good Match" (50-74% match) - yellow indicator  
+    - "Partial Match" (25-49% match) - orange indicator
+  - **Visual Match Indicators**: Color-coded dots and ingredient counts (have/total) throughout recipe lists
+  - **Smart Missing Detection**: Shows exact missing ingredients with "Add missing" buttons for shopping list
+  - **Enhanced Recipe List**: All recipes show match status with color indicators and missing ingredient counts
 - Default recipes: Includes starter recipes (Scrambled Eggs, Pasta with Garlic Oil, Chicken Stir Fry, Grilled Cheese, Pancakes) for new users
-- Integration: Uses pantry data to calculate cookable and suggested recipes in real-time
+- Integration: Uses pantry data to calculate cookable and suggested recipes in real-time; adds meals with attached ingredients so Pantry/Shopping views reflect cookability and missing items
+
+**Ingredient Matching & Entry**
+- **Normalization**: Pantry vs. Recipe comparisons normalize names (trim, lowercase, simple plural strip, punctuation removal)
+- **Structured Input**: Individual ingredient fields with name + optional quantity
+- **Autocomplete**: Ingredient name fields suggest from existing pantry items
+- **Visual Feedback**: Real-time match indicators and missing ingredient calculations
 - Storage: localStorage via `utils/recipesStorage.ts` and `hooks/useRecipes.ts` with computed `cookable` and `suggested` lists.
 
 #### Data & State

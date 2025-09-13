@@ -7,12 +7,19 @@ import { usePantry } from '@/hooks/usePantry';
 import { useShopping } from '@/hooks/useShopping';
 import { useMeals } from '@/hooks/useMeals';
 import { MealSlot } from '@/types/meals';
+import { Input } from '@/components/ui/input';
 
 export const PantrySidebar: React.FC<{ dateKey: string }> = ({ dateKey }) => {
-  const { items, addItem, removeItem, canCook, missingFor } = usePantry();
+  const { items, addItem, removeItem, updateItem, canCook, missingFor } = usePantry();
   const { add: addToShopping } = useShopping();
   const { getMeals } = useMeals();
-  const [inputValue, setInputValue] = useState('');
+  const [inputName, setInputName] = useState('');
+  const [inputQty, setInputQty] = useState('');
+  const [inputCat, setInputCat] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editQty, setEditQty] = useState('');
+  const [editCat, setEditCat] = useState('');
 
   const todayMeals = useMemo(() => {
     const slots: MealSlot[] = ['breakfast', 'lunch', 'dinner'];
@@ -32,21 +39,67 @@ export const PantrySidebar: React.FC<{ dateKey: string }> = ({ dateKey }) => {
       <CardContent className="p-3 space-y-4">
         <div>
           <div className="text-xs text-muted-foreground mb-2">Available Ingredients</div>
-          <form className="flex gap-1 mb-2" onSubmit={(e) => {
+          <form className="grid grid-cols-5 gap-1 mb-2" onSubmit={(e) => {
             e.preventDefault();
-            const val = inputValue.trim();
-            if (!val) return;
-            addItem(val);
-            setInputValue('');
+            const name = inputName.trim();
+            const qty = inputQty.trim();
+            const cat = inputCat.trim();
+            console.log('🥫 PantrySidebar: Form submitted with:', { name, qty, cat });
+            if (!name) {
+              console.log('🥫 PantrySidebar: Skipping - no name provided');
+              return;
+            }
+            console.log('🥫 PantrySidebar: Calling addItem...');
+            const result = addItem(name, qty, cat);
+            console.log('🥫 PantrySidebar: addItem returned:', result);
+            setInputName('');
+            setInputQty('');
+            setInputCat('');
           }}>
-            <input value={inputValue} onChange={(e) => setInputValue(e.target.value)} className="flex-1 border px-2 py-1 bg-background" placeholder="e.g., eggs" autoComplete="off" />
+            <Input value={inputName} onChange={(e) => setInputName(e.target.value)} className="col-span-2" placeholder="Ingredient (e.g., eggs)" autoComplete="off" />
+            <Input value={inputQty} onChange={(e) => setInputQty(e.target.value)} placeholder="Qty (e.g., 2 dozen)" autoComplete="off" />
+            <Input value={inputCat} onChange={(e) => setInputCat(e.target.value)} placeholder="Category (e.g., Dairy)" autoComplete="off" />
             <Button type="submit" variant="ghost" size="sm">Add</Button>
           </form>
           <ul className="space-y-1">
             {items.map(i => (
-              <li key={i.id} className="group flex items-center justify-between text-sm">
-                <span className="truncate pr-2">{i.name}</span>
-                <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100" onClick={() => removeItem(i.id)}>Remove</Button>
+              <li key={i.id} className="group text-sm">
+                {editingId === i.id ? (
+                  <form className="grid grid-cols-5 gap-1" onSubmit={(e) => { 
+                    e.preventDefault(); 
+                    const updates = { name: editName.trim() || i.name, quantity: editQty.trim() || undefined, category: editCat.trim() || undefined };
+                    console.log('🥫 PantrySidebar: Updating item:', i.id, 'with:', updates);
+                    updateItem(i.id, updates); 
+                    setEditingId(null); 
+                  }}>
+                    <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="col-span-2" />
+                    <Input value={editQty} onChange={(e) => setEditQty(e.target.value)} />
+                    <Input value={editCat} onChange={(e) => setEditCat(e.target.value)} />
+                    <div className="flex gap-1">
+                      <Button type="submit" variant="ghost" size="sm">Save</Button>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => setEditingId(null)}>Cancel</Button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <span className="truncate pr-2">
+                      {i.name}{i.quantity ? ` (${i.quantity})` : ''}{i.category ? ` · ${i.category}` : ''}
+                    </span>
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100">
+                      <Button variant="ghost" size="sm" onClick={() => { 
+                        console.log('🥫 PantrySidebar: Editing item:', i.id, i.name);
+                        setEditingId(i.id); 
+                        setEditName(i.name); 
+                        setEditQty(i.quantity || ''); 
+                        setEditCat(i.category || ''); 
+                      }}>Edit</Button>
+                      <Button variant="ghost" size="sm" onClick={() => {
+                        console.log('🥫 PantrySidebar: Removing item:', i.id, i.name);
+                        removeItem(i.id);
+                      }}>Remove</Button>
+                    </div>
+                  </div>
+                )}
               </li>
             ))}
           </ul>

@@ -32,24 +32,25 @@ export const SidebarProvider: React.FC<SidebarProviderProps> = ({
   minWidth = 140, 
   maxWidth = 320 
 }) => {
-  // Initialize state with localStorage values if available
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    if (typeof window !== 'undefined') {
+  // Hydration-safe initial state; apply saved values after mount
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [sidebarWidth, setSidebarWidthState] = useState(initialWidth);
+
+  // After mount, load saved sidebar state from localStorage
+  useEffect(() => {
+    try {
       const savedCollapsed = localStorage.getItem('sidebarCollapsed');
-      return savedCollapsed !== null ? JSON.parse(savedCollapsed) : false;
-    }
-    return false;
-  });
-  
-  const [sidebarWidth, setSidebarWidthState] = useState(() => {
-    if (typeof window !== 'undefined') {
+      if (savedCollapsed !== null) {
+        setIsCollapsed(JSON.parse(savedCollapsed));
+      }
       const savedWidth = localStorage.getItem('sidebarWidth');
       if (savedWidth) {
-        return Math.max(minWidth, Math.min(maxWidth, parseInt(savedWidth, 10)));
+        const parsed = parseInt(savedWidth, 10);
+        const bounded = Math.max(minWidth, Math.min(maxWidth, parsed));
+        setSidebarWidthState(bounded);
       }
-    }
-    return initialWidth;
-  });
+    } catch {}
+  }, [minWidth, maxWidth]);
 
   // Only adjust width if it's outside the new bounds
   useEffect(() => {

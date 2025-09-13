@@ -12,14 +12,21 @@ export const RecipesStorage = {
       const data: RecipesStorageData = JSON.parse(raw);
       if (!data || !Array.isArray(data.recipes)) return [];
       return data.recipes.map(RecipesStorage.clean).filter(RecipesStorage.isValid);
-    } catch {
+    } catch (e) {
+      console.error('Failed to load recipes', e);
       return [];
     }
   },
   save(recipes: RecipeItem[]) {
     if (typeof window === 'undefined') return;
-    const payload: RecipesStorageData = { version: STORAGE_VERSION, recipes, lastUpdated: new Date().toISOString() };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    console.log('🧑‍🍳 RecipesStorage.save: Attempting to save:', recipes);
+    try {
+      const payload: RecipesStorageData = { version: STORAGE_VERSION, recipes, lastUpdated: new Date().toISOString() };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      console.log('🧑‍🍳 RecipesStorage.save: Successfully saved to localStorage');
+    } catch (e) {
+      console.error('🧑‍🍳 RecipesStorage.save: Failed to save recipes', e);
+    }
   },
   isValid(r: any): r is RecipeItem { return r && typeof r.id === 'string' && typeof r.name === 'string' && Array.isArray(r.ingredients); },
   clean(r: any): RecipeItem {
