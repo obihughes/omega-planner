@@ -312,6 +312,9 @@ Reusable UI primitives built with consistent styling.
 - Dark mode support
 - Accessibility features
 
+**Feature Flags:**
+- `SHOW_MEALS_IN_NAV` (in `lib/constants.ts`): when `false`, the `Meals` nav item is hidden from the sidebar. The `/meals` route and components remain available.
+
 ### Navigation Collapse Persistence
 Navigation collapsed/expanded state is now persisted in `localStorage` and respected across route changes.
 

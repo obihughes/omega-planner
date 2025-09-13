@@ -15,6 +15,7 @@ import { useCalendarView } from '@/app/context/CalendarViewContext';
 import { useSidebar } from '@/app/context/SidebarContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { SHOW_MEALS_IN_NAV } from '@/lib/constants';
 
 export function Navigation() {
   const { isCollapsed, sidebarWidth, toggleSidebar, setSidebarWidth } = useSidebar();
@@ -167,6 +168,8 @@ export function Navigation() {
     }
   ];
 
+  const filteredNavItems = navItems.filter((item) => item.href !== '/meals' || SHOW_MEALS_IN_NAV);
+
   return (
     <>
       <nav 
@@ -205,7 +208,7 @@ export function Navigation() {
         {/* Navigation Links */}
         <div className="flex-1 py-1 overflow-y-auto">
           <div className="space-y-0.5">
-            {navItems.map((item) => {
+            {filteredNavItems.map((item) => {
               const Icon = item.icon;
               const showSubViews = true;
 

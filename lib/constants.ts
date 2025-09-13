@@ -95,3 +95,6 @@ export const DURATION_OPTIONS = [
 ]; 
 
 export const TASK_POOL_ITEM_HEIGHT = 90;
+
+/** Feature flag: Show Meals in main navigation */
+export const SHOW_MEALS_IN_NAV = false;

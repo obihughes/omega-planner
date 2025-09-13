@@ -1,5 +1,8 @@
 ## Unreleased
 
+- Navigation
+  - Hide `Meals` from the main sidebar via feature flag. Code and route remain intact; toggle with `SHOW_MEALS_IN_NAV` in `lib/constants.ts`.
+
 - Meals/Recipes
   - Added `RecipeFormModal` for creating/editing recipes with structured ingredient entry (name + quantity fields).
   - Integrated modal into `components/meals/RecipesSidebar.tsx` and enabled editing by clicking recipe names.
