@@ -128,6 +128,7 @@ export function TaskItem({
   const [isEditingDueDate, setIsEditingDueDate] = React.useState(false);
   const [editingDueDate, setEditingDueDate] = React.useState('');
   const dueInputRef = useRef<HTMLInputElement>(null);
+  const [shouldAutoOpenDatePicker, setShouldAutoOpenDatePicker] = React.useState(false);
   
   const {
     attributes,
@@ -258,6 +259,12 @@ export function TaskItem({
   useEffect(() => {
     if (isEditingDueDate && dueInputRef.current) {
       dueInputRef.current.focus();
+      if (shouldAutoOpenDatePicker) {
+        try {
+          (dueInputRef.current as any)?.showPicker?.();
+        } catch {}
+        setShouldAutoOpenDatePicker(false);
+      }
     }
   }, [isEditingDueDate]);
 
@@ -305,6 +312,7 @@ export function TaskItem({
   const startEditingDueDate = () => {
     setIsEditingDueDate(true);
     setEditingDueDate(normalizeDueDate(task.dueDate) || '');
+    setShouldAutoOpenDatePicker(true);
   };
 
   const saveEditDueDate = () => {

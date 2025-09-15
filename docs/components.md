@@ -243,6 +243,18 @@ Dates are normalized to YYYY-MM-DD and formatted using the centralized `formatDu
 - **Task Status Management**: Toggle completion status with visual celebrations
 - **Multi-Sort Interface**: Configure multiple sorting criteria with drag-to-reorder priority
 
+### Project Detail Sorting
+**Location**: `app/projects/[id]/page.tsx`
+
+Added curated sort options for tasks within a project:
+- Custom (default; uses `order` for drag-and-drop)
+- Due Date (date-only compare using `getDateKey`/`dateFromDateKey`)
+- Created (task `createdAt`)
+- Title (A–Z/Z–A)
+- Status (To Do → In Progress → Blocked → Completed)
+
+Includes an Asc/Desc toggle. Status filter remains available alongside sorting.
+
 **Sorting Options:**
 - **Single Sort**: Traditional single-field sorting (title, due date, status, created date, custom order)
 - **Multi Sort**: Configure up to 4 simultaneous sort criteria with independent ascending/descending order
@@ -303,6 +315,18 @@ Left sidebar navigation component.
 
 **Order Update (2025-09-12):**
 - Main order is now: `Daily Planner`, `Workspace`, `Text Canvas`, then `Focus` and `Meals` at the bottom per UX preference.
+
+### Focus Page (`app/focus/page.tsx`)
+Purpose: Minimal focus-mode workspace with a timer, planned/completed lists, and backlog.
+
+**Key Behaviors:**
+- Past Sessions are hidden while a session is active (reduces distraction).
+- When no session is active, Past Sessions are shown with edit/delete controls.
+- State persists to localStorage (`omega-planner-focus-state-v1`, `omega-planner-focus-sessions-v1`).
+
+**Controls:**
+- Start, Pause, End Session
+- Drag backlog items into the planned list; mark planned items done to move to completed
 
 ### Button, Input, Card, etc. (`components/ui/`)
 Reusable UI primitives built with consistent styling.

@@ -177,6 +177,8 @@ function SortableTaskItem({
     transition,
   };
 
+  const [shouldAutoOpenDatePicker, setShouldAutoOpenDatePicker] = React.useState(false);
+
   // Full date string for hover tooltip: Weekday DD/MM/YYYY
   const fullDueTitle = React.useMemo(() => {
     if (!task.dueDate) return undefined;
@@ -277,7 +279,13 @@ function SortableTaskItem({
             {/* Due date */}
             {editingTaskId === task.id && editingField === 'dueDate' ? (
               <input
-                ref={editInputRef as React.RefObject<HTMLInputElement>}
+                ref={(node) => {
+                  (editInputRef as React.RefObject<HTMLInputElement>).current = node as HTMLInputElement | null;
+                  if (node && shouldAutoOpenDatePicker) {
+                    try { (node as any)?.showPicker?.(); } catch {}
+                    setShouldAutoOpenDatePicker(false);
+                  }
+                }}
                 type="date"
                 value={editingValue}
                 onChange={(e) => setEditingValue(e.target.value)}
@@ -301,6 +309,7 @@ function SortableTaskItem({
                     setEditingTaskId(task.id);
                     setEditingField('dueDate');
                     setEditingValue(task.dueDate || '');
+                    setShouldAutoOpenDatePicker(true);
                   }}
                   title={fullDueTitle}
                 >

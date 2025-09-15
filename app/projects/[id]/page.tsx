@@ -32,6 +32,7 @@ import {
   Edit,
   MoreVertical,
 } from 'lucide-react';
+import { getDateKey, dateFromDateKey } from '@/utils/dateUtils';
 
 interface ProjectDetailPageProps {
   params: { id: string };
@@ -58,6 +59,8 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   
   const [statusFilter, setStatusFilter] = useState<ProjectTask['status'] | 'all'>('all');
   const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [sortBy, setSortBy] = useState<'custom' | 'dueDate' | 'created' | 'title' | 'status'>('custom');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   
   // Task form modal state
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
@@ -102,10 +105,63 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
 
   // Memoize expensive filtering and sorting operations
   const filteredAndSortedTasks = useMemo(() => {
-    return tasks
-      .filter(task => statusFilter === 'all' || task.status === statusFilter)
-      .sort((a, b) => a.order - b.order);
-  }, [tasks, statusFilter]);
+    const filtered = tasks.filter(task => statusFilter === 'all' || task.status === statusFilter);
+
+    const direction = sortOrder === 'asc' ? 1 : -1;
+
+    const statusOrder: Record<ProjectTask['status'], number> = {
+      'todo': 1,
+      'in-progress': 2,
+      'blocked': 3,
+      'completed': 4,
+    } as const;
+
+    return [...filtered].sort((a, b) => {
+      let cmp = 0;
+
+      switch (sortBy) {
+        case 'custom': {
+          cmp = (a.order || 0) - (b.order || 0);
+          break;
+        }
+        case 'dueDate': {
+          const aHas = !!a.dueDate;
+          const bHas = !!b.dueDate;
+          if (aHas && !bHas) cmp = -1; // with due date first
+          else if (!aHas && bHas) cmp = 1;
+          else if (!aHas && !bHas) cmp = a.title.localeCompare(b.title);
+          else {
+            // Normalize to date-only keys to avoid timezone issues
+            const aKey = getDateKey(a.dueDate as string);
+            const bKey = getDateKey(b.dueDate as string);
+            const aDate = dateFromDateKey(aKey).getTime();
+            const bDate = dateFromDateKey(bKey).getTime();
+            cmp = aDate - bDate;
+          }
+          break;
+        }
+        case 'created': {
+          const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          cmp = aTime - bTime;
+          break;
+        }
+        case 'title': {
+          cmp = a.title.localeCompare(b.title);
+          break;
+        }
+        case 'status': {
+          cmp = (statusOrder[a.status] || 0) - (statusOrder[b.status] || 0);
+          break;
+        }
+        default: {
+          cmp = 0;
+        }
+      }
+
+      return cmp * direction;
+    });
+  }, [tasks, statusFilter, sortBy, sortOrder]);
 
   // Memoize handlers to prevent unnecessary re-renders
   const handleTaskStatusChange = useCallback((taskId: string, status: ProjectTask['status']) => {
@@ -264,7 +320,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
             </div>
           </div>
           
-          {/* Project Info and Progress Bar */}
+          {/* Project Info, Filters, and Sorting */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center space-x-6">
               {/* Progress Info */}
@@ -305,18 +361,43 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
               })()}
             </div>
 
-            {/* Filter */}
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as ProjectTask['status'] | 'all')}
-              className="px-3 py-2 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-sm"
-            >
-              <option value="all">All Status</option>
-              <option value="todo">To Do</option>
-              <option value="in-progress">In Progress</option>
-              <option value="blocked">Blocked</option>
-              <option value="completed">Completed</option>
-            </select>
+            <div className="flex items-center gap-2">
+              {/* Filter */}
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as ProjectTask['status'] | 'all')}
+                className="px-3 py-2 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+                title="Filter by status"
+              >
+                <option value="all">All Status</option>
+                <option value="todo">To Do</option>
+                <option value="in-progress">In Progress</option>
+                <option value="blocked">Blocked</option>
+                <option value="completed">Completed</option>
+              </select>
+
+              {/* Sort By */}
+              <label className="text-sm text-muted-foreground ml-2">Sort by:</label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="px-3 py-2 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+                title="Sort tasks"
+              >
+                <option value="custom">Custom</option>
+                <option value="dueDate">Due Date</option>
+                <option value="created">Created</option>
+                <option value="title">Title</option>
+                <option value="status">Status</option>
+              </select>
+              <button
+                onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                className="px-2 py-2 bg-background border border-input rounded-lg text-sm hover:bg-accent/50"
+                title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
+              >
+                {sortOrder === 'asc' ? '↑' : '↓'}
+              </button>
+            </div>
           </div>
 
           {/* Always-visible Add Task Section */}

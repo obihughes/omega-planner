@@ -41,6 +41,11 @@ npm run dev:clean
 - **Task inbox** for unscheduled tasks
 - **Pinned tasks** for quick access
 
+### Focus Mode
+- Minimal focus workspace at `/focus` with a session timer and planned/completed/backlog columns.
+- Past Sessions are hidden during an active session to reduce distraction; visible with edit/delete tools when no session is active.
+- Local persistence via `omega-planner-focus-state-v1` and `omega-planner-focus-sessions-v1`.
+
 ### Calendar Features
 - Year-view calendar with event and period management
 - Modern, minimalist design with Lexend/Inter font combination

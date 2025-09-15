@@ -1,5 +1,13 @@
 ## Unreleased
 
+- Branding
+  - Added browser tab icon using Next.js file-based icon support.
+  - File added: `app/icon.svg`. Replace this file to customize the favicon.
+
+- Focus
+  - Past Sessions list is hidden during an active session to reduce distraction. Files affected: `app/focus/page.tsx`.
+  - Removed stray `secondsRemaining` reference from the Focus page.
+
 - Navigation
   - Re-enable `Meals` in the main sidebar by default. Toggle visibility via `SHOW_MEALS_IN_NAV` in `lib/constants.ts` (default: true). Code and route remain intact.
 

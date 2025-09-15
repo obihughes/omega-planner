@@ -46,6 +46,8 @@ export function CompactTaskCard({
   const [pendingStatusChange, setPendingStatusChange] = useState<{ taskId: string; status: ProjectTask['status'] } | null>(null);
   const [isEditingDueDate, setIsEditingDueDate] = useState(false);
   const [dueDateValue, setDueDateValue] = useState('');
+  const dueInputRef = useRef<HTMLInputElement>(null);
+  const [shouldAutoOpenDatePicker, setShouldAutoOpenDatePicker] = useState(false);
 
   const dueInfo = formatDueDate(task.dueDate);
   const fullDueTitle = React.useMemo(() => {
@@ -157,6 +159,7 @@ export function CompactTaskCard({
   const startEditingDueDate = () => {
     setIsEditingDueDate(true);
     setDueDateValue(task.dueDate || '');
+    setShouldAutoOpenDatePicker(true);
   };
 
   const saveDueDate = () => {
@@ -173,6 +176,17 @@ export function CompactTaskCard({
     setIsEditingDueDate(false);
     setDueDateValue('');
   };
+
+  // Auto-open native date picker on mount of the input
+  useEffect(() => {
+    if (isEditingDueDate && dueInputRef.current) {
+      dueInputRef.current.focus();
+      if (shouldAutoOpenDatePicker) {
+        try { (dueInputRef.current as any)?.showPicker?.(); } catch {}
+        setShouldAutoOpenDatePicker(false);
+      }
+    }
+  }, [isEditingDueDate]);
 
   // Create confetti particles animation
   const createConfettiParticles = (button: HTMLElement) => {
@@ -377,6 +391,7 @@ export function CompactTaskCard({
             <div className="flex items-center gap-1">
               <Clock className="w-3 h-3 text-muted-foreground/50" />
               <input
+                ref={dueInputRef}
                 type="date"
                 value={dueDateValue}
                 onChange={(e) => setDueDateValue(e.target.value)}
