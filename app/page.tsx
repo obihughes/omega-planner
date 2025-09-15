@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AppLayout } from '@/components/ui/AppLayout';
 import { dateFromDateKey } from '@/utils/dateUtils';
 
-export default function Home() {
+function HomeContent() {
   const [DailyPlanner, setDailyPlanner] = useState<React.ComponentType | null>(null);
   const [loading, setLoading] = useState(true);
   const params = useSearchParams();
@@ -85,4 +85,22 @@ function DailyPlannerWrapper({ Component, paramsDate }: { Component: React.Compo
 
   const C = Component as any;
   return <C />;
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <AppLayout>
+        <div className="px-6 pb-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center justify-center h-96">
+              <div className="text-muted-foreground">Loading planner...</div>
+            </div>
+          </div>
+        </div>
+      </AppLayout>
+    }>
+      <HomeContent />
+    </Suspense>
+  );
 }

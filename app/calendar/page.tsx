@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, Suspense } from 'react';
 import { AppLayout } from '@/components/ui/AppLayout';
 import { YearCalendar, MonthlyCalendar, MonthlyTimelineView } from '@/components/calendar';
 import { useCalendarData } from '@/hooks/useCalendarData';
@@ -13,7 +13,7 @@ import { useDailyPlanner } from '@/hooks/useDailyPlannerState';
 
 type CalendarView = 'yearly' | 'monthly' | 'timeline';
 
-export default function CalendarPage() {
+function CalendarContent() {
   const {
     data,
     isLoading,
@@ -216,5 +216,24 @@ export default function CalendarPage() {
         </div>
       </div>
     </AppLayout>
+  );
+}
+
+export default function CalendarPage() {
+  return (
+    <Suspense fallback={
+      <AppLayout>
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+              <p className="text-muted-foreground">Loading calendar...</p>
+            </div>
+          </div>
+        </div>
+      </AppLayout>
+    }>
+      <CalendarContent />
+    </Suspense>
   );
 } 
