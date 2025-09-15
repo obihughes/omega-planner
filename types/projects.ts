@@ -2,6 +2,35 @@
  * Project Management Types
  */
 
+export interface SubTask {
+  /** Unique identifier for the subtask */
+  id: string;
+  
+  /** Subtask title */
+  title: string;
+  
+  /** Subtask description */
+  description?: string;
+  
+  /** Subtask status */
+  status: 'todo' | 'in-progress' | 'completed' | 'blocked';
+  
+  /** Due date */
+  dueDate?: string;
+  
+  /** Completion timestamp */
+  completedAt?: string;
+  
+  /** Creation timestamp */
+  createdAt: string;
+  
+  /** Last updated timestamp */
+  updatedAt: string;
+  
+  /** Display order for the subtask within a task */
+  order: number;
+}
+
 export interface ProjectTask {
   /** Unique identifier for the task */
   id: string;
@@ -17,6 +46,9 @@ export interface ProjectTask {
   
   /** Priority level */
   priority: 'low' | 'medium' | 'high' | 'urgent';
+  
+  /** Start date - when the task should begin */
+  startDate?: string;
   
   /** Due date */
   dueDate?: string;
@@ -44,6 +76,38 @@ export interface ProjectTask {
 
   /** Display order for the task within a project */
   order: number;
+  
+  /** Subtasks for hierarchical task management */
+  subtasks?: SubTask[];
+}
+
+export interface ProjectFolder {
+  /** Unique identifier for the folder */
+  id: string;
+  
+  /** Folder name */
+  name: string;
+  
+  /** Folder description */
+  description?: string;
+  
+  /** Folder color for visual identification */
+  color: string;
+  
+  /** Folder icon */
+  icon?: string;
+  
+  /** Creation timestamp */
+  createdAt: string;
+  
+  /** Last updated timestamp */
+  updatedAt: string;
+  
+  /** Display order for the folder */
+  order: number;
+  
+  /** Whether the folder is expanded in the UI */
+  isExpanded?: boolean;
 }
 
 export interface Project {
@@ -88,6 +152,9 @@ export interface Project {
 
   /** Soft delete flag */
   isDeleted?: boolean;
+  
+  /** Folder ID that this project belongs to */
+  folderId?: string;
 }
 
 export interface ProjectsStorageData {
@@ -96,6 +163,9 @@ export interface ProjectsStorageData {
   
   /** Array of projects */
   projects: Project[];
+  
+  /** Array of project folders */
+  folders: ProjectFolder[];
   
   /** Timestamp of when the data was last updated */
   lastUpdated: string;

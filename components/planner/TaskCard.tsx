@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import ReactDOM from 'react-dom';
-import { Edit3, Copy, Eye } from 'lucide-react';
+import { Edit3, Copy, Eye, Trash2 } from 'lucide-react';
 
 import { formatDuration, formatTime } from '@/utils/formatters';
 import { dateFromDateKey } from '@/utils/dateUtils';
@@ -75,12 +75,16 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           ${isCompressed ? 'p-1.5' : 'p-2'}
           rounded-md
           ${color}
-          border border-border/40 dark:border-gray-700
-          hover:ring-1 hover:ring-border/60 dark:hover:ring-gray-300
+          border border-border/30
+          hover:border-border/80
+          hover:shadow-md
           transition-all duration-200
           ${isCompressed ? 'min-h-[24px]' : 'min-h-[32px]'}
           h-full max-h-full relative overflow-hidden
           ${isPastTask ? 'opacity-50' : ''}
+          group
+          font-medium
+          shadow-sm
         `}
         draggable={false}
         onDragStart={(e) => e.preventDefault()}
@@ -93,9 +97,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         
         {/* Drag handle area - middle section that doesn't cover button areas */}
         <div 
-          className={`absolute left-1.5 top-0 bottom-0 cursor-grab active:cursor-grabbing z-20 ${
-            isCompressed ? 'right-8' : 'right-8'
-          }`}
+          className={`absolute left-1.5 top-0 bottom-0 cursor-grab active:cursor-grabbing z-20 right-6`}
           draggable={false}
           onDragStart={(e) => e.preventDefault()}
           onMouseDown={(e) => {
@@ -120,6 +122,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   ${isCompressed ? 'text-sm writing-mode-vertical-lr transform h-full flex items-center justify-center overflow-hidden leading-tight' : 'text-base line-clamp-2 leading-tight'}
                   font-bold
                   cursor-grab active:cursor-grabbing
+                  drop-shadow-sm
                 `}
                 draggable={false}
                 onDragStart={(e) => e.preventDefault()}
@@ -150,122 +153,55 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                        }
                      }}
                      style={{ pointerEvents: 'auto' }}>
-                  <div className="text-sm font-medium opacity-90 leading-tight">
-                    {formatTime(task.startHour)} - {formatTime(endTime)}
-                  </div>
-                  <div className="text-xs font-semibold mt-1 opacity-90 leading-tight">
+                  <div className="text-xs font-semibold opacity-90 leading-tight drop-shadow-sm">
                     {formatDuration(task.duration)}
                   </div>
                 </div>
               )}
             </div>
-
-            {/* Buttons for non-compressed view */}
-            {!isCompressed && (
-              <div className="flex flex-col items-end gap-1 flex-shrink-0 relative z-40" style={{ pointerEvents: 'auto' }}>
-                <button
-                  type="button"
-                  className="h-4 w-4 p-0 hover:bg-black/10 dark:hover:bg-white/10 rounded-sm flex items-center justify-center transition-colors relative z-50"
-                  onClick={handleEditClick}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  title="Edit task"
-                >
-                  <Edit3 className="w-3 h-3" />
-                </button>
-                
-                <button
-                  type="button"
-                  className="h-4 w-4 p-0 hover:bg-black/10 dark:hover:bg-white/10 rounded-sm flex items-center justify-center transition-colors relative z-50"
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); onCopy(task); }}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  title="Copy task"
-                >
-                  <Copy className="w-3 h-3" />
-                </button>
-
-                <button
-                  type="button"
-                  className="h-4 w-4 p-0 hover:bg-black/10 dark:hover:bg-white/10 rounded-sm flex items-center justify-center transition-colors relative z-50"
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); onViewNotes(task); }}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  title="View task details"
-                >
-                  <Eye className="w-3 h-3" />
-                </button>
-              </div>
-            )}
-            {/* Buttons for compressed view - Conditional styling based on duration */}
-            {isCompressed && (
-              task.duration <= 0.25 ? (
-                // Tighter styles for 15-min tasks - Triangular formation
-                <div className="absolute bottom-1 right-1 flex flex-col items-center z-50" onClick={(e) => e.stopPropagation()} style={{ pointerEvents: 'auto' }}>
-                  <div className="flex justify-center"> {/* Centering for the top button */}
-                    <button
-                      type="button"
-                      className="h-3 w-3 p-0 text-muted-foreground dark:text-black hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); onViewNotes(task); }}
-                      onMouseDown={(e) => e.stopPropagation()}
-                      title="View task"
-                    >
-                      <Eye className="w-2 h-2" />
-                    </button>
-                  </div>
-                  <div className="flex items-center space-x-0.5 mt-0.5"> {/* Bottom row with Copy and Edit */}
-                    <button
-                      type="button"
-                      className="h-3 w-3 p-0 text-muted-foreground dark:text-black hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); onCopy(task); }}
-                      onMouseDown={(e) => e.stopPropagation()}
-                      title="Copy task"
-                    >
-                      <Copy className="w-2 h-2" />
-                    </button>
-                    <button
-                      type="button"
-                      className="h-3 w-3 p-0 text-muted-foreground dark:text-black hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
-                      onClick={handleEditClick}
-                      onMouseDown={(e) => e.stopPropagation()}
-                      title="Edit task"
-                    >
-                      <Edit3 className="w-2 h-2" />
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                // Linear (vertical) for 30-min tasks
-                <div className="absolute bottom-1 right-1 flex flex-col items-end space-y-0.5 z-50" onClick={(e) => e.stopPropagation()} style={{ pointerEvents: 'auto' }}>
-                  <button
-                    type="button"
-                    className="h-3 w-3 p-0 text-muted-foreground dark:text-black hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); onCopy(task); }}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    title="Copy task"
-                  >
-                    <Copy className="w-2 h-2" />
-                  </button>
-                  <button
-                    type="button"
-                    className="h-3 w-3 p-0 text-muted-foreground dark:text-black hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); onViewNotes(task); }}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    title="View/Edit task"
-                  >
-                    <Eye className="w-2 h-2" />
-                  </button>
-                  <button
-                    type="button"
-                    className="h-3 w-3 p-0 text-muted-foreground dark:text-black hover:bg-accent/50 hover:text-foreground rounded-sm flex items-center justify-center transition-colors relative z-50"
-                    onClick={handleEditClick}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    title="Edit task"
-                  >
-                    <Edit3 className="w-2 h-2" />
-                  </button>
-                </div>
-              )
-            )}
           </div>
         </div>
+
+        {/* Action buttons - styled to match pool tasks */}
+        <div className="absolute top-1 right-1.5 flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-40">
+          {onViewNotes && (
+            <button
+              type="button"
+              className="h-6 w-6 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onViewNotes(task);
+              }}
+              title="View Notes"
+            >
+              <Eye className="w-3 h-3" />
+            </button>
+          )}
+          
+          <button
+            type="button"
+            className="h-6 w-6 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+            onClick={handleEditClick}
+            title="Edit Task"
+          >
+            <Edit3 className="w-3 h-3" />
+          </button>
+          
+          <button
+            type="button"
+            className="h-6 w-6 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onCopy(task);
+            }}
+            title="Copy Task"
+          >
+            <Copy className="w-3 h-3" />
+          </button>
+        </div>
+        
         <div 
           className="resize-handle absolute right-0 top-0 bottom-0 w-1.5 cursor-ew-resize group-hover:bg-blue-500/20 active:bg-blue-500/30 z-30 transition-colors"
           onMouseDown={(e) => { e.stopPropagation(); onResizeStart('end', e); }}

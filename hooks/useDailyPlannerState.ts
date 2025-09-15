@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Task, PinnedTask } from '../types/planner'; // Removed PlannerMode, TaskColor, CloneConfirmationData, ModalOpenOptions
+import { Task, PinnedTask, SavedDay } from '../types/planner'; // Removed PlannerMode, TaskColor, CloneConfirmationData, ModalOpenOptions
 import TaskStorage, { DayViewSettings } from '../utils/storage'; // TaskStorage is default, DayViewSettings is named
 // import { TASK_COLORS } from '../components/planner/DailyPlanner'; // TODO: Decouple this, maybe move to a constants file
 import { formatTime, formatDuration } from '../utils/formatters'; // Ensure this is imported
@@ -18,6 +18,7 @@ import {
 import { useModalManager } from './useModalManager';
 import type { ActiveModalTask as ImportedActiveModalTask } from './useModalManager';
 import { getDateKeyFromOffset, dateFromDateKey, getTodayDateKey, addDaysToDateKey, getDateKey } from '../utils/dateUtils'; // Import the new utility functions
+import { nanoid } from 'nanoid';
 // import { checkOverlap } from '../utils/taskUtils'; // checkOverlap is available via wildcard import
 
 // Define the type for the resizingTask state
@@ -44,7 +45,9 @@ export function useDailyPlanner() {
   // --- STATE ---
   const [tasks, setTasks] = useState<Task[]>([]);
   const [poolTasks, setPoolTasks] = useState<Task[]>([]);
+  const [poolTasksByDate, setPoolTasksByDate] = useState<Map<string, Task[]>>(new Map());
   const [pinnedTasks, setPinnedTasks] = useState<PinnedTask[]>([]);
+  const [savedDays, setSavedDays] = useState<SavedDay[]>([]);
   const [taskIdCounter, setTaskIdCounter] = useState<number>(-1); // Last used ID, primarily for display or effects
   const taskIdCounterRef = useRef<number>(-1); // Ref for the actual latest ID counter for generation
   const [activeSidebarTab, setActiveSidebarTab] = useState<'pool' | 'pinned'>('pinned');
@@ -96,8 +99,23 @@ export function useDailyPlanner() {
       }
       map.get(dateStr)!.push(task);
     });
+    
     return map;
   }, [tasks]);
+
+  // Memoized combined pool tasks (general pool + current viewed date pool tasks)
+  const combinedPoolTasks = useMemo(() => {
+    if (!isClient) return poolTasks;
+    
+    // Get the currently viewed date key (using topDayOffset as primary view)
+    const viewedDateKey = getDateKeyFromOffset(topDayOffset);
+    
+    // Get pool tasks for the currently viewed date
+    const viewedDatePoolTasks = poolTasksByDate.get(viewedDateKey) || [];
+    
+    // Combine general pool tasks with viewed date pool tasks
+    return [...poolTasks, ...viewedDatePoolTasks];
+  }, [poolTasks, poolTasksByDate, isClient, topDayOffset]);
 
   // --- UTILITY FUNCTIONS (originally in DailyPlanner.tsx) ---
   /**
@@ -237,7 +255,14 @@ export function useDailyPlanner() {
   }, [getNextId]);
 
   const handleDeleteTask = useCallback((taskIdToDelete: string) => {
-    setTasks(currentTasks => currentTasks.filter(task => task.id !== taskIdToDelete));
+    console.log('🗑️ HOOK DELETE DEBUG: handleDeleteTask called for taskId:', taskIdToDelete);
+    setTasks(currentTasks => {
+      const taskToDelete = currentTasks.find(task => task.id === taskIdToDelete);
+      console.log('🗑️ HOOK DELETE DEBUG: Found task to delete:', taskToDelete ? { id: taskToDelete.id, name: taskToDelete.name } : 'NOT FOUND');
+      const filteredTasks = currentTasks.filter(task => task.id !== taskIdToDelete);
+      console.log('🗑️ HOOK DELETE DEBUG: Tasks before deletion:', currentTasks.length, 'Tasks after deletion:', filteredTasks.length);
+      return filteredTasks;
+    });
   }, [setTasks]);
 
   const handleUpdateTask = useCallback((taskIdToUpdate: string, updatedFields: Partial<Omit<Task, 'id'>>) => {
@@ -296,6 +321,10 @@ export function useDailyPlanner() {
 
       let conflict = false;
       for (const otherTask of otherTasksOnFinalDate) {
+        // Skip overlap check if either task is unscheduled (startHour is undefined)
+        if (finalDraggedTaskData.startHour === undefined || otherTask.startHour === undefined) {
+          continue;
+        }
         const hasOverlap = checkOverlap(finalDraggedTaskData.startHour, finalDraggedTaskData.duration, otherTask.startHour, otherTask.duration);
         if (hasOverlap) {
           conflict = true;
@@ -329,17 +358,21 @@ export function useDailyPlanner() {
       let finalStartHour = rawPreviewTask.startHour;
       let finalDuration = rawPreviewTask.duration;
 
-      // Strict snap to 15-minute intervals on mouse up
-      finalStartHour = Math.round(finalStartHour * 4) / 4;
+      // Strict snap to 15-minute intervals on mouse up (only if startHour is defined)
+      if (finalStartHour !== undefined) {
+        finalStartHour = Math.round(finalStartHour * 4) / 4;
+      }
       finalDuration = Math.round(finalDuration * 4) / 4;
       
       // Ensure minimal duration after snapping
       finalDuration = Math.max(MIN_TASK_DURATION, finalDuration);
 
-      // Boundary checks after snapping
-      finalStartHour = Math.max(TIMELINE_START_HOUR, finalStartHour);
-      finalStartHour = Math.min(TIMELINE_END_HOUR - MIN_TASK_DURATION, finalStartHour); // Ensure start hour allows min duration
-      finalDuration = Math.min(finalDuration, TIMELINE_END_HOUR - finalStartHour);
+      // Boundary checks after snapping (only for scheduled tasks)
+      if (finalStartHour !== undefined) {
+        finalStartHour = Math.max(TIMELINE_START_HOUR, finalStartHour);
+        finalStartHour = Math.min(TIMELINE_END_HOUR - MIN_TASK_DURATION, finalStartHour); // Ensure start hour allows min duration
+        finalDuration = Math.min(finalDuration, TIMELINE_END_HOUR - finalStartHour);
+      }
       finalDuration = Math.max(MIN_TASK_DURATION, finalDuration); // Re-ensure min duration after end boundary adjustment
 
       // The resizingTask.task already contains collision-resolved preview from handleMouseMoveResize.
@@ -388,7 +421,9 @@ export function useDailyPlanner() {
       startHour: 0, // Not relevant for pool
       baseDate: getTodayDateKey(), // Add base date for pool tasks in YYYY-MM-DD format
       notes: "",
-      completed: false
+      completed: false,
+      createdAt: new Date().toISOString(),
+      autoRollover: true
     };
     setPoolTasks(prevPoolTasks => [...prevPoolTasks, newPoolTask]);
   }, [getNextId, setPoolTasks]);
@@ -416,6 +451,7 @@ export function useDailyPlanner() {
         ...taskToMove,
         id: getNextId(), // New ID for the timeline instance
         startHour: targetStartHour,
+        poolDate: undefined // Clear poolDate since this is now a scheduled task
       };
       setTasks(prev => [...prev, newTaskForTimeline]);
       setPoolTasks(prev => prev.filter(t => t.id !== poolTaskId)); // Remove from pool
@@ -423,7 +459,14 @@ export function useDailyPlanner() {
   }, [poolTasks, setTasks, setPoolTasks, getNextId]);
 
   const handleDeletePoolTask = useCallback((taskId: string) => {
-    setPoolTasks(prevPoolTasks => prevPoolTasks.filter(task => task.id !== taskId));
+    console.log('🗑️ HOOK DELETE DEBUG: handleDeletePoolTask called for taskId:', taskId);
+    setPoolTasks(prevPoolTasks => {
+      const taskToDelete = prevPoolTasks.find(task => task.id === taskId);
+      console.log('🗑️ HOOK DELETE DEBUG: Found pool task to delete:', taskToDelete ? { id: taskToDelete.id, name: taskToDelete.name } : 'NOT FOUND');
+      const filteredTasks = prevPoolTasks.filter(task => task.id !== taskId);
+      console.log('🗑️ HOOK DELETE DEBUG: Pool tasks before deletion:', prevPoolTasks.length, 'Pool tasks after deletion:', filteredTasks.length);
+      return filteredTasks;
+    });
   }, [setPoolTasks]);
 
   const clearPool = useCallback(() => {
@@ -444,8 +487,10 @@ export function useDailyPlanner() {
     
     // Add the task's start hour to this date
     // The startHour is a float (e.g., 14.5 for 2:30 PM)
-    const hours = Math.floor(taskToPin.startHour);
-    const minutes = Math.round((taskToPin.startHour - hours) * 60);
+    // For unscheduled tasks (startHour undefined), use 9 AM as default
+    const startHour = taskToPin.startHour ?? 9;
+    const hours = Math.floor(startHour);
+    const minutes = Math.round((startHour - hours) * 60);
     dueDate.setHours(hours, minutes, 0, 0);
 
     const newPinnedTask: PinnedTask = {
@@ -493,8 +538,10 @@ export function useDailyPlanner() {
       if (correspondingTimelineTask) {
         // Recalculate dueDate based on timeline task's startHour and baseDate using timezone-safe parsing
         const newDueDate = dateFromDateKey(correspondingTimelineTask.baseDate);
-        const hours = Math.floor(correspondingTimelineTask.startHour);
-        const minutes = Math.round((correspondingTimelineTask.startHour - hours) * 60);
+        // For unscheduled tasks (startHour undefined), use 9 AM as default
+        const startHour = correspondingTimelineTask.startHour ?? 9;
+        const hours = Math.floor(startHour);
+        const minutes = Math.round((startHour - hours) * 60);
         newDueDate.setHours(hours, minutes, 0, 0);
 
         // Check if an update is needed
@@ -598,7 +645,8 @@ export function useDailyPlanner() {
       ...copyingTaskData, // Spread properties from the source task being copied
       id: getNextId(),     // Assign a new ID
       startHour: targetStartHour,
-      baseDate: getDateKey(normalizedBaseDate) // Use the specific target date in YYYY-MM-DD format
+      baseDate: getDateKey(normalizedBaseDate), // Use the specific target date in YYYY-MM-DD format
+      poolDate: undefined // Clear poolDate since this is now a scheduled task
     };
 
     setTasks(prevTasks => [...prevTasks, newTask]);
@@ -638,8 +686,14 @@ export function useDailyPlanner() {
 
     // Handle conflicts based on strategy
     const finalTasksToApply = newClonedTasks.filter(clonedTask => {
+      // Skip conflict checking for unscheduled tasks
+      if (clonedTask.startHour === undefined) {
+        return true;
+      }
+      
       const hasConflictWithExisting = existingDestinationTasks.some(existingTask => 
-        checkOverlap(clonedTask.startHour, clonedTask.duration, existingTask.startHour, existingTask.duration)
+        existingTask.startHour !== undefined && 
+        checkOverlap(clonedTask.startHour!, clonedTask.duration, existingTask.startHour, existingTask.duration)
       );
       
       if (hasConflictWithExisting) {
@@ -650,10 +704,14 @@ export function useDailyPlanner() {
             return true; 
           case 'adjust':
             let adjustedStartHour = clonedTask.startHour;
+            if (adjustedStartHour === undefined) {
+              return true; // Don't adjust unscheduled tasks
+            }
             const maxAttempts = (TIMELINE_END_HOUR - TIMELINE_START_HOUR) * 4; // Max 15-min slots in a day
             let attempts = 0;
             while (existingDestinationTasks.some(existingTask => 
-              checkOverlap(adjustedStartHour, clonedTask.duration, existingTask.startHour, existingTask.duration)
+              existingTask.startHour !== undefined &&
+              checkOverlap(adjustedStartHour!, clonedTask.duration, existingTask.startHour, existingTask.duration)
             ) && attempts < maxAttempts) {
               adjustedStartHour += 0.25;
               if (adjustedStartHour + clonedTask.duration > TIMELINE_END_HOUR) {
@@ -675,6 +733,82 @@ export function useDailyPlanner() {
 
   }, [tasks, getNextId, cloneConflictStrategy, TIMELINE_END_HOUR, TIMELINE_START_HOUR, checkOverlap, setTasks]);
 
+  // --- Saved Days Functions ---
+
+  /**
+   * Saves the current day as a named saved day
+   * @param {string} name - Name for the saved day
+   * @param {string} dateKey - Date key (YYYY-MM-DD) to save
+   */
+  const saveSavedDay = useCallback((name: string, dateKey: string) => {
+    const existingIndex = savedDays.findIndex(s => s.dateKey === dateKey);
+    const newEntry: SavedDay = {
+      id: existingIndex >= 0 ? savedDays[existingIndex].id : nanoid(),
+      name: name.trim(),
+      dateKey,
+      createdAt: existingIndex >= 0 ? savedDays[existingIndex].createdAt : new Date().toISOString()
+    };
+    
+    let updatedSavedDays: SavedDay[];
+    if (existingIndex >= 0) {
+      // Update existing entry
+      updatedSavedDays = savedDays.map((s, i) => i === existingIndex ? newEntry : s);
+    } else {
+      // Add new entry
+      updatedSavedDays = [...savedDays, newEntry];
+    }
+    
+    setSavedDays(updatedSavedDays);
+    TaskStorage.saveSavedDays(updatedSavedDays);
+  }, [savedDays]);
+
+  /**
+   * Deletes a saved day
+   * @param {string} id - ID of the saved day to delete
+   */
+  const deleteSavedDay = useCallback((id: string) => {
+    const updatedSavedDays = savedDays.filter(s => s.id !== id);
+    setSavedDays(updatedSavedDays);
+    TaskStorage.saveSavedDays(updatedSavedDays);
+  }, [savedDays]);
+
+  /**
+   * Renames a saved day
+   * @param {string} id - ID of the saved day to rename
+   * @param {string} name - New name for the saved day
+   */
+  const renameSavedDay = useCallback((id: string, name: string) => {
+    const updatedSavedDays = savedDays.map(s => 
+      s.id === id ? { ...s, name: name.trim() } : s
+    );
+    setSavedDays(updatedSavedDays);
+    TaskStorage.saveSavedDays(updatedSavedDays);
+  }, [savedDays]);
+
+  /**
+   * Applies a saved day to a target date using existing clone functionality
+   * @param {string} savedId - ID of the saved day to apply
+   * @param {string} targetDateKey - Target date key (YYYY-MM-DD)
+   * @param {boolean} replaceExisting - Whether to replace existing tasks
+   */
+  const applySavedDay = useCallback((savedId: string, targetDateKey: string, replaceExisting = false) => {
+    const savedDay = savedDays.find(s => s.id === savedId);
+    if (!savedDay) {
+      console.warn('Saved day not found:', savedId);
+      return;
+    }
+
+    // If replacing existing tasks, remove them first
+    if (replaceExisting) {
+      setTasks(prevTasks => prevTasks.filter(task => task.baseDate !== targetDateKey));
+    }
+
+    // Use existing clone functionality
+    const sourceDate = dateFromDateKey(savedDay.dateKey);
+    const targetDate = dateFromDateKey(targetDateKey);
+    cloneDayTasks(sourceDate, targetDate);
+  }, [savedDays, cloneDayTasks, setTasks]);
+
   // For updating pool tasks from the modal
   const handleUpdatePoolTask = useCallback((taskId: string, updatedFields: Partial<Omit<Task, 'id'>>) => {
     setPoolTasks(prevPoolTasks => 
@@ -684,56 +818,7 @@ export function useDailyPlanner() {
     );
   }, [setPoolTasks]);
 
-  // --- Use Modal Manager ---
-  const modalManager = useModalManager({
-    onAddTask: handleAddTask,
-    onUpdateTask: handleUpdateTask,
-    onUpdatePoolTask: handleUpdatePoolTask,
-    onClearPool: clearPool,
-    onCloneTasks: cloneDayTasks,
-    topDayOffset
-  });
-
-  // Destructure all properties from modalManager as defined in ModalManagerState
-  // These will be directly available in the scope below
-  const {
-    showClearPoolConfirmation,
-    showCloneConfirmation: mmShowCloneConfirmation,
-    colorPickerState: mmColorPickerState,
-    activeEditModalTask: mmActiveEditModalTask,
-    initialDayOffsetForModal,
-    initialStartHourForModal,
-    toggleColorPicker: mmToggleColorPicker,
-    handleTaskColorChange: mmHandleTaskColorChange,
-    showClearPoolModal,
-    confirmClearPool,
-    cancelClearPool,
-    showCloneModal: mmShowCloneModal,
-    confirmCloneDay: mmConfirmCloneDay,
-    cancelCloneDay,
-    openEditModal: mmOpenEditModal,
-    closeEditModal: mmCloseEditModal,
-    saveTaskFromModal: mmSaveTaskFromModal,
-    setShowClearPoolConfirmation,
-    setShowCloneConfirmation: mmSetShowCloneConfirmation,
-    setColorPickerState,
-    setActiveEditModalTask: mmSetActiveEditModalTask,
-    setInitialDayOffsetForModal,
-    setInitialStartHourForModal
-  } = modalManager;
-
-  /**
-   * Sets the task data for copying, enters paste mode, and closes the edit modal.
-   * @param {Omit<Task, 'id'>} taskData - The data of the task to be copied.
-   */
-  const handleCopyAndEnterPasteMode = useCallback((taskData: Omit<Task, 'id'>) => {
-    const taskToCopy: Task = {
-      ...taskData,
-      id: 'temp-copy-id'
-    };
-    startCopy(taskToCopy);
-    mmCloseEditModal(); // Close the modal after starting copy
-  }, [startCopy, mmCloseEditModal]);
+  // --- Use Modal Manager (moved after pool functions are defined) ---
 
   const openViewNotesModal = useCallback((task: Task) => {
     setViewingTaskNotes(task);
@@ -763,6 +848,33 @@ export function useDailyPlanner() {
       const sanitizedPinnedTasks = loadedPinnedTasks.map(({ dayOffset, ...task }: any) => task);
       setPinnedTasks(sanitizedPinnedTasks);
     }
+    
+    const loadedSavedDays = TaskStorage.loadSavedDays();
+    setSavedDays(loadedSavedDays);
+    
+    const loadedPoolTasksByDate = TaskStorage.loadPoolTasksByDate();
+    // Auto-rollover: move incomplete inbox tasks from past dates to today (opt-out via autoRollover=false)
+    const todayKey = getTodayDateKey();
+    const todayTasks = loadedPoolTasksByDate.get(todayKey) || [];
+    const newMap = new Map(loadedPoolTasksByDate);
+    let moved = 0;
+    newMap.forEach((tasksForDate, dateKey) => {
+      if (dateKey === todayKey) return;
+      const date = dateFromDateKey(dateKey);
+      const today = dateFromDateKey(todayKey);
+      if (date < today) {
+        const carry = tasksForDate.filter(t => !t.completed && (t.autoRollover !== false));
+        const keep = tasksForDate.filter(t => !( !t.completed && (t.autoRollover !== false)) );
+        if (carry.length > 0) {
+          const movedTasks = carry.map(t => ({ ...t, poolDate: todayKey }));
+          newMap.set(dateKey, keep);
+          newMap.set(todayKey, [...todayTasks, ...movedTasks]);
+          moved += movedTasks.length;
+        }
+      }
+    });
+    setPoolTasksByDate(newMap);
+    if (moved > 0) TaskStorage.savePoolTasksByDate(newMap);
 
     // Initialize taskIdCounter and taskIdCounterRef
     const allLoadedTasksForIdCalc = [
@@ -833,6 +945,13 @@ export function useDailyPlanner() {
     }
   }, [pinnedTasks]);
 
+  // Save pool tasks by date whenever they change
+  useEffect(() => {
+    if (initialLoadComplete.current && typeof window !== 'undefined') {
+      TaskStorage.savePoolTasksByDate(poolTasksByDate);
+    }
+  }, [poolTasksByDate]);
+
   // Removed sidebar collapsed state saving since we moved to top horizontal layout
 
   // Save day view settings whenever they change
@@ -884,10 +1003,257 @@ export function useDailyPlanner() {
     syncPinnedTasksWithTimeline();
   }, [tasks, syncPinnedTasksWithTimeline]); // Sync when tasks change
 
+  // --- TASK ASSIGNMENT FUNCTIONS ---
+  
+  // --- POOL TASKS BY DATE FUNCTIONS ---
+  const addPoolTaskForDate = useCallback((dateKey: string, task: Partial<Task>) => {
+    const newTask: Task = {
+      id: task.id || `pool-task-${Date.now()}-${Math.random()}`,
+      name: task.name || '',
+      startHour: task.startHour ?? undefined, // Undefined for unscheduled pool tasks
+      duration: task.duration || 1,
+      color: task.color || '',
+      baseDate: dateKey,
+      notes: task.notes || '',
+      completed: false,
+      poolDate: dateKey,
+      createdAt: task.createdAt || new Date().toISOString(),
+      autoRollover: task.autoRollover !== undefined ? task.autoRollover : true
+    };
+
+    setPoolTasksByDate(prev => {
+      const newMap = new Map(prev);
+      const existingTasks = newMap.get(dateKey) || [];
+      newMap.set(dateKey, [...existingTasks, newTask]);
+      return newMap;
+    });
+
+    return newTask;
+  }, []);
+
+  const getPoolTasksForDate = useCallback((dateKey: string): Task[] => {
+    return poolTasksByDate.get(dateKey) || [];
+  }, [poolTasksByDate]);
+
+  const removePoolTaskForDate = useCallback((dateKey: string, taskId: string) => {
+    console.log('🗑️ HOOK DELETE DEBUG: removePoolTaskForDate called for dateKey:', dateKey, 'taskId:', taskId);
+    setPoolTasksByDate(prev => {
+      const newMap = new Map(prev);
+      const existingTasks = newMap.get(dateKey) || [];
+      const taskToDelete = existingTasks.find(task => task.id === taskId);
+      console.log('🗑️ HOOK DELETE DEBUG: Found date-specific pool task to delete:', taskToDelete ? { id: taskToDelete.id, name: taskToDelete.name } : 'NOT FOUND');
+      const filteredTasks = existingTasks.filter(task => task.id !== taskId);
+      console.log('🗑️ HOOK DELETE DEBUG: Date-specific pool tasks before deletion:', existingTasks.length, 'after deletion:', filteredTasks.length);
+      
+      if (filteredTasks.length === 0) {
+        console.log('🗑️ HOOK DELETE DEBUG: No tasks left for date, removing date entry');
+        newMap.delete(dateKey);
+      } else {
+        newMap.set(dateKey, filteredTasks);
+      }
+      
+      return newMap;
+    });
+  }, []);
+
+  const updatePoolTaskForDate = useCallback((dateKey: string, taskId: string, updatedFields: Partial<Omit<Task, 'id'>>) => {
+    setPoolTasksByDate(prev => {
+      const newMap = new Map(prev);
+      const existingTasks = newMap.get(dateKey) || [];
+      const updatedTasks = existingTasks.map(task =>
+        task.id === taskId ? { ...task, ...updatedFields } : task
+      );
+      newMap.set(dateKey, updatedTasks);
+      return newMap;
+    });
+  }, []);
+
+  // Get combined pool tasks (general pool + all date-specific tasks)
+  const getCombinedPoolTasks = useCallback((): Task[] => {
+    const allDateTasks: Task[] = [];
+    poolTasksByDate.forEach((tasks) => {
+      allDateTasks.push(...tasks);
+    });
+    return [...poolTasks, ...allDateTasks];
+  }, [poolTasks, poolTasksByDate]);
+
+  // Add task to general pool
+  const addPoolTask = useCallback((task: Task) => {
+    setPoolTasks(prev => [...prev, task]);
+  }, [setPoolTasks]);
+
+  // Remove task from general pool
+  const removePoolTask = useCallback((taskId: string) => {
+    setPoolTasks(prev => prev.filter(task => task.id !== taskId));
+  }, [setPoolTasks]);
+
+  const handleAssignTask = useCallback((task: Task, targetDate: Date, startHour: number = 9) => {
+    // When a task from the general pool is assigned to a day in the monthly calendar,
+    // it should be moved to that day's specific task pool, not the timeline.
+    
+    // 1. Remove from the general "inbox" pool.
+    removePoolTask(task.id);
+
+    // 2. If it was previously in another day's pool, remove it from there.
+    if (task.poolDate) {
+        removePoolTaskForDate(task.poolDate, task.id);
+    }
+    
+    // 3. Add it to the target date's pool.
+    const targetDateKey = getDateKey(targetDate);
+    const taskForNewPool = { 
+        ...task, 
+        poolDate: targetDateKey, // Set the new pool date
+        baseDate: '',            // Ensure it's not on the timeline
+        startHour: 0             // Reset start hour as it's not scheduled
+    };
+    
+    setPoolTasksByDate(prev => {
+        const newMap = new Map(prev);
+        const tasksForDay = newMap.get(targetDateKey) || [];
+        // Avoid adding duplicates
+        if (!tasksForDay.some(t => t.id === taskForNewPool.id)) {
+           newMap.set(targetDateKey, [...tasksForDay, taskForNewPool]);
+        }
+        return newMap;
+    });
+  }, [removePoolTask, removePoolTaskForDate, setPoolTasksByDate]);
+
+  const handleUnassignTask = useCallback((task: Task) => {
+    console.log('🎯 INBOX DEBUG: handleUnassignTask called with task:', task);
+    console.log('🎯 INBOX DEBUG: Current tasks before removal:', tasks.map(t => ({ id: t.id, name: t.name, baseDate: t.baseDate })));
+    console.log('🎯 INBOX DEBUG: Current poolTasks before addition:', poolTasks.map(t => ({ id: t.id, name: t.name, baseDate: t.baseDate })));
+    
+    // Remove from timeline
+    setTasks(prev => {
+      const filtered = prev.filter(t => t.id !== task.id);
+      console.log('🎯 INBOX DEBUG: Tasks after removal:', filtered.map(t => ({ id: t.id, name: t.name, baseDate: t.baseDate })));
+      return filtered;
+    });
+    
+    // Add back to pool (remove scheduling-specific properties)
+    const poolTask: Task = {
+      ...task,
+      baseDate: '', // Clear the date
+      startHour: task.startHour || 9, // Keep start hour as suggestion
+      completed: false
+    };
+    
+    console.log('🎯 INBOX DEBUG: Creating poolTask:', poolTask);
+    setPoolTasks(prev => {
+      const newPoolTasks = [...prev, poolTask];
+      console.log('🎯 INBOX DEBUG: poolTasks after addition:', newPoolTasks.map(t => ({ id: t.id, name: t.name, baseDate: t.baseDate })));
+      return newPoolTasks;
+    });
+  }, [tasks, poolTasks]);
+
+  const handleRescheduleTask = useCallback((task: Task, newDate: Date) => {
+    const newDateKey = getDateKey(newDate);
+    
+    setTasks(prev => prev.map(t => 
+      t.id === task.id 
+        ? { ...t, baseDate: newDateKey }
+        : t
+    ));
+  }, []);
+
+  // --- Use Modal Manager ---
+  const modalManager = useModalManager({
+    onAddTask: handleAddTask,
+    onUpdateTask: handleUpdateTask,
+    onUpdatePoolTask: handleUpdatePoolTask,
+    onUpdatePoolTaskForDate: updatePoolTaskForDate,
+    onAddPoolTask: addPoolTask,
+    onAddPoolTaskForDate: addPoolTaskForDate,
+    onClearPool: clearPool,
+    onCloneTasks: cloneDayTasks,
+    topDayOffset
+  });
+
+
+
+  // Destructure all properties from modalManager as defined in ModalManagerState
+  // These will be directly available in the scope below
+  const {
+    showClearPoolConfirmation,
+    showCloneConfirmation: mmShowCloneConfirmation,
+    colorPickerState: mmColorPickerState,
+    activeEditModalTask: mmActiveEditModalTask,
+    initialDayOffsetForModal,
+    initialStartHourForModal,
+    toggleColorPicker: mmToggleColorPicker,
+    handleTaskColorChange: mmHandleTaskColorChange,
+    showClearPoolModal,
+    confirmClearPool,
+    cancelClearPool,
+    showCloneModal: mmShowCloneModal,
+    confirmCloneDay: mmConfirmCloneDay,
+    cancelCloneDay,
+    openEditModal: mmOpenEditModal,
+    closeEditModal: mmCloseEditModal,
+    saveTaskFromModal: mmSaveTaskFromModal,
+    setShowClearPoolConfirmation,
+    setShowCloneConfirmation: mmSetShowCloneConfirmation,
+    setColorPickerState,
+    setActiveEditModalTask: mmSetActiveEditModalTask,
+    setInitialDayOffsetForModal,
+    setInitialStartHourForModal
+  } = modalManager;
+
+  /**
+   * Sets the task data for copying, enters paste mode, and closes the edit modal.
+   * @param {Omit<Task, 'id'>} taskData - The data of the task to be copied.
+   */
+  const handleCopyAndEnterPasteMode = useCallback((taskData: Omit<Task, 'id'>) => {
+    const taskToCopy: Task = {
+      ...taskData,
+      id: 'temp-copy-id'
+    };
+    startCopy(taskToCopy);
+    mmCloseEditModal(); // Close the modal after starting copy
+  }, [startCopy, mmCloseEditModal]);
+
+  const handleDropFromPool = useCallback((task: Task, targetDate: Date, startHour: number) => {
+    // 1. Add the task to the timeline
+    const newTask = {
+      ...task,
+      id: nanoid(), // Assign a new ID to prevent key conflicts and mark it as a new entity
+      baseDate: getDateKey(targetDate),
+      startHour: startHour,
+      // Reset pool-specific properties if they exist
+      poolDate: undefined, 
+    };
+    
+    setTasks(prevTasks => {
+      const newTasks = [...prevTasks, newTask];
+      TaskStorage.save(newTasks);
+      return newTasks;
+    });
+
+    // 2. Remove the task from its original pool
+    if (task.poolDate) {
+      removePoolTaskForDate(task.poolDate, task.id);
+    } else {
+      removePoolTask(task.id);
+    }
+
+    return newTask;
+  }, [tasks, setTasks, poolTasks, setPoolTasks, poolTasksByDate, setPoolTasksByDate, removePoolTask, removePoolTaskForDate]);
+
   // --- RETURNED STATE AND FUNCTIONS ---
   return {
-    // State
-    poolTasks,
+    // --- STATE ---
+    poolTasks: combinedPoolTasks, // For monthly view - contains general + current day's pool tasks
+    generalPoolTasks: poolTasks, // For "Add to Inbox" functionality - general inbox tasks only
+    currentDayPoolTasks: useMemo(() => {
+      if (!isClient) return [];
+      const today = new Date();
+      const viewedDate = new Date(today);
+      viewedDate.setDate(today.getDate() + topDayOffset);
+      const viewedDateKey = getDateKeyFromOffset(topDayOffset);
+      const tasks = poolTasksByDate.get(viewedDateKey) || [];
+      return tasks;
+    }, [poolTasksByDate, isClient, topDayOffset]),
     pinnedTasks,
     taskIdCounter,
     activeSidebarTab,
@@ -994,8 +1360,37 @@ export function useDailyPlanner() {
     openViewNotesModal,
     closeViewNotesModal,
 
+    // Task Assignment Functions
+    handleAssignTask,
+    handleUnassignTask,
+    handleRescheduleTask,
+
+    // Pool Tasks By Date Functions
+    poolTasksByDate,
+    addPoolTaskForDate,
+    getPoolTasksForDate,
+    removePoolTaskForDate,
+    updatePoolTaskForDate,
+    getCombinedPoolTasks,
+    addPoolTask,
+    removePoolTask,
+
     // Specific Modal Related Aliases / Properties (ensure these are distinct and necessary)
     isModalOpen: showClearPoolModal,
-    modalType: 'Edit',
+    modalType: 'Edit' as const,
+
+    // NEW: Expose context-aware modal functions
+    createTimelineTask: modalManager.createTimelineTask,
+    createPoolTask: modalManager.createPoolTask,
+    createPoolTaskForDate: modalManager.createPoolTaskForDate,
+    createQuickTask: modalManager.createQuickTask,
+    handleDropFromPool,
+
+    // Saved Days Functions
+    savedDays,
+    saveSavedDay,
+    deleteSavedDay,
+    renameSavedDay,
+    applySavedDay,
   };
 } 

@@ -67,6 +67,40 @@ export interface StorageData {
 }
 ```
 
+### Calendar Types
+
+The calendar aligns with the daily planner's date handling by persisting date-only strings and using `Date` objects in UI:
+
+```typescript
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  description?: string;
+  notes?: string;
+  // UI/runtime representation
+  date: Date;
+  // Storage-friendly representation (YYYY-MM-DD)
+  dateKey?: string;
+  color: string;
+  type: 'event';
+}
+
+export interface CalendarPeriod {
+  id: string;
+  title: string;
+  description?: string;
+  notes?: string;
+  // UI/runtime representation
+  startDate: Date;
+  endDate: Date;
+  // Storage-friendly representation (YYYY-MM-DD)
+  startDateKey?: string;
+  endDateKey?: string;
+  color: string;
+  type: 'period';
+}
+```
+
 ## Test Types
 
 The `testing-library.d.ts` file extends Jest's matcher types to include the additional matchers provided by `@testing-library/jest-dom`, such as `toBeInTheDocument()`, `toBeVisible()`, etc. 

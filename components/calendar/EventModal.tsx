@@ -49,7 +49,6 @@ export function EventModal({
   initialDate 
 }: EventModalProps) {
   const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
   const [notes, setNotes] = useState('');
   const [date, setDate] = useState<Date>(new Date());
   const [color, setColor] = useState(EVENT_COLORS[0]);
@@ -58,13 +57,11 @@ export function EventModal({
   useEffect(() => {
     if (event) {
       setTitle(event.title);
-      setDescription(event.description || '');
-      setNotes(event.notes || '');
+      setNotes(event.notes || event.description || '');
       setDate(new Date(event.date));
       setColor(event.color);
     } else {
       setTitle('');
-      setDescription('');
       setNotes('');
       setDate(initialDate || new Date());
       setColor(EVENT_COLORS[0]);
@@ -76,7 +73,6 @@ export function EventModal({
 
     onSave({
       title: title.trim(),
-      description: description.trim(),
       notes: notes.trim(),
       date,
       color,
@@ -166,7 +162,7 @@ export function EventModal({
                   key={eventColor}
                   type="button"
                   className={cn(
-                    "w-6 h-6 rounded-md border-2 transition-all",
+                    "w-6 h-6 border-2 transition-all",
                     color === eventColor 
                       ? "border-foreground scale-110" 
                       : "border-border/30 hover:scale-105 hover:border-border/60"
@@ -179,21 +175,7 @@ export function EventModal({
             </div>
           </div>
 
-          {/* Description */}
-          <div>
-            <label className="text-xs font-medium text-foreground mb-2 block">
-              Description (optional)
-            </label>
-            <Textarea
-              value={description}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
-              placeholder="Add a description for this event..."
-              className="w-full text-sm resize-none"
-              rows={2}
-            />
-          </div>
-
-          {/* Notes */}
+          {/* Notes (single details field) */}
           <div>
             <label className="text-xs font-medium text-foreground mb-2 block">
               Notes
@@ -203,7 +185,7 @@ export function EventModal({
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Add detailed notes..."
               className="w-full text-sm resize-none"
-              rows={3}
+              rows={4}
             />
           </div>
 

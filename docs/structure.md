@@ -18,9 +18,16 @@ The root directory contains configuration files and the main project structure:
 
 #### `/app`
 Contains the Next.js 13+ app router pages and layouts. This is where the main application routes and page components are defined.
+App icon (favicon) is file-based: `app/icon.svg`. Replace this file to change the browser tab icon.
 
 #### `/components`
 Reusable React components used throughout the application. These components are organized by feature or functionality.
+Current notable feature folders include:
+- `components/planner` – Daily/Weekly scheduling
+- `components/projects` – Workspace views
+- `components/documents` – Text canvas editor
+- `components/calendar` – Calendars and modals
+- `components/meals` – Meal planning components (see `MealPlanner`)
 
 #### `/lib`
 Core library code and utilities that are fundamental to the application's functionality. This includes database configurations, authentication setup, and other core services.

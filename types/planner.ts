@@ -8,8 +8,8 @@ export interface Task {
   /** Name/title of the task */
   name: string;
   
-  /** Start time in decimal hours (e.g., 8.5 for 8:30 AM) */
-  startHour: number;
+  /** Start time in decimal hours (e.g., 8.5 for 8:30 AM). Undefined for unscheduled/pool tasks */
+  startHour?: number;
   
   /** Duration in decimal hours (e.g., 1.5 for 1 hour 30 minutes) */
   duration: number;
@@ -29,8 +29,26 @@ export interface Task {
   /** Indicates whether the task is completed */
   completed: boolean;
   
+  /** ISO timestamp when the task (or pool entry) was created */
+  createdAt?: string;
+  
+  /** Whether this inbox task should automatically roll over to today */
+  autoRollover?: boolean;
+  
   /** Indicates whether the task is new */
   isNew?: boolean;
+  
+  /** 
+   * Inbox date in YYYY-MM-DD format for unscheduled tasks.
+   * When set, indicates this task is in the inbox for a specific date
+   */
+  poolDate?: string;
+
+  /** 
+   * When true, this task will be displayed on the monthly calendar view
+   * regardless of whether it is scheduled or not.
+   */
+  isMonthlyPinned?: boolean;
 }
 
 /**
@@ -60,4 +78,21 @@ export interface PinnedTask extends Task {
   
   /** A unique ID for this pinned instance itself */
   pinnedId: string;
+}
+
+/**
+ * Saved Day interface representing a named day template
+ */
+export interface SavedDay {
+  /** Unique identifier for the saved day */
+  id: string;
+  
+  /** Name/title of the saved day */
+  name: string;
+  
+  /** Date key in YYYY-MM-DD format */
+  dateKey: string;
+  
+  /** Timestamp when the saved day was created */
+  createdAt: string;
 } 

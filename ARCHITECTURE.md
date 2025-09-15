@@ -56,7 +56,7 @@ The application is built with these main components:
   Main layout wrapper that provides the application structure with a fixed left sidebar navigation and main content area.
 
 - **Navigation** (`components/ui/Navigation.tsx`): 
-  Left sidebar navigation component that provides app-wide navigation between different modes (Daily Planner, Projects, Calendar, Text Canvas). Features:
+  Left sidebar navigation component that provides app-wide navigation between different modes (Daily Planner, Workspace, Text Canvas). Calendar views (Monthly, Yearly) now live as subviews under Daily Planner. Features:
   * Fixed left sidebar with 256px width
   * Vertical navigation with branded header
   * Theme toggle functionality

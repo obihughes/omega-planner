@@ -14,3 +14,6 @@ export * from './dateUtils';
 
 // Task utilities
 export * from './taskUtils'; 
+
+// Ingredient utilities
+export * from './ingredientUtils';

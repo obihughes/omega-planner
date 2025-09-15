@@ -160,42 +160,45 @@ const CustomTimePicker: React.FC<CustomTimePickerProps> = ({
       {isOpen && (
         <div 
           ref={popoverRef} 
+          data-custom-timepicker-popup="true"
           className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md shadow-lg p-2"
           style={{ top: '100%' }} // Position below the button
         >
           <div className="flex items-center justify-around space-x-1">
             {/* Hour Picker */}
             <div className="flex flex-col items-center">
-              <button onClick={() => handleTimeChange(selectedHour12 + 1)} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"><ChevronUp size={16}/></button>
+              <button type="button" onClick={() => handleTimeChange(selectedHour12 + 1)} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"><ChevronUp size={16}/></button>
               <span 
                 className="text-lg font-semibold w-8 text-center tabular-nums cursor-ns-resize py-1"
                 onWheel={handleHourWheel}
               >
                 {selectedHour12.toString().padStart(2, '0')}
               </span>
-              <button onClick={() => handleTimeChange(selectedHour12 - 1)} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"><ChevronDown size={16}/></button>
+              <button type="button" onClick={() => handleTimeChange(selectedHour12 - 1)} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"><ChevronDown size={16}/></button>
             </div>
             <span className="text-lg font-semibold">:</span>
             {/* Minute Picker */}
             <div className="flex flex-col items-center">
-              <button onClick={() => handleTimeChange(undefined, selectedMinute + 15)} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"><ChevronUp size={16}/></button>
+              <button type="button" onClick={() => handleTimeChange(undefined, selectedMinute + 15)} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"><ChevronUp size={16}/></button>
               <span 
                 className="text-lg font-semibold w-8 text-center tabular-nums cursor-ns-resize py-1"
                 onWheel={handleMinuteWheel}
               >
                 {selectedMinute.toString().padStart(2, '0')}
               </span>
-              <button onClick={() => handleTimeChange(undefined, selectedMinute - 15)} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"><ChevronDown size={16}/></button>
+              <button type="button" onClick={() => handleTimeChange(undefined, selectedMinute - 15)} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"><ChevronDown size={16}/></button>
             </div>
             {/* AM/PM Picker */}
             <div className="flex flex-col items-center space-y-1">
               <button 
+                type="button"
                 onClick={() => handleTimeChange(undefined, undefined, true)} 
                 className={`px-2 py-1 text-xs rounded ${selectedPeriodAM ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'}`}
               >
                 AM
               </button>
               <button 
+                type="button"
                 onClick={() => handleTimeChange(undefined, undefined, false)} 
                 className={`px-2 py-1 text-xs rounded ${!selectedPeriodAM ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'}`}
               >

@@ -1,33 +1,43 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo } from 'react';
 import { Navigation } from './Navigation';
 import { cn } from '@/lib/utils';
+import { SidebarProvider, useSidebar } from '@/app/context/SidebarContext';
 
 interface AppLayoutProps {
   children: React.ReactNode;
 }
 
-export function AppLayout({ children }: AppLayoutProps) {
-  const [isNavigationCollapsed, setIsNavigationCollapsed] = useState(false);
+const AppLayoutContent: React.FC<AppLayoutProps> = ({ children }) => {
+  const { isCollapsed, sidebarWidth } = useSidebar();
+
+  // Calculate collapsed width to match Navigation component
+  const collapsedWidth = useMemo(() => {
+    const proportion = Math.max(100, Math.min(180, sidebarWidth * 0.55));
+    return Math.floor(proportion);
+  }, [sidebarWidth]);
 
   return (
-    <div className="flex min-h-screen bg-background">
-      {/* Sidebar Navigation */}
-      <Navigation 
-        isCollapsed={isNavigationCollapsed}
-        onToggleCollapse={setIsNavigationCollapsed}
-      />
+    <div className="flex h-screen bg-background">
+      <Navigation />
       
-      {/* Main Content Area */}
-      <main className={cn(
-        "flex-1 transition-all duration-300 ease-in-out",
-        isNavigationCollapsed ? "ml-16" : "ml-48"
-      )}>
-        <div className="min-h-screen">
+      <main 
+        className="flex-1 relative"
+        style={{ marginLeft: isCollapsed ? `${collapsedWidth}px` : `${sidebarWidth}px` }}
+      >
+        <div className="h-full">
           {children}
         </div>
       </main>
     </div>
+  );
+}
+
+export function AppLayout({ children }: AppLayoutProps) {
+  return (
+    <SidebarProvider>
+      <AppLayoutContent>{children}</AppLayoutContent>
+    </SidebarProvider>
   );
 } 

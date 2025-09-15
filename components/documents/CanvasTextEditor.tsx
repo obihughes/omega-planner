@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { Move, Edit, Bold, Italic } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 // Type guard for caret positioning methods
 const hasCaretPositionFromPoint = (doc: Document): doc is Document & { caretPositionFromPoint: (x: number, y: number) => any } => {
@@ -31,6 +32,8 @@ interface CanvasTextEditorProps {
   style?: React.CSSProperties;
   dragMode?: boolean;
   onDragModeChange?: (dragMode: boolean) => void;
+  isAddingText?: boolean;
+  onIsAddingTextChange?: (isAddingText: boolean) => void;
 }
 
 const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
@@ -39,7 +42,9 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
   className,
   style,
   dragMode,
-  onDragModeChange
+  onDragModeChange,
+  isAddingText: externalIsAddingText,
+  onIsAddingTextChange
 }) => {
   const [textBlocks, setTextBlocks] = useState<TextBlock[]>([]);
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
@@ -49,6 +54,7 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
   const [recentlyDeleted, setRecentlyDeleted] = useState<TextBlock | null>(null);
   const [showUndoPrompt, setShowUndoPrompt] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const [canvasSize, setCanvasSize] = useState({ width: '100%', height: '100%'});
   const blockElementsRef = useRef<Map<string, HTMLDivElement | null>>(new Map());
   const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const undoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -57,6 +63,45 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
   // It's used to prevent the component from re-initializing itself with old
   // data if the parent component re-renders.
   const lastPropagatedContent = useRef<string | null>(null);
+
+  // This effect calculates the required canvas size to contain all text blocks.
+  // It runs after the layout has been calculated but before the screen is painted,
+  // which prevents flickering.
+  useLayoutEffect(() => {
+    const PADDING = 200; // Extra space around the content
+    let bottomMost = 0;
+
+    textBlocks.forEach(block => {
+      const element = blockElementsRef.current.get(block.id);
+      // Use the actual element's size if available, otherwise estimate.
+      const height = element ? element.offsetHeight : (block.height || LINE_HEIGHT);
+      
+      const blockBottom = block.y + height;
+
+      if (blockBottom > bottomMost) {
+        bottomMost = blockBottom;
+      }
+    });
+
+    const parent = canvasRef.current?.parentElement;
+    if (parent) {
+      // The canvas should maintain the container width but expand vertically as needed
+      const newHeight = Math.max(parent.clientHeight, bottomMost + PADDING);
+      
+      // Use a more stable comparison to prevent infinite loops
+      setCanvasSize(prevSize => {
+        const newHeightPx = `${newHeight}px`;
+        
+        if (newHeightPx !== prevSize.height) {
+          return {
+            width: '100%', // Always use 100% width to fit container
+            height: newHeightPx,
+          };
+        }
+        return prevSize;
+      });
+    }
+  }, [textBlocks]);
 
   // Use external dragMode if provided, otherwise use internal state
   const effectiveDragMode = dragMode !== undefined ? dragMode : isDragMode;
@@ -67,12 +112,6 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
   // last sent out, which prevents the editor from wiping out the user's
   // current typing.
   useEffect(() => {
-    // This effect is now responsible for synchronizing the internal state with
-    // the external `content` prop. It will only re-initialize the blocks if
-    // the `content` prop changes to something different than what this component
-    // last sent out, which prevents the editor from wiping out the user's
-    // current typing.
-
     // If the new content is different from what we last sent, update the editor.
     // This is the primary mechanism for loading a new document's content.
     if (content !== lastPropagatedContent.current) {
@@ -85,7 +124,9 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
       if (content) {
         try {
           const parsed = JSON.parse(content);
-          if (Array.isArray(parsed)) loadedBlocks = parsed;
+          if (Array.isArray(parsed)) {
+            loadedBlocks = parsed;
+          }
         } catch (e) {
           console.warn('Fallback to legacy text parser for backward compatibility.');
           loadedBlocks = content.split('\n').map((line, i) => ({
@@ -96,6 +137,10 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
             isActive: false,
           })).filter(block => block.content.trim());
         }
+      } else {
+        // For new empty documents, initialize with an empty array
+        // This ensures we don't have stale blocks from previous documents
+        loadedBlocks = [];
       }
       
       const snappedBlocks = loadedBlocks.map(block => ({
@@ -122,6 +167,70 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
     onChange(newContent);
   };
 
+  const createNewTextBlock = (clientX: number, clientY: number) => {
+    if (effectiveDragMode) return;
+    
+    // Save current active block first
+    let currentBlocks = [...textBlocks];
+    if (activeBlockId) {
+      const activeEl = blockElementsRef.current.get(activeBlockId)?.querySelector('[contenteditable]') as HTMLElement;
+      if (activeEl) {
+        const newContent = activeEl.innerHTML.trim();
+        const block = currentBlocks.find(b => b.id === activeBlockId);
+
+        if (block && (newContent === '' || newContent === '<br>')) {
+           currentBlocks = currentBlocks.filter(b => b.id !== activeBlockId);
+        } else if (block && block.content !== newContent) {
+           currentBlocks = currentBlocks.map(b =>
+            b.id === activeBlockId ? { ...b, content: newContent, isActive: false } : b
+          );
+        } else {
+           currentBlocks = currentBlocks.map(b =>
+            b.id === activeBlockId ? { ...b, isActive: false } : b
+          );
+        }
+      }
+      setActiveBlockId(null);
+    }
+
+    const canvasRect = canvasRef.current!.getBoundingClientRect();
+    const snapped = snapToGrid(
+      clientX - canvasRect.left,
+      clientY - canvasRect.top
+    );
+    
+    const newBlock: TextBlock = {
+      id: `block-${Date.now()}`,
+      x: snapped.x,
+      y: snapped.y,
+      content: '',
+      isActive: true,
+    };
+
+    const updatedBlocks = [...currentBlocks, newBlock];
+    setTextBlocks(updatedBlocks);
+    setActiveBlockId(newBlock.id);
+
+    // Save immediately when creating a new block to ensure it's preserved
+    handleContentChange(updatedBlocks);
+
+    // Focus the new block
+    setTimeout(() => {
+        const newBlockEl = blockElementsRef.current.get(newBlock.id)?.querySelector('[contenteditable]');
+        if (newBlockEl && newBlockEl instanceof HTMLElement) {
+            newBlockEl.focus();
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.selectNodeContents(newBlockEl);
+            range.collapse(false);
+            if (sel) {
+              sel.removeAllRanges();
+              sel.addRange(range);
+            }
+        }
+    }, 50);
+  };
+
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (effectiveDragMode) return;
     const target = e.target as HTMLElement;
@@ -129,6 +238,14 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
       return;
     }
 
+    // If in add text mode, create a new text block at click location
+    if (externalIsAddingText) {
+      createNewTextBlock(e.clientX, e.clientY);
+      onIsAddingTextChange?.(false);
+      return;
+    }
+
+    // Deactivate current block if clicking on empty space
     if (activeBlockId) {
       const activeEl = blockElementsRef.current.get(activeBlockId)?.querySelector('[contenteditable]') as HTMLElement;
       let newBlocks = [...textBlocks];
@@ -165,66 +282,9 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
   };
 
   const handleCanvasDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Double-click disabled - no longer creates text blocks
     e.preventDefault();
     e.stopPropagation();
-    if (effectiveDragMode) return;
-
-    let currentBlocks = [...textBlocks];
-    if (activeBlockId) {
-      const activeEl = blockElementsRef.current.get(activeBlockId)?.querySelector('[contenteditable]') as HTMLElement;
-      if (activeEl) {
-        const newContent = activeEl.innerHTML.trim();
-        const block = currentBlocks.find(b => b.id === activeBlockId);
-
-        if (block && (newContent === '' || newContent === '<br>')) {
-           currentBlocks = currentBlocks.filter(b => b.id !== activeBlockId);
-        } else if (block && block.content !== newContent) {
-           currentBlocks = currentBlocks.map(b =>
-            b.id === activeBlockId ? { ...b, content: newContent, isActive: false } : b
-          );
-        } else {
-           currentBlocks = currentBlocks.map(b =>
-            b.id === activeBlockId ? { ...b, isActive: false } : b
-          );
-        }
-      } else {
-         currentBlocks = currentBlocks.map(b =>
-            b.id === activeBlockId ? { ...b, isActive: false } : b
-        );
-      }
-      setActiveBlockId(null);
-    }
-
-    const canvasRect = canvasRef.current!.getBoundingClientRect();
-    const newBlock: TextBlock = {
-      id: `block-${Date.now()}`,
-      x: e.clientX - canvasRect.left,
-      y: e.clientY - canvasRect.top,
-      content: '', // Start with empty content
-      isActive: true,
-    };
-
-    const updatedBlocks = [...currentBlocks, newBlock];
-    setTextBlocks(updatedBlocks);
-    // Don't save to parent immediately - wait until user types something
-    setActiveBlockId(newBlock.id);
-
-    // After creating a new block, focus it so the user can type immediately.
-    setTimeout(() => {
-        const newBlockEl = blockElementsRef.current.get(newBlock.id)?.querySelector('[contenteditable]');
-        if (newBlockEl && newBlockEl instanceof HTMLElement) {
-            newBlockEl.focus();
-            // Move cursor to end of content (which should be empty for new blocks)
-            const range = document.createRange();
-            const sel = window.getSelection();
-            range.selectNodeContents(newBlockEl);
-            range.collapse(false);
-            if (sel) {
-              sel.removeAllRanges();
-              sel.addRange(range);
-            }
-        }
-    }, 50);
   };
 
   const handleBlockChange = (blockId: string, newContent: string) => {
@@ -246,10 +306,16 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
         return content !== '' && content !== '<br>';
       });
       handleContentChange(nonEmptyBlocks);
-    }, 300); // Reduced debounce time so first keystroke saves quicker
+    }, 150); // Reduced from 300ms to 150ms for faster saving
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Cancel add text mode on Escape
+    if (e.key === 'Escape' && externalIsAddingText) {
+      onIsAddingTextChange?.(false);
+      return;
+    }
+
     if (!activeBlockId) return;
 
     const activeBlock = textBlocks.find(block => block.id === activeBlockId);
@@ -287,8 +353,7 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
     // Handle Enter key to insert <br> tags manually
     if (e.key === 'Enter') {
       e.preventDefault();
-      // Using execCommand is deprecated, but it is the most reliable way 
-      // to handle line breaks consistently across browsers in a contentEditable div.
+      // Regular Enter adds line break
       document.execCommand('insertLineBreak');
       return;
     }
@@ -397,7 +462,8 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
   }, []);
 
   return (
-    <div className={className} style={style}>
+    <div className={cn("h-full w-full overflow-auto", className)} style={style}>
+
       {/* Floating Formatting Toolbar */}
       {activeBlockId && !effectiveDragMode && (
         <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 bg-muted rounded-lg shadow-lg p-1 flex items-center gap-1">
@@ -427,13 +493,17 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
 
       <div
         ref={canvasRef}
-        className="relative w-full h-full cursor-text"
+        className={cn(
+          "relative w-full h-full",
+          externalIsAddingText ? "cursor-crosshair" : "cursor-text"
+        )}
         onClick={handleCanvasClick}
         onDoubleClick={handleCanvasDoubleClick}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         style={{
-          minHeight: '100%',
+          width: canvasSize.width,
+          height: canvasSize.height,
           fontFamily: '"JetBrains Mono", "Fira Code", Consolas, "Liberation Mono", Menlo, Courier, monospace',
           fontSize: '16px',
           lineHeight: '1.7',
@@ -462,7 +532,9 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
               lineHeight: 'inherit',
               whiteSpace: 'pre-wrap',
               minWidth: '20px',
-              minHeight: '20px'
+              minHeight: '20px',
+              maxWidth: 'calc(100vw - 100px)', // Prevent blocks from extending beyond viewport
+              wordWrap: 'break-word'
             }}
             onMouseDown={(e) => handleMouseDown(e, block.id)}
             onClick={(e) => {
@@ -576,7 +648,10 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
               className={`outline-none ${block.isActive ? 'cursor-text' : ''}`}
               style={{
                 minWidth: block.isActive ? '100px' : 'auto',
-                minHeight: '20px'
+                minHeight: '20px',
+                maxWidth: '100%',
+                wordWrap: 'break-word',
+                overflowWrap: 'break-word'
               }}
               dangerouslySetInnerHTML={!block.isActive ? { __html: block.content } : undefined}
             >
@@ -612,13 +687,27 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
           </div>
         ))}
 
+        {/* Add text mode overlay */}
+        {externalIsAddingText && (
+          <div className="absolute inset-0 bg-primary/5 border-2 border-dashed border-primary/30 flex items-center justify-center pointer-events-none">
+            <div className="bg-background/90 backdrop-blur-sm border rounded-lg p-4 shadow-lg">
+              <p className="text-foreground font-medium">Click anywhere to place your text block</p>
+              <p className="text-muted-foreground text-sm mt-1">Press Escape to cancel</p>
+            </div>
+          </div>
+        )}
+
         {/* Instruction text when no blocks exist */}
-        {textBlocks.length === 0 && (
+        {textBlocks.length === 0 && !externalIsAddingText && (
           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
             <div className="text-center">
-              <p className="text-lg mb-2">Double-click anywhere to start typing</p>
-              <p className="text-sm">Each double-click creates an independent text block</p>
-              <p className="text-xs mt-2">• Enter for new lines • Backspace on empty blocks to delete</p>
+              <p className="text-lg mb-2">Click "Add Text" button, then click where you want to type</p>
+              <p className="text-sm">Single-click existing text to edit it</p>
+              <div className="text-xs mt-4 space-y-1">
+                <p>• <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Tab</kbd> - Insert spaces in text</p>
+                <p>• <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Enter</kbd> - New line in text</p>
+                <p>• <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Escape</kbd> - Deselect active text</p>
+              </div>
             </div>
           </div>
         )}

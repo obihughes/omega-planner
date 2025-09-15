@@ -13,13 +13,18 @@ Functions:
 - Number formatting
 - Other data transformation utilities
 
-### Storage (`/utils/storage.ts`)
+### Storage (`/utils/storage.ts` and calendar/meals storage)
 Contains utilities for handling data storage and persistence.
 
 Functions:
 - Local storage operations
 - Data caching
 - State persistence helpers
+
+### Meals Storage (`/utils/mealsStorage.ts`)
+- Persists meal plans per date with three slots: breakfast, lunch, dinner.
+- Structure: `MealsStorageData` with `mealsByDate: Record<string, MealsBySlot>`.
+- Helpers: `ensureMealsForDate()` to initialize per-date structure safely.
 
 ## Usage Guidelines
 
@@ -117,13 +122,13 @@ Resolves conflicts when dragging tasks to new positions, ensuring proper placeme
 ## Date Utilities (`utils/dateUtils.ts`)
 
 ### Date Key Management
-All date utilities use consistent YYYY-MM-DD format for reliable date operations.
+All date utilities use consistent YYYY-MM-DD format for reliable date operations. Always prefer passing date keys (YYYY-MM-DD) between pages and parsing them using local-safe helpers to avoid UTC off-by-one shifts.
 
 #### `getDateKeyFromOffset(dayOffset): string`
 Generates date key for today + offset days.
 
 #### `dateFromDateKey(dateKey): Date`
-Converts YYYY-MM-DD string to Date object (local timezone).
+Converts YYYY-MM-DD string to Date object using a noon-time construction to avoid timezone shifts.
 
 #### `getTodayDateKey(): string`
 Gets today's date in YYYY-MM-DD format.
@@ -131,12 +136,17 @@ Gets today's date in YYYY-MM-DD format.
 #### `getCalendarDateForColumn(columnDayOffset): string`
 Helper for getting date keys for timeline columns.
 
-**Important:** All date utilities are timezone-safe and use consistent formatting to prevent date-related bugs in drag and drop operations.
+**Important:** All date utilities are timezone-safe and use consistent formatting to prevent date-related bugs in drag and drop operations. The calendar now also persists dates as YYYY-MM-DD keys (`dateKey`, `startDateKey`, `endDateKey`) and reconstructs `Date` objects at runtime to match the daily planner's `baseDate` convention.
+
+### Navigation Best Practices
+- When navigating from monthly calendar to daily planner, build `?date=` using a local-safe YYYY-MM-DD string, not `toISOString()`.
+- When reading `?date=` on the home page, detect YYYY-MM-DD and parse with `dateFromDateKey`.
+- For cross-view persistence like "Back to Calendar", store `lastCalendarDate` as a YYYY-MM-DD key and reuse it directly in URLs.
 
 ## Storage Utilities (`utils/storage.ts`)
 
 ### Task Persistence
-Handles local storage operations for tasks, pool tasks, and planner settings.
+Handles local storage operations for tasks, inbox tasks, and planner settings.
 
 #### `TaskStorage.save(tasks)`
 Persists main timeline tasks.
@@ -145,10 +155,10 @@ Persists main timeline tasks.
 Retrieves saved timeline tasks.
 
 #### `TaskStorage.savePoolTasks(tasks)`
-Persists task pool.
+Persists task inbox.
 
 #### `TaskStorage.loadPoolTasks()`
-Retrieves task pool.
+Retrieves task inbox.
 
 ## Formatter Utilities (`utils/formatters.ts`)
 

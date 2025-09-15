@@ -26,7 +26,7 @@
     --border: 0 0% 88%;                       /* Slightly more visible borders */
     --input: 0 0% 96%;                        /* Input background */
     --ring: 252 83% 57%;                      /* Focus ring matches primary */
-    --radius: 0.75rem;
+    --radius: 0;
   }
 
   .dark {
@@ -92,7 +92,7 @@ html.resize-active .resize-handle {
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-muted-foreground/20 rounded-md;
+  @apply bg-muted-foreground/20;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -282,6 +282,102 @@ h1, h2, h3, h4, h5, h6 {
 .progress-fill {
   @apply bg-primary rounded-full h-full transition-all duration-500 ease-out;
   background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.8));
+}
+
+/* Exciting checkbox animations */
+@keyframes fade-in-out {
+  0% { opacity: 0; }
+  50% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes confetti-burst {
+  0% { 
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% { 
+    transform: scale(1) rotate(180deg);
+    opacity: 1;
+  }
+  100% { 
+    transform: scale(0) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes celebration-pulse {
+  0%, 100% { 
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  50% { 
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+  }
+}
+
+.animate-fade-in-out {
+  animation: fade-in-out 1s ease-in-out;
+}
+
+.animate-confetti-burst {
+  animation: confetti-burst 0.8s ease-out;
+}
+
+.animate-celebration-pulse {
+  animation: celebration-pulse 0.6s ease-in-out;
+}
+
+/* Custom task colors from hex codes */
+.task-color-kelly-green {
+  background-color: #29BF12;
+  color: white;
+}
+
+.dark .task-color-kelly-green {
+  background-color: #29BF12;
+  color: black;
+}
+
+.task-color-green-yellow {
+  background-color: #ABFF4F;
+  color: black;
+}
+
+.dark .task-color-green-yellow {
+  background-color: #ABFF4F;
+  color: black;
+}
+
+.task-color-verdigris {
+  background-color: #08BDBD;
+  color: white;
+}
+
+.dark .task-color-verdigris {
+  background-color: #08BDBD;
+  color: black;
+}
+
+.task-color-red-munsell {
+  background-color: #F21B3F;
+  color: white;
+}
+
+.dark .task-color-red-munsell {
+  background-color: #F21B3F;
+  color: black;
+}
+
+.task-color-princeton-orange {
+  background-color: #FF9914;
+  color: black;
+}
+
+.dark .task-color-princeton-orange {
+  background-color: #FF9914;
+  color: black;
 }
 
  

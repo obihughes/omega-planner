@@ -27,7 +27,7 @@ export interface TaskFormModalProps {
   onDelete?: (taskId: string) => void;
   onPinTask?: (task: Task) => void;
   pinnedTasks?: PinnedTask[];
-  onMoveToPool?: (taskId: string) => void;
+  onMoveToInbox?: (taskId: string) => void;
   initialDayOffset?: number;
   initialStartHour?: number;
   // TASK_COLORS is already imported globally from @/lib/constants
@@ -41,10 +41,12 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
   onDelete,
   onPinTask,
   pinnedTasks = [],
-  onMoveToPool,
+  onMoveToInbox,
   initialDayOffset = 0,
   initialStartHour = 9,
 }) => {
+
+
   const isNewTask = !taskToEdit;
   const [taskName, setTaskName] = useState("");
   const [startHour, setStartHour] = useState(initialStartHour);
@@ -52,6 +54,15 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
   const [notes, setNotes] = useState("");
   const [color, setColor] = useState(TASK_COLORS[0]);
   const modalRef = useRef<HTMLDivElement>(null);
+
+  // Calculate end time based on start time + duration
+  const endHour = startHour + duration;
+
+  // Helper function to set end time and automatically calculate duration
+  const setEndTime = (newEndHour: number) => {
+    const newDuration = Math.max(0.25, newEndHour - startHour); // Minimum 15 minutes
+    setDuration(newDuration);
+  };
 
   useEffect(() => {
     if (taskToEdit) {
@@ -114,9 +125,9 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
     }
   };
 
-  const handleMoveToPool = () => {
-    if (taskToEdit && onMoveToPool) {
-      onMoveToPool(taskToEdit.id);
+  const handleMoveToInbox = () => {
+    if (taskToEdit && onMoveToInbox) {
+      onMoveToInbox(taskToEdit.id);
       onClose(); 
     }
   };
@@ -160,19 +171,25 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
+        {/* Start Time */}
+        <div className="grid grid-cols-3 gap-4">
+          <div className="col-span-2">
             <label htmlFor={`startHourInput-${taskToEdit?.id || 'new'}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Start Time
             </label>
             <select
               id={`startHourInput-${taskToEdit?.id || 'new'}`}
-              value={startHour}
-              onChange={(e) => setStartHour(parseFloat(e.target.value))}
+              value={Math.floor(startHour)}
+              onChange={(e) => {
+                const newHour = parseInt(e.target.value, 10);
+                const minutePart = startHour % 1;
+                setStartHour(newHour + minutePart);
+              }}
               className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
             >
-              {Array.from({ length: TIMELINE_END_HOUR - TIMELINE_START_HOUR }, (_, i) => {
+              {Array.from({ length: TIMELINE_END_HOUR - TIMELINE_START_HOUR + 1 }, (_, i) => {
                 const hourVal = TIMELINE_START_HOUR + i;
+                if (hourVal > TIMELINE_END_HOUR) return null;
                 return (
                   <option key={hourVal} value={hourVal}>
                     {formatTime(hourVal)}
@@ -181,7 +198,79 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
               })}
             </select>
           </div>
+          <div>
+            <label htmlFor={`startMinuteInput-${taskToEdit?.id || 'new'}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Minute
+            </label>
+            <select
+              id={`startMinuteInput-${taskToEdit?.id || 'new'}`}
+              value={Math.round((startHour % 1) * 60)}
+              onChange={(e) => {
+                const newMinute = parseInt(e.target.value, 10);
+                const hourPart = Math.floor(startHour);
+                setStartHour(hourPart + newMinute / 60);
+              }}
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+            >
+              <option value={0}>00</option>
+              <option value={15}>15</option>
+              <option value={30}>30</option>
+              <option value={45}>45</option>
+            </select>
+          </div>
+        </div>
 
+        {/* End Time */}
+        <div className="grid grid-cols-3 gap-4">
+          <div className="col-span-2">
+            <label htmlFor={`endHourInput-${taskToEdit?.id || 'new'}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              End Time
+            </label>
+            <select
+              id={`endHourInput-${taskToEdit?.id || 'new'}`}
+              value={Math.floor(endHour)}
+              onChange={(e) => {
+                const newHour = parseInt(e.target.value, 10);
+                const minutePart = endHour % 1;
+                setEndTime(newHour + minutePart);
+              }}
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+            >
+              {Array.from({ length: TIMELINE_END_HOUR - TIMELINE_START_HOUR + 1 }, (_, i) => {
+                const hourVal = TIMELINE_START_HOUR + i;
+                if (hourVal > TIMELINE_END_HOUR) return null;
+                return (
+                  <option key={hourVal} value={hourVal}>
+                    {formatTime(hourVal)}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+          <div>
+            <label htmlFor={`endMinuteInput-${taskToEdit?.id || 'new'}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Minute
+            </label>
+            <select
+              id={`endMinuteInput-${taskToEdit?.id || 'new'}`}
+              value={Math.round((endHour % 1) * 60)}
+              onChange={(e) => {
+                const newMinute = parseInt(e.target.value, 10);
+                const hourPart = Math.floor(endHour);
+                setEndTime(hourPart + newMinute / 60);
+              }}
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+            >
+              <option value={0}>00</option>
+              <option value={15}>15</option>
+              <option value={30}>30</option>
+              <option value={45}>45</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Duration (now calculated automatically but still shown for reference) */}
+        <div className="grid grid-cols-2 gap-4">
           <div>
             <label htmlFor={`durationInput-${taskToEdit?.id || 'new'}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Duration
@@ -201,7 +290,7 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
               }}
             >
               <div className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white cursor-pointer">
-                {DURATION_OPTIONS.find(opt => opt.value === duration)?.label}
+                {DURATION_OPTIONS.find(opt => opt.value === duration)?.label || `${duration} hour${duration !== 1 ? 's' : ''}`}
               </div>
               <div className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 max-h-48 overflow-y-auto">
                 {DURATION_OPTIONS.map((option) => (
@@ -248,13 +337,13 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
                 <PinIcon className="w-4 h-4" /> Pinned
               </div>
             )}
-            {onMoveToPool && (
+            {onMoveToInbox && (
                 <button
                 type="button"
                 className="flex items-center justify-center gap-1.5 flex-1 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                onClick={handleMoveToPool}
+                onClick={handleMoveToInbox}
                 >
-                <FolderPlus className="w-4 h-4" /> Pool
+                <FolderPlus className="w-4 h-4" /> Inbox
                 </button>
             )}
           </div>

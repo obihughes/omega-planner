@@ -8,14 +8,12 @@ export type {
   PinnedTask 
 } from './planner';
 
-export type {
-  Project,
-  ProjectTask,
-  ProjectsStorageData
-} from './projects';
+// Export all project-related types including the new SubTask
+export type { Project, ProjectTask, SubTask, ProjectFolder, ProjectsStorageData } from './projects';
 
 export type {
   Document,
+  DocumentFolder,
   DocumentsStorageData,
   DocumentEditorProps,
   DocumentListProps
@@ -29,4 +27,28 @@ export type {
   DayInfo,
   PeriodPosition,
   CalendarProps
-} from './calendar'; 
+} from './calendar';
+
+export type {
+  MealItem,
+  MealsBySlot,
+  MealsStorageData,
+  MealSlot,
+  IngredientDetail
+} from './meals';
+
+export type {
+  PantryItem,
+  PantryStorageData
+} from './pantry';
+
+export type {
+  RecipeItem,
+  RecipeIngredient,
+  RecipesStorageData
+} from './recipes';
+
+export type {
+  ShoppingItem,
+  ShoppingStorageData
+} from './shopping'; 

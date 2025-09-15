@@ -5,6 +5,8 @@
  */
 export const getDateKeyFromOffset = (dayOffset: number): string => {
   const date = new Date();
+  // Set time to noon to avoid timezone-related date shifts
+  date.setHours(12, 0, 0, 0);
   date.setDate(date.getDate() + dayOffset);
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -19,7 +21,8 @@ export const getDateKeyFromOffset = (dayOffset: number): string => {
  */
 export const dateFromDateKey = (dateKey: string): Date => {
   const [year, month, day] = dateKey.split('-').map(Number);
-  return new Date(year, month - 1, day, 0, 0, 0, 0);
+  // Set time to noon to avoid timezone-related date shifts
+  return new Date(year, month - 1, day, 12, 0, 0, 0);
 };
 
 /**
@@ -38,6 +41,7 @@ export const getTodayDateKey = (): string => {
  */
 export const addDaysToDateKey = (dateKey: string, days: number): string => {
   const date = dateFromDateKey(dateKey);
+  // dateFromDateKey already sets time to noon, so this is safe
   date.setDate(date.getDate() + days);
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -52,14 +56,33 @@ export const addDaysToDateKey = (dateKey: string, days: number): string => {
  */
 export const getDateKey = (input: Date | string): string => {
   let date: Date;
-  if (typeof input === 'string') {
-    date = new Date(input);
-  } else {
-    date = input;
+  
+  // Validate input
+  if (!input) {
+    throw new Error('getDateKey: input cannot be null or undefined');
   }
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  
+  if (typeof input === 'string') {
+    // Handle ISO strings (e.g., "2023-10-27T05:00:00.000Z") correctly
+    // by parsing and then using UTC parts to construct a new date
+    const d = new Date(input);
+    if (isNaN(d.getTime())) {
+      throw new Error(`getDateKey: invalid date string "${input}"`);
+    }
+    date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 12, 0, 0));
+  } else if (input instanceof Date) {
+    if (isNaN(input.getTime())) {
+      throw new Error('getDateKey: invalid Date object');
+    }
+    date = input;
+  } else {
+    throw new Error(`getDateKey: expected Date or string, got ${typeof input}`);
+  }
+  
+  // Use UTC methods to avoid timezone shift issues
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
 
@@ -76,7 +99,8 @@ export const getDateWithoutTime = (input: string | Date): Date => {
   } else {
     date = input;
   }
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+  // Use UTC methods to create a date at midnight UTC
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
 };
 
 /**
@@ -117,6 +141,80 @@ export const isPastDate = (dateKey: string): boolean => {
  */
 export const getCalendarDateForColumn = (columnDayOffset: number): string => {
   return getDateKeyFromOffset(columnDayOffset);
+};
+
+/**
+ * Format a due date string for display, comparing against today's date.
+ * This function properly handles date comparison without time components.
+ * @param {string | undefined} dueDate - Due date in YYYY-MM-DD format or ISO string
+ * @returns {object | null} Object with text and isOverdue flag, or null if no due date
+ */
+export const formatDueDate = (dueDate?: string): { text: string; isOverdue: boolean } | null => {
+  if (!dueDate) return null;
+  
+  // Normalize the due date first to handle different formats
+  const normalizedDueDate = normalizeDueDate(dueDate);
+  if (!normalizedDueDate) return null;
+  
+  // Get the date key (YYYY-MM-DD format) from the due date
+  const dueDateKey = getDateKey(normalizedDueDate);
+  const todayKey = getTodayDateKey();
+  
+
+  
+  // Compare date keys directly (string comparison works for YYYY-MM-DD format)
+  if (dueDateKey < todayKey) {
+    // Show the actual due date when overdue
+    const overdueDate = dateFromDateKey(dueDateKey);
+    return { text: overdueDate.toLocaleDateString(), isOverdue: true };
+  }
+  if (dueDateKey === todayKey) return { text: 'Today', isOverdue: false };
+  
+  // Calculate days difference for future dates
+  const dueDate_ = dateFromDateKey(dueDateKey);
+  const today = dateFromDateKey(todayKey);
+  const diffMs = dueDate_.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 1) return { text: 'Tomorrow', isOverdue: false };
+  if (diffDays <= 7) return { text: `${diffDays} days`, isOverdue: false };
+  
+  // For dates further in the future, show the formatted date
+  const date = new Date(dueDate);
+  return { text: date.toLocaleDateString(), isOverdue: false };
+};
+
+/**
+ * Normalize a due date to ensure it's in the correct YYYY-MM-DD format.
+ * This function handles various input formats and converts them to date-only strings.
+ * @param {string | undefined} dueDate - Due date in any format
+ * @returns {string | undefined} Normalized date in YYYY-MM-DD format, or undefined if invalid
+ */
+export const normalizeDueDate = (dueDate?: string): string | undefined => {
+  if (!dueDate) return undefined;
+  
+  try {
+    // If it's already in YYYY-MM-DD format, return as-is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) {
+      return dueDate;
+    }
+    
+    // If it's an ISO string or other date format, convert to YYYY-MM-DD
+    const date = new Date(dueDate);
+    if (isNaN(date.getTime())) {
+      console.warn('Invalid due date format:', dueDate);
+      return undefined;
+    }
+    
+    // Convert to YYYY-MM-DD format
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  } catch (error) {
+    console.warn('Error normalizing due date:', dueDate, error);
+    return undefined;
+  }
 };
 
  

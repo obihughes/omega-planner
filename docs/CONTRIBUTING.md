@@ -18,6 +18,19 @@ This document provides guidelines and instructions for developers who want to ex
 3. Start the development server with `npm run dev`
 4. Run tests with `npm test`
 
+## Branching Strategy
+
+We use the following branching strategy for managing our codebase:
+
+- **`alpha`**: This branch is used for active development of new features and bug fixes. All new work is initially committed here.
+- **`development`**: This branch integrates stable features from the `alpha` branch. It is used for internal testing and staging before release.
+- **`main`**: This branch represents the latest stable release of the application. Only thoroughly tested and approved code from `development` is merged into `main`.
+
+### Merge Process
+
+1. **`alpha` to `development`**: When a set of features or bug fixes in `alpha` are ready for broader testing, they are merged into `development`.
+2. **`development` to `main`**: After thorough testing and quality assurance in `development`, the changes are merged into `main` for release.
+
 ## Project Structure
 
 The application is organized into several key directories:

@@ -11,8 +11,8 @@ This directory contains utility functions used throughout the application.
 **Key Functions:**
 - `save(tasks: Task[])`: Save tasks to localStorage
 - `load(): Task[] | null`: Load tasks from localStorage
-- `savePoolTasks(tasks: Task[])`: Save pool tasks to localStorage
-- `loadPoolTasks(): Task[] | null`: Load pool tasks from localStorage
+- `savePoolTasks(tasks: Task[])`: Save inbox tasks to localStorage
+- `loadPoolTasks(): Task[] | null`: Load inbox tasks from localStorage
 - `savePinnedTasks(tasks: PinnedTask[])`: Save pinned tasks to localStorage
 - `loadPinnedTasks(): PinnedTask[] | null`: Load pinned tasks from localStorage
 - `saveNextId(id: number)`: Save the next available task ID

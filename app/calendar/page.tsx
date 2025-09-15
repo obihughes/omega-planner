@@ -1,12 +1,17 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { AppLayout } from '@/components/ui/AppLayout';
-import { YearCalendar } from '@/components/calendar/YearCalendar';
+import { YearCalendar, MonthlyCalendar, MonthlyTimelineView } from '@/components/calendar';
 import { useCalendarData } from '@/hooks/useCalendarData';
 import { CalendarEvent, CalendarPeriod } from '@/types/calendar';
 import { Settings, Download, RefreshCw, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useCalendarView } from '@/app/context/CalendarViewContext';
+import { useSearchParams } from 'next/navigation';
+import { useDailyPlanner } from '@/hooks/useDailyPlannerState';
+
+type CalendarView = 'yearly' | 'monthly' | 'timeline';
 
 export default function CalendarPage() {
   const {
@@ -23,7 +28,41 @@ export default function CalendarPage() {
     exportData
   } = useCalendarData();
 
+  // Planner state for timeline view
+  const {
+    tasksByDate,
+    poolTasks,
+    pinnedTasks,
+    getPoolTasksForDate,
+    openEditModal,
+    createPoolTask,
+    handleDeleteTask,
+    handleAssignTask,
+    handleUnassignTask,
+    handleRescheduleTask,
+    handleUpdateTask,
+    isClient
+  } = useDailyPlanner();
+
   const [showSettings, setShowSettings] = useState(false);
+  const { viewMode: currentView, setViewMode: setCurrentView } = useCalendarView();
+  const params = useSearchParams();
+  
+  // Respect ?view=monthly|yearly|timeline from query params
+  useEffect(() => {
+    const v = params?.get('view');
+    if (v === 'monthly' || v === 'yearly' || v === 'timeline') {
+      setCurrentView(v as CalendarView);
+    }
+  }, [params, setCurrentView]);
+  const initialDateFromQuery = useMemo(() => {
+    const d = params?.get('date');
+    if (d) {
+      const parsed = new Date(d);
+      if (!isNaN(parsed.getTime())) return parsed;
+    }
+    return undefined;
+  }, [params]);
 
   const handleEventAdd = (eventData: Omit<CalendarEvent, 'id'>) => {
     addEvent(eventData);
@@ -58,19 +97,71 @@ export default function CalendarPage() {
 
   return (
     <AppLayout>
-      
       <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* View toggle removed; navigation handled in main sidebar */}
+
         {/* Calendar Component */}
-        <YearCalendar
-          data={data}
-          onEventAdd={handleEventAdd}
-          onPeriodAdd={handlePeriodAdd}
-          onEventEdit={handleEventEdit}
-          onPeriodEdit={handlePeriodEdit}
-          onEventDelete={deleteEvent}
-          onPeriodDelete={deletePeriod}
-          className="bg-background"
-        />
+        {currentView === 'monthly' ? (
+          <MonthlyCalendar
+            data={data}
+            onEventAdd={handleEventAdd}
+            onPeriodAdd={handlePeriodAdd}
+            onEventEdit={handleEventEdit}
+            onPeriodEdit={handlePeriodEdit}
+            onEventDelete={deleteEvent}
+            onPeriodDelete={deletePeriod}
+            className="bg-background max-w-5xl mx-auto"
+            compact
+            onNavigateToDaily={(date) => {
+              // Navigate to home page daily planner with a local-safe YYYY-MM-DD date key
+              try {
+                const d = new Date(date);
+                d.setHours(0, 0, 0, 0);
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                const dateKey = `${year}-${month}-${day}`;
+                window.location.href = `/?date=${dateKey}`;
+              } catch {
+                window.location.href = `/`;
+              }
+            }}
+            initialDate={initialDateFromQuery}
+          />
+        ) : currentView === 'timeline' ? (
+          isClient && (
+            <MonthlyTimelineView
+              poolTasks={poolTasks}
+              scheduledTasks={tasksByDate}
+              pinnedTasks={pinnedTasks}
+              onAssignTask={handleAssignTask}
+              onUnassignTask={handleUnassignTask}
+              onRescheduleTask={handleRescheduleTask}
+              onUpdateTask={handleUpdateTask}
+              onDeleteTask={(task) => handleDeleteTask(task.id)}
+              getPoolTasksForDate={getPoolTasksForDate}
+              openEditModal={openEditModal}
+              createPoolTask={createPoolTask}
+              onNavigateToDaily={(date) => {
+                // Navigate to home page (daily planner) with the selected date
+                // You could implement date-specific navigation here
+                window.location.href = '/';
+              }}
+            />
+          )
+        ) : (
+          <YearCalendar
+            data={data}
+            onEventAdd={handleEventAdd}
+            onPeriodAdd={handlePeriodAdd}
+            onEventEdit={handleEventEdit}
+            onPeriodEdit={handlePeriodEdit}
+            onEventDelete={deleteEvent}
+            onPeriodDelete={deletePeriod}
+            className="bg-background"
+            isVisible={currentView === 'yearly'}
+          />
+        )}
 
         {/* Settings Section */}
         <div className="mt-12 pt-8 border-t">

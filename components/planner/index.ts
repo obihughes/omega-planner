@@ -1,4 +1,12 @@
 export { default as DailyPlanner } from './DailyPlanner';
 export { TaskCard } from './TaskCard'; 
-export { TaskPoolSidebar } from './TaskPoolSidebar';
-export { PinnedTasksSidebar } from './PinnedTasksSidebar'; 
+export { TaskInboxSidebar } from './TaskInboxSidebar';
+export { PinnedTasksSidebar } from './PinnedTasksSidebar';
+export { TaskAssignmentCalendar } from './TaskAssignmentCalendar';
+export { UpcomingTasksTimeline } from './UpcomingTasksTimeline';
+export { default as WeeklyView } from './WeeklyView';
+export { WeeklyTaskCard, MemoizedWeeklyTaskCard } from './WeeklyTaskCard';
+export { DailyEventsContainer } from './DailyEventsContainer';
+export { WeeklyEventsDisplay } from './WeeklyEventsDisplay';
+export { MiniDailyTimeline } from './MiniDailyTimeline';
+ 

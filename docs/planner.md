@@ -50,8 +50,40 @@ Main component that orchestrates all planner functionality.
 ### TimelineColumn
 Renders individual timeline sections with tasks and time markers.
 
+### WeeklyView
+Displays a 7-day view of scheduled tasks in a horizontal timeline format. Features include:
+
+- **Enhanced Visual Design**: Modern gradient backgrounds, improved spacing, and better color hierarchy
+- **Smart Time Management**: Focused timeline from 6 AM to 10 PM for optimal productivity planning
+- **Day Highlighting**: Weekend days with orange accents, today with primary color accent bar
+- **Progress Visualization**: Completion dots in day headers and progress bars in stats
+- **Current Time Indicator**: Live red line with floating time badge for real-time context
+- **Task Collision Handling**: Automatic lane assignment for overlapping tasks
+- **Inbox Integration**: Separate section for unscheduled tasks with clear visual distinction
+- **Interactive Elements**: Hover effects, smooth animations, and click-to-add functionality
+
 ### TaskCard
 Individual task representation with drag/resize handles.
+
+### TaskInboxSidebar
+Displays tasks from the "task pool" that are not yet scheduled.
+
+### PinnedTasksSidebar
+Shows tasks that the user has pinned for quick access.
+
+
+
+### WeeklyView
+Displays a 7-day view of scheduled tasks.
+
+### TaskAssignmentCalendar
+A small calendar for assigning dates to tasks.
+
+### EditTaskModal
+Modal for editing the details of a task.
+
+### ViewTaskNotesModal
+Modal for viewing the notes of a task.
 
 ## Usage
 
@@ -143,6 +175,9 @@ const PIXELS_PER_HOUR = 142;
    - Use left/right handles
    - Minimum duration: 15 minutes
 
+5. **Scheduling Inbox/Unscheduled Tasks**
+   - Drag tasks from the "Inbox" section (in monthly view) or "Unscheduled" tasks (in daily view) directly onto the calendar to assign them a specific time.
+
 ## Best Practices
 1. Always check for task conflicts before placement
 2. Use the provided color palette for consistency
@@ -154,3 +189,62 @@ Common issues and solutions:
 1. Task conflict: Ensure no overlapping times in same period
 2. Drag issues: Check if task is properly released
 3. Resize limits: Verify minimum/maximum duration constraints 
+
+## Key Hooks
+
+-   `useDailyPlannerState`: Manages the state for the daily planner, including tasks, pinned tasks, and UI state. It loads and saves data from `localStorage` using the `TaskStorage` utility.
+-   `useModalManager`: Handles the state for all modals in the application.
+
+## Key Utilities
+
+-   `TaskStorage`: A class that handles all interactions with `localStorage` for tasks, settings, and other planner-related data. It uses specific keys to avoid conflicts (e.g., `TASKS_KEY`, `PINS_KEY`).
+-   `dateUtils`: A set of functions for handling dates, such as getting date keys (`YYYY-MM-DD`) and formatting dates for display. All date calculations are done in UTC to avoid timezone issues.
+-   `taskUtils`: Functions for task-specific logic, such as checking for overlapping tasks.
+-   `colorUtils`: Utility for handling color conversions and manipulations.
+-   `formatters`: Functions for formatting text, such as time and duration.
+
+### Saved Days (Templates)
+
+The Saved Days feature allows you to save daily task configurations as reusable templates.
+
+#### How to Use Saved Days
+
+1. **Save a Day as Template:**
+   - Navigate to a day with tasks you want to save
+   - Click the "Saved Days" button in the day header
+   - Enter a name for your template (e.g., "Morning Routine", "Work Day")
+   - Click "Save"
+
+2. **Apply a Saved Day:**
+   - Click the "Saved Days" button on any day
+   - Select a saved day from the list
+   - Choose "Apply" to add tasks alongside existing ones
+   - Choose "Replace" to replace all existing tasks with the template
+
+3. **Manage Saved Days:**
+   - **View/Edit:** Click the 📝 icon to navigate to the template's original date and edit tasks
+   - **Rename:** Click the ✏️ icon to rename a saved day
+   - **Delete:** Click the 🗑️ icon to delete a saved day
+
+#### Technical Implementation
+
+- Saved days are stored separately from tasks in localStorage
+- When applied, templates use the existing `cloneDayTasks` functionality
+- Each saved day references the original date where the template tasks are stored
+- Templates preserve task names, times, durations, colors, and notes
+- New task IDs are generated when applying templates to avoid conflicts
+
+#### Use Cases
+
+- **Daily Routines:** Save morning routines, workout schedules, or evening wind-down activities
+- **Work Templates:** Create templates for different types of work days (meetings, focus work, etc.)
+- **Event Planning:** Save template schedules for recurring events or meetings
+- **Quick Setup:** Rapidly populate new days with common task patterns
+
+### Calendar Views (under Daily Planner)
+The Monthly and Yearly calendar views are accessible from the main navigation under `Daily Planner`:
+- Scheduling View: the planner's own monthly mode
+- Monthly Calendar View: the full calendar page's monthly mode; includes a compact grid and an Events/Periods list under the calendar for the selected month
+- Yearly Calendar: the full calendar page's yearly mode
+
+Note: The in-page monthly/yearly/timeline toggle in `app/calendar/page.tsx` has been removed. Use the main sidebar navigation to switch views.

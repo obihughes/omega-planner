@@ -8,7 +8,7 @@ This directory contains documentation for the project. Below is an overview of t
 - [Utility Functions](utils.md) - Documentation for utility functions and helpers
 - [API Documentation](api.md) - Documentation for API endpoints and services
 - [State Management](state.md) - Documentation for state management and data flow
-- [Styling Guide](styling.md) - Documentation for styling conventions and Tailwind usage
+- [Styling Guide](styling-guide.md) - Documentation for styling conventions and sharp design system
 
 ## Feature Documentation
 - [Daily Planner](planner.md) - Comprehensive guide to the daily planner feature

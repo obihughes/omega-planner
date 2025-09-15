@@ -28,5 +28,10 @@ export const formatTime = (hour: number): string => {
     displayHour = 12; // 0 and 12 should be displayed as 12
   }
   
-  return `${displayHour}:${minutes.toString().padStart(2, '0')} ${period}`;
+  // For minimalist display, only show minutes if they're not 00
+  if (minutes === 0) {
+    return `${displayHour} ${period}`;
+  } else {
+    return `${displayHour}:${minutes.toString().padStart(2, '0')} ${period}`;
+  }
 }; 

@@ -1,11 +1,73 @@
 'use client';
 
 import React, { memo, useMemo } from 'react';
-import { Project } from '@/types';
-import { Clock, MoreVertical, Plus, Edit, Trash2, RotateCcw, GripVertical } from 'lucide-react';
+import { Project, ProjectFolder } from '@/types';
+import { Clock, MoreVertical, Plus, Edit, Trash2, RotateCcw, GripVertical, Folder, ChevronRight, Briefcase, Copy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CSS } from '@dnd-kit/utilities';
+import { Button } from '@/components/ui/button';
+
+// Task Indicator Component - shows dots up to 12, then numbers
+interface TaskIndicatorProps {
+  completed: number;
+  total: number;
+  className?: string;
+}
+
+function TaskIndicator({ completed, total, className }: TaskIndicatorProps) {
+  if (total === 0) {
+    return (
+      <div className={cn("text-xs text-muted-foreground", className)}>
+        No tasks
+      </div>
+    );
+  }
+
+  // If more than 12 tasks, show numbers instead of dots
+  if (total > 12) {
+    return (
+      <div className={cn("flex items-center gap-2", className)}>
+        <div className="text-xs font-medium text-foreground">
+          {completed}/{total}
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="h-2 w-8 bg-muted rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-green-500 transition-all duration-300"
+              style={{ width: `${total > 0 ? (completed / total) * 100 : 0}%` }}
+            />
+          </div>
+          <span className="text-xs text-muted-foreground">
+            {Math.round((completed / total) * 100)}%
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  // Show dots for 12 or fewer tasks
+  return (
+    <div className={cn("flex items-center gap-1", className)}>
+      <div className="flex items-center gap-0.5">
+        {Array.from({ length: total }, (_, i) => (
+          <div
+            key={i}
+            className={cn(
+              "w-1.5 h-1.5 rounded-full transition-all duration-200",
+              i < completed 
+                ? "bg-green-500" 
+                : "bg-muted border border-border"
+            )}
+          />
+        ))}
+      </div>
+      <span className="text-xs text-muted-foreground ml-1">
+        {completed}/{total}
+      </span>
+    </div>
+  );
+}
 
 interface ProjectCardProps {
   project: Project;
@@ -13,8 +75,11 @@ interface ProjectCardProps {
   onDelete: (projectId: string) => void;
   onRestore?: (projectId: string) => void;
   onPermanentlyDelete?: (projectId: string) => void;
+  onClone?: (project: Project) => void;
   onClick: (project: Project) => void;
   isArchived?: boolean;
+  folders?: ProjectFolder[];
+  onMoveToFolder?: (projectId: string, folderId: string | undefined) => void;
   // Drag and drop props
   isDragging?: boolean;
   transform?: { x: number; y: number; scaleX: number; scaleY: number } | null;
@@ -22,6 +87,11 @@ interface ProjectCardProps {
   attributes?: Record<string, any>;
   setNodeRef?: (node: HTMLElement | null) => void;
   dragOverlayStyle?: React.CSSProperties;
+  // New quick action callbacks (optional)
+  onQuickAddTask?: (projectId: string) => void;
+  onQuickChangeStatus?: (projectId: string, status: Project['status']) => void;
+  onQuickChangeColor?: (projectId: string, color: string) => void;
+  onQuickChangeDueDate?: (projectId: string, endDate: string | undefined) => void;
 }
 
 function ProjectCardComponent({ 
@@ -30,14 +100,21 @@ function ProjectCardComponent({
   onDelete, 
   onRestore,
   onPermanentlyDelete,
+  onClone,
   onClick, 
   isArchived = false,
+  folders = [],
+  onMoveToFolder,
   isDragging = false,
   transform,
   listeners,
   attributes,
   setNodeRef,
-  dragOverlayStyle
+  dragOverlayStyle,
+  onQuickAddTask,
+  onQuickChangeStatus,
+  onQuickChangeColor,
+  onQuickChangeDueDate
 }: ProjectCardProps) {
 
   const getStatusColor = (status: Project['status']) => {
@@ -63,7 +140,8 @@ function ProjectCardComponent({
     due.setHours(23, 59, 59, 999);
 
     const diffMs = due.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    const dayMs = 1000 * 60 * 60 * 24;
+    const diffDays = diffMs >= 0 ? Math.floor(diffMs / dayMs) : Math.ceil(diffMs / dayMs);
 
     if (diffDays < -1) return { text: `Overdue by ${Math.abs(diffDays)} days`, isOverdue: true };
     if (diffDays === -1) return { text: `Overdue by 1 day`, isOverdue: true };
@@ -111,6 +189,13 @@ function ProjectCardComponent({
     onDelete(project.id);
   };
 
+  const handleClone = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onClone) {
+      onClone(project);
+    }
+  };
+
   const handleRestore = (e: React.MouseEvent) => {
     e.stopPropagation();
     onRestore?.(project.id);
@@ -123,43 +208,37 @@ function ProjectCardComponent({
     }
   };
 
-  const renderProgressCircles = () => {
+  const handleMoveToFolder = (folderId: string | undefined) => {
+    if (onMoveToFolder) {
+      onMoveToFolder(project.id, folderId);
+    }
+  };
+
+  const renderProgressIndicator = () => {
     if (totalTasks === 0) {
       return (
-        <div className="flex items-center justify-center py-3 bg-muted/20 rounded-lg">
-          <div className="flex items-center space-x-2 text-muted-foreground text-xs">
-            <Plus className="w-3.5 h-3.5" />
-            <span>Click to add tasks</span>
-          </div>
+        <div className="flex items-center justify-center py-1 text-muted-foreground text-xs">
+          No tasks
         </div>
       );
     }
 
-    const maxCircles = 12;
-    const totalCircles = Math.min(totalTasks, maxCircles);
-    const showEllipsis = totalTasks > maxCircles;
-
+    const progressPercentage = Math.round((completedTasks / totalTasks) * 100);
     return (
-      <div className="flex items-center space-x-3">
-        <span className="text-xs font-medium text-muted-foreground flex-shrink-0">
-          {completedTasks}/{totalTasks}
-        </span>
-        <div className="flex flex-wrap gap-1.5 items-center">
-          {Array.from({ length: totalCircles }, (_, i) => {
-            const isCompleted = i < completedTasks;
-            return (
-              <div
-                key={i}
-                className={cn(
-                  "w-2 h-2 rounded-full transition-all duration-200 flex-shrink-0",
-                  isCompleted ? "bg-green-500" : "bg-muted-foreground/30"
-                )}
-              />
-            );
-          })}
-          {showEllipsis && (
-            <span className="text-xs text-muted-foreground ml-0.5 whitespace-nowrap font-medium">+{totalTasks - maxCircles}</span>
-          )}
+      <div className="space-y-1">
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">
+            {completedTasks}/{totalTasks} tasks
+          </span>
+          <span className="text-xs font-medium text-foreground">
+            {progressPercentage}%
+          </span>
+        </div>
+        <div className="w-full bg-muted rounded-full h-1.5">
+          <div 
+            className="bg-green-500 h-1.5 rounded-full transition-all duration-300" 
+            style={{ width: `${progressPercentage}%` }}
+          />
         </div>
       </div>
     );
@@ -170,135 +249,162 @@ function ProjectCardComponent({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "card-enhanced p-5 cursor-pointer group relative overflow-hidden",
-        "bg-gradient-to-br from-card/80 to-card/60 backdrop-blur-sm",
-        "border border-border/50 rounded-xl shadow-sm",
-        "hover:shadow-lg hover:border-primary/40 hover:bg-gradient-to-br hover:from-card/90 hover:to-card/70",
-        "transition-all duration-300 ease-out transform hover:scale-[1.02]",
-        isDragging && "rotate-2 scale-105 shadow-2xl ring-2 ring-primary/50",
-        isArchived && "opacity-60 bg-muted/20 hover:bg-muted/30"
+        "relative group transition-all duration-200",
+        isDragging ? 'z-10 scale-[1.01]' : '',
       )}
-      onClick={handleCardClick}
-      title="Click to open project and manage tasks"
       {...attributes}
     >
-      {/* Header */}
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center space-x-4 min-w-0 flex-1">
-          <div 
-            className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ 
-              backgroundColor: project.color + '1A', 
-            }}
-          >
-            <div className="w-5 h-5" style={{ color: project.color }}>
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19.4 4.925H4.6c-.718 0-1.3.582-1.3 1.3v11.55c0 .718.582 1.3 1.3 1.3h14.8c.718 0 1.3-.582 1.3-1.3V6.225c0-.718-.582-1.3-1.3-1.3z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path><path d="M3.3 9.7h17.4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path></svg>
-            </div>
-          </div>
-          <div className="min-w-0 flex-1">
-            <h3 className={cn(
-              "font-semibold group-hover:text-primary transition-colors truncate",
-              isArchived ? "text-muted-foreground" : "text-foreground"
-            )}>
-              {project.name}
-              {isArchived && <span className="ml-2 text-xs opacity-70">(Archived)</span>}
-            </h3>
-            <div className="flex items-center space-x-2 mt-1">
-              <span className={cn(
-                "px-2 py-0.5 rounded-full text-xs font-medium border", 
-                getStatusColor(project.status)
-              )}>
-                {project.status.replace('-', ' ')}
-              </span>
-            </div>
-          </div>
-        </div>
-        
-        <div className="flex items-center space-x-1">
-          {!isArchived && (
+      <div className="bg-card border border-border/60 rounded-lg p-4 hover:border-border transition-all duration-200 hover:shadow-sm h-32 flex flex-col" onClick={handleCardClick}>
+        {/* Header */}
+        <div className="flex items-start justify-between mb-2 flex-shrink-0">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             <div 
-              className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing p-1 rounded-md hover:bg-accent transition-opacity flex-shrink-0"
+              className="w-3 h-3 rounded-sm flex-shrink-0"
+              style={{ backgroundColor: project.color }}
+            />
+            <div className="min-w-0 flex-1">
+              <h3
+                className="font-semibold text-sm text-foreground truncate whitespace-nowrap leading-tight"
+                title={project.name && project.name.trim() ? project.name : 'Untitled Project'}
+              >
+                {project.name && project.name.trim() ? project.name : 'Untitled Project'}
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                {project.progress}% complete
+              </p>
+            </div>
+          </div>
+        {!isArchived && (
+          <div className="flex items-center">
+            <div 
+              className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing p-1 rounded-md hover:bg-accent transition-opacity mr-1"
               {...listeners}
               title="Drag to reorder"
+              onClick={(e) => e.stopPropagation()}
             >
               <GripVertical className="w-4 h-4 text-muted-foreground" />
             </div>
-          )}
-          <Popover>
+            <Popover>
             <PopoverTrigger asChild>
-              <button
-                className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-accent transition-all flex-shrink-0"
-                title="More options"
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="h-7 w-7 p-0 ml-2"
                 onClick={(e) => e.stopPropagation()}
               >
-                <MoreVertical className="w-4 h-4 text-muted-foreground" />
-              </button>
+                <MoreVertical className="w-4 h-4" />
+              </Button>
             </PopoverTrigger>
-            <PopoverContent 
-              className="w-40 p-0" 
-              align="end"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="py-1">
-                {!isArchived && (
-                  <>
+            <PopoverContent align="end" className="w-48 p-1">
+              <button
+                onClick={handleEdit}
+                className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center space-x-2 rounded-md"
+              >
+                <Edit className="w-4 h-4" />
+                <span>Edit Project</span>
+              </button>
+              {onClone && (
+                <button
+                  onClick={handleClone}
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center space-x-2 rounded-md"
+                >
+                  <Copy className="w-4 h-4" />
+                  <span>Clone Project</span>
+                </button>
+              )}
+              {onMoveToFolder && (
+                <Popover>
+                  <PopoverTrigger asChild>
                     <button
-                      onClick={handleEdit}
-                      className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center space-x-2"
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center justify-between"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      <Edit className="w-4 h-4" />
-                      <span>Edit Project</span>
+                      <div className="flex items-center space-x-2">
+                        <Folder className="w-4 h-4" />
+                        <span>Move to Folder</span>
+                      </div>
+                      <ChevronRight className="w-3 h-3" />
                     </button>
-                    <button
-                      onClick={handleDelete}
-                      className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center space-x-2 text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      <span>Archive Project</span>
-                    </button>
-                  </>
-                )}
-                {isArchived && (
-                  <>
-                    <button
-                      onClick={handleRestore}
-                      className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center space-x-2"
-                    >
-                      <RotateCcw className="w-4 h-4" />
-                      <span>Restore Project</span>
-                    </button>
-                    <button
-                      onClick={handlePermanentlyDelete}
-                      className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center space-x-2 text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      <span>Delete Forever</span>
-                    </button>
-                  </>
-                )}
-              </div>
+                  </PopoverTrigger>
+                  <PopoverContent 
+                    className="w-44 p-0" 
+                    side="right"
+                    align="start"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="py-1">
+                      <button
+                        onClick={() => handleMoveToFolder(undefined)}
+                        className={cn(
+                          "w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center space-x-2",
+                          !project.folderId && "bg-accent"
+                        )}
+                      >
+                        <Folder className="w-4 h-4 text-muted-foreground" />
+                        <span>Unsorted Projects</span>
+                      </button>
+                      {folders.map((folder) => (
+                        <button
+                          key={folder.id}
+                          onClick={() => handleMoveToFolder(folder.id)}
+                          className={cn(
+                            "w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center space-x-2",
+                            project.folderId === folder.id && "bg-accent"
+                          )}
+                        >
+                          <div 
+                            className="w-3 h-3 rounded"
+                            style={{ backgroundColor: folder.color }}
+                          />
+                          <span>{folder.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+              <button
+                onClick={handleDelete}
+                className="w-full px-3 py-2 text-left text-sm hover:bg-destructive hover:text-destructive-foreground transition-colors flex items-center space-x-2 rounded-md"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Archive Project</span>
+              </button>
             </PopoverContent>
-          </Popover>
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        {renderProgressCircles()}
-
-        <div className="flex items-center justify-between">
-          <div className="flex-1"></div>
-          <div className="flex items-center space-x-2 ml-auto">
-            <span className="flex items-center space-x-1.5 bg-muted/30 text-muted-foreground px-2 py-1 rounded-md text-xs font-medium">
-              <span>{project.progress}%</span>
-              <span className="opacity-80">complete</span>
-            </span>
-            {timeRemaining && (
-              <span className="flex items-center space-x-1.5 px-2 py-1 rounded-md text-xs font-medium bg-muted/30 text-muted-foreground">
-                <Clock className="w-3 h-3" />
-                <span>{timeRemaining.text}</span>
-              </span>
-            )}
+                      </Popover>
           </div>
+        )}
+        {isArchived && null}
+        </div>
+
+              {/* Task Progress Indicator */}
+        {isArchived && (
+          <div className="flex items-center gap-2 mt-1">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 px-1 md:px-2"
+              onClick={handleRestore}
+              title="Restore project"
+            >
+              <RotateCcw className="w-4 h-4 mr-0 lg:mr-1" />
+              <span className="hidden lg:inline">Restore</span>
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              className="h-7 px-1 md:px-2"
+              onClick={handlePermanentlyDelete}
+              title="Delete permanently"
+            >
+              <Trash2 className="w-4 h-4 mr-0 lg:mr-1" />
+              <span className="hidden lg:inline">Delete</span>
+            </Button>
+          </div>
+        )}
+        
+        <div className="mt-auto">
+          {renderProgressIndicator()}
         </div>
       </div>
     </div>
@@ -311,6 +417,7 @@ export const ProjectCard = memo(ProjectCardComponent, (prevProps, nextProps) => 
     prevProps.project.name === nextProps.project.name &&
     prevProps.project.status === nextProps.project.status &&
     prevProps.project.progress === nextProps.project.progress &&
+    prevProps.project.color === nextProps.project.color &&
     prevProps.project.updatedAt === nextProps.project.updatedAt &&
     prevProps.project.tasks?.length === nextProps.project.tasks?.length
   );

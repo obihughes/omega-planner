@@ -12,6 +12,8 @@ interface ExtendedDocumentEditorProps extends DocumentEditorProps {
   onChange?: () => void;
   dragMode?: boolean;
   onDragModeChange?: (dragMode: boolean) => void;
+  isAddingText?: boolean;
+  onIsAddingTextChange?: (isAddingText: boolean) => void;
 }
 
 export default function DocumentEditor({
@@ -22,7 +24,9 @@ export default function DocumentEditor({
   onStar,
   onChange,
   dragMode,
-  onDragModeChange
+  onDragModeChange,
+  isAddingText,
+  onIsAddingTextChange
 }: ExtendedDocumentEditorProps) {
   const [content, setContent] = useState(document?.content || '');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -38,7 +42,7 @@ export default function DocumentEditor({
   }, [document]);
 
   useEffect(() => {
-    // Auto-save after 2 seconds of inactivity
+    // Auto-save after 1 second of inactivity (reduced from 2 seconds for faster saving)
     if (hasUnsavedChanges && document) {
       if (autoSaveTimerRef.current) {
         clearTimeout(autoSaveTimerRef.current);
@@ -46,7 +50,7 @@ export default function DocumentEditor({
       
       autoSaveTimerRef.current = setTimeout(() => {
         handleSave();
-      }, 2000);
+      }, 1000); // Reduced from 2000ms to 1000ms for faster auto-save
     }
 
     return () => {
@@ -54,7 +58,7 @@ export default function DocumentEditor({
         clearTimeout(autoSaveTimerRef.current);
       }
     };
-  }, [hasUnsavedChanges, content]);
+  }, [hasUnsavedChanges, content, document]); // Added document to dependencies
 
   const handleSave = async () => {
     if (!document) return;
@@ -106,7 +110,7 @@ export default function DocumentEditor({
   return (
     <div className="flex flex-col h-full">
       {/* Canvas Text Editor for True Independent Positioning */}
-      <div className="flex-1 overflow-hidden bg-background">
+      <div className="flex-1 overflow-auto bg-background min-w-0">
         <CanvasTextEditor
           content={content}
           onChange={(newContent: string) => {
@@ -120,6 +124,8 @@ export default function DocumentEditor({
           }}
           dragMode={dragMode}
           onDragModeChange={onDragModeChange}
+          isAddingText={isAddingText}
+          onIsAddingTextChange={onIsAddingTextChange}
         />
       </div>
 
