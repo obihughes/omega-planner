@@ -20,7 +20,7 @@ export const WeeklyTaskCard: React.FC<WeeklyTaskCardProps> = ({
   onViewNotes,
   currentTime,
 }) => {
-  const endTime = task.startHour + Number(task.duration);
+  const endTime = (task.startHour || 9) + Number(task.duration || 1);
   const color = task.color || TASK_COLORS[0];
 
   // Determine if we should show compact layout based on height 
@@ -29,7 +29,7 @@ export const WeeklyTaskCard: React.FC<WeeklyTaskCardProps> = ({
   const isSquareFormat = height >= 50; // More square layout for weekly view
   const useSmallTimeFont = task.duration >= 1; // Use smaller font for 1+ hour tasks
 
-  const timeLabel = `${formatTime(task.startHour)}${showDuration ? ` - ${formatTime(endTime)}` : ''}`;
+  const timeLabel = `${formatTime(task.startHour || 9)}${showDuration ? ` - ${formatTime(endTime)}` : ''}`;
 
   const handleEditClick = (e: React.MouseEvent) => {
     e.preventDefault();

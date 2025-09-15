@@ -46,7 +46,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   }, [isViewing]);
 
   const isCompressed = task.duration <= 0.5;
-  const endTime = task.startHour + Number(task.duration);
+  const endTime = (task.startHour || 9) + Number(task.duration || 1);
   const color = task.color || TASK_COLORS[0];
 
   // Check if task is in the past (only for today's tasks)

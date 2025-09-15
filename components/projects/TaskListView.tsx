@@ -280,7 +280,9 @@ function SortableTaskItem({
             {editingTaskId === task.id && editingField === 'dueDate' ? (
               <input
                 ref={(node) => {
-                  (editInputRef as React.RefObject<HTMLInputElement>).current = node as HTMLInputElement | null;
+                  if (editInputRef && 'current' in editInputRef) {
+                    (editInputRef as any).current = node;
+                  }
                   if (node && shouldAutoOpenDatePicker) {
                     try { (node as any)?.showPicker?.(); } catch {}
                     setShouldAutoOpenDatePicker(false);

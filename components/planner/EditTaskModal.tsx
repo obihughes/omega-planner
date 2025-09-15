@@ -73,11 +73,12 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   const [isDurationDropdownOpen, setIsDurationDropdownOpen] = useState(false);
 
   // Calculate end time based on start time + duration
-  const endHour = startHour + duration;
+  const endHour = (startHour || 9) + (duration || 1);
 
   // Helper function to set end time and automatically calculate duration
   const setEndTime = (newEndHour: number) => {
-    const newDuration = Math.max(0.25, newEndHour - startHour); // Minimum 15 minutes
+    const currentStartHour = startHour || 9;
+    const newDuration = Math.max(0.25, newEndHour - currentStartHour); // Minimum 15 minutes
     setDuration(newDuration);
   };
 
@@ -274,7 +275,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                 <div>
                   <label htmlFor="taskStartTime" className="block text-xs font-medium text-muted-foreground mb-1">Start Time</label>
                   <CustomTimePicker
-                    value={startHour}
+                    value={startHour || 9}
                     onChange={setStartHour}
                   />
                 </div>

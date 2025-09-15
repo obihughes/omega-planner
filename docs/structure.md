@@ -10,7 +10,6 @@ The root directory contains configuration files and the main project structure:
 - `tsconfig.json` - TypeScript configuration
 - `tailwind.config.js` - Tailwind CSS configuration
 - `postcss.config.js` - PostCSS configuration
-- `.env` - Environment variables
 - `package.json` - Project dependencies and scripts
 - `next-env.d.ts` - Next.js TypeScript declarations
 
@@ -30,7 +29,7 @@ Current notable feature folders include:
 - `components/meals` – Meal planning components (see `MealPlanner`)
 
 #### `/lib`
-Core library code and utilities that are fundamental to the application's functionality. This includes database configurations, authentication setup, and other core services.
+Core library code and utilities that are fundamental to the application's functionality.
 
 #### `/utils`
 Helper functions, custom hooks, and utility functions that are used across different parts of the application.

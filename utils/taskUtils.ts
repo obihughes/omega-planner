@@ -53,10 +53,10 @@ export const resolveCollisionsForResize = (
   if (edgeBeingResized === 'start') {
     let maxEndTimeOfCollidingTasks = -Infinity;
     for (const otherTask of otherTasksOnSameDay) {
-      if (checkOverlap(resolvedStartHour, resolvedDuration, otherTask.startHour, otherTask.duration)) {
+      if (checkOverlap(resolvedStartHour, resolvedDuration, otherTask.startHour || 9, otherTask.duration || 1)) {
         collided = true;
-        if (resolvedStartHour < (otherTask.startHour + otherTask.duration)) {
-          maxEndTimeOfCollidingTasks = Math.max(maxEndTimeOfCollidingTasks, otherTask.startHour + otherTask.duration);
+        if (resolvedStartHour < ((otherTask.startHour || 9) + (otherTask.duration || 1))) {
+          maxEndTimeOfCollidingTasks = Math.max(maxEndTimeOfCollidingTasks, (otherTask.startHour || 9) + (otherTask.duration || 1));
         }
       }
     }
@@ -67,10 +67,10 @@ export const resolveCollisionsForResize = (
   } else { // edgeBeingResized === 'end'
     let minStartTimeOfCollidingTasks = Infinity;
     for (const otherTask of otherTasksOnSameDay) {
-      if (checkOverlap(resolvedStartHour, resolvedDuration, otherTask.startHour, otherTask.duration)) {
+      if (checkOverlap(resolvedStartHour, resolvedDuration, otherTask.startHour || 9, otherTask.duration || 1)) {
         collided = true;
-        if ((resolvedStartHour + resolvedDuration) > otherTask.startHour) {
-          minStartTimeOfCollidingTasks = Math.min(minStartTimeOfCollidingTasks, otherTask.startHour);
+        if ((resolvedStartHour + resolvedDuration) > (otherTask.startHour || 9)) {
+          minStartTimeOfCollidingTasks = Math.min(minStartTimeOfCollidingTasks, otherTask.startHour || 9);
         }
       }
     }
@@ -120,15 +120,17 @@ export const resolveCollisionsForDrag = (
   });
 
   for (const otherTask of otherTasksOnTargetDate) {
-    const overlaps = checkOverlap(snappedNewStartHour, taskDuration, otherTask.startHour, otherTask.duration);
+    const otherStartHour = otherTask.startHour || 9;
+    const otherDuration = otherTask.duration || 1;
+    const overlaps = checkOverlap(snappedNewStartHour, taskDuration, otherStartHour, otherDuration);
 
     if (overlaps) {
-      if (snappedNewStartHour < otherTask.startHour) {
+      if (snappedNewStartHour < otherStartHour) {
         // Task is to the left of the obstacle, try to place it right before the obstacle
-        snappedNewStartHour = otherTask.startHour - taskDuration;
+        snappedNewStartHour = otherStartHour - taskDuration;
       } else {
         // Task is to the right of (or overlapping) the obstacle, try to place it right after
-        snappedNewStartHour = otherTask.startHour + otherTask.duration;
+        snappedNewStartHour = otherStartHour + otherDuration;
       }
       // Re-snap and clamp after adjustment attempt
       snappedNewStartHour = Math.max(timelineStartHour, snappedNewStartHour);
@@ -137,7 +139,7 @@ export const resolveCollisionsForDrag = (
 
       // Final check if the adjusted position is still overlapping
       // This can happen if the task is squeezed between two others or against timeline boundary
-      if (checkOverlap(snappedNewStartHour, taskDuration, otherTask.startHour, otherTask.duration)) {
+      if (checkOverlap(snappedNewStartHour, taskDuration, otherStartHour, otherDuration)) {
         canMove = false; // If still overlaps, mark as cannot move for this iteration
       }
       
