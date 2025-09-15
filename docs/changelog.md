@@ -1,5 +1,8 @@
 ## Unreleased
 
+- Fixes
+  - Ensure `TaskFormModal` sets defined values for `startHour` and `duration` using nullish coalescing with explicit fallbacks to satisfy strict type checks in production (Vercel) builds. Files affected: `components/modals/TaskFormModal.tsx`.
+
 - Branding
   - Added browser tab icon using Next.js file-based icon support.
   - File added: `app/icon.svg`. Replace this file to customize the favicon.

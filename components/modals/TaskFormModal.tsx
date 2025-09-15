@@ -67,8 +67,8 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
   useEffect(() => {
     if (taskToEdit) {
       setTaskName(taskToEdit.name);
-      setStartHour(taskToEdit.startHour || 9);
-      setDuration(taskToEdit.duration || 1);
+      setStartHour(taskToEdit.startHour ?? initialStartHour);
+      setDuration(taskToEdit.duration ?? 1);
       setNotes(taskToEdit.notes || "");
       setColor(taskToEdit.color || TASK_COLORS[0]);
     } else {
