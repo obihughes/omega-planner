@@ -321,12 +321,16 @@ Purpose: Minimal focus-mode workspace with a timer, planned/completed lists, and
 
 **Key Behaviors:**
 - Past Sessions are hidden while a session is active (reduces distraction).
-- When no session is active, Past Sessions are shown with edit/delete controls.
+- When no session is active, Past Sessions can be toggled Show/Hide and include edit/delete controls. Toggle preference persists.
 - State persists to localStorage (`omega-planner-focus-state-v1`, `omega-planner-focus-sessions-v1`).
+ - Session target length can be set (quick picks 15/25/45/60 min or custom). Target persists (`omega-planner-focus-target-seconds-v1`).
+ - Visual feedback: progress bar and remaining time until target, with percentage.
+ - Optional sound notifications (toggleable): 5 minutes remaining and time up. Preference persists (`omega-planner-focus-sound-enabled-v1`).
 
 **Controls:**
 - Start, Pause, End Session
 - Drag backlog items into the planned list; mark planned items done to move to completed
+ - Target controls: quick-pick buttons and numeric input in minutes
 
 ### Button, Input, Card, etc. (`components/ui/`)
 Reusable UI primitives built with consistent styling.
