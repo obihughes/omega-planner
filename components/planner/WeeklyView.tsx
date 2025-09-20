@@ -80,16 +80,19 @@ export default function WeeklyView({}: WeeklyViewProps) {
     scrollContainer.scrollLeft = initialScrollPosition;
   }, [weekOffset, isSameDayView, selectedDayOfWeek]); // Re-run when view changes
 
-  // Calculate week dates (starting from previous day, with today as second day)
+  // Calculate week dates (Monday to Sunday, fixed week start)
   const getWeekDates = (offset: number) => {
     const today = new Date();
     today.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
+    
+    // Find Monday of the current week
+    const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, ...
+    const daysSinceMonday = (dayOfWeek + 6) % 7; // 0 for Monday, 6 for Sunday
     const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - daysSinceMonday + (offset * 7));
+    startOfWeek.setHours(12, 0, 0, 0);
     
-    // Start from yesterday (today - 1 day)
-    startOfWeek.setDate(today.getDate() - 1 + (offset * 7));
-    
-    const weekDates = [];
+    const weekDates = [] as Date[];
     for (let i = 0; i < 7; i++) {
       const date = new Date(startOfWeek);
       date.setDate(startOfWeek.getDate() + i);

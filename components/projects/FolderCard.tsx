@@ -141,8 +141,8 @@ export function FolderCard({
 
         {/* Expanded Projects View */}
         {isExpanded && projects.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-border/30">
-            <div className="flex flex-col gap-1 max-h-20 overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+          <div className="mt-3 pt-3 border-t border-border/30 flex-1 min-h-0 overflow-hidden">
+            <div className="flex flex-col gap-1 h-full min-h-0 overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
               {projects.map((project) => (
                 <div
                   key={project.id}

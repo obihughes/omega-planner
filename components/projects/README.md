@@ -86,4 +86,8 @@ Main navigation structure under Task Manager:
 - A "New Folder" button is available in the header to create folders using the folder modal.
 - Folders and projects can be shown together in a grid; folder cards use a square aspect to align heights with project cards.
 
+### UI Tweaks (September 2025)
+- Folder cards: Expanded the projects sublist to fill remaining card height and scroll within the card for better use of space.
+- Project cards: Project names now support up to two lines (line-clamp-2) instead of a single-line truncate, improving readability for longer names.
+
 This provides a dedicated space for task-focused workflows while maintaining easy access to project management features. 

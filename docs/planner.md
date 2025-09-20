@@ -51,7 +51,7 @@ Main component that orchestrates all planner functionality.
 Renders individual timeline sections with tasks and time markers.
 
 ### WeeklyView
-Displays a 7-day view of scheduled tasks in a horizontal timeline format. Features include:
+Displays a 7-day view of scheduled tasks in a horizontal timeline format. Weeks start on Monday and end on Sunday. Features include:
 
 - **Enhanced Visual Design**: Modern gradient backgrounds, improved spacing, and better color hierarchy
 - **Smart Time Management**: Focused timeline from 6 AM to 10 PM for optimal productivity planning
@@ -244,7 +244,7 @@ The Saved Days feature allows you to save daily task configurations as reusable 
 ### Calendar Views (under Daily Planner)
 The Monthly and Yearly calendar views are accessible from the main navigation under `Daily Planner`:
 - Scheduling View: the planner's own monthly mode
-- Monthly Calendar View: the full calendar page's monthly mode; includes a compact grid and an Events/Periods list under the calendar for the selected month
+- Monthly Calendar View: the full calendar page's monthly mode; includes a compact grid and an Events/Periods list under the calendar for the selected month. In the grid, hover an event to reveal a delete icon for quick removal. Deletions prompt for confirmation.
 - Yearly Calendar: the full calendar page's yearly mode
 
 Note: The in-page monthly/yearly/timeline toggle in `app/calendar/page.tsx` has been removed. Use the main sidebar navigation to switch views.

@@ -1,10 +1,24 @@
 ## Unreleased
 
+- Weekly view now starts on Monday consistently (fixed moving week start)
+- Monthly calendar grid shows a delete button on event chips; events can be removed without opening timeline. Deletions now prompt for confirmation.
+
+## Unreleased
+
+- Calendar (Yearly view)
+  - Disabled hover tooltips and summaries in `YearCalendar` in favor of explicit click interactions.
+  - Single-click on any date opens a Day Details modal listing events and intervals.
+  - Event/Interval chips open a compact Details modal on click (Edit/Delete available).
+  - Cleaned up hover state and removed `title` attributes from indicators to prevent native browser tooltips.
+  - Files affected: `components/calendar/YearCalendar.tsx`, `docs/components.md`.
+
 - Branding
   - Added browser tab icon using Next.js file-based icon support.
   - File added: `app/icon.svg`. Replace this file to customize the favicon.
 
 - Focus
+  - Timer rewritten to use wall-clock elapsed time with `lastResumedAt`, preventing freezes when the tab is backgrounded or the user navigates away. Files affected: `app/focus/page.tsx`.
+  - Added Focus-only Screen Wake Lock while the timer is running and page is visible; releases on pause, visibility change, or unmount. Other pages remain static (no wake lock). Files affected: `app/focus/page.tsx`.
   - Past Sessions list is hidden during an active session to reduce distraction. Files affected: `app/focus/page.tsx`.
   - Added collapsible Show/Hide for Past Sessions when no session is active; preference is persisted. Files affected: `app/focus/page.tsx`, `docs/components.md`, `README.md`.
   - Added session target length with quick-picks and custom minutes, plus progress bar, remaining time, and percentage. Persistence via `omega-planner-focus-target-seconds-v1`. Files affected: `app/focus/page.tsx`, `docs/components.md`, `README.md`.

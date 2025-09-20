@@ -40,6 +40,7 @@ interface TasksViewPreferences {
     order: 'asc' | 'desc';
   }>;
   useMultipleSort: boolean;
+  
 }
 
 // Default preferences with 'today' as default dueDate filter
@@ -613,7 +614,7 @@ export default function ProjectsTasksPage() {
     if (task) {
       try {
         updateTaskInProject(task.projectId, taskId, { 
-          dueDate: date.toISOString().split('T')[0] // Format as YYYY-MM-DD
+          dueDate: date.toISOString().split('T')[0]
         });
         console.log(`Task "${task.title}" scheduled for ${date.toLocaleDateString()}`);
       } catch (error) {
@@ -862,6 +863,7 @@ export default function ProjectsTasksPage() {
           </div>
           
           <div className="flex items-center gap-2">
+            
             <Button
               onClick={() => setIsAddTaskModalOpen(true)}
               size="sm"

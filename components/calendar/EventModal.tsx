@@ -84,8 +84,10 @@ export function EventModal({
 
   const handleDelete = () => {
     if (event && onDelete) {
-      onDelete(event.id);
-      onClose();
+      if (confirm('Delete this event?')) {
+        onDelete(event.id);
+        onClose();
+      }
     }
   };
 

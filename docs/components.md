@@ -326,6 +326,8 @@ Purpose: Minimal focus-mode workspace with a timer, planned/completed lists, and
  - Session target length can be set (quick picks 15/25/45/60 min or custom). Target persists (`omega-planner-focus-target-seconds-v1`).
  - Visual feedback: progress bar and remaining time until target, with percentage.
  - Optional sound notifications (toggleable): 5 minutes remaining and time up. Preference persists (`omega-planner-focus-sound-enabled-v1`).
+ - Timer uses wall-clock time: while running, the UI derives elapsed from `elapsedSeconds + (now - lastResumedAt)`. This prevents the timer from freezing when the tab is backgrounded or you navigate away.
+ - Focus-only Screen Wake Lock: while the timer is running and the Focus page is visible, the screen is kept awake (if supported). The lock is released on pause, when switching tabs/routes, or on unmount. Other pages remain static; no wake lock is requested elsewhere.
 
 **Controls:**
 - Start, Pause, End Session
@@ -352,12 +354,18 @@ File Updated:
 ## Calendar Components
 
 ### YearCalendar (`components/calendar/YearCalendar.tsx`)
-Full year calendar view with event management. Accessible under Daily Planner → Yearly Calendar.
+Full year calendar view with event and interval management. Accessible under Daily Planner → Yearly Calendar.
 
-**Key Features:**
-- Month-by-month navigation
-- Event and period creation
-- Date selection and highlighting
+**Key Interactions:**
+- Clicking a date opens a Day Details modal listing events and intervals for that day (or an empty-state message).
+- Clicking an event or interval chip opens a compact Details modal with title, color, date(s), and notes/description, plus Edit/Delete actions.
+- Double-clicking a date opens the New Event modal prefilled with that date.
+- Long-press on a date (500ms) opens the New Interval modal starting on that date.
+- Drag on an interval chip supports move/resize (start/end) across days.
+
+**Notes:**
+- Hover-based summaries and tooltips are disabled; interaction is click/long-press driven to reduce accidental popups.
+- Past dates remain clickable for read-only summaries; editing/new actions are still available via controls.
 
 ### EventModal (`components/calendar/EventModal.tsx`)
 Modal for creating and editing calendar events.
@@ -452,6 +460,7 @@ Custom time selection component.
 - `components/calendar/MiniSchedulerCalendar.tsx`: replaced single badge with unlimited wrapping dots at bottom of cells, colored by project.
 
 - Inline due date editing in `components/projects/CompactTaskCard.tsx` using a native date input. Saves on blur/Enter, cancels on Escape. Dates normalized to YYYY-MM-DD.
+ 
 - New grouping in `app/projects/tasks/page.tsx`: select "Done by day" to group tasks by `completedAt` date.
 - `components/projects/ProjectsCalendar.tsx`: completed-count badge now shows a tooltip with the titles of tasks completed on that day, and the day cell lists up to 2 completed task titles with an overflow indicator like "+N completed". Overdue/remaining time uses normalized date keys.
 

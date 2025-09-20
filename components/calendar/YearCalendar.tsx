@@ -321,7 +321,7 @@ export function YearCalendar({
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const longPressTriggered = useRef(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
+  // Hover state removed; we now use click-to-open only
   
   // Drag state for periods
   const [dragMode, setDragMode] = useState<'move' | 'resize-start' | 'resize-end' | null>(null);
@@ -621,11 +621,10 @@ export function YearCalendar({
       // Single event - square in top right corner
       return (
         <div className="absolute top-0.5 right-0.5 z-20">
-          <div
-            className="w-2 h-2 border border-white/30 shadow-sm"
-            style={{ backgroundColor: events[0].color }}
-            title={events[0].title}
-          />
+            <div
+              className="w-2 h-2 border border-white/30 shadow-sm"
+              style={{ backgroundColor: events[0].color }}
+            />
         </div>
       );
     } else if (events.length === 2) {
@@ -636,14 +635,12 @@ export function YearCalendar({
             <div
               className="w-1.5 h-1.5 border border-white/30 shadow-sm"
               style={{ backgroundColor: events[0].color }}
-              title={events[0].title}
             />
           </div>
           <div className="absolute top-0.5 right-0.5 z-20">
             <div
               className="w-1.5 h-1.5 border border-white/30 shadow-sm"
               style={{ backgroundColor: events[1].color }}
-              title={events[1].title}
             />
           </div>
         </>
@@ -656,21 +653,18 @@ export function YearCalendar({
             <div
               className="w-1.5 h-1.5 border border-white/30 shadow-sm"
               style={{ backgroundColor: events[0].color }}
-              title={events[0].title}
             />
           </div>
           <div className="absolute top-0.5 left-1/2 transform -translate-x-1/2 z-20">
             <div
               className="w-1.5 h-1.5 border border-white/30 shadow-sm"
               style={{ backgroundColor: events[1].color }}
-              title={events[1].title}
             />
           </div>
           <div className="absolute top-0.5 right-0.5 z-20">
             <div
               className="w-1.5 h-1.5 border border-white/30 shadow-sm"
               style={{ backgroundColor: events[2].color }}
-              title={events[2].title}
             />
           </div>
         </>
@@ -683,20 +677,17 @@ export function YearCalendar({
             <div
               className="w-1.5 h-1.5 border border-white/30 shadow-sm"
               style={{ backgroundColor: events[0].color }}
-              title={events[0].title}
             />
           </div>
           <div className="absolute top-0.5 left-1/2 transform -translate-x-1/2 z-20">
             <div
               className="w-1.5 h-1.5 border border-white/30 shadow-sm"
               style={{ backgroundColor: events[1].color }}
-              title={events[1].title}
             />
           </div>
           <div className="absolute top-0.5 right-0.5 z-20">
             <div
               className="w-1.5 h-1.5 border border-white/30 shadow-sm bg-muted-foreground flex items-center justify-center"
-              title={`${events.length - 2} more events`}
             >
               <div className="w-0.5 h-0.5 bg-white" />
             </div>
@@ -844,15 +835,13 @@ export function YearCalendar({
                       eraserMode ? 'hover:border-red-300 hover:bg-red-50 dark:hover:border-red-700 dark:hover:bg-red-900/30' : ''
                     }`}
                       onClick={(e) => handleEventClick(event, e)}
-                      onMouseEnter={() => setHoveredItemId(event.id)}
-                      onMouseLeave={() => setHoveredItemId(null)}
                     >
                       <div 
                         className="w-2 h-2 rounded-full flex-shrink-0"
                         style={{ backgroundColor: event.color }}
                       />
                       <div className="flex items-center gap-1 flex-1 min-w-0">
-                        <span className="text-foreground truncate font-medium" title={event.title}>
+                        <span className="text-foreground truncate font-medium">
                           {event.title}
                         </span>
                         <span className="text-muted-foreground/60 text-[10px] font-normal whitespace-nowrap">
@@ -862,7 +851,7 @@ export function YearCalendar({
                       {eraserMode ? (
                         <X className="w-3 h-3 text-red-500" />
                       ) : (
-                        <Edit2 className="w-3 h-3 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <Edit2 className="w-3 h-3 text-muted-foreground/40" />
                       )}
                     </div>
                   ))}
@@ -882,8 +871,6 @@ export function YearCalendar({
                       eraserMode ? 'hover:border-red-300 hover:bg-red-50 dark:hover:border-red-700 dark:hover:bg-red-900/30' : ''
                     }`}
                       onClick={(e) => handlePeriodClick(period, e)}
-                      onMouseEnter={() => setHoveredItemId(period.id)}
-                      onMouseLeave={() => setHoveredItemId(null)}
                       onMouseDown={(e) => {
                         if (eraserMode) return; // Disable drag in eraser mode
                         e.stopPropagation(); // Prevent date-level mouse down
@@ -894,7 +881,7 @@ export function YearCalendar({
                         className="w-4 h-1.5 rounded-full flex-shrink-0"
                         style={{ backgroundColor: period.color }}
                       />
-                      <span className="text-foreground truncate flex-1 font-medium" title={period.title}>
+                      <span className="text-foreground truncate flex-1 font-medium">
                         {period.title}
                       </span>
                       {eraserMode ? (
@@ -928,7 +915,6 @@ export function YearCalendar({
               onClick={() => navigateYear('prev')}
               size="sm"
               className="flex items-center gap-2"
-              title={`Go to ${currentYear - 1}`}
             >
               <ChevronLeft className="w-4 h-4" />
               {currentYear - 1}
@@ -943,7 +929,6 @@ export function YearCalendar({
               onClick={() => navigateYear('next')}
               size="sm"
               className="flex items-center gap-2"
-              title={`Go to ${currentYear + 1}`}
             >
               {currentYear + 1}
               <ChevronRight className="w-4 h-4" />

@@ -48,6 +48,7 @@ export function CompactTaskCard({
   const [dueDateValue, setDueDateValue] = useState('');
   const dueInputRef = useRef<HTMLInputElement>(null);
   const [shouldAutoOpenDatePicker, setShouldAutoOpenDatePicker] = useState(false);
+  
 
   const dueInfo = formatDueDate(task.dueDate);
   const fullDueTitle = React.useMemo(() => {
@@ -187,6 +188,8 @@ export function CompactTaskCard({
       }
     }
   }, [isEditingDueDate]);
+
+  
 
   // Create confetti particles animation
   const createConfettiParticles = (button: HTMLElement) => {
@@ -461,6 +464,7 @@ export function CompactTaskCard({
                 <Plus className="w-3 h-3" />
               </button>
             )}
+            
           </div>
         </div>
       </div>

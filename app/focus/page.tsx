@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AppLayout } from '@/components/ui/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,8 @@ type FocusState = {
   elapsedSeconds: number;
   isRunning: boolean;
   sessionStartedAt: string | null; // ISO
+  // When running, we accumulate using wall-clock from this timestamp
+  lastResumedAt: string | null; // ISO
   // Planned for this session
   planned: FocusTask[];
   // Completed during this session
@@ -71,6 +73,7 @@ export default function FocusPage() {
     elapsedSeconds: 0,
     isRunning: false,
     sessionStartedAt: null,
+    lastResumedAt: null,
     planned: [],
     completed: [],
     backlog: [],
@@ -88,6 +91,8 @@ export default function FocusPage() {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const notifiedFiveRef = useRef<boolean>(false);
   const notifiedTimeUpRef = useRef<boolean>(false);
+  const wakeLockRef = useRef<any>(null);
+  const [tick, setTick] = useState<number>(0);
 
   type FocusSession = {
     id: string;
@@ -111,6 +116,7 @@ export default function FocusPage() {
           elapsedSeconds: typeof parsed.elapsedSeconds === 'number' ? parsed.elapsedSeconds : prev.elapsedSeconds,
           isRunning: typeof parsed.isRunning === 'boolean' ? parsed.isRunning : prev.isRunning,
           sessionStartedAt: typeof parsed.sessionStartedAt === 'string' ? parsed.sessionStartedAt : prev.sessionStartedAt,
+          lastResumedAt: typeof (parsed as any).lastResumedAt === 'string' ? (parsed as any).lastResumedAt : null,
           planned: Array.isArray(parsed.planned) ? parsed.planned as FocusTask[] : prev.planned,
           completed: Array.isArray(parsed.completed) ? parsed.completed as FocusTask[] : prev.completed,
           backlog: Array.isArray(parsed.backlog) ? parsed.backlog as FocusTask[] : prev.backlog,
@@ -255,6 +261,16 @@ export default function FocusPage() {
     }
   }, [state]);
 
+  // Derived elapsed seconds using wall-clock while running
+  const displayedElapsedSeconds = useMemo(() => {
+    if (state.isRunning && state.lastResumedAt) {
+      const sinceMs = Date.now() - new Date(state.lastResumedAt).getTime();
+      const extra = Math.max(0, Math.floor(sinceMs / 1000));
+      return state.elapsedSeconds + extra;
+    }
+    return state.elapsedSeconds;
+  }, [state.elapsedSeconds, state.isRunning, state.lastResumedAt, tick]);
+
   // Persist Past Sessions visibility
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -327,31 +343,77 @@ export default function FocusPage() {
   // Notify on important times
   useEffect(() => {
     if (!state.isRunning || targetSeconds <= 0) return;
-    const remaining = targetSeconds - state.elapsedSeconds;
-    // 5 minutes remaining (only if target is at least 5 minutes)
+    const remaining = targetSeconds - displayedElapsedSeconds;
     if (targetSeconds >= 300 && remaining <= 300 && remaining > 0 && !notifiedFiveRef.current) {
       playBeep('warning');
       notifiedFiveRef.current = true;
     }
-    // Time up
-    if (state.elapsedSeconds >= targetSeconds && !notifiedTimeUpRef.current) {
+    if (displayedElapsedSeconds >= targetSeconds && !notifiedTimeUpRef.current) {
       playBeep('timeup');
       notifiedTimeUpRef.current = true;
     }
-  }, [state.elapsedSeconds, state.isRunning, targetSeconds]);
+  }, [displayedElapsedSeconds, state.isRunning, targetSeconds]);
 
-  // Stopwatch timer
+  // Render tick while running (do not mutate elapsed while running)
   useEffect(() => {
     if (!state.isRunning) return;
     intervalRef.current && clearInterval(intervalRef.current);
     intervalRef.current = setInterval(() => {
-      setState(prev => ({
-        ...prev,
-        elapsedSeconds: prev.elapsedSeconds + 1,
-      }));
+      setTick(v => (v + 1) % 1_000_000);
     }, 1000);
     return () => {
       intervalRef.current && clearInterval(intervalRef.current);
+    };
+  }, [state.isRunning]);
+
+  // Screen wake lock only on Focus page while running
+  useEffect(() => {
+    let cancelled = false;
+    const requestWakeLock = async () => {
+      try {
+        if ((navigator as any).wakeLock && state.isRunning && document.visibilityState === 'visible' && !cancelled && !wakeLockRef.current) {
+          const sentinel = await (navigator as any).wakeLock.request('screen');
+          wakeLockRef.current = sentinel;
+          sentinel.addEventListener?.('release', () => {
+            wakeLockRef.current = null;
+          });
+        }
+      } catch {}
+    };
+    requestWakeLock();
+    if (!state.isRunning && wakeLockRef.current) {
+      try { wakeLockRef.current.release(); } catch {}
+      wakeLockRef.current = null;
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [state.isRunning]);
+
+  useEffect(() => {
+    const onVisibility = async () => {
+      if ((navigator as any).wakeLock) {
+        if (document.visibilityState === 'visible' && state.isRunning && !wakeLockRef.current) {
+          try {
+            const sentinel = await (navigator as any).wakeLock.request('screen');
+            wakeLockRef.current = sentinel;
+            sentinel.addEventListener?.('release', () => {
+              wakeLockRef.current = null;
+            });
+          } catch {}
+        } else if (document.visibilityState !== 'visible' && wakeLockRef.current) {
+          try { wakeLockRef.current.release(); } catch {}
+          wakeLockRef.current = null;
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      if (wakeLockRef.current) {
+        try { wakeLockRef.current.release(); } catch {}
+        wakeLockRef.current = null;
+      }
     };
   }, [state.isRunning]);
 
@@ -360,21 +422,34 @@ export default function FocusPage() {
     ensureAudioContext();
     notifiedFiveRef.current = false;
     notifiedTimeUpRef.current = false;
-    setState(s => ({ ...s, isRunning: true, sessionStartedAt: s.sessionStartedAt ?? new Date().toISOString() }));
+    setState(s => ({
+      ...s,
+      isRunning: true,
+      sessionStartedAt: s.sessionStartedAt ?? new Date().toISOString(),
+      lastResumedAt: new Date().toISOString(),
+    }));
   };
-  const pause = () => setState(s => ({ ...s, isRunning: false }));
+  const pause = () => setState(s => {
+    if (!s.isRunning) return s;
+    const lastMs = s.lastResumedAt ? new Date(s.lastResumedAt).getTime() : 0;
+    const extra = lastMs ? Math.max(0, Math.floor((Date.now() - lastMs) / 1000)) : 0;
+    return { ...s, isRunning: false, elapsedSeconds: s.elapsedSeconds + extra, lastResumedAt: null };
+  });
   const endSession = () => {
     notifiedFiveRef.current = false;
     notifiedTimeUpRef.current = false;
     setState(s => {
       if (!s.sessionStartedAt) {
-        return { ...s, isRunning: false };
+        return { ...s, isRunning: false, lastResumedAt: null };
       }
+      const lastMs = s.lastResumedAt ? new Date(s.lastResumedAt).getTime() : 0;
+      const extra = s.isRunning && lastMs ? Math.max(0, Math.floor((Date.now() - lastMs) / 1000)) : 0;
+      const total = s.elapsedSeconds + extra;
       const session: FocusSession = {
         id: crypto.randomUUID(),
         startedAt: s.sessionStartedAt,
         endedAt: new Date().toISOString(),
-        durationSeconds: s.elapsedSeconds,
+        durationSeconds: total,
         completed: [...s.completed],
       };
       const nextSessions = [session, ...sessions].sort((a, b) => b.startedAt.localeCompare(a.startedAt));
@@ -387,6 +462,7 @@ export default function FocusPage() {
         isRunning: false,
         sessionStartedAt: null,
         elapsedSeconds: 0,
+        lastResumedAt: null,
         // keep planned/backlog as-is; completed resets for next session
         completed: [],
       };
@@ -521,7 +597,7 @@ export default function FocusPage() {
           <div className="flex flex-col items-center justify-center mb-6 gap-3">
             <div className="flex items-center gap-4 p-4 border border-border rounded-lg bg-card/50 w-full max-w-3xl">
               <Clock className="w-5 h-5 text-muted-foreground" />
-              <div className="font-mono text-3xl min-w-[88px]">{loaded ? formatHMS(state.elapsedSeconds) : '00:00'}</div>
+              <div className="font-mono text-3xl min-w-[88px]">{loaded ? formatHMS(displayedElapsedSeconds) : '00:00'}</div>
               <div className="flex items-center gap-2">
                 {!state.isRunning ? (
                   <Button size="sm" onClick={start} className="flex items-center gap-1">
@@ -570,17 +646,17 @@ export default function FocusPage() {
               <div className="progress-bar h-2 w-full border border-border/50">
                 <div
                   className="progress-fill"
-                  style={{ width: `${targetSeconds > 0 ? Math.min(100, Math.floor((state.elapsedSeconds / targetSeconds) * 100)) : 0}%` }}
+                  style={{ width: `${targetSeconds > 0 ? Math.min(100, Math.floor((displayedElapsedSeconds / targetSeconds) * 100)) : 0}%` }}
                 />
               </div>
               <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
                 <span>
                   {targetSeconds > 0
-                    ? `${formatHMS(Math.max(0, targetSeconds - state.elapsedSeconds))} remaining`
+                    ? `${formatHMS(Math.max(0, targetSeconds - displayedElapsedSeconds))} remaining`
                     : 'No target set'}
                 </span>
                 {targetSeconds > 0 && (
-                  <span>{Math.min(100, Math.floor((state.elapsedSeconds / targetSeconds) * 100))}%</span>
+                  <span>{Math.min(100, Math.floor((displayedElapsedSeconds / targetSeconds) * 100))}%</span>
                 )}
               </div>
             </div>

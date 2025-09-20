@@ -264,7 +264,7 @@ function ProjectCardComponent({
             />
             <div className="min-w-0 flex-1">
               <h3
-                className="font-semibold text-sm text-foreground truncate whitespace-nowrap leading-tight"
+                className="font-semibold text-sm text-foreground leading-tight line-clamp-2"
                 title={project.name && project.name.trim() ? project.name : 'Untitled Project'}
               >
                 {project.name && project.name.trim() ? project.name : 'Untitled Project'}
