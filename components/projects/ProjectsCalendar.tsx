@@ -16,6 +16,7 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
   const router = useRouter();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   // Get the first day of the current month and calculate calendar grid
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -185,8 +186,7 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
   };
 
   const handleDayClick = (date: Date) => {
-    // Navigate to projects view with date-specific focus
-    router.push('/projects');
+    setSelectedDate(date);
   };
 
   const handleProjectClick = (projectId: string, e?: React.MouseEvent) => {
@@ -331,6 +331,7 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
                 const completedCount = getCompletedCountForDate(date);
                 const completedTasks = completedCount > 0 ? getCompletedTasksForDate(date) : [];
                 const isCurrentMonthDay = isCurrentMonth(date);
+                const isSelected = selectedDate && date.toDateString() === selectedDate.toDateString();
                 const isTodayDate = isToday(date);
                 
                 return (
@@ -339,7 +340,8 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
                     className={cn(
                       "min-h-[80px] p-1.5 border-b border-border/20 hover:bg-accent/10 transition-all duration-200 cursor-pointer group",
                       !isCurrentMonthDay && "bg-muted/20 text-muted-foreground/60",
-                      isTodayDate && "bg-primary/5 border-primary/20 border-l-2 border-l-primary"
+                      isTodayDate && "bg-primary/5 border-primary/20 border-l-2 border-l-primary",
+                      isSelected && "ring-1 ring-primary"
                     )}
                     onClick={() => handleDayClick(date)}
                     title="Click to view tasks for this day"
@@ -495,6 +497,45 @@ export function ProjectsCalendar({ projects }: ProjectsCalendarProps) {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {/* Selected day tasks list (from Tasks view) */}
+        {selectedDate && (
+          <div className="mt-4 bg-card/50 border border-border/20 rounded-lg">
+            <div className="p-3 border-b border-border/20 flex items-center justify-between">
+              <div className="text-sm font-medium">
+                Selected day — {selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setSelectedDate(null)}>Clear</Button>
+            </div>
+            <div className="p-3 max-h-64 overflow-y-auto space-y-1">
+              {(() => {
+                const dateKey = getDateKey(selectedDate);
+                const tasksForDate: { project: Project; task: ProjectTask }[] = [];
+                filteredProjects.forEach(project => {
+                  project.tasks.forEach(task => {
+                    if (task.dueDate && getDateKey(task.dueDate) === dateKey) {
+                      tasksForDate.push({ project, task });
+                    }
+                  });
+                });
+                if (tasksForDate.length === 0) {
+                  return <div className="text-xs text-muted-foreground">No tasks for this day</div>;
+                }
+                return (
+                  <ul className="space-y-1">
+                    {tasksForDate.map(({ project, task }) => (
+                      <li key={task.id} className="flex items-center gap-2 text-xs">
+                        <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: project.color }} />
+                        <span className="font-medium truncate">{task.title}</span>
+                        <span className="text-muted-foreground">({project.name})</span>
+                      </li>
+                    ))}
+                  </ul>
+                );
+              })()}
             </div>
           </div>
         )}

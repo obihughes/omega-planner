@@ -29,8 +29,8 @@ import {
   MIN_TASK_DURATION as APP_MIN_TASK_DURATION
 } from '../../lib/constants';
 
-// Weekly view specific constants for row-based layout (reduced by 5% width, 34% height)
-const WEEKLY_PIXELS_PER_HOUR = 90; // Optimized for better overall layout balance
+// Weekly view specific constants for row-based layout
+const WEEKLY_PIXELS_PER_HOUR = 90; // Original width
 const WEEKLY_ROW_HEIGHT = 60; // Increased height for better date display and events visibility
 const WEEKLY_TASK_HEIGHT = 39; // Reduced from 41 (another 5% smaller)  
 const WEEKLY_DAY_COLUMN_WIDTH = 95; // Increased for proper date display visibility
