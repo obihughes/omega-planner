@@ -33,6 +33,17 @@ export function useMeals(): UseMealsState {
     MealsStorage.save(mealsByDate);
   }, [mealsByDate]);
 
+  // Sync across tabs/windows when localStorage changes
+  useEffect(() => {
+    function handleStorage(e: StorageEvent) {
+      if (e.key && e.key !== 'omega-planner-meals') return;
+      const next = MealsStorage.load();
+      setMealsByDate(next);
+    }
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
   const getMeals = useCallback((dateKey: string, slot: MealSlot): MealItem[] => {
     const d = mealsByDate[dateKey];
     if (!d) return [];

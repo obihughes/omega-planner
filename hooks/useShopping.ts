@@ -13,6 +13,17 @@ export function useShopping() {
   useEffect(() => { setItems(ShoppingStorage.load()); loaded.current = true; }, []);
   useEffect(() => { if (loaded.current) ShoppingStorage.save(items); }, [items]);
 
+  // Sync across tabs/windows when localStorage changes
+  useEffect(() => {
+    function handleStorage(e: StorageEvent) {
+      if (e.key && e.key !== 'omega-planner-shopping') return;
+      const next = ShoppingStorage.load();
+      setItems(next);
+    }
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
   const add = useCallback((name: string, quantity?: string) => {
     const n = name.trim(); if (!n) return null;
     const now = new Date().toISOString();

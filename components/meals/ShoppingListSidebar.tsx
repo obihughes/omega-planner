@@ -3,14 +3,14 @@
 import React, { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useShopping } from '@/hooks/useShopping';
-import { useMeals } from '@/hooks/useMeals';
+import { useShoppingContext } from '@/app/context/ShoppingContext';
+import { useMealsContext } from '@/app/context/MealsContext';
 import { usePantry } from '@/hooks/usePantry';
 import { MealSlot } from '@/types/meals';
 
 export const ShoppingListSidebar: React.FC<{ dateKey: string }> = ({ dateKey }) => {
-  const { items, add, remove, toggle, clearChecked } = useShopping();
-  const { getMeals } = useMeals();
+  const { items, add, remove, toggle, clearChecked } = useShoppingContext();
+  const { getMeals } = useMealsContext();
   const { missingFor } = usePantry();
   const [inputValue, setInputValue] = useState('');
 

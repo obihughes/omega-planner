@@ -17,3 +17,6 @@ export * from './taskUtils';
 
 // Ingredient utilities
 export * from './ingredientUtils';
+
+// Habits utilities
+export { HabitsStorage } from './habitsStorage';

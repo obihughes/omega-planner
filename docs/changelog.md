@@ -1,5 +1,14 @@
 ## Unreleased
 
+- Added Habits & Medication feature:
+  - New page at `/habits` with tabs for Habits and Medication.
+  - LocalStorage-backed utilities `HabitsStorage` and `MedicationsStorage`.
+  - New types in `types/habits.ts` exported via `types/index.ts`.
+  - Sidebar navigation link added.
+  - UI uses existing layout and tabs components.
+
+## Unreleased
+
 - Weekly view now starts on Monday consistently (fixed moving week start)
 - Monthly calendar grid shows a delete button on event chips; events can be removed without opening timeline. Deletions now prompt for confirmation.
 

@@ -40,6 +40,17 @@ export function useRecipes() {
     loaded.current = true; 
     console.log('🧑‍🍳 useRecipes: Initial load completed');
   }, []);
+
+  // Sync across tabs/windows when localStorage changes
+  useEffect(() => {
+    function handleStorage(e: StorageEvent) {
+      if (e.key && e.key !== 'omega-planner-recipes') return;
+      const next = RecipesStorage.load();
+      setRecipes(next);
+    }
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
   useEffect(() => { 
     console.log('🧑‍🍳 useRecipes: Save effect triggered with recipes:', recipes);
     if (!loaded.current) {

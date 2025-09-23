@@ -4,18 +4,18 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useRecipes } from '@/hooks/useRecipes';
-import { useMeals } from '@/hooks/useMeals';
+import { useMealsContext } from '@/app/context/MealsContext';
 import { useShopping } from '@/hooks/useShopping';
 import { RecipeFormModal } from '../modals/RecipeFormModal';
 import { RecipeItem } from '@/types/recipes';
 import { Plus, Trash2 } from 'lucide-react';
-import { usePantry } from '@/hooks/usePantry';
+import { usePantryContext } from '@/app/context/PantryContext';
 import { normalizeIngredientName } from '@/utils/ingredientUtils';
 
 export const RecipesSidebar: React.FC<{ dateKey: string }> = ({ dateKey }) => {
   const { recipes, addRecipe, removeRecipe, updateRecipe, cookable, suggestedTiered, matchPercent } = useRecipes();
-  const { items: pantryItems } = usePantry();
-  const { addMeal, updateMeal } = useMeals();
+  const { items: pantryItems } = usePantryContext();
+  const { addMeal, updateMeal } = useMealsContext();
   const { add: addToShopping } = useShopping();
 
   const [isModalOpen, setIsModalOpen] = useState(false);

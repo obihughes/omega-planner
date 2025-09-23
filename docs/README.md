@@ -6,6 +6,7 @@ This directory contains documentation for the project. Below is an overview of t
 - [Project Structure](structure.md) - Overview of the project's directory structure and purpose
 - [Component Documentation](components.md) - Documentation for all React components
 - [Utility Functions](utils.md) - Documentation for utility functions and helpers
+- [Habits](habits.md) - Habits view usage and UI controls
 - [API Documentation](api.md) - Documentation for API endpoints and services
 - [State Management](state.md) - Documentation for state management and data flow
 - [Styling Guide](styling-guide.md) - Documentation for styling conventions and sharp design system

@@ -165,6 +165,13 @@ export function Navigation() {
       icon: ClipboardList,
       active: pathname === '/meals',
       subViews: []
+    },
+    {
+      href: '/habits',
+      label: 'Habits',
+      icon: ClipboardList,
+      active: pathname === '/habits',
+      subViews: []
     }
   ];
 

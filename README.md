@@ -168,6 +168,7 @@ npm test
 ### New: Meals Page
 - Added weekly Meal Planner at `/meals` with a 7-column grid and Breakfast/Lunch/Dinner slots.
 - Navigation link "Meals" added to the sidebar.
+- Persistence: Meals are persisted in localStorage via `utils/mealsStorage.ts` and shared through a page-level `MealsProvider` (`app/context/MealsContext.tsx`). Components use `useMealsContext()` for a single source of truth.
 
 ## Troubleshooting
 

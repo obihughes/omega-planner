@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { addDaysToDateKey, dateFromDateKey, getDateKeyFromOffset, getTodayDateKey } from '@/utils/dateUtils';
-import { useMeals } from '@/hooks/useMeals';
+import { useMealsContext } from '@/app/context/MealsContext';
 import type { MealSlot } from '@/types/meals';
 import { usePantry } from '@/hooks/usePantry';
 
@@ -37,7 +37,7 @@ function formatDayHeader(dateKey: string): string {
 export const MealPlanner: React.FC = () => {
   const [anchorDateKey, setAnchorDateKey] = useState<string>(getTodayDateKey());
   const [dayStartOffset, setDayStartOffset] = useState<number>(0); // 0 = Mon-Wed, 1 = Thu-Sat, 2 = Sun-Tue
-  const { getMeals, addMeal, removeMeal, updateMeal } = useMeals();
+  const { getMeals, addMeal, removeMeal, updateMeal } = useMealsContext();
   const { canCook, missingFor } = usePantry();
   const [openEditorKey, setOpenEditorKey] = useState<string | null>(null);
   const [editingIngredientsId, setEditingIngredientsId] = useState<string | null>(null);

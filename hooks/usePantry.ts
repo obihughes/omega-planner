@@ -27,6 +27,17 @@ export function usePantry() {
     console.log('🥫 usePantry: Initial load completed');
   }, []);
 
+  // Sync across tabs/windows when localStorage changes
+  useEffect(() => {
+    function handleStorage(e: StorageEvent) {
+      if (e.key && e.key !== 'omega-planner-pantry') return;
+      const next = PantryStorage.load();
+      setItems(next);
+    }
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
   useEffect(() => {
     console.log('🥫 usePantry: Save effect triggered with items:', items);
     if (!initialLoadComplete.current) {

@@ -52,3 +52,9 @@ export type {
   ShoppingItem,
   ShoppingStorageData
 } from './shopping'; 
+
+// Habits
+export type {
+  Habit,
+  HabitsStorageData
+} from './habits';

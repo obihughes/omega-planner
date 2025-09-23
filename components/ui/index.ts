@@ -9,3 +9,4 @@ export { Popover, PopoverTrigger, PopoverContent } from './popover';
 export { Textarea } from './textarea';
 export { AppLayout } from './AppLayout';
 export { Navigation } from './Navigation'; 
+export { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs';

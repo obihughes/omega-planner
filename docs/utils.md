@@ -1,3 +1,11 @@
+## HabitsStorage
+
+- Key: `omega-planner-habits-v1`
+- Structure: `{ version, habits: Habit[], completionsByDate: Record<dateKey, Record<habitId, number>>, lastUpdated }`
+- API:
+  - `load()` → `{ habits, completionsByDate }`
+  - `save(habits, completionsByDate)`
+
 # Utility Functions Documentation
 
 This document provides documentation for the utility functions available in the project.

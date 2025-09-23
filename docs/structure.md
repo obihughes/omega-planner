@@ -28,15 +28,23 @@ Current notable feature folders include:
 - `components/documents` – Text canvas editor
 - `components/calendar` – Calendars and modals
 - `components/meals` – Meal planning components (see `MealPlanner`)
+ - `components/ui` – Shared UI primitives (layout, inputs, tabs, etc.)
 
 #### `/lib`
 Core library code and utilities that are fundamental to the application's functionality. This includes database configurations, authentication setup, and other core services.
 
 #### `/utils`
 Helper functions, custom hooks, and utility functions that are used across different parts of the application.
+Includes storage helpers like:
+- `utils/mealsStorage.ts` – Meals local storage (consumed by `hooks/useMeals.ts` and exposed via `app/context/MealsContext.tsx`)
+- `utils/habitsStorage.ts` – Habits local storage
 
 #### `/docs`
 Project documentation including setup guides, component documentation, and development guidelines.
+
+Additional feature routes in `/app` include:
+- `app/meals` — Meals planner page
+- `app/habits` — Simple habits tracker page
 
 #### `/planner-backup`
 Backup files for the planner functionality.

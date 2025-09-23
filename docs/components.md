@@ -1,3 +1,10 @@
+### Habits Page (`app/habits/page.tsx`)
+
+- Simple monthly grid across all habits.
+- Month navigation (previous/next) and summary stats (completions, rate, count).
+- Add/delete habits; click any day cell to toggle completion.
+- Uses `HabitsStorage` for persistence with date-keyed completion data.
+
 # Component Documentation
 
 ## Projects Timeline (Preview)
@@ -560,6 +567,7 @@ Layout:
 - 3-day sliding view: shows 3 days at a time with "Prev 3 days" / "Next 3 days" controls to slide through the week.
 - 3-column grid layout for displayed days with full-width usage.
 - Second row shows Pantry and Shopping List side by side; both have always-visible add inputs and a one-click "Add all missing today" into the shopping list.
+- Providers: `MealsProvider`, `PantryProvider`, and `ShoppingProvider` wrap the `/meals` page, ensuring shared state across all components and robust localStorage persistence with cross-tab syncing.
 ### PantrySidebar (`components/meals/PantrySidebar.tsx`)
 Location: `components/meals/PantrySidebar.tsx`
 
@@ -604,7 +612,7 @@ Location: `components/meals/RecipesSidebar.tsx`
 - Storage: localStorage via `utils/recipesStorage.ts` and `hooks/useRecipes.ts` with computed `cookable` and `suggested` lists.
 
 #### Data & State
-- Uses `useMeals` hook for localStorage-backed persistence.
+- Uses `useMeals` hook via a page-level `MealsProvider` context for localStorage-backed persistence. All meals components (`MealPlanner`, `PantrySidebar`, `ShoppingListSidebar`, `RecipesSidebar`) consume `useMealsContext()` to ensure a single shared state across the page and eliminate hydration/persistence mismatches.
 - Quick-add input per slot; items render beneath with Remove action.
 
 ### Pinned Tasks Time Display Fix

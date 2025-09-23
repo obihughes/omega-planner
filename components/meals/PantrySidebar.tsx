@@ -3,16 +3,16 @@
 import React, { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { usePantry } from '@/hooks/usePantry';
+import { usePantryContext } from '@/app/context/PantryContext';
 import { useShopping } from '@/hooks/useShopping';
-import { useMeals } from '@/hooks/useMeals';
+import { useMealsContext } from '@/app/context/MealsContext';
 import { MealSlot } from '@/types/meals';
 import { Input } from '@/components/ui/input';
 
 export const PantrySidebar: React.FC<{ dateKey: string }> = ({ dateKey }) => {
-  const { items, addItem, removeItem, updateItem, canCook, missingFor } = usePantry();
+  const { items, addItem, removeItem, updateItem, canCook, missingFor } = usePantryContext();
   const { add: addToShopping } = useShopping();
-  const { getMeals } = useMeals();
+  const { getMeals } = useMealsContext();
   const [inputName, setInputName] = useState('');
   const [inputQty, setInputQty] = useState('');
   const [inputCat, setInputCat] = useState('');
