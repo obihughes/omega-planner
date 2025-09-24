@@ -597,7 +597,7 @@ export default function FocusPage() {
           <div className="flex flex-col items-center justify-center mb-6 gap-3">
             <div className="flex items-center gap-4 p-4 border border-border rounded-lg bg-card/50 w-full max-w-3xl">
               <Clock className="w-5 h-5 text-muted-foreground" />
-              <div className="font-mono text-3xl min-w-[88px]">{loaded ? formatHMS(displayedElapsedSeconds) : '00:00'}</div>
+              <div className="font-mono text-3xl min-w-[88px]">{loaded ? (targetSeconds > 0 ? formatHMS(Math.max(0, targetSeconds - displayedElapsedSeconds)) : formatHMS(displayedElapsedSeconds)) : '00:00'}</div>
               <div className="flex items-center gap-2">
                 {!state.isRunning ? (
                   <Button size="sm" onClick={start} className="flex items-center gap-1">
@@ -664,8 +664,8 @@ export default function FocusPage() {
 
           {/* Columns */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Planned for session */}
-            <div className="border border-border rounded-lg bg-card/50">
+            {/* Planned for session (main area) */}
+            <div className="border border-border rounded-lg bg-card/50 lg:col-span-2">
               <div className="p-3 border-b border-border/40 flex items-center justify-between">
                 <h2 className="text-sm font-semibold">Planned this session</h2>
                 <div className="flex items-center gap-2">
@@ -719,90 +719,93 @@ export default function FocusPage() {
               </div>
             </div>
 
-            {/* Completed in this session */}
-            <div className="border border-border rounded-lg bg-card/50">
-              <div className="p-3 border-b border-border/40 flex items-center justify-between">
-                <h2 className="text-sm font-semibold">Completed this session</h2>
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={newCompletedTitle}
-                    onChange={(e) => setNewCompletedTitle(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') addCompleted(); }}
-                    placeholder="Add thing you just did..."
-                    className="h-8 text-sm"
-                  />
-                  <Button size="sm" onClick={addCompleted} className="h-8 px-2"><Plus className="w-4 h-4" /></Button>
+            {/* Right sidebar: Completed + Backlog stacked */}
+            <div className="space-y-6">
+              {/* Completed in this session */}
+              <div className="border border-border rounded-lg bg-card/50">
+                <div className="p-3 border-b border-border/40 flex items-center justify-between">
+                  <h2 className="text-sm font-semibold">Completed this session</h2>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={newCompletedTitle}
+                      onChange={(e) => setNewCompletedTitle(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') addCompleted(); }}
+                      placeholder="Add thing you just did..."
+                      className="h-8 text-sm"
+                    />
+                    <Button size="sm" onClick={addCompleted} className="h-8 px-2"><Plus className="w-4 h-4" /></Button>
+                  </div>
+                </div>
+                <div className="p-3 space-y-2">
+                  {state.completed.length === 0 && (
+                    <div className="text-xs text-muted-foreground">Nothing completed yet.</div>
+                  )}
+                  {state.completed.map(t => (
+                    <div key={t.id} className="flex items-center justify-between p-2 border border-border/40 bg-background rounded">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <CheckSquare2 className="w-4 h-4 text-green-600" />
+                        <span className="text-sm truncate line-through text-muted-foreground">{t.title}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button size="sm" variant="ghost" onClick={() => deleteCompleted(t.id)} title="Remove" className="h-7 w-7 p-0 text-destructive">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <div className="p-3 space-y-2">
-                {state.completed.length === 0 && (
-                  <div className="text-xs text-muted-foreground">Nothing completed yet.</div>
-                )}
-                {state.completed.map(t => (
-                  <div key={t.id} className="flex items-center justify-between p-2 border border-border/40 bg-background rounded">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <CheckSquare2 className="w-4 h-4 text-green-600" />
-                      <span className="text-sm truncate line-through text-muted-foreground">{t.title}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" variant="ghost" onClick={() => deleteCompleted(t.id)} title="Remove" className="h-7 w-7 p-0 text-destructive">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
 
-            {/* Backlog (session ideas) */}
-            <div className="border border-border rounded-lg bg-card/50">
-              <div className="p-3 border-b border-border/40 flex items-center justify-between">
-                <h2 className="text-sm font-semibold">Backlog</h2>
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={newBacklogTitle}
-                    onChange={(e) => setNewBacklogTitle(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') addBacklog(); }}
-                    placeholder="Add backlog item..."
-                    className="h-8 text-sm"
-                  />
-                  <Button size="sm" onClick={addBacklog} className="h-8 px-2"><Plus className="w-4 h-4" /></Button>
-                </div>
-              </div>
-              <div
-                className={cn(
-                  "p-3 space-y-2 transition-colors",
-                  dragOverZone === 'backlog' && 'ring-2 ring-primary/40 rounded-lg bg-primary/5'
-                )}
-                onDragOver={handleDragOver('backlog')}
-                onDragEnter={handleDragOver('backlog')}
-                onDragLeave={handleDragLeave('backlog')}
-                onDrop={handleDropTo('backlog')}
-              >
-                {state.backlog.length === 0 && (
-                  <div className="text-xs text-muted-foreground">No backlog yet. Add ideas here.</div>
-                )}
-                {state.backlog.map(t => (
-                  <div
-                    key={t.id}
-                    className="flex items-center justify-between p-2 border border-border/40 bg-background rounded"
-                    draggable
-                    onDragStart={handleTaskDragStart('backlog', t.id)}
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <GripVertical className="w-3 h-3 text-muted-foreground" />
-                      <span className="text-sm truncate">{t.title}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" variant="ghost" onClick={() => moveBacklogToPlanned(t.id)} title="Add to session" className="h-7 w-7 p-0">
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => deleteBacklog(t.id)} title="Remove" className="h-7 w-7 p-0 text-destructive">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+              {/* Backlog (session ideas) */}
+              <div className="border border-border rounded-lg bg-card/50">
+                <div className="p-3 border-b border-border/40 flex items-center justify-between">
+                  <h2 className="text-sm font-semibold">Backlog</h2>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={newBacklogTitle}
+                      onChange={(e) => setNewBacklogTitle(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') addBacklog(); }}
+                      placeholder="Add backlog item..."
+                      className="h-8 text-sm"
+                    />
+                    <Button size="sm" onClick={addBacklog} className="h-8 px-2"><Plus className="w-4 h-4" /></Button>
                   </div>
-                ))}
+                </div>
+                <div
+                  className={cn(
+                    "p-3 space-y-2 transition-colors",
+                    dragOverZone === 'backlog' && 'ring-2 ring-primary/40 rounded-lg bg-primary/5'
+                  )}
+                  onDragOver={handleDragOver('backlog')}
+                  onDragEnter={handleDragOver('backlog')}
+                  onDragLeave={handleDragLeave('backlog')}
+                  onDrop={handleDropTo('backlog')}
+                >
+                  {state.backlog.length === 0 && (
+                    <div className="text-xs text-muted-foreground">No backlog yet. Add ideas here.</div>
+                  )}
+                  {state.backlog.map(t => (
+                    <div
+                      key={t.id}
+                      className="flex items-center justify-between p-2 border border-border/40 bg-background rounded"
+                      draggable
+                      onDragStart={handleTaskDragStart('backlog', t.id)}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <GripVertical className="w-3 h-3 text-muted-foreground" />
+                        <span className="text-sm truncate">{t.title}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button size="sm" variant="ghost" onClick={() => moveBacklogToPlanned(t.id)} title="Add to session" className="h-7 w-7 p-0">
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => deleteBacklog(t.id)} title="Remove" className="h-7 w-7 p-0 text-destructive">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

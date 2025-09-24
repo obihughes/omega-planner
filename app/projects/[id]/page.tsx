@@ -48,6 +48,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
     projects, 
     loading, 
     addTaskToProject, 
+    addTaskSeriesToProject,
     updateTaskInProject, 
     deleteTaskFromProject,
     reorderTasksInProject,
@@ -61,6 +62,8 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [sortBy, setSortBy] = useState<'custom' | 'dueDate' | 'created' | 'title' | 'status'>('custom');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [seriesBaseTitle, setSeriesBaseTitle] = useState('');
+  const [seriesCount, setSeriesCount] = useState('');
   
   // Task form modal state
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
@@ -433,6 +436,38 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
               <Plus className="w-4 h-4" />
               <span>Add Task</span>
             </button>
+            {/* Add Series (bulk) */}
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={seriesBaseTitle}
+                onChange={(e) => setSeriesBaseTitle(e.target.value)}
+                placeholder="Series base title"
+                className="w-40 px-3 py-3 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+              />
+              <input
+                type="number"
+                min={1}
+                inputMode="numeric"
+                value={seriesCount}
+                onChange={(e) => setSeriesCount(e.target.value)}
+                placeholder="#"
+                className="w-20 px-3 py-3 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+              />
+              <button
+                onClick={() => {
+                  const count = parseInt(seriesCount || '0', 10);
+                  if (!project || !seriesBaseTitle.trim() || !count || count < 1) return;
+                  addTaskSeriesToProject(project.id, seriesBaseTitle.trim(), count);
+                  setSeriesBaseTitle('');
+                  setSeriesCount('');
+                }}
+                className="px-3 py-3 bg-secondary text-secondary-foreground hover:bg-secondary/90 transition-colors rounded-lg text-sm"
+                title="Add series of tasks with _N suffix"
+              >
+                Add Series
+              </button>
+            </div>
           </div>
         </div>
 

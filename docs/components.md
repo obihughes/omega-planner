@@ -276,6 +276,7 @@ Includes an Asc/Desc toggle. Status filter remains available alongside sorting.
 - **Quick Add**: Inline task creation with project selection
 - **Project-Specific**: "Add Task" buttons in project group headers that pre-select the project
 - **Full Modal**: Detailed task creation with all fields (title, description, project, due date, estimated hours)
+- **Layout Updates (2025-09-24)**: Header and control bars wrap content on small screens to avoid horizontal scrolling; outer container now hides unintended overflow.
 
 ### **ProjectCard** 
 **Location**: `components/projects/ProjectCard.tsx`
@@ -324,17 +325,21 @@ Left sidebar navigation component.
 - Main order is now: `Daily Planner`, `Workspace`, `Text Canvas`, then `Focus` and `Meals` at the bottom per UX preference.
 
 ### Focus Page (`app/focus/page.tsx`)
-Purpose: Minimal focus-mode workspace with a timer, planned/completed lists, and backlog.
+Purpose: Minimal focus-mode workspace with a timer, central planned list, and a compact sidebar for supporting lists.
+
+**Layout:**
+- Planned this session is the central, primary column.
+- Right sidebar stacks Completed (top) and Backlog (bottom).
 
 **Key Behaviors:**
 - Past Sessions are hidden while a session is active (reduces distraction).
 - When no session is active, Past Sessions can be toggled Show/Hide and include edit/delete controls. Toggle preference persists.
 - State persists to localStorage (`omega-planner-focus-state-v1`, `omega-planner-focus-sessions-v1`).
- - Session target length can be set (quick picks 15/25/45/60 min or custom). Target persists (`omega-planner-focus-target-seconds-v1`).
- - Visual feedback: progress bar and remaining time until target, with percentage.
- - Optional sound notifications (toggleable): 5 minutes remaining and time up. Preference persists (`omega-planner-focus-sound-enabled-v1`).
- - Timer uses wall-clock time: while running, the UI derives elapsed from `elapsedSeconds + (now - lastResumedAt)`. This prevents the timer from freezing when the tab is backgrounded or you navigate away.
- - Focus-only Screen Wake Lock: while the timer is running and the Focus page is visible, the screen is kept awake (if supported). The lock is released on pause, when switching tabs/routes, or on unmount. Other pages remain static; no wake lock is requested elsewhere.
+- Session target length can be set (quick picks 15/25/45/60 min or custom). Target persists (`omega-planner-focus-target-seconds-v1`).
+- Main timer shows a countdown when a target duration is set; otherwise it shows elapsed time. Progress bar and remaining time label are displayed beneath with percentage.
+- Optional sound notifications (toggleable): 5 minutes remaining and time up. Preference persists (`omega-planner-focus-sound-enabled-v1`).
+- Timer uses wall-clock time: while running, the UI derives elapsed from `elapsedSeconds + (now - lastResumedAt)`. This prevents the timer from freezing when the tab is backgrounded or you navigate away.
+- Focus-only Screen Wake Lock: while the timer is running and the Focus page is visible, the screen is kept awake (if supported). The lock is released on pause, when switching tabs/routes, or on unmount. Other pages remain static; no wake lock is requested elsewhere.
 
 **Controls:**
 - Start, Pause, End Session

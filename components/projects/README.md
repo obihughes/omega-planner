@@ -67,6 +67,15 @@ function ProjectsPage() {
 Extended with new functions:
 - `getAllProjectTasks()`: Returns all tasks with project metadata
 - `getTaskStats()`: Provides task statistics (total, completed, overdue, etc.)
+ - `addTaskSeriesToProject(projectId, baseTitle, count, options?)`: Quickly create multiple tasks in the same project with names like `baseTitle_1..N`. Updates project progress automatically. Options may include `status`, `priority`, `startDate`, `dueDate`.
+
+#### Quick Add Series (Project Detail)
+- On a project page, use the inline "Add Series" controls next to quick add to generate tasks named `BaseTitle_1..N` without retyping.
+- Intended for volumes/parts workflows (e.g., "Book_1..12").
+
+#### TaskListView Layout (September 2025)
+- Header, control bar, and group headers were tightened to avoid forced horizontal scrolling.
+- Controls wrap on small screens instead of extending the width; outer container now hides unintended horizontal overflow.
 
 ## Navigation
 

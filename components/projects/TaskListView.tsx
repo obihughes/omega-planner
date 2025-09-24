@@ -846,18 +846,18 @@ export function TaskListView({ className }: TaskListViewProps) {
   const completedTasks = allTasks.filter(t => t.status === 'completed').length;
 
   return (
-    <div className={cn("flex flex-col h-full", className)}>
+    <div className={cn("flex flex-col h-full overflow-x-hidden", className)}>
       {/* Header */}
       <div className="border-b border-border/30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex items-center justify-between p-6">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Tasks</h1>
-            <p className="text-sm text-muted-foreground mt-1">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 sm:p-6">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold text-foreground leading-tight">Tasks</h1>
+            <p className="text-sm text-muted-foreground">
               {totalTasks} total • {completedTasks} completed • {totalTasks - completedTasks} remaining
             </p>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
             <Button 
               onClick={openFullTaskModal}
               className="bg-primary text-primary-foreground hover:bg-primary/90"
@@ -869,9 +869,9 @@ export function TaskListView({ className }: TaskListViewProps) {
         </div>
         
         {/* Controls */}
-        <div className="flex items-center justify-between px-6 pb-4 gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between px-4 sm:px-6 pb-4 gap-3 sm:gap-4">
           {/* Search */}
-          <div className="relative flex-1 max-w-sm">
+          <div className="relative w-full lg:max-w-sm">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
               type="text"
@@ -883,7 +883,7 @@ export function TaskListView({ className }: TaskListViewProps) {
           </div>
           
           {/* Filter and sort controls */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             {/* Clear filters */}
             {hasActiveFilters && (
               <Button
@@ -1091,11 +1091,11 @@ export function TaskListView({ className }: TaskListViewProps) {
         </div>
 
         {/* Compact Quick Add */}
-        <div className="flex gap-2 mb-4 px-6">
+        <div className="flex flex-col sm:flex-row gap-2 mb-4 px-4 sm:px-6">
           <select
             value={newTaskProjectId}
             onChange={(e) => setNewTaskProjectId(e.target.value)}
-            className="px-2 py-1.5 rounded bg-input border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs min-w-0 flex-shrink-0"
+            className="px-2 py-1.5 rounded bg-input border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs min-w-0 sm:w-48"
           >
             <option value="">Project...</option>
             {projects.filter(p => !p.isDeleted).map(project => (
@@ -1137,9 +1137,9 @@ export function TaskListView({ className }: TaskListViewProps) {
               {groupBy !== 'none' && (
                 <button
                   onClick={() => toggleProjectCollapse(group.id)}
-                  className="w-full flex items-center justify-between p-6 hover:bg-accent/20 transition-all duration-200"
+                  className="w-full flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4 sm:p-6 hover:bg-accent/20 transition-all duration-200"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     {collapsedProjects.has(group.id) ? (
                       <ChevronRight className="w-5 h-5 text-muted-foreground" />
                     ) : (
@@ -1149,14 +1149,16 @@ export function TaskListView({ className }: TaskListViewProps) {
                       className="w-4 h-4 rounded-full shadow-sm"
                       style={{ backgroundColor: group.color }}
                     />
-                    <span className="font-medium text-lg text-foreground">{group.title}</span>
+                    <span className="font-medium text-lg text-foreground truncate max-w-full">
+                      {group.title}
+                    </span>
                     {isCustomOrderMode && (
                       <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">
                         Drag to reorder
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 md:gap-3 flex-wrap md:flex-nowrap">
                     <span className="text-sm text-muted-foreground">
                       {group.tasks.filter(t => t.status === 'completed').length} of {group.tasks.length}
                     </span>

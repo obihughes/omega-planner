@@ -200,6 +200,48 @@ export function useProjects() {
     return newTask;
   }, []);
 
+  const addTaskSeriesToProject = useCallback((
+    projectId: string,
+    baseTitle: string,
+    count: number,
+    options?: Partial<Pick<ProjectTask, 'status' | 'priority' | 'startDate' | 'dueDate'>>
+  ) => {
+    if (!baseTitle || count <= 0) return [] as ProjectTask[];
+
+    const createdTasks: ProjectTask[] = [];
+    const nowIso = new Date().toISOString();
+
+    updateProjectsState(prevProjects =>
+      prevProjects.map(project => {
+        if (project.id !== projectId) return project;
+
+        const startingOrder = project.tasks.length;
+        const newTasks: ProjectTask[] = Array.from({ length: count }).map((_, i) => ({
+          id: `task-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 9)}`,
+          title: `${baseTitle}_${i + 1}`,
+          description: '',
+          status: options?.status ?? 'todo',
+          priority: options?.priority ?? 'medium',
+          startDate: options?.startDate,
+          dueDate: options?.dueDate,
+          createdAt: nowIso,
+          updatedAt: nowIso,
+          order: startingOrder + i,
+        }));
+
+        createdTasks.push(...newTasks);
+
+        const updatedTasks = [...project.tasks, ...newTasks];
+        const completedTasks = updatedTasks.filter(t => t.status === 'completed').length;
+        const progress = updatedTasks.length > 0 ? Math.round((completedTasks / updatedTasks.length) * 100) : 0;
+
+        return { ...project, tasks: updatedTasks, progress, updatedAt: nowIso };
+      })
+    );
+
+    return createdTasks;
+  }, []);
+
   const updateTaskInProject = useCallback((projectId: string, taskId: string, updates: Partial<ProjectTask>) => {
     updateProjectsState(prevProjects => 
       prevProjects.map(project => {
@@ -482,6 +524,7 @@ export function useProjects() {
     permanentlyDeleteProject,
     reorderProjects,
     addTaskToProject,
+    addTaskSeriesToProject,
     updateTaskInProject,
     deleteTaskFromProject,
     reorderTasksInProject,
