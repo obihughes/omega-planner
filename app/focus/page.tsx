@@ -5,7 +5,7 @@ import { AppLayout } from '@/components/ui/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { CheckSquare2, Pause, Play, RotateCcw, Trash2, Plus, GripVertical, Clock, ListChecks, Bell, BellOff } from 'lucide-react';
+import { CheckSquare2, Pause, Play, RotateCcw, Trash2, Plus, GripVertical, Clock, ListChecks, Bell, BellOff, Square } from 'lucide-react';
 
 type FocusTask = {
   id: string;
@@ -705,7 +705,7 @@ export default function FocusPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Button size="sm" variant="ghost" onClick={() => completePlanned(t.id)} title="Mark done" className="h-7 w-7 p-0">
-                        <CheckSquare2 className="w-4 h-4 text-green-600" />
+                        <Square className="w-4 h-4" />
                       </Button>
                       <Button size="sm" variant="ghost" onClick={() => returnPlannedToBacklog(t.id)} title="Return to backlog" className="h-7 w-7 p-0">
                         <RotateCcw className="w-4 h-4" />
