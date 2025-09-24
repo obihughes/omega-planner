@@ -10,7 +10,7 @@ import {
   Plus, 
   X
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, celebrateAtElement } from '@/lib';
 import { formatDueDate, normalizeDueDate, dateFromDateKey } from '@/utils/dateUtils';
 
 interface TaskWithProject extends ProjectTask {
@@ -130,9 +130,7 @@ export function CompactTaskCard({
     if (newStatus === 'completed') {
       setIsAnimating(true);
       setShowConfetti(true);
-      
-      // Create confetti particles
-      createConfettiParticles(e.currentTarget);
+      try { celebrateAtElement(e.currentTarget as unknown as HTMLElement); } catch {}
       
       // Start fade-out animation before changing status
       setIsFadingOut(true);
@@ -191,63 +189,7 @@ export function CompactTaskCard({
 
   
 
-  // Create confetti particles animation
-  const createConfettiParticles = (button: HTMLElement) => {
-    const colors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
-    const rect = button.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-
-    for (let i = 0; i < 12; i++) {
-      const particle = document.createElement('div');
-      particle.className = 'confetti-particle'; // Ensure you have CSS for this class
-      particle.style.cssText = `
-        position: fixed;
-        width: 6px;
-        height: 6px;
-        background: ${colors[Math.floor(Math.random() * colors.length)]};
-        border-radius: 50%;
-        pointer-events: none;
-        z-index: 9999;
-        left: ${centerX}px;
-        top: ${centerY}px;
-        transform-origin: center;
-      `;
-
-      document.body.appendChild(particle);
-
-      const angle = (i / 12) * Math.PI * 2;
-      const velocity = 100 + Math.random() * 100;
-      const gravity = 500;
-      const life = 800 + Math.random() * 400;
-
-      let startTime = performance.now();
-      
-      const animate = (currentTime: number) => {
-        const elapsed = currentTime - startTime;
-        const progress = elapsed / life;
-
-        if (progress >= 1) {
-          particle.remove();
-          return;
-        }
-
-        const x = centerX + Math.cos(angle) * velocity * (elapsed / 1000);
-        const y = centerY + Math.sin(angle) * velocity * (elapsed / 1000) + 0.5 * gravity * Math.pow(elapsed / 1000, 2);
-        const opacity = 1 - progress;
-        const scale = 1 - progress * 0.5;
-
-        particle.style.left = x + 'px';
-        particle.style.top = y + 'px';
-        particle.style.opacity = opacity.toString();
-        particle.style.transform = `scale(${scale})`;
-
-        requestAnimationFrame(animate);
-      };
-
-      requestAnimationFrame(animate);
-    }
-  };
+  // Removed local confetti particle generator; use shared celebration utility
 
   // Drag handlers
   const handleDragStart = (e: React.DragEvent) => {

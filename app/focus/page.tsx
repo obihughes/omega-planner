@@ -340,6 +340,78 @@ export default function FocusPage() {
     }
   };
 
+  // Success chime for task completion
+  const playSuccessChime = () => {
+    if (!soundEnabled) return;
+    playTone(880, 120, 0.06);
+    setTimeout(() => playTone(1175, 140, 0.06), 130);
+    setTimeout(() => playTone(1568, 180, 0.05), 300);
+  };
+
+  // Lightweight confetti burst without external libs
+  const spawnConfettiAt = (x: number, y: number) => {
+    if (typeof document === 'undefined') return;
+    const container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.left = '0';
+    container.style.top = '0';
+    container.style.width = '100%';
+    container.style.height = '100%';
+    container.style.pointerEvents = 'none';
+    container.style.zIndex = '9999';
+    document.body.appendChild(container);
+
+    const colors = ['#FFD166', '#06D6A0', '#118AB2', '#EF476F', '#8338EC'];
+    const count = 24;
+    for (let i = 0; i < count; i++) {
+      const piece = document.createElement('div');
+      const w = 6 + Math.random() * 4;
+      const h = 8 + Math.random() * 6;
+      piece.style.position = 'absolute';
+      piece.style.left = `${x}px`;
+      piece.style.top = `${y}px`;
+      piece.style.width = `${w}px`;
+      piece.style.height = `${h}px`;
+      piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+      piece.style.opacity = '1';
+      piece.style.transform = `translate3d(0,0,0) rotate(${Math.floor(Math.random() * 360)}deg)`;
+      piece.style.transition = 'transform 700ms cubic-bezier(0.22, 1, 0.36, 1), opacity 700ms linear';
+      piece.style.willChange = 'transform, opacity';
+      container.appendChild(piece);
+
+      const angle = Math.random() * Math.PI * 2;
+      const distance = 80 + Math.random() * 120;
+      const dx = Math.cos(angle) * distance;
+      const dy = Math.sin(angle) * distance * 1.2 + 10;
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          piece.style.transform = `translate3d(${dx}px, ${dy}px, 0) rotate(${Math.floor(Math.random() * 360)}deg)`;
+          piece.style.opacity = '0';
+        });
+      });
+    }
+
+    setTimeout(() => {
+      if (container.parentNode) container.parentNode.removeChild(container);
+    }, 900);
+  };
+
+  const spawnConfettiFromElement = (el: HTMLElement | null) => {
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    spawnConfettiAt(x, y);
+  };
+
+  // Handle planned-task completion with feedback
+  const handleCompletePlannedClick = (taskId: string) => (e: React.MouseEvent<HTMLButtonElement>) => {
+    try { spawnConfettiFromElement(e.currentTarget as unknown as HTMLElement); } catch {}
+    try { playSuccessChime(); } catch {}
+    completePlanned(taskId);
+  };
+
   // Notify on important times
   useEffect(() => {
     if (!state.isRunning || targetSeconds <= 0) return;
@@ -704,7 +776,7 @@ export default function FocusPage() {
                       <span className="text-sm truncate">{t.title}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button size="sm" variant="ghost" onClick={() => completePlanned(t.id)} title="Mark done" className="h-7 w-7 p-0">
+                      <Button size="sm" variant="ghost" onClick={handleCompletePlannedClick(t.id)} title="Mark done" className="h-7 w-7 p-0">
                         <Square className="w-4 h-4" />
                       </Button>
                       <Button size="sm" variant="ghost" onClick={() => returnPlannedToBacklog(t.id)} title="Return to backlog" className="h-7 w-7 p-0">

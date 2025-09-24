@@ -228,6 +228,7 @@ Individual timeline column representing a specific time period.
 Advanced task management interface with powerful sorting, filtering, and organization features.
 
 **Key Features:**
+- Completion celebration matches Focus: lightweight confetti burst near the checkbox and a brief success chime (respects Focus sound toggle).
 - **Multi-Criteria Sorting**: Sort tasks by multiple fields simultaneously (e.g., completion status + title)
 - **Custom Order Sorting**: Drag-and-drop reordering with custom order persistence 
 - **Advanced Filtering**: Filter by due date, status, and search across task content
@@ -338,6 +339,7 @@ Purpose: Minimal focus-mode workspace with a timer, central planned list, and a 
 - Session target length can be set (quick picks 15/25/45/60 min or custom). Target persists (`omega-planner-focus-target-seconds-v1`).
 - Main timer shows a countdown when a target duration is set; otherwise it shows elapsed time. Progress bar and remaining time label are displayed beneath with percentage.
 - Optional sound notifications (toggleable): 5 minutes remaining and time up. Preference persists (`omega-planner-focus-sound-enabled-v1`).
+- Celebration feedback: marking a planned task done triggers a small confetti burst near the button and a brief success chime (respects the sound toggle).
 - Timer uses wall-clock time: while running, the UI derives elapsed from `elapsedSeconds + (now - lastResumedAt)`. This prevents the timer from freezing when the tab is backgrounded or you navigate away.
 - Focus-only Screen Wake Lock: while the timer is running and the Focus page is visible, the screen is kept awake (if supported). The lock is released on pause, when switching tabs/routes, or on unmount. Other pages remain static; no wake lock is requested elsewhere.
 

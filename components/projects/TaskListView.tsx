@@ -24,7 +24,7 @@ import {
   Check,
   GripVertical
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, celebrateAtElement } from '@/lib';
 import { formatDueDate as formatDueDateUtil, normalizeDueDate, dateFromDateKey } from '@/utils/dateUtils';
 
 // Drag and drop imports
@@ -153,7 +153,7 @@ function SortableTaskItem({
   editInputRef: React.RefObject<HTMLInputElement | HTMLTextAreaElement>;
   celebratingTasks: Set<string>;
   isCustomOrderMode: boolean;
-  onStatusToggle: (task: TaskWithProject) => void;
+  onStatusToggle: (task: TaskWithProject, evt?: React.MouseEvent) => void;
   onSaveEdit: () => void;
   onCancelEdit: () => void;
   onDeleteTask: (task: TaskWithProject) => void;
@@ -232,7 +232,7 @@ function SortableTaskItem({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onStatusToggle(task);
+            onStatusToggle(task, e);
           }}
           className="flex-shrink-0"
         >
@@ -674,20 +674,15 @@ export function TaskListView({ className }: TaskListViewProps) {
   };
 
   // Handle task status toggle with celebration
-  const handleTaskStatusToggle = useCallback((task: TaskWithProject) => {
+  const handleTaskStatusToggle = useCallback((task: TaskWithProject, evt?: React.MouseEvent) => {
     const newStatus = task.status === 'completed' ? 'todo' : 'completed';
     
     if (newStatus === 'completed') {
-      // Add celebration
+      try { celebrateAtElement((evt?.currentTarget as HTMLElement) || null); } catch {}
       setCelebratingTasks(prev => new Set([...Array.from(prev), task.id]));
-      // Remove celebration after animation
       setTimeout(() => {
-        setCelebratingTasks(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(task.id);
-          return newSet;
-        });
-      }, 1000);
+        setCelebratingTasks(prev => { const ns = new Set(prev); ns.delete(task.id); return ns; });
+      }, 800);
     }
     
     updateTaskInProject(task.projectId, task.id, { 
