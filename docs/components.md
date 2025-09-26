@@ -70,11 +70,11 @@ The main daily planning interface with timeline views and task management.
 
 **View Mode Navigation:**
 - Located above the sidebar area
-- Three active buttons: "Daily" (default), "Weekly", and "Scheduling"
+- Daily (default) and Weekly are primary; Scheduling is launched from a button in the Daily header
 - Completely switches the page layout and functionality
 - Daily: Timeline + sidebar for detailed time-based planning
 - Weekly: Weekly overview of scheduled and inbox tasks across all seven days
-- Scheduling: Full calendar for task assignment and scheduling
+- Scheduling: Full calendar for task assignment and scheduling (opened via the Daily header button)
 
 ### **MiniDailyTimeline**
 **Location**: `components/planner/MiniDailyTimeline.tsx`
@@ -320,10 +320,10 @@ Left sidebar navigation component.
 - Theme toggle functionality
 - Active state indicators
 - Branded header section
-- Calendar Monthly and Yearly views available under `Daily Planner` subviews
+- Calendar Yearly view available under `Daily Planner` subviews. Monthly view is no longer listed in the sidebar; open it by clicking a month in the Yearly view.
 
 **Order Update (2025-09-12):**
-- Main order is now: `Daily Planner`, `Workspace`, `Text Canvas`, then `Focus` and `Meals` at the bottom per UX preference.
+- Main order is now: `Daily Planner`, `Workspace`, `Text Canvas`, then `Meals` and `Habits`. Focus has been removed from the main sidebar; access it via the Focus button in the Daily view header (opens in a new tab).
 
 ### Focus Page (`app/focus/page.tsx`)
 Purpose: Minimal focus-mode workspace with a timer, central planned list, and a compact sidebar for supporting lists.
@@ -357,7 +357,7 @@ Reusable UI primitives built with consistent styling.
 - Accessibility features
 
 **Feature Flags:**
-- `SHOW_MEALS_IN_NAV` (in `lib/constants.ts`): default true. When `false`, the `Meals` nav item is hidden from the sidebar; the `/meals` route and components remain available.
+- `SHOW_MEALS_IN_NAV` (in `lib/constants.ts`): default false. When `true`, the `Meals` nav item appears in the sidebar; the `/meals` route and components remain available regardless.
 
 ### Navigation Collapse Persistence
 Navigation collapsed/expanded state is now persisted in `localStorage` and respected across route changes.

@@ -122,12 +122,9 @@ export function Navigation() {
       icon: Calendar,
       active: pathname === '/' || pathname === '/inbox' || pathname === '/calendar',
       subViews: [
-
         { key: 'planner-daily', type: 'planner', mode: 'daily', label: 'Daily', icon: CalendarCheck, active: pathname === '/' && plannerViewMode === 'daily' },
         { key: 'planner-weekly', type: 'planner', mode: 'weekly', label: 'Week Overview', icon: CalendarDays, active: pathname === '/' && plannerViewMode === 'weekly' },
-        { key: 'planner-monthly', type: 'planner', mode: 'monthly', label: 'Scheduling View', icon: CalendarRange, active: pathname === '/' && plannerViewMode === 'monthly' },
-        // Calendar views placed under Daily Planner
-        { key: 'calendar-monthly', type: 'calendar', mode: 'monthly', label: 'Monthly Calendar View', icon: Calendar, active: pathname === '/calendar' && calendarViewMode === 'monthly' },
+        // Monthly scheduling is accessed via a header button in Daily view
         { key: 'calendar-yearly', type: 'calendar', mode: 'yearly', label: 'Yearly Calendar', icon: CalendarDays, active: pathname === '/calendar' && calendarViewMode === 'yearly' }
       ]
     },
@@ -138,9 +135,7 @@ export function Navigation() {
       active: pathname === '/projects' || pathname.startsWith('/projects/'),
       subViews: [
         { key: 'tasks', label: 'Tasks', icon: ClipboardList, active: pathname === '/projects/tasks' },
-        { key: 'active', label: 'Projects', icon: Folder, active: projectsViewMode === 'active' },
-        { key: 'calendar', label: 'Projects Calendar', icon: Calendar, active: projectsViewMode === 'calendar' },
-        { key: 'timeline', label: 'Timeline', icon: Clock, active: pathname === '/projects/timeline' }
+        { key: 'active', label: 'Projects', icon: Folder, active: projectsViewMode === 'active' }
       ]
     },
     {
@@ -152,13 +147,7 @@ export function Navigation() {
         { key: 'documents', label: 'Documents', icon: Files, active: true }
       ]
     },
-    {
-      href: '/focus',
-      label: 'Focus',
-      icon: Clock,
-      active: pathname === '/focus',
-      subViews: []
-    },
+    // Focus removed from main sidebar; access via header button in Tasks
     {
       href: '/meals',
       label: 'Meals',

@@ -96,5 +96,5 @@ export const DURATION_OPTIONS = [
 
 export const TASK_POOL_ITEM_HEIGHT = 90;
 
-/** Feature flag: Show Meals in main navigation (default: true) */
-export const SHOW_MEALS_IN_NAV = true;
+/** Feature flag: Show Meals in main navigation (default: false). The route remains accessible at `/meals`. */
+export const SHOW_MEALS_IN_NAV = false;

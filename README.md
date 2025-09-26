@@ -165,9 +165,9 @@ npm test
 - **Documentation**: Added JSDoc comments and README files across the codebase
 - **Improved Type Safety**: Enhanced TypeScript type definitions and interfaces
 
-### New: Meals Page
-- Added weekly Meal Planner at `/meals` with a 7-column grid and Breakfast/Lunch/Dinner slots.
-- Navigation link "Meals" added to the sidebar.
+### Meals Page
+- Weekly Meal Planner at `/meals` with a 7-column grid and Breakfast/Lunch/Dinner slots.
+- Sidebar link is hidden by default; enable via the `SHOW_MEALS_IN_NAV` flag in `lib/constants.ts` (default: false). Route and features remain accessible directly at `/meals`.
 - Persistence: Meals are persisted in localStorage via `utils/mealsStorage.ts` and shared through a page-level `MealsProvider` (`app/context/MealsContext.tsx`). Components use `useMealsContext()` for a single source of truth.
 
 ## Troubleshooting

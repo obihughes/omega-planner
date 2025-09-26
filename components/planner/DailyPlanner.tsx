@@ -1063,6 +1063,14 @@ export default function DailyPlanner() {
                       >
                         Back to Calendar
                       </Button>
+                      <Button
+                        size="sm"
+                        title="Open Scheduling (Monthly) view"
+                        onClick={() => setViewMode('monthly')}
+                        className="ml-2"
+                      >
+                        Scheduling
+                      </Button>
                       {isClient && getRelativeDayLabel(topDayOffset) && (
                         <span className="text-xs text-muted-foreground ml-2 px-1.5 py-0.5 bg-muted rounded-sm">
                           {getRelativeDayLabel(topDayOffset)}

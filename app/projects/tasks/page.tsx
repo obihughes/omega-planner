@@ -768,6 +768,16 @@ export default function ProjectsTasksPage() {
               <Plus className="w-4 h-4" />
               Add Task
             </Button>
+            <Button
+              onClick={() => window.open('/focus', '_blank')}
+              size="sm"
+              variant="outline"
+              className="flex items-center gap-2"
+              title="Open Focus in a new tab"
+            >
+              <Clock className="w-4 h-4" />
+              Focus
+            </Button>
           </div>
         </div>
 
