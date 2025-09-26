@@ -164,20 +164,6 @@ export default function ProjectsTasksPage() {
   }, [collapsedProjectGroups, updatePreferences]);
 
   // Collapse/Expand all project groups in current view
-  const allProjectIdsInView = useMemo(() => {
-    const set = new Set<string>();
-    filteredAllTasks.forEach(t => set.add(t.projectId));
-    return Array.from(set);
-  }, [filteredAllTasks]);
-
-  const collapseAllProjects = useCallback(() => {
-    if (allProjectIdsInView.length === 0) return;
-    updatePreferences({ collapsedProjectGroups: allProjectIdsInView });
-  }, [allProjectIdsInView, updatePreferences]);
-
-  const expandAllProjects = useCallback(() => {
-    updatePreferences({ collapsedProjectGroups: [] });
-  }, [updatePreferences]);
 
   // Add task modal state
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
@@ -533,6 +519,22 @@ export default function ProjectsTasksPage() {
       tasks: sortTasks(tasks, allTasksSortBy, sortOrder)
     }));
   }, [filteredAllTasks, allTasksGroupBy, allTasksSubGroupBy, allTasksSortBy, sortOrder]);
+
+  // Collapse/Expand all project groups in current view (depends on filteredAllTasks)
+  const allProjectIdsInView = useMemo(() => {
+    const set = new Set<string>();
+    filteredAllTasks.forEach(t => set.add(t.projectId));
+    return Array.from(set);
+  }, [filteredAllTasks]);
+
+  const collapseAllProjects = useCallback(() => {
+    if (allProjectIdsInView.length === 0) return;
+    updatePreferences({ collapsedProjectGroups: allProjectIdsInView });
+  }, [allProjectIdsInView, updatePreferences]);
+
+  const expandAllProjects = useCallback(() => {
+    updatePreferences({ collapsedProjectGroups: [] });
+  }, [updatePreferences]);
 
   // Get subgrouping options based on current grouping
   const getSubGroupingOptions = () => {
@@ -1184,7 +1186,6 @@ export default function ProjectsTasksPage() {
                 </div>
               </div>
             </div>
-            )
 
             {/* Tasks List */}
             <div className="max-w-5xl mx-auto space-y-6">
@@ -1289,7 +1290,6 @@ export default function ProjectsTasksPage() {
                 })
               )}
             </div>
-            )
           </div>
 
           {/* Scheduling Calendar Sidebar */}
