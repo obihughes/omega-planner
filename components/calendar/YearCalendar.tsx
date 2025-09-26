@@ -715,9 +715,23 @@ export function YearCalendar({
       <div key={month} id={`month-${month}`}>
         {/* Month Header */}
         <div className="mb-4">
-          <h3 className="text-lg font-bold text-center text-foreground tracking-tight">
+          <button
+            type="button"
+            className="text-lg font-bold text-center text-foreground tracking-tight w-full hover:underline cursor-pointer"
+            title="Open this month in Monthly view"
+            onClick={() => {
+              try {
+                const yyyy = String(currentYear);
+                const mm = String(month + 1).padStart(2, '0');
+                const dateParam = `${yyyy}-${mm}-01`;
+                window.location.href = `/calendar?view=monthly&date=${dateParam}`;
+              } catch {
+                window.location.href = `/calendar?view=monthly`;
+              }
+            }}
+          >
             {getMonthName(month)}
-          </h3>
+          </button>
         </div>
 
         {/* Week Days Header */}

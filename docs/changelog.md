@@ -40,6 +40,10 @@
 - Navigation
   - Hide `Meals` in the main sidebar by default. Toggle visibility via `SHOW_MEALS_IN_NAV` in `lib/constants.ts` (default: false). Code and route remain intact (`/meals`).
 
+- Calendar
+  - Year view: Clicking a month name navigates to the Monthly view for that month (`/calendar?view=monthly&date=YYYY-MM-01`).
+  - Monthly view: Event chips show Edit and Delete buttons on hover; Delete prompts for confirmation.
+
 - Projects / Tasks
   - Project task rows now always show the due date/time-until-due inline next to the task name. Hover is no longer required to see due information. Editing the due date remains a click on the chip; action buttons (clear date, expand subtasks, add subtask, edit, delete) still appear on hover to keep the layout minimal.
   - Completion celebration effect updated to match Focus: lightweight confetti burst at the clicked checkbox and a short success chime that respects the Focus sound toggle. Files affected: `components/projects/TaskListView.tsx`, `components/projects/CompactTaskCard.tsx`, `components/projects/DraggableTaskCard.tsx`, `app/projects/tasks/page.tsx`, `lib/celebration.ts`.
@@ -68,6 +72,15 @@
 ## 2025-09-12
 
 - Navigation order updated: moved `Focus` and `Meals` to the bottom of the main sidebar list. Files affected: `components/ui/Navigation.tsx`, `docs/components.md`.
+
+## Unreleased
+
+- Projects / Tasks – Weekly Scheduler
+  - New page at `/projects/tasks/weekly` for week-based scheduling of project tasks.
+  - Two-panel layout: left shows week days (drop targets); right shows projects and tasks (draggable).
+  - Drop a task on a day to set `dueDate`.
+  - Tasks include a checkbox to toggle completion; plays a brief celebration on complete.
+  - Long task titles are truncated to avoid overflow in the days panel.
 
 - Focus page: Past Sessions redesigned to emphasize duration and show tasks as chips; dates are deemphasized with a compact time range and small day label. Files affected: `app/focus/page.tsx`.
 

@@ -372,6 +372,7 @@ Full year calendar view with event and interval management. Accessible under Dai
 
 **Key Interactions:**
 - Clicking a date opens a Day Details modal listing events and intervals for that day (or an empty-state message).
+- Clicking a month header navigates to the Monthly view for that month. The URL includes `?view=monthly&date=YYYY-MM-01`.
 - Clicking an event or interval chip opens a compact Details modal with title, color, date(s), and notes/description, plus Edit/Delete actions.
 - Double-clicking a date opens the New Event modal prefilled with that date.
 - Long-press on a date (500ms) opens the New Interval modal starting on that date.

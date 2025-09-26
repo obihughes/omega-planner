@@ -465,11 +465,17 @@ export function MonthlyCalendar({
                           {event.title}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <Eye className={cn("text-gray-700 opacity-60 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0", compact ? "w-2.5 h-2.5" : "w-3 h-3")} />
+                      <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <button
+                          className={cn("flex items-center justify-center rounded-sm bg-background/70 hover:bg-background border border-border/50", compact ? "h-4 px-1" : "h-5 px-1.5")}
+                          title="Edit"
+                          onClick={(e) => { e.stopPropagation(); setEditingEvent(event); setShowEventModal(true); }}
+                        >
+                          <Edit2 className={cn("text-foreground", compact ? "w-2.5 h-2.5" : "w-3 h-3")} />
+                        </button>
                         {onEventDelete && (
                           <button
-                            className={cn("opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center rounded-sm", compact ? "w-3.5 h-3.5" : "w-4 h-4")}
+                            className={cn("flex items-center justify-center rounded-sm bg-background/70 hover:bg-background border border-border/50", compact ? "h-4 px-1" : "h-5 px-1.5")}
                             title="Delete"
                             onClick={(e) => { e.stopPropagation(); if (confirm('Delete this event?')) { onEventDelete(event.id); } }}
                           >
