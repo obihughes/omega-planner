@@ -1,5 +1,10 @@
 ## Unreleased
 
+- Tasks / Navigation
+  - Tasks page header now includes a "Projects Views" menu linking to Projects, Projects Calendar, Projects Timeline, and Weekly Projects.
+  - Projects page respects `?view=` query param to switch tabs (active | archived | calendar).
+  - Added inline Status and Due filters to Tasks controls and Expand/Collapse All when grouped by Project.
+
 - Added Habits & Medication feature:
   - New page at `/habits` with tabs for Habits and Medication.
   - LocalStorage-backed utilities `HabitsStorage` and `MedicationsStorage`.

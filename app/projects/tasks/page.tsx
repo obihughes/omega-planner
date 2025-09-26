@@ -7,6 +7,8 @@ import { DraggableTaskCard } from '@/components/projects/DraggableTaskCard';
 import { MiniSchedulerCalendar } from '@/components/calendar/MiniSchedulerCalendar';
 import { AppLayout } from '@/components/ui/AppLayout';
 import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useRouter } from 'next/navigation';
  
 import { useProjects } from '@/hooks/useProjects';
 import { Calendar, List, Plus, Clock, CheckCircle2, Filter, SortAsc, CheckSquare2, Square, Edit3, X, ChevronDown, ChevronRight, Search } from 'lucide-react';
@@ -115,6 +117,7 @@ interface TaskWithProject extends ProjectTask {
 
 export default function ProjectsTasksPage() {
   const { projects, folders, updateTaskInProject, addTaskToProject, updateProject, deleteProject } = useProjects();
+  const router = useRouter();
   
   // Initialize with default preferences to prevent hydration mismatch
   const [preferences, setPreferences] = useState<TasksViewPreferences>(defaultTasksPreferences);
@@ -159,6 +162,22 @@ export default function ProjectsTasksPage() {
       collapsedProjectGroups: newCollapsedGroups
     });
   }, [collapsedProjectGroups, updatePreferences]);
+
+  // Collapse/Expand all project groups in current view
+  const allProjectIdsInView = useMemo(() => {
+    const set = new Set<string>();
+    filteredAllTasks.forEach(t => set.add(t.projectId));
+    return Array.from(set);
+  }, [filteredAllTasks]);
+
+  const collapseAllProjects = useCallback(() => {
+    if (allProjectIdsInView.length === 0) return;
+    updatePreferences({ collapsedProjectGroups: allProjectIdsInView });
+  }, [allProjectIdsInView, updatePreferences]);
+
+  const expandAllProjects = useCallback(() => {
+    updatePreferences({ collapsedProjectGroups: [] });
+  }, [updatePreferences]);
 
   // Add task modal state
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
@@ -759,7 +778,44 @@ export default function ProjectsTasksPage() {
           </div>
           
           <div className="flex items-center gap-2">
-            
+            {/* Projects Views quick nav */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  Projects Views
+                  <ChevronDown className="w-3 h-3" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-56 p-2">
+                <div className="flex flex-col">
+                  <button
+                    onClick={() => { router.push('/projects'); }}
+                    className="text-left px-3 py-2 rounded hover:bg-accent/40"
+                  >
+                    Projects
+                  </button>
+                  <button
+                    onClick={() => { router.push('/projects?view=calendar'); }}
+                    className="text-left px-3 py-2 rounded hover:bg-accent/40"
+                  >
+                    Projects Calendar
+                  </button>
+                  <button
+                    onClick={() => { router.push('/projects/timeline'); }}
+                    className="text-left px-3 py-2 rounded hover:bg-accent/40"
+                  >
+                    Projects Timeline
+                  </button>
+                  <button
+                    onClick={() => { router.push('/projects/tasks/weekly'); }}
+                    className="text-left px-3 py-2 rounded hover:bg-accent/40"
+                  >
+                    Weekly Projects
+                  </button>
+                </div>
+              </PopoverContent>
+            </Popover>
             <Button
               onClick={() => setIsAddTaskModalOpen(true)}
               size="sm"
@@ -877,6 +933,38 @@ export default function ProjectsTasksPage() {
                     </select>
                   </div>
 
+                  {/* Status Filter */}
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-muted-foreground">Status:</label>
+                    <select
+                      value={allTasksFilters.status}
+                      onChange={(e) => updatePreferences({ allTasksFilters: { ...allTasksFilters, status: e.target.value } })}
+                      className="px-3 py-2 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    >
+                      <option value="all">All</option>
+                      <option value="todo">To Do</option>
+                      <option value="in-progress">In Progress</option>
+                      <option value="blocked">Blocked</option>
+                      <option value="completed">Completed</option>
+                    </select>
+                  </div>
+
+                  {/* Due Filter */}
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-muted-foreground">Due:</label>
+                    <select
+                      value={allTasksFilters.dueDate}
+                      onChange={(e) => updatePreferences({ allTasksFilters: { ...allTasksFilters, dueDate: e.target.value } })}
+                      className="px-3 py-2 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    >
+                      <option value="all">All</option>
+                      <option value="overdue">Overdue</option>
+                      <option value="today">Today</option>
+                      <option value="thisWeek">This Week</option>
+                      <option value="none">No Due Date</option>
+                    </select>
+                  </div>
+
                   {/* Project Filter */}
                   <div className="flex items-center gap-2">
                     <label className="text-sm text-muted-foreground">Project:</label>
@@ -924,6 +1012,26 @@ export default function ProjectsTasksPage() {
                     <Clock className="w-4 h-4" />
                     Today
                   </Button>
+
+                  {/* Expand/Collapse All for Project groups */}
+                  {allTasksGroupBy === 'project' && allProjectIdsInView.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        onClick={collapseAllProjects}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Collapse All
+                      </Button>
+                      <Button
+                        onClick={expandAllProjects}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Expand All
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Row 2: Sorting Options */}

@@ -182,6 +182,14 @@ function ProjectsPageContent() {
     }
   }, [searchParams, folders]);
 
+  // Handle view URL parameter (?view=active|archived|calendar)
+  useEffect(() => {
+    const viewParam = searchParams.get('view');
+    if (viewParam === 'active' || viewParam === 'archived' || viewParam === 'calendar') {
+      setActiveView(viewParam as any);
+    }
+  }, [searchParams, setActiveView]);
+
   // Set all folders as expanded by default when folders load
   useEffect(() => {
     if (folders.length > 0) {

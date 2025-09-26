@@ -468,6 +468,14 @@ Custom time selection component.
 ## Recent Updates
 
 ### Advanced Task Management Features (Latest Update)
+### Tasks Header Navigation and Refinements (Latest)
+- Tasks page now includes a "Projects Views" menu in the header with quick links to:
+  - `/projects`
+  - `/projects?view=calendar`
+  - `/projects/timeline`
+  - `/projects/tasks/weekly`
+- Added inline Status and Due filters in Tasks controls.
+- Added Collapse All / Expand All when grouped by Project, scoped to the currently filtered projects.
 ### Workspace Tasks Enhancements (Inline Due Date, Done-by-day, Calendar Tooltip)
 ### Monthly Scheduling View and Unlimited Dots
 - `components/projects/MonthlyTaskScheduler.tsx`: monthly grid for scheduling tasks via drag-and-drop; shows unlimited project-colored dots per day with wrapping and a selected-day task list.
