@@ -46,6 +46,7 @@ Additional feature routes in `/app` include:
 - `app/meals` — Meals planner page
 - `app/habits` — Simple habits tracker page
 - `app/projects/tasks/weekly` — Weekly scheduler for project tasks (drag to set due dates)
+ - `app/projects/workspace` — Project-only workspace: Today vertical list (project tasks with dueDate=today), Projects/Tasks on right; drag or “+ Today” to set dueDate
 
 #### `/planner-backup`
 Backup files for the planner functionality.

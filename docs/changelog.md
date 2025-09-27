@@ -1,5 +1,9 @@
 ## Unreleased
 
+- Workspace
+  - `/projects/workspace` is now project-only: Left is a vertical list of project tasks due Today; Right lists Projects/Tasks with “+ Today” to set dueDate. No planner integration.
+  - Drag a project task to the Today pane to set its `dueDate` to today; remove from Today to clear `dueDate`.
+
 - Tasks / Navigation
   - Tasks page header now includes a "Projects Views" menu linking to Projects, Projects Calendar, Projects Timeline, and Weekly Projects.
   - Projects page respects `?view=` query param to switch tabs (active | archived | calendar).

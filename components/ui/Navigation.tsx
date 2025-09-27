@@ -134,6 +134,7 @@ export function Navigation() {
       icon: FolderKanban,
       active: pathname === '/projects' || pathname.startsWith('/projects/'),
       subViews: [
+        { key: 'workspace-today', label: 'Workspace Today', icon: CalendarCheck, active: pathname === '/projects/workspace' },
         { key: 'tasks', label: 'Tasks', icon: ClipboardList, active: pathname === '/projects/tasks' },
         { key: 'active', label: 'Projects', icon: Folder, active: projectsViewMode === 'active' }
       ]
@@ -263,7 +264,11 @@ export function Navigation() {
                                   setPlannerViewMode((subView as any).mode as any);
                                 }
                               } else if (item.href === '/projects') {
-                                if (subView.key === 'tasks') {
+                                if (subView.key === 'workspace-today') {
+                                  if (pathname !== '/projects/workspace') {
+                                    router.push('/projects/workspace');
+                                  }
+                                } else if (subView.key === 'tasks') {
                                   router.push('/projects/tasks');
                                 } else if (subView.key === 'timeline') {
                                   if (pathname !== '/projects/timeline') {
