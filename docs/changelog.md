@@ -1,7 +1,12 @@
 ## Unreleased
 
 - Weekly Goals
-  - New page at `/goals/weekly` to plan up to 3 goals per day with week navigation (Mon-start) and an Important Dates section.
+  - New minimalist page at `/goals/weekly` to plan up to 3 goals per day with week navigation (Mon-start).
+  - Visual color-coding system (6 colors) for quick goal identification at a glance.
+  - Hover-based UI: Add goal input appears on hover, actions (remove, color picker, create task) appear on hover.
+  - Press Enter to add goals, Escape or click outside to cancel.
+  - Create tasks from goals: click ExternalLink icon to navigate to Tasks page with pre-filled data.
+  - Today highlighted with primary tint, weekends with muted background.
   - LocalStorage persistence via `GoalsStorage` (`omega-planner-weekly-goals-v1`).
   - Added sidebar navigation link: Weekly Goals.
 

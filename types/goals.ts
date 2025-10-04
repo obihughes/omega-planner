@@ -9,6 +9,7 @@ export interface WeeklyGoal {
   done: boolean;
   createdAt: string;
   linkedEventId?: string;
+  color?: string;
 }
 
 export interface ImportantDate {

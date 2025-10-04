@@ -323,6 +323,26 @@ Left sidebar navigation component.
 - Calendar Yearly view available under `Daily Planner` subviews. Monthly view is no longer listed in the sidebar; open it by clicking a month in the Yearly view.
 - Weekly Goals page is available as a top-level link: `/goals/weekly`.
 
+### Weekly Goals (`app/goals/weekly/page.tsx`)
+Minimalist weekly goal planning interface with visual color-coding and hover interactions.
+
+**Key Features:**
+- **Week Navigation**: Prev/This Week/Next buttons with Monday-start weeks
+- **7-Day Grid**: Full-height columns for Mon-Sun with visual distinctions (today highlighted, weekends muted)
+- **3 Goals Per Day**: Hard limit enforced at storage and UI level
+- **Color Coding**: 6 color options (Gray, Blue, Green, Yellow, Red, Purple) for visual organization
+- **Hover-Based UI**:
+  - Add goal input appears on column hover (when space available)
+  - Goal actions appear on hover: color picker, create task, remove
+  - Color picker expands inline on click
+- **Keyboard Navigation**:
+  - Enter to submit new goal
+  - Escape to cancel
+  - Click outside input to cancel
+- **Task Creation**: Click ExternalLink icon to create a task from a goal (navigates to Tasks page with pre-filled title, due date, and notes)
+- **Visual Feedback**: Colored backgrounds and borders, done state with strikethrough, smooth transitions
+- **LocalStorage Persistence**: Uses `GoalsStorage` (`omega-planner-weekly-goals-v1`) for week-level data storage
+
 **Order Update (2025-09-12):**
 - Main order is now: `Daily Planner`, `Workspace`, `Text Canvas`, then `Meals` and `Habits`. Focus has been removed from the main sidebar; access it via the Focus button in the Daily view header (opens in a new tab).
 

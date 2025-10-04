@@ -90,6 +90,15 @@ export const GoalsStorage = {
     return week;
   },
 
+  updateGoalColor(weekStartKey: string, dateKey: string, goalId: string, color: string): WeekGoals {
+    const week = GoalsStorage.loadWeek(weekStartKey);
+    const list = week.goalsByDate[dateKey] || [];
+    week.goalsByDate[dateKey] = list.map(g => g.id === goalId ? { ...g, color } : g);
+    week.updatedAt = new Date().toISOString();
+    GoalsStorage.upsertWeek(week);
+    return week;
+  },
+
   upsertImportantDate(weekStartKey: string, date: ImportantDate): WeekGoals {
     const week = GoalsStorage.loadWeek(weekStartKey);
     const cleaned = GoalsStorage.cleanImportantDate(date);
@@ -140,6 +149,7 @@ export const GoalsStorage = {
       done: Boolean(g?.done),
       createdAt: String(g?.createdAt ?? new Date().toISOString()),
       linkedEventId: typeof g?.linkedEventId === 'string' ? g.linkedEventId : undefined,
+      color: typeof g?.color === 'string' ? g.color : 'gray',
     };
   },
 
