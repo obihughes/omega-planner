@@ -321,27 +321,41 @@ Left sidebar navigation component.
 - Active state indicators
 - Branded header section
 - Calendar Yearly view available under `Daily Planner` subviews. Monthly view is no longer listed in the sidebar; open it by clicking a month in the Yearly view.
-- Weekly Goals page is available as a top-level link: `/goals/weekly`.
+- Daily Goals page is available as a top-level link: `/goals/weekly`.
 
-### Weekly Goals (`app/goals/weekly/page.tsx`)
-Minimalist weekly goal planning interface with visual color-coding and hover interactions.
+### Daily Goals (`app/goals/weekly/page.tsx`)
+Grid-based interface for daily goal planning with visual hierarchy, color-coding, and persistent add controls.
 
 **Key Features:**
-- **Week Navigation**: Prev/This Week/Next buttons with Monday-start weeks
-- **7-Day Grid**: Full-height columns for Mon-Sun with visual distinctions (today highlighted, weekends muted)
+- **7-Column Grid Layout**: Shows 2 weeks (14 days) in a 7-column grid (Mon-Sun) across 2 rows for efficient space usage
+- **No Horizontal Scroll**: Grid layout eliminates the need for horizontal scrolling or drag navigation
+- **Date-Based Layout**: Each day column shows weekday and month/day for easy orientation across date ranges
+- **Today Highlighted**: Today is highlighted with primary tint, weekends with muted background
 - **3 Goals Per Day**: Hard limit enforced at storage and UI level
+- **Goal Types with Visual Hierarchy**:
+  - **Primary Goals**: For important events (exams, deadlines, appointments)
+    - Larger text (text-base), bold font weight
+    - Larger checkbox (20px) and icons (16px)
+    - Thicker border (border-2) for emphasis
+    - More padding for visual prominence
+  - **Supporting Tasks**: For regular daily tasks
+    - Standard text size (text-sm), normal font weight
+    - Standard checkbox (16px) and icons (14px)
+    - Standard border, compact padding
+- **Persistent Add UI** (non-disruptive):
+  - Small fixed "+" button in each day header opens the add form
+  - Form includes goal type selector (Primary/Task buttons)
+  - Color picker, Add/Cancel buttons for explicit control
+  - Enter to submit, Escape to cancel
+- **Fixed Text Overflow**: Long goal names wrap properly with `break-words` and `min-w-0` flex constraints
 - **Color Coding**: 6 color options (Gray, Blue, Green, Yellow, Red, Purple) for visual organization
-- **Hover-Based UI**:
-  - Add goal input appears on column hover (when space available)
-  - Goal actions appear on hover: color picker, create task, remove
-  - Color picker expands inline on click
-- **Keyboard Navigation**:
-  - Enter to submit new goal
-  - Escape to cancel
-  - Click outside input to cancel
+- **Actions (No Hover Expansion)**:
+  - Single options menu (⋮) on each goal for actions
+  - Menu entries: Change color, Create task, Remove
+  - Color picker expands inline below goal when "Change color" is selected
 - **Task Creation**: Click ExternalLink icon to create a task from a goal (navigates to Tasks page with pre-filled title, due date, and notes)
 - **Visual Feedback**: Colored backgrounds and borders, done state with strikethrough, smooth transitions
-- **LocalStorage Persistence**: Uses `GoalsStorage` (`omega-planner-weekly-goals-v1`) for week-level data storage
+- **LocalStorage Persistence**: Uses `GoalsStorage` (`omega-planner-weekly-goals-v1`) for data storage. Loads goals dynamically across multiple weeks for the visible date range. Goals include `goalType` field ('primary' | 'supporting').
 
 **Order Update (2025-09-12):**
 - Main order is now: `Daily Planner`, `Workspace`, `Text Canvas`, then `Meals` and `Habits`. Focus has been removed from the main sidebar; access it via the Focus button in the Daily view header (opens in a new tab).

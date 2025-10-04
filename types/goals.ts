@@ -10,6 +10,8 @@ export interface WeeklyGoal {
   createdAt: string;
   linkedEventId?: string;
   color?: string;
+  /** 'primary' for main goals (exams, important events), 'supporting' for regular tasks */
+  goalType?: 'primary' | 'supporting';
 }
 
 export interface ImportantDate {

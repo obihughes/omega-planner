@@ -142,6 +142,7 @@ export const GoalsStorage = {
   },
 
   cleanGoal(g: any): WeeklyGoal {
+    const goalType = g?.goalType === 'primary' || g?.goalType === 'supporting' ? g.goalType : 'supporting';
     return {
       id: String(g?.id ?? Math.random().toString(36).slice(2)),
       title: String(g?.title ?? '').trim(),
@@ -150,6 +151,7 @@ export const GoalsStorage = {
       createdAt: String(g?.createdAt ?? new Date().toISOString()),
       linkedEventId: typeof g?.linkedEventId === 'string' ? g.linkedEventId : undefined,
       color: typeof g?.color === 'string' ? g.color : 'gray',
+      goalType,
     };
   },
 

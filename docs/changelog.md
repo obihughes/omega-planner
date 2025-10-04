@@ -1,13 +1,23 @@
 ## Unreleased
 
-- Weekly Goals
-  - New minimalist page at `/goals/weekly` to plan up to 3 goals per day with week navigation (Mon-start).
-  - Visual color-coding system (6 colors) for quick goal identification at a glance.
-  - Hover-based UI: Add goal input appears on hover, actions (remove, color picker, create task) appear on hover.
-  - Press Enter to add goals, Escape or click outside to cancel.
+- Daily Goals (formerly Weekly Goals)
+  - Redesigned page at `/goals/weekly` with 7-column grid layout showing 2 weeks (14 days total: 7 past, today, 6 future).
+  - Grid layout eliminates horizontal scroll in favor of multiple rows for efficient space utilization.
+  - Plan up to 3 goals per day with visual color-coding system (6 colors) for quick goal identification.
+  - **New Goal Types**: Support for Primary goals (exams, important events) vs Supporting tasks with visual hierarchy:
+    - Primary goals: Larger text (text-base), bold font, larger checkbox (20px), thicker border (border-2), more padding
+    - Supporting tasks: Smaller text (text-sm), normal font, standard checkbox (16px), standard border, less padding
+    - Toggle type when adding goals via "Primary" / "Task" buttons
+  - **Improved Add UI**: Persistent "+ Add Goal" button instead of hover-based input (non-disruptive)
+    - Click button to open input form with goal type selector, color picker, and Add/Cancel buttons
+    - Press Enter to submit, Escape to cancel
+  - **Fixed Overflow**: Long goal names now wrap properly with `break-words` and `min-w-0` constraints
+  - Goal actions (remove, color picker, create task) appear on hover only
   - Create tasks from goals: click ExternalLink icon to navigate to Tasks page with pre-filled data.
   - Today highlighted with primary tint, weekends with muted background.
-  - LocalStorage persistence via `GoalsStorage` (`omega-planner-weekly-goals-v1`).
+  - Date headers show both weekday and month/day for better orientation across date ranges.
+- **Monday Add Fix**: Date parsing now uses timezone-safe `dateFromDateKey()` when computing week keys; adding to Mondays works reliably across locales/timezones.
+  - LocalStorage persistence via `GoalsStorage` (`omega-planner-weekly-goals-v1`). Dynamically loads goals across multiple weeks.
   - Added sidebar navigation link: Weekly Goals.
 
 - Workspace
