@@ -156,7 +156,10 @@ export const ProjectTaskFormModal: React.FC<ProjectTaskFormModalProps> = ({
               placeholder="Enter task title..."
               autoFocus
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && e.ctrlKey) handleSave();
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleSave();
+                }
               }}
             />
           </div>
@@ -253,7 +256,7 @@ export const ProjectTaskFormModal: React.FC<ProjectTaskFormModalProps> = ({
         </div>
 
         <div className="text-xs text-gray-500 mt-3 text-center">
-          Press Ctrl+Enter to save quickly
+          Press Enter (or Ctrl+Enter) to save
         </div>
       </div>
     </div>,

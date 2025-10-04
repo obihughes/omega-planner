@@ -6,6 +6,9 @@
 export { default as TaskStorage } from './storage';
 export type { DayViewSettings } from './storage';
 
+// Goals storage
+export { GoalsStorage } from './goalsStorage';
+
 // Formatting utilities
 export { formatTime, formatDuration } from './formatters';
 

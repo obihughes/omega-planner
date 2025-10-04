@@ -1,5 +1,10 @@
 ## Unreleased
 
+- Weekly Goals
+  - New page at `/goals/weekly` to plan up to 3 goals per day with week navigation (Mon-start) and an Important Dates section.
+  - LocalStorage persistence via `GoalsStorage` (`omega-planner-weekly-goals-v1`).
+  - Added sidebar navigation link: Weekly Goals.
+
 - Workspace
   - `/projects/workspace` is now project-only: Left is a vertical list of project tasks due Today; Right lists Projects/Tasks with “+ Today” to set dueDate. No planner integration.
   - Drag a project task to the Today pane to set its `dueDate` to today; remove from Today to clear `dueDate`.

@@ -13,6 +13,7 @@ This directory contains documentation for the project. Below is an overview of t
 
 ## Feature Documentation
 - [Daily Planner](planner.md) - Comprehensive guide to the daily planner feature
+- Weekly Goals (docs coming soon) - `/goals/weekly` simple weekly goals and important dates
 
 ## Quick Links
 - [Getting Started](getting-started.md) - Quick start guide for new developers

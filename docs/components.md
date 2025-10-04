@@ -321,6 +321,7 @@ Left sidebar navigation component.
 - Active state indicators
 - Branded header section
 - Calendar Yearly view available under `Daily Planner` subviews. Monthly view is no longer listed in the sidebar; open it by clicking a month in the Yearly view.
+- Weekly Goals page is available as a top-level link: `/goals/weekly`.
 
 **Order Update (2025-09-12):**
 - Main order is now: `Daily Planner`, `Workspace`, `Text Canvas`, then `Meals` and `Habits`. Focus has been removed from the main sidebar; access it via the Focus button in the Daily view header (opens in a new tab).

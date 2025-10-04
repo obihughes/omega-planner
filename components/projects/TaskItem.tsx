@@ -14,7 +14,8 @@ import {
   Square,
   Edit,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Copy
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSortable } from '@dnd-kit/sortable';
@@ -33,6 +34,7 @@ interface TaskItemProps {
   onAddSubtask?: (taskId: string, subtask: Omit<SubTask, 'id' | 'createdAt' | 'updatedAt' | 'order'>) => void;
   onUpdateSubtask?: (taskId: string, subtaskId: string, updates: Partial<SubTask>) => void;
   onDeleteSubtask?: (taskId: string, subtaskId: string) => void;
+  onCloneEdit?: (task: ProjectTask) => void;
 }
 
 // SubTask Item Component
@@ -109,7 +111,8 @@ export function TaskItem({
   onUpdateTask,
   onAddSubtask,
   onUpdateSubtask,
-  onDeleteSubtask
+  onDeleteSubtask,
+  onCloneEdit
 }: TaskItemProps) {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [showAddSubtask, setShowAddSubtask] = React.useState(false);
@@ -586,6 +589,17 @@ export function TaskItem({
                 >
                   <Plus className="w-4 h-4" />
                 </button>
+                
+                {/* Clone & Edit */}
+                {onCloneEdit && (
+                  <button
+                    onClick={() => onCloneEdit(task)}
+                    className="p-2 hover:bg-accent rounded-md transition-colors"
+                    title="Clone & Edit"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                )}
                 
                 <button
                   onClick={() => onEdit(task)}

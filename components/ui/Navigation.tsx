@@ -140,6 +140,13 @@ export function Navigation() {
       ]
     },
     {
+      href: '/goals/weekly',
+      label: 'Weekly Goals',
+      icon: ClipboardList,
+      active: pathname === '/goals/weekly',
+      subViews: []
+    },
+    {
       href: '/documents',
       label: 'Text Canvas',
       icon: FileText,

@@ -8,6 +8,9 @@ export type {
   PinnedTask 
 } from './planner';
 
+// Weekly Goals
+export type { WeeklyGoal, ImportantDate, WeekGoals, WeeklyGoalsStorageData } from './goals';
+
 // Export all project-related types including the new SubTask
 export type { Project, ProjectTask, SubTask, ProjectFolder, ProjectsStorageData } from './projects';
 

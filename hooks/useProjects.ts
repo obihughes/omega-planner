@@ -109,7 +109,7 @@ export function useProjects() {
     const clonedProject: Project = {
       ...sourceProject,
       id: `project-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      name: `${sourceProject.name} (Copy)`,
+      name: sourceProject.name,
       tasks: clonedTasks,
       progress: sourceProject.tasks.length > 0 ? Math.round((clonedTasks.filter(t => t.status === 'completed').length / clonedTasks.length) * 100) : 0,
       order: Date.now(),

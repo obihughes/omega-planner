@@ -217,6 +217,28 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
     }
   }, [project, editingTask, addTaskToProject, updateTaskInProject]);
 
+  // Clone + Edit in one click
+  const handleCloneAndEdit = useCallback((task: ProjectTask) => {
+    if (!project) return;
+    const cloned: Partial<ProjectTask> = {
+      title: task.title,
+      description: task.description,
+      status: 'todo',
+      priority: task.priority,
+      startDate: task.startDate,
+      dueDate: task.dueDate,
+      estimatedHours: task.estimatedHours,
+      actualHours: undefined,
+      tags: task.tags,
+      assignedTo: task.assignedTo,
+    };
+    const created = addTaskToProject(project.id, cloned as Omit<ProjectTask, 'id' | 'createdAt' | 'updatedAt' | 'order'>);
+    if (created) {
+      setEditingTask(created);
+      setIsTaskModalOpen(true);
+    }
+  }, [project, addTaskToProject]);
+
   const handleCloseTaskModal = useCallback(() => {
     setIsTaskModalOpen(false);
     setEditingTask(null);
@@ -494,6 +516,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
                       onStatusChange={handleTaskStatusChange}
                       onEdit={handleEditTask}
                       onDelete={handleDeleteTask}
+                      onCloneEdit={handleCloneAndEdit}
                       onUpdateTask={(taskId, updates) => {
                         if (project) updateTaskInProject(project.id, taskId, updates);
                       }}
