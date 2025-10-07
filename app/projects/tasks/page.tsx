@@ -827,14 +827,14 @@ export default function ProjectsTasksPage() {
               Add Task
             </Button>
             <Button
-              onClick={() => window.open('/focus', '_blank')}
+              onClick={() => window.open('/projects/workspace', '_blank')}
               size="sm"
               variant="outline"
               className="flex items-center gap-2"
-              title="Open Focus in a new tab"
+              title="Open Workspace Today in a new tab"
             >
               <Clock className="w-4 h-4" />
-              Focus
+              Workspace Today
             </Button>
           </div>
         </div>

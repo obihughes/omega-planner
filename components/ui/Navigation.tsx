@@ -155,7 +155,7 @@ export function Navigation() {
         { key: 'documents', label: 'Documents', icon: Files, active: true }
       ]
     },
-    // Focus removed from main sidebar; access via header button in Tasks
+    // Focus merged into Workspace Today (/projects/workspace)
     {
       href: '/meals',
       label: 'Meals',

@@ -1,5 +1,22 @@
 ## Unreleased
 
+- **Workspace Today Enhancement** (2025-10-07)
+  - Merged focus mode functionality into Workspace Today page (`/projects/workspace`)
+  - Added session timer with target durations (25/45/60 min) and sound notifications
+  - Added simple task creation for non-structured quick planning
+  - Integrated backlog management with drag-and-drop between planned and backlog
+  - Added completed tasks tracking with celebration feedback (confetti and sound)
+  - Screen Wake Lock support while timer is running
+  - Session history and persistence via new localStorage keys:
+    - `omega-planner-workspace-today-v1` (session state)
+    - `omega-planner-workspace-sessions-v1` (session history)
+    - `omega-planner-workspace-target-v1` (target duration)
+    - `omega-planner-workspace-sound-v1` (sound settings)
+  - Files affected: `app/projects/workspace/page.tsx`
+  - Deleted standalone focus mode page (`app/focus/page.tsx`)
+  - Updated Tasks page button to link to Workspace Today instead of Focus
+  - Files affected: `app/projects/tasks/page.tsx`, `docs/components.md`, `README.md`
+
 - Daily Goals (formerly Weekly Goals)
   - Redesigned page at `/goals/weekly` with 7-column grid layout showing 2 weeks (14 days total: 7 past, today, 6 future).
   - Grid layout eliminates horizontal scroll in favor of multiple rows for efficient space utilization.

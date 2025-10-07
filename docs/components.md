@@ -358,30 +358,33 @@ Grid-based interface for daily goal planning with visual hierarchy, color-coding
 - **LocalStorage Persistence**: Uses `GoalsStorage` (`omega-planner-weekly-goals-v1`) for data storage. Loads goals dynamically across multiple weeks for the visible date range. Goals include `goalType` field ('primary' | 'supporting').
 
 **Order Update (2025-09-12):**
-- Main order is now: `Daily Planner`, `Workspace`, `Text Canvas`, then `Meals` and `Habits`. Focus has been removed from the main sidebar; access it via the Focus button in the Daily view header (opens in a new tab).
+- Main order is now: `Daily Planner`, `Workspace`, `Text Canvas`, then `Meals` and `Habits`.
 
-### Focus Page (`app/focus/page.tsx`)
-Purpose: Minimal focus-mode workspace with a timer, central planned list, and a compact sidebar for supporting lists.
+### Workspace Today Page (`app/projects/workspace/page.tsx`)
+Purpose: Unified workspace combining focus mode session management with project task integration.
 
 **Layout:**
-- Planned this session is the central, primary column.
-- Right sidebar stacks Completed (top) and Backlog (bottom).
+- Left panel: Today's tasks including simple planned tasks, project tasks due today, completed tasks, and backlog
+- Right panel: All projects with drag-to-today functionality
 
-**Key Behaviors:**
-- Past Sessions are hidden while a session is active (reduces distraction).
-- When no session is active, Past Sessions can be toggled Show/Hide and include edit/delete controls. Toggle preference persists.
-- State persists to localStorage (`omega-planner-focus-state-v1`, `omega-planner-focus-sessions-v1`).
-- Session target length can be set (quick picks 15/25/45/60 min or custom). Target persists (`omega-planner-focus-target-seconds-v1`).
-- Main timer shows a countdown when a target duration is set; otherwise it shows elapsed time. Progress bar and remaining time label are displayed beneath with percentage.
-- Optional sound notifications (toggleable): 5 minutes remaining and time up. Preference persists (`omega-planner-focus-sound-enabled-v1`).
-- Celebration feedback: marking a planned task done triggers a small confetti burst near the button and a brief success chime (respects the sound toggle).
-- Timer uses wall-clock time: while running, the UI derives elapsed from `elapsedSeconds + (now - lastResumedAt)`. This prevents the timer from freezing when the tab is backgrounded or you navigate away.
-- Focus-only Screen Wake Lock: while the timer is running and the Focus page is visible, the screen is kept awake (if supported). The lock is released on pause, when switching tabs/routes, or on unmount. Other pages remain static; no wake lock is requested elsewhere.
+**Key Features:**
+- **Session Timer**: Built-in timer with target durations (25/45/60 min) and sound notifications
+- **Simple Tasks**: Create non-structured tasks for quick planning without project association
+- **Project Integration**: Drag project tasks to today or use quick-add button
+- **Backlog Management**: Drag tasks between planned and backlog areas
+- **Celebration Feedback**: Confetti and sound effects on task completion (respects sound toggle)
+
+**Persistence:**
+- Session state: `omega-planner-workspace-today-v1`
+- Session history: `omega-planner-workspace-sessions-v1`
+- Target duration: `omega-planner-workspace-target-v1`
+- Sound settings: `omega-planner-workspace-sound-v1`
 
 **Controls:**
-- Start, Pause, End Session
-- Drag backlog items into the planned list; mark planned items done to move to completed
- - Target controls: quick-pick buttons and numeric input in minutes
+- Start, Pause, End Session with wall-clock accurate timer
+- Screen Wake Lock while timer is running (if supported)
+- Drag and drop between planned/backlog areas
+- Quick add buttons for simple and project tasks
 
 ### Button, Input, Card, etc. (`components/ui/`)
 Reusable UI primitives built with consistent styling.

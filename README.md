@@ -41,12 +41,14 @@ npm run dev:clean
 - **Task inbox** for unscheduled tasks
 - **Pinned tasks** for quick access
 
-### Focus Mode
-- Minimal focus workspace at `/focus` with a session timer and planned/completed/backlog columns.
-- Past Sessions: hidden during active session; when idle, can be toggled Show/Hide with edit/delete. Preference persists.
-- Session target length with quick picks (15/25/45/60) or custom minutes; progress bar, remaining time, and percentage. Target persists.
-- Optional sound notifications for 5 minutes remaining and time up; toggle persists.
-- Local persistence via `omega-planner-focus-state-v1`, `omega-planner-focus-sessions-v1`, and `omega-planner-focus-target-seconds-v1`.
+### Workspace Today
+- Unified workspace at `/projects/workspace` combining focus mode timer with project task management
+- **Session Timer**: Built-in timer with target durations (25/45/60 min) and sound notifications
+- **Simple Tasks**: Create non-structured tasks for quick planning without project association
+- **Project Integration**: Drag project tasks to today or use quick-add button
+- **Backlog Management**: Organize and prioritize tasks with drag-and-drop
+- **Celebration Feedback**: Confetti and sound effects on task completion
+- Local persistence via `omega-planner-workspace-today-v1`, `omega-planner-workspace-sessions-v1`, `omega-planner-workspace-target-v1`, and `omega-planner-workspace-sound-v1`
 
 ### Calendar Features
 - Year-view calendar with event and period management
