@@ -784,16 +784,16 @@ export default function WorkspaceTodayPage() {
           </div>
 
           {/* Right: Projects (drag sources) */}
-          <div className="w-1/2 shrink-0 p-4 overflow-y-auto">
+          <div className="w-1/2 shrink-0 p-4 overflow-y-auto overflow-x-hidden">
             <div className="text-sm font-semibold mb-3">Projects</div>
-            <div className="space-y-4">
+            <div className="space-y-3">
               {activeProjects.map(project => (
-                <div key={project.id} className="border border-border rounded bg-card/40">
-                  <div className="px-3 py-2 border-b border-border/50 flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: project.color }} />
-                    <div className="text-sm font-medium truncate" title={project.name}>{project.name}</div>
+                <div key={project.id} className="border border-border rounded bg-card/40 overflow-hidden">
+                  <div className="px-2.5 py-1.5 border-b border-border/50 flex items-center gap-2 min-w-0">
+                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: project.color }} />
+                    <div className="text-xs font-medium truncate" title={project.name}>{project.name}</div>
                   </div>
-                  <div className="p-3 space-y-2">
+                  <div className="p-2 space-y-1.5">
                     {project.tasks.length === 0 ? (
                       <div className="text-xs text-muted-foreground italic">No tasks</div>
                     ) : (
@@ -821,18 +821,18 @@ export default function WorkspaceTodayPage() {
                               setTimeout(() => document.body.removeChild(ghost), 0);
                             } catch {}
                           }}
-                          className="border bg-background hover:bg-accent/40 transition-colors px-2 py-1 flex items-center gap-2 rounded cursor-move"
+                          className="border bg-background hover:bg-accent/40 transition-colors px-1.5 py-1 flex items-center gap-1.5 rounded cursor-move min-w-0"
                           title={task.title}
                         >
-                          <div className={cn('w-4 h-4 border flex-shrink-0', task.status === 'completed' ? 'bg-green-500 border-green-600' : 'bg-background')} />
-                          <div className="min-w-0 flex-1">
-                            <div className="text-sm font-medium truncate">{task.title}</div>
+                          <div className={cn('w-3.5 h-3.5 border flex-shrink-0', task.status === 'completed' ? 'bg-green-500 border-green-600' : 'bg-background')} />
+                          <div className="min-w-0 flex-1 overflow-hidden">
+                            <div className="text-xs font-medium truncate" title={task.title}>{task.title}</div>
                             {task.dueDate && (
-                              <div className="text-[10px] text-muted-foreground truncate">Due {task.dueDate}</div>
+                              <div className="text-[9px] text-muted-foreground truncate">Due {task.dueDate}</div>
                             )}
                           </div>
-                          <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => quickAddToToday(project.id, task.id)}>
-                            <Plus className="w-3 h-3 mr-1" /> Today
+                          <Button size="sm" variant="outline" className="h-6 px-1.5 text-[10px] flex-shrink-0" onClick={(e) => { e.stopPropagation(); quickAddToToday(project.id, task.id); }}>
+                            <Plus className="w-2.5 h-2.5" />
                           </Button>
                         </div>
                       ))
