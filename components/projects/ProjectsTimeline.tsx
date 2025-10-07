@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useProjects } from '@/hooks/useProjects';
 import { getContrastColor } from '@/utils/colorUtils';
-import { ChevronLeft, ChevronRight, Calendar, Filter, Eye, EyeOff, ZoomIn, ZoomOut } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Filter, Eye, EyeOff, ZoomIn, ZoomOut, AlertCircle, TrendingUp, CheckCircle2, Clock } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { ProjectTaskFormModal } from '@/components/modals/ProjectTaskFormModal';
@@ -32,12 +32,18 @@ function addMonths(date: Date, delta: number): Date {
 
 type ViewMode = 'week' | 'month' | 'quarter';
 type FilterMode = 'all' | 'active' | 'completed';
+type QuickFilter = 'none' | 'overdue' | 'high-priority' | 'blocked' | 'upcoming';
+type GroupMode = 'project' | 'status' | 'priority';
 
 export default function ProjectsTimeline() {
   const { projects, updateTaskInProject } = useProjects();
   const [monthCursor, setMonthCursor] = useState<Date>(startOfMonth(new Date()));
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
+  const [quickFilter, setQuickFilter] = useState<QuickFilter>('none');
+  const [groupMode, setGroupMode] = useState<GroupMode>('project');
+  const [showProjectBars, setShowProjectBars] = useState(true);
+  const [showWorkloadDensity, setShowWorkloadDensity] = useState(false);
   // Collapsed state hides tasks but keeps the project row visible so it can be expanded again
   const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(new Set());
   const [hoveredTask, setHoveredTask] = useState<string | null>(null);
@@ -69,8 +75,8 @@ export default function ProjectsTimeline() {
     return days;
   }, [rangeStart, rangeEnd]);
 
-  // Layout constants (compact)
-  const labelColumnWidth = 220;
+  // Layout constants (improved spacing)
+  const labelColumnWidth = 240;
 
   // Measure container width to compute a responsive day width so we use all available space
   const containerRef = useRef<HTMLDivElement>(null);
@@ -89,17 +95,55 @@ export default function ProjectsTimeline() {
 
   const dayWidth: number = useMemo(() => {
     const numDays = Math.max(1, dayTicks.length);
-    const minDayWidth = 24;  // Prevent labels/handles from getting too cramped
-    const maxDayWidth = 64;  // Avoid comically large bars on ultra-wide screens
-    if (!containerWidth) return 28; // SSR/initial fallback
+    const minDayWidth = 30;  // Increased minimum for better readability
+    const maxDayWidth = 80;  // Increased maximum for more spacious view
+    if (!containerWidth) return 40; // SSR/initial fallback
     const available = Math.max(0, containerWidth - labelColumnWidth);
     const computed = Math.floor(available / numDays);
     return Math.min(Math.max(computed, minDayWidth), maxDayWidth);
   }, [containerWidth, dayTicks.length]);
 
-  const rowHeight = 44;
-  const rowGap = 10;
-  const headerHeight = 40;
+  // Calculate proper swimlanes for tasks to avoid overlaps
+  const calculateTaskLanes = (tasks: any[]) => {
+    const lanes: any[][] = [];
+    const sortedTasks = [...tasks].sort((a, b) => {
+      const aStart = new Date(a.startDate || a.dueDate || 0).getTime();
+      const bStart = new Date(b.startDate || b.dueDate || 0).getTime();
+      return aStart - bStart;
+    });
+
+    sortedTasks.forEach(task => {
+      let placed = false;
+      for (let i = 0; i < lanes.length; i++) {
+        const lane = lanes[i];
+        const canPlace = !lane.some(existing => {
+          const taskStart = new Date(task.startDate || task.dueDate);
+          const taskEnd = new Date(task.dueDate || task.startDate);
+          const existingStart = new Date(existing.startDate || existing.dueDate);
+          const existingEnd = new Date(existing.dueDate || existing.startDate);
+          return !(taskEnd < existingStart || taskStart > existingEnd);
+        });
+        if (canPlace) {
+          lane.push({ ...task, lane: i });
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        lanes.push([{ ...task, lane: lanes.length }]);
+      }
+    });
+
+    return lanes.flat();
+  };
+
+  const taskHeight = 18; // Height of each task bar
+  const laneSpacing = 4; // Spacing between lanes
+  const projectLabelHeight = 32;
+  const taskAreaHeight = 80; // Space allocated for tasks in each row
+  const rowHeight = projectLabelHeight + taskAreaHeight;
+  const rowGap = 16;
+  const headerHeight = 60;
   const contentWidth = labelColumnWidth + dayTicks.length * dayWidth;
 
   const dateToX = (date: Date) => {
@@ -125,15 +169,138 @@ export default function ProjectsTimeline() {
     'blocked': '#ef4444'      // red-500
   };
 
-  const visibleProjects = useMemo(() => {
+  const priorityColor: Record<'low' | 'medium' | 'high' | 'urgent', string> = {
+    'low': '#94a3b8',      // slate-400
+    'medium': '#60a5fa',   // blue-400
+    'high': '#f59e0b',     // amber-500
+    'urgent': '#ef4444'    // red-500
+  };
+
+  // Check if a task is overdue
+  const isTaskOverdue = (task: ProjectTask): boolean => {
+    if (!task.dueDate || task.status === 'completed') return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return new Date(task.dueDate) < today;
+  };
+
+  // Check if task is upcoming (within next 7 days)
+  const isTaskUpcoming = (task: ProjectTask): boolean => {
+    if (!task.dueDate || task.status === 'completed') return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const weekFromNow = new Date(today);
+    weekFromNow.setDate(today.getDate() + 7);
+    const dueDate = new Date(task.dueDate);
+    return dueDate >= today && dueDate <= weekFromNow;
+  };
+
+  // Calculate task progress based on subtasks
+  const getTaskProgress = (task: ProjectTask): number => {
+    if (!task.subtasks || task.subtasks.length === 0) {
+      return task.status === 'completed' ? 100 : 0;
+    }
+    const completed = task.subtasks.filter(st => st.status === 'completed').length;
+    return Math.round((completed / task.subtasks.length) * 100);
+  };
+
+  // Apply filters and grouping
+  const { groupedData, stats } = useMemo(() => {
     let filtered = projects.filter(p => !p.isDeleted);
+    
+    // Apply filter mode
     if (filterMode === 'active') {
       filtered = filtered.filter(p => p.status === 'active' || p.status === 'planning');
     } else if (filterMode === 'completed') {
       filtered = filtered.filter(p => p.status === 'completed');
     }
-    return filtered;
-  }, [projects, filterMode]);
+
+    // Apply quick filters to tasks
+    const filterTasks = (project: any) => {
+      let tasks = project.tasks || [];
+      
+      if (quickFilter === 'overdue') {
+        tasks = tasks.filter((t: ProjectTask) => isTaskOverdue(t));
+      } else if (quickFilter === 'high-priority') {
+        tasks = tasks.filter((t: ProjectTask) => t.priority === 'high' || t.priority === 'urgent');
+      } else if (quickFilter === 'blocked') {
+        tasks = tasks.filter((t: ProjectTask) => t.status === 'blocked');
+      } else if (quickFilter === 'upcoming') {
+        tasks = tasks.filter((t: ProjectTask) => isTaskUpcoming(t));
+      }
+      
+      return tasks;
+    };
+
+    // Calculate stats
+    const allTasks = filtered.flatMap(p => p.tasks || []);
+    const overdueCount = allTasks.filter(t => isTaskOverdue(t)).length;
+    const blockedCount = allTasks.filter(t => t.status === 'blocked').length;
+    const highPriorityCount = allTasks.filter(t => (t.priority === 'high' || t.priority === 'urgent') && t.status !== 'completed').length;
+    const upcomingCount = allTasks.filter(t => isTaskUpcoming(t)).length;
+
+    // Group data
+    if (groupMode === 'project') {
+      const grouped = filtered.map(project => ({
+        id: project.id,
+        name: project.name,
+        color: project.color,
+        status: project.status,
+        startDate: project.startDate,
+        endDate: project.endDate,
+        tasks: filterTasks(project),
+        isProject: true
+      }));
+      return { 
+        groupedData: grouped, 
+        stats: { overdueCount, blockedCount, highPriorityCount, upcomingCount }
+      };
+    } else if (groupMode === 'status') {
+      const statusGroups: any = {};
+      filtered.forEach(project => {
+        const tasks = filterTasks(project);
+        tasks.forEach((task: ProjectTask) => {
+          if (!statusGroups[task.status]) {
+            statusGroups[task.status] = {
+              id: task.status,
+              name: task.status.charAt(0).toUpperCase() + task.status.slice(1).replace('-', ' '),
+              color: statusColor[task.status],
+              tasks: [],
+              isProject: false
+            };
+          }
+          statusGroups[task.status].tasks.push({ ...task, projectId: project.id, projectName: project.name, projectColor: project.color });
+        });
+      });
+      return { 
+        groupedData: Object.values(statusGroups), 
+        stats: { overdueCount, blockedCount, highPriorityCount, upcomingCount }
+      };
+    } else { // priority
+      const priorityGroups: any = {};
+      const priorityOrder = ['urgent', 'high', 'medium', 'low'];
+      filtered.forEach(project => {
+        const tasks = filterTasks(project);
+        tasks.forEach((task: ProjectTask) => {
+          if (!priorityGroups[task.priority]) {
+            priorityGroups[task.priority] = {
+              id: task.priority,
+              name: task.priority.charAt(0).toUpperCase() + task.priority.slice(1),
+              color: priorityColor[task.priority],
+              tasks: [],
+              isProject: false
+            };
+          }
+          priorityGroups[task.priority].tasks.push({ ...task, projectId: project.id, projectName: project.name, projectColor: project.color });
+        });
+      });
+      const sorted = priorityOrder.map(p => priorityGroups[p]).filter(Boolean);
+      return { 
+        groupedData: sorted, 
+        stats: { overdueCount, blockedCount, highPriorityCount, upcomingCount }
+      };
+    }
+  }, [projects, filterMode, quickFilter, groupMode]);
 
   const toggleProjectCollapsed = (projectId: string) => {
     setCollapsedProjects(prev => {
@@ -191,8 +358,11 @@ export default function ProjectsTimeline() {
 
   return (
     <div className="h-full w-full flex flex-col bg-background">
-      <div className="px-4 py-3 border-b border-border/60 bg-card/30 flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      {/* Enhanced Header with Stats */}
+      <div className="px-4 py-3 border-b border-border/60 bg-card/30">
+        {/* Top Row - Controls */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-3">
           {/* Navigation */}
           <div className="flex items-center gap-2">
             <button
@@ -212,6 +382,12 @@ export default function ProjectsTimeline() {
             >
               <ChevronRight className="w-4 h-4" />
             </button>
+              <button
+                className="ml-1 px-2 py-1 text-xs rounded border border-border hover:bg-accent"
+                onClick={() => setMonthCursor(startOfMonth(new Date()))}
+              >
+                Today
+            </button>
           </div>
 
           {/* View Mode Toggle */}
@@ -227,6 +403,23 @@ export default function ProjectsTimeline() {
                 onClick={() => setViewMode(mode)}
               >
                 {mode === 'week' ? 'Week' : mode === 'month' ? 'Month' : 'Quarter'}
+              </button>
+            ))}
+          </div>
+
+            {/* Group Mode Toggle */}
+            <div className="flex items-center border border-border rounded overflow-hidden">
+              {(['project', 'status', 'priority'] as GroupMode[]).map((mode) => (
+                <button
+                  key={mode}
+                  className={`px-3 py-1 text-xs font-medium transition-colors ${
+                    groupMode === mode 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'bg-background hover:bg-accent text-muted-foreground'
+                  }`}
+                  onClick={() => setGroupMode(mode)}
+                >
+                  {mode.charAt(0).toUpperCase() + mode.slice(1)}
               </button>
             ))}
           </div>
@@ -263,24 +456,115 @@ export default function ProjectsTimeline() {
             >
               Done
             </button>
+            </div>
+
+            {/* Display Options */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="h-8 w-8 rounded border border-border hover:bg-accent flex items-center justify-center">
+                  <Eye className="w-4 h-4" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64" align="start">
+                <div className="space-y-2">
+                  <div className="text-sm font-medium mb-2">Display Options</div>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={showProjectBars}
+                      onChange={(e) => setShowProjectBars(e.target.checked)}
+                      className="rounded"
+                    />
+                    <span className="text-xs">Show project timeline bars</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={showWorkloadDensity}
+                      onChange={(e) => setShowWorkloadDensity(e.target.checked)}
+                      className="rounded"
+                    />
+                    <span className="text-xs">Show workload density</span>
+                  </label>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Stats Panel */}
+          <div className="flex items-center gap-4 text-xs">
+            {stats.overdueCount > 0 && (
+              <button 
+                className={`flex items-center gap-1.5 px-2 py-1 rounded hover:bg-accent transition-colors ${
+                  quickFilter === 'overdue' ? 'bg-accent' : ''
+                }`}
+                onClick={() => setQuickFilter(quickFilter === 'overdue' ? 'none' : 'overdue')}
+              >
+                <AlertCircle className="w-3.5 h-3.5 text-red-500" />
+                <span className="font-medium">{stats.overdueCount}</span>
+                <span className="text-muted-foreground">Overdue</span>
+              </button>
+            )}
+            {stats.blockedCount > 0 && (
+              <button 
+                className={`flex items-center gap-1.5 px-2 py-1 rounded hover:bg-accent transition-colors ${
+                  quickFilter === 'blocked' ? 'bg-accent' : ''
+                }`}
+                onClick={() => setQuickFilter(quickFilter === 'blocked' ? 'none' : 'blocked')}
+              >
+                <AlertCircle className="w-3.5 h-3.5 text-red-500" />
+                <span className="font-medium">{stats.blockedCount}</span>
+                <span className="text-muted-foreground">Blocked</span>
+              </button>
+            )}
+            {stats.highPriorityCount > 0 && (
+              <button 
+                className={`flex items-center gap-1.5 px-2 py-1 rounded hover:bg-accent transition-colors ${
+                  quickFilter === 'high-priority' ? 'bg-accent' : ''
+                }`}
+                onClick={() => setQuickFilter(quickFilter === 'high-priority' ? 'none' : 'high-priority')}
+              >
+                <TrendingUp className="w-3.5 h-3.5 text-amber-500" />
+                <span className="font-medium">{stats.highPriorityCount}</span>
+                <span className="text-muted-foreground">High Priority</span>
+              </button>
+            )}
+            {stats.upcomingCount > 0 && (
+              <button 
+                className={`flex items-center gap-1.5 px-2 py-1 rounded hover:bg-accent transition-colors ${
+                  quickFilter === 'upcoming' ? 'bg-accent' : ''
+                }`}
+                onClick={() => setQuickFilter(quickFilter === 'upcoming' ? 'none' : 'upcoming')}
+              >
+                <Clock className="w-3.5 h-3.5 text-blue-500" />
+                <span className="font-medium">{stats.upcomingCount}</span>
+                <span className="text-muted-foreground">Upcoming</span>
+              </button>
+            )}
           </div>
         </div>
 
-        <div className="flex items-center gap-3 text-xs opacity-70">
+        {/* Bottom Row - Legend */}
+        <div className="flex items-center gap-4 text-xs opacity-70">
           <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: statusColor['todo'] }} /> Todo</div>
           <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: statusColor['in-progress'] }} /> In Progress</div>
           <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: statusColor['completed'] }} /> Completed</div>
           <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: statusColor['blocked'] }} /> Blocked</div>
+          <span className="mx-2">|</span>
+          <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Urgent</div>
+          <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> High</div>
+          <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-blue-400" /> Medium</div>
+          <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-slate-400" /> Low</div>
         </div>
       </div>
 
       <div ref={containerRef} className="flex-1 overflow-auto">
-        <svg width={contentWidth} height={headerHeight + visibleProjects.length * (rowHeight + rowGap)}>
+        <svg width={contentWidth} height={headerHeight + groupedData.length * (rowHeight + rowGap)}>
           {/* Header background */}
           <rect x={0} y={0} width={contentWidth} height={headerHeight} fill="transparent" />
 
           {/* Label column background */}
-          <rect x={0} y={0} width={labelColumnWidth} height={headerHeight + visibleProjects.length * (rowHeight + rowGap)} fill="transparent" />
+          <rect x={0} y={0} width={labelColumnWidth} height={headerHeight + groupedData.length * (rowHeight + rowGap)} fill="transparent" />
 
           {/* Weekend shading (ultra subtle) */}
           {dayTicks.map((tick, idx) => {
@@ -293,27 +577,89 @@ export default function ProjectsTimeline() {
                 x={x}
                 y={headerHeight}
                 width={dayWidth}
-                height={visibleProjects.length * (rowHeight + rowGap)}
+                height={groupedData.length * (rowHeight + rowGap)}
                 fill={'hsl(var(--muted-foreground) / 0.06)'}
               />
             );
           })}
 
-          {/* Week separators and labels (Mondays) */}
+          {/* Enhanced date labels */}
           {dayTicks.map((tick, idx) => {
-            if (tick.date.getDay() !== 1) return null; // Monday
             const x = labelColumnWidth + idx * dayWidth;
+            const isMonday = tick.date.getDay() === 1;
+            const isFirstOfMonth = tick.date.getDate() === 1;
+            const showLabel = viewMode === 'week' || isMonday || (viewMode === 'quarter' && isFirstOfMonth);
+            
             return (
-              <g key={`wk-${tick.key}`}>
-                <line x1={x} x2={x} y1={0} y2={headerHeight + visibleProjects.length * (rowHeight + rowGap)} stroke="hsl(var(--muted-foreground) / 0.35)" strokeWidth={0.75} />
-                <text x={x + 2} y={headerHeight / 2 + 4} textAnchor="start" fontSize={11} fill="hsl(var(--foreground))">
+              <g key={`date-${tick.key}`}>
+                {/* Separator line for weeks/months */}
+                {isMonday && (
+                  <line 
+                    x1={x} 
+                    x2={x} 
+                    y1={headerHeight - 20} 
+                    y2={headerHeight + groupedData.length * (rowHeight + rowGap)} 
+                    stroke="hsl(var(--muted-foreground) / 0.25)" 
+                    strokeWidth={1}
+                  />
+                )}
+                {isFirstOfMonth && (
+                  <line 
+                    x1={x} 
+                    x2={x} 
+                    y1={0} 
+                    y2={headerHeight + groupedData.length * (rowHeight + rowGap)} 
+                    stroke="hsl(var(--muted-foreground) / 0.4)" 
+                    strokeWidth={1.5}
+                  />
+                )}
+                
+                {/* Date labels */}
+                {showLabel && (
+                  <>
+                    {/* Day of month */}
+                    <text 
+                      x={x + dayWidth / 2} 
+                      y={headerHeight - 28} 
+                      textAnchor="middle" 
+                      fontSize={13} 
+                      fill="hsl(var(--foreground))"
+                      fontWeight={isFirstOfMonth ? 'bold' : 'normal'}
+                    >
                   {tick.date.getDate()}
                 </text>
+                    {/* Day of week (only for week view or first of month) */}
+                    {(viewMode === 'week' || isFirstOfMonth) && (
+                      <text 
+                        x={x + dayWidth / 2} 
+                        y={headerHeight - 12} 
+                        textAnchor="middle" 
+                        fontSize={10} 
+                        fill="hsl(var(--muted-foreground))"
+                      >
+                        {tick.date.toLocaleDateString('en-US', { weekday: 'short' })}
+                      </text>
+                    )}
+                    {/* Month label for first of month */}
+                    {isFirstOfMonth && (
+                      <text 
+                        x={x + 4} 
+                        y={headerHeight - 45} 
+                        textAnchor="start" 
+                        fontSize={12} 
+                        fill="hsl(var(--foreground))"
+                        fontWeight="bold"
+                      >
+                        {tick.date.toLocaleDateString('en-US', { month: 'short' })}
+                      </text>
+                    )}
+                  </>
+                )}
               </g>
             );
           })}
           {/* Rightmost border line */}
-          <line x1={labelColumnWidth + dayTicks.length * dayWidth} x2={labelColumnWidth + dayTicks.length * dayWidth} y1={0} y2={headerHeight + visibleProjects.length * (rowHeight + rowGap)} stroke="hsl(var(--muted-foreground) / 0.4)" strokeWidth={0.5} />
+          <line x1={labelColumnWidth + dayTicks.length * dayWidth} x2={labelColumnWidth + dayTicks.length * dayWidth} y1={0} y2={headerHeight + groupedData.length * (rowHeight + rowGap)} stroke="hsl(var(--muted-foreground) / 0.4)" strokeWidth={0.5} />
 
           {/* Today indicator line */}
           {todayX && (
@@ -322,7 +668,7 @@ export default function ProjectsTimeline() {
                 x1={todayX} 
                 x2={todayX} 
                 y1={0} 
-                y2={headerHeight + visibleProjects.length * (rowHeight + rowGap)} 
+                y2={headerHeight + groupedData.length * (rowHeight + rowGap)} 
                 stroke="#ef4444" 
                 strokeWidth={2} 
                 opacity={0.8}
@@ -339,47 +685,208 @@ export default function ProjectsTimeline() {
             </g>
           )}
 
-          {/* Project rows and tasks */}
-          {visibleProjects.map((project, rowIndex) => {
+          {/* Workload density visualization (heat map) */}
+          {showWorkloadDensity && (
+            <g>
+              {dayTicks.map((tick, idx) => {
+                const x = labelColumnWidth + idx * dayWidth;
+                const tasksOnDay = groupedData.flatMap(g => g.tasks || []).filter((task: any) => {
+                  if (!task.startDate || !task.dueDate) return false;
+                  const taskStart = new Date(task.startDate);
+                  const taskEnd = new Date(task.dueDate);
+                  return tick.date >= taskStart && tick.date <= taskEnd;
+                }).length;
+                
+                if (tasksOnDay === 0) return null;
+                const intensity = Math.min(tasksOnDay / 5, 1); // Max out at 5 tasks
+                return (
+                  <rect
+                    key={`density-${tick.key}`}
+                    x={x}
+                    y={headerHeight - 8}
+                    width={dayWidth}
+                    height={4}
+                    fill={`hsl(45, 100%, ${100 - intensity * 40}%)`}
+                    opacity={0.7}
+                  />
+                );
+              })}
+            </g>
+          )}
+
+          {/* Group rows and tasks */}
+          {groupedData.map((group, rowIndex) => {
             const yBase = headerHeight + rowIndex * (rowHeight + rowGap);
-            const labelBg = project.color || '#64748b';
-            const labelFg = getContrastColor(project.color || '#64748b');
-            const stats = getProjectStats(project);
+            const stats = getProjectStats(group);
 
             return (
-              <g key={project.id}>
+              <g key={group.id}>
                 {/* Row separator */}
                 <line x1={0} x2={contentWidth} y1={yBase + rowHeight + rowGap / 2} y2={yBase + rowHeight + rowGap / 2} stroke="hsl(var(--muted-foreground) / 0.25)" strokeWidth={0.5} />
 
-                {/* Project label with enhanced info */}
-                <g className="cursor-pointer" onClick={() => toggleProjectCollapsed(project.id)}>
-                  <circle cx={20} cy={yBase + rowHeight / 2} r={6} fill={project.color || '#64748b'} />
-                  <text x={34} y={yBase + rowHeight / 2 - 2} fontSize={12} fill="hsl(var(--foreground))" fontWeight="bold">
-                    {project.name}
-                  </text>
-                  <text x={34} y={yBase + rowHeight / 2 + 12} fontSize={10} fill="hsl(var(--muted-foreground))">
-                    {stats.total > 0 ? `${stats.completed}/${stats.total} tasks` : 'No tasks'}
-                    {stats.inProgress > 0 && ` • ${stats.inProgress} in progress`}
-                  </text>
+                {/* Enhanced Project/Group label area */}
+                <g>
+                  {/* Label background card */}
+                  <rect 
+                    x={4} 
+                    y={yBase + 4} 
+                    width={labelColumnWidth - 8} 
+                    height={projectLabelHeight - 4} 
+                    rx={6} 
+                    fill="hsl(var(--card))" 
+                    stroke="hsl(var(--border))"
+                    strokeWidth={1}
+                    opacity={0.8}
+                  />
                   
-                  {/* Progress bar */}
-                  {stats.total > 0 && (
+                  <g className="cursor-pointer" onClick={() => toggleProjectCollapsed(group.id)}>
+                    {/* Color indicator bar */}
+                    <rect 
+                      x={4} 
+                      y={yBase + 4} 
+                      width={4} 
+                      height={projectLabelHeight - 4} 
+                      rx={6}
+                      fill={group.color || '#64748b'} 
+                    />
+                    
+                    {/* Expand/collapse indicator */}
+                    <text 
+                      x={16} 
+                      y={yBase + projectLabelHeight / 2 + 4} 
+                      fontSize={12} 
+                      fill="hsl(var(--muted-foreground))"
+                    >
+                      {collapsedProjects.has(group.id) ? '▶' : '▼'}
+                    </text>
+                    
+                    {/* Project name */}
+                    <text 
+                      x={30} 
+                      y={yBase + 16} 
+                      fontSize={13} 
+                      fill="hsl(var(--foreground))" 
+                      fontWeight="600"
+                    >
+                      {group.name}
+                  </text>
+                    
+                    {/* Task count and status */}
+                    <text 
+                      x={30} 
+                      y={yBase + 28} 
+                      fontSize={10} 
+                      fill="hsl(var(--muted-foreground))"
+                    >
+                      {stats.total > 0 ? (
+                        `${stats.completed}/${stats.total} • ${Math.round((stats.completed / stats.total) * 100)}%`
+                      ) : (
+                        'No tasks'
+                      )}
+                  </text>
+                    
+                    {/* Compact progress indicator */}
+                    {stats.total > 0 && (
+                      <g>
+                        <rect 
+                          x={labelColumnWidth - 60} 
+                          y={yBase + 12} 
+                          width={48} 
+                          height={8} 
+                          rx={4} 
+                          fill="hsl(var(--muted) / 0.3)"
+                        />
+                        <rect 
+                          x={labelColumnWidth - 60} 
+                          y={yBase + 12} 
+                          width={(stats.completed / stats.total) * 48} 
+                          height={8} 
+                          rx={4} 
+                          fill={statusColor['completed']}
+                        />
+                      </g>
+                    )}
+                  </g>
+                  
+                  {/* Swimlane guides (subtle horizontal lines) */}
+                  {!collapsedProjects.has(group.id) && (
                     <g>
-                      <rect x={34} y={yBase + rowHeight / 2 + 16} width={100} height={2} fill="hsl(var(--muted-foreground) / 0.3)" rx={1} />
-                      <rect 
-                        x={34} 
-                        y={yBase + rowHeight / 2 + 16} 
-                        width={(stats.completed / stats.total) * 100} 
-                        height={2} 
-                        fill={statusColor['completed']} 
-                        rx={1} 
-                      />
+                      {[...Array(Math.floor(taskAreaHeight / (taskHeight + laneSpacing)))].map((_, laneIdx) => (
+                        <line
+                          key={`lane-${laneIdx}`}
+                          x1={labelColumnWidth}
+                          x2={contentWidth}
+                          y1={yBase + projectLabelHeight + laneIdx * (taskHeight + laneSpacing) + taskHeight / 2}
+                          y2={yBase + projectLabelHeight + laneIdx * (taskHeight + laneSpacing) + taskHeight / 2}
+                          stroke="hsl(var(--muted-foreground) / 0.08)"
+                          strokeWidth={0.5}
+                          strokeDasharray="4 4"
+                        />
+                      ))}
                     </g>
                   )}
                 </g>
 
-                {/* Tasks */}
-                {!collapsedProjects.has(project.id) && (project.tasks || []).map((task, taskIdx) => {
+                {/* Project-level timeline bar (if project has start/end dates) */}
+                {showProjectBars && group.isProject && group.startDate && group.endDate && (
+                  <g>
+                    {(() => {
+                      const projStart = new Date(group.startDate);
+                      const projEnd = new Date(group.endDate);
+                      if (projEnd < rangeStart || projStart > rangeEnd) return null;
+                      
+                      const startX = dateToX(projStart);
+                      const endX = dateToX(new Date(projEnd.getFullYear(), projEnd.getMonth(), projEnd.getDate() + 1));
+                      const width = Math.max(8, endX - startX - 4);
+                      const barY = yBase + projectLabelHeight - 6;
+                      
+                      return (
+                        <>
+                          {/* Project timeline background bar */}
+                          <rect 
+                            x={startX} 
+                            y={barY} 
+                            width={width} 
+                            height={8} 
+                            rx={4} 
+                            fill={group.color} 
+                            opacity={0.2}
+                            stroke={group.color}
+                            strokeWidth={1}
+                          />
+                          {/* Solid progress indicator */}
+                          <rect 
+                            x={startX} 
+                            y={barY} 
+                            width={width * (stats.completed / Math.max(stats.total, 1))} 
+                            height={8} 
+                            rx={4} 
+                            fill={group.color} 
+                            opacity={0.5}
+                          />
+                          {/* Start milestone diamond */}
+                          <g transform={`translate(${startX}, ${barY + 4}) rotate(45)`}>
+                            <rect x={-4} y={-4} width={8} height={8} fill={group.color} stroke="white" strokeWidth={1.5} />
+                          </g>
+                          {/* End milestone diamond */}
+                          <g transform={`translate(${endX - 2}, ${barY + 4}) rotate(45)`}>
+                            <rect x={-4} y={-4} width={8} height={8} fill={group.color} stroke="white" strokeWidth={1.5} />
+                          </g>
+                        </>
+                      );
+                    })()}
+                  </g>
+                )}
+
+                {/* Tasks with proper swimlane positioning */}
+                {!collapsedProjects.has(group.id) && (() => {
+                  // Calculate lanes for all tasks in this group
+                  const tasksWithDates = (group.tasks || []).filter((t: any) => 
+                    (t.startDate && t.dueDate) || t.startDate || t.dueDate
+                  );
+                  const lanedTasks = calculateTaskLanes(tasksWithDates);
+                  
+                  return lanedTasks.map((task: any) => {
                   const hasSpan = task.startDate && task.dueDate;
                   const hasDueOnly = !task.startDate && task.dueDate;
                   const hasStartOnly = task.startDate && !task.dueDate;
@@ -391,48 +898,143 @@ export default function ProjectsTimeline() {
                     if (endOnly < rangeStart || startOnly > rangeEnd) {
                       return null; // completely outside the visible range
                     }
-                    const start = dateToX(new Date(task.startDate!));
-                    // include the end day fully by +1 day
-                    const endX = dateToX(new Date(new Date(task.dueDate!).getFullYear(), new Date(task.dueDate!).getMonth(), new Date(task.dueDate!).getDate() + 1));
-                    const width = Math.max(6, endX - start - 2);
-                    const barY = yBase + 12 + (taskIdx % 2) * 14; // simple stagger to reduce overlap
-                    const color = statusColor[task.status || 'todo'];
-                    const isHovered = hoveredTask === task.id;
+                      const start = dateToX(new Date(task.startDate!));
+                      // include the end day fully by +1 day
+                      const endX = dateToX(new Date(new Date(task.dueDate!).getFullYear(), new Date(task.dueDate!).getMonth(), new Date(task.dueDate!).getDate() + 1));
+                      const width = Math.max(8, endX - start - 4);
+                      const barY = yBase + projectLabelHeight + (task.lane || 0) * (taskHeight + laneSpacing);
+                      const taskStatus = (task.status || 'todo') as 'todo' | 'in-progress' | 'completed' | 'blocked';
+                      const taskPriority = (task.priority || 'medium') as 'low' | 'medium' | 'high' | 'urgent';
+                      const color = statusColor[taskStatus];
+                      const isHovered = hoveredTask === task.id;
+                      const isOverdue = isTaskOverdue(task);
+                      const progress = getTaskProgress(task);
+                      const projectId = task.projectId || group.id;
+                    
                     return (
                       <g 
                         key={task.id}
                         className="cursor-pointer"
                         onMouseEnter={() => setHoveredTask(task.id)}
                         onMouseLeave={() => setHoveredTask(null)}
-                        onClick={() => handleTaskClick(task, project.id)}
+                        onClick={() => handleTaskClick(task, projectId)}
                       >
                         <HoverCard>
                           <HoverCardTrigger asChild>
                             <g>
+                              {/* Shadow layer */}
+                              {isHovered && (
+                                <rect 
+                                  x={start + 1} 
+                                  y={barY + 1} 
+                                  width={width} 
+                                  height={taskHeight} 
+                                  rx={6} 
+                                  fill="black" 
+                                  opacity={0.15}
+                                />
+                              )}
+                              
+                              {/* Main task bar with gradient effect */}
+                              <defs>
+                                <linearGradient id={`grad-${task.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                                  <stop offset="0%" style={{stopColor: color, stopOpacity: isHovered ? 0.95 : 0.85}} />
+                                  <stop offset="100%" style={{stopColor: color, stopOpacity: isHovered ? 0.85 : 0.75}} />
+                                </linearGradient>
+                              </defs>
+                              
                               <rect 
                                 x={start} 
                                 y={barY} 
                                 width={width} 
-                                height={12} 
-                                rx={4} 
-                                ry={4} 
-                                fill={color} 
-                                opacity={isHovered ? 0.9 : 0.75}
-                                stroke={isHovered ? color : 'none'}
-                                strokeWidth={isHovered ? 1 : 0}
+                                height={taskHeight} 
+                                rx={6} 
+                                fill={`url(#grad-${task.id})`}
+                                stroke={isOverdue ? '#ef4444' : isHovered ? color : 'hsl(var(--border))'}
+                                strokeWidth={isOverdue ? 2 : 1}
                               />
-                              {(width > 30 || isHovered) && (
+                              
+                              {/* Progress overlay for tasks with subtasks */}
+                              {task.subtasks && task.subtasks.length > 0 && progress > 0 && (
+                                <>
+                                  <rect 
+                                    x={start} 
+                                    y={barY} 
+                                    width={Math.max(4, (width * progress) / 100)} 
+                                    height={taskHeight} 
+                                    rx={6} 
+                                    fill={statusColor['completed']} 
+                                    opacity={0.4}
+                                  />
+                                  {/* Progress percentage text for wider bars */}
+                                  {width > 60 && (
+                                    <text 
+                                      x={start + width - 28} 
+                                      y={barY + taskHeight / 2 + 4} 
+                                      fontSize={9} 
+                                      fill="hsl(var(--foreground))" 
+                                      opacity={0.7}
+                                      fontWeight="600"
+                                    >
+                                      {progress}%
+                                    </text>
+                                  )}
+                                </>
+                              )}
+                              
+                              {/* Priority indicator */}
+                              {(taskPriority === 'high' || taskPriority === 'urgent') && (
+                                <>
+                                  <circle 
+                                    cx={start + 6} 
+                                    cy={barY + taskHeight / 2} 
+                                    r={3.5} 
+                                    fill={priorityColor[taskPriority]} 
+                                    stroke="white" 
+                                    strokeWidth={1.5}
+                                  />
+                                  {/* Pulse animation effect for urgent */}
+                                  {taskPriority === 'urgent' && (
+                                    <circle 
+                                      cx={start + 6} 
+                                      cy={barY + taskHeight / 2} 
+                                      r={5} 
+                                      fill="none" 
+                                      stroke={priorityColor[taskPriority]} 
+                                      strokeWidth={1}
+                                      opacity={0.5}
+                                    />
+                                  )}
+                                </>
+                              )}
+                              
+                              {/* Task title with better positioning */}
+                              {width > 40 && (
                                 <text 
-                                  x={start + 6} 
-                                  y={barY + 9.5} 
-                                  fontSize={10} 
+                                  x={start + (taskPriority === 'high' || taskPriority === 'urgent' ? 14 : 8)} 
+                                  y={barY + taskHeight / 2 + 4} 
+                                  fontSize={11} 
                                   fill={getContrastColor(color)} 
-                                  opacity={0.9}
-                                  fontWeight={isHovered ? 'bold' : 'normal'}
+                                  fontWeight={isHovered ? '600' : '500'}
                                   style={{ pointerEvents: 'none' }}
                                 >
-                                  {task.title}
+                                  {isOverdue && '⚠ '}{task.title.length > 40 ? task.title.substring(0, 40) + '...' : task.title}
                                 </text>
+                              )}
+                              
+                              {/* Hover glow effect */}
+                              {isHovered && (
+                                <rect 
+                                  x={start - 1} 
+                                  y={barY - 1} 
+                                  width={width + 2} 
+                                  height={taskHeight + 2} 
+                                  rx={7} 
+                                  fill="none" 
+                                  stroke={color} 
+                                  strokeWidth={2}
+                                  opacity={0.4}
+                                />
                               )}
                             </g>
                           </HoverCardTrigger>
@@ -440,11 +1042,23 @@ export default function ProjectsTimeline() {
                             <div className="flex justify-between space-x-4">
                               <div className="space-y-1">
                                 <h4 className="text-sm font-semibold">{task.title}</h4>
+                                {!group.isProject && task.projectName && (
+                                  <p className="text-xs">
+                                    Project: <span className="font-medium" style={{color: task.projectColor}}>{task.projectName}</span>
+                                  </p>
+                                )}
                                 <p className="text-sm">
-                                  Status: <span className="font-medium" style={{color: color}}>{task.status}</span>
+                                  Status: <span className="font-medium" style={{color: color}}>{taskStatus}</span>
+                                </p>
+                                <p className="text-xs">
+                                  Priority: <span className="font-medium" style={{color: priorityColor[taskPriority]}}>{taskPriority}</span>
                                 </p>
                                 {task.startDate && <p className="text-xs text-muted-foreground">Start: {new Date(task.startDate).toLocaleDateString()}</p>}
                                 {task.dueDate && <p className="text-xs text-muted-foreground">Due: {new Date(task.dueDate).toLocaleDateString()}</p>}
+                                {isOverdue && <p className="text-xs text-red-500 font-medium">⚠ Overdue!</p>}
+                                {task.subtasks && task.subtasks.length > 0 && (
+                                  <p className="text-xs text-muted-foreground">Subtasks: {task.subtasks.filter((st: any) => st.status === 'completed').length}/{task.subtasks.length} completed ({progress}%)</p>
+                                )}
                               </div>
                             </div>
                           </HoverCardContent>
@@ -460,39 +1074,103 @@ export default function ProjectsTimeline() {
                       return null;
                     }
                     const x = dateToX(d) + dayWidth / 2;
-                    const dotY = yBase + rowHeight / 2;
-                    const color = statusColor[task.status || 'todo'];
+                    const dotY = yBase + projectLabelHeight + (task.lane || 0) * (taskHeight + laneSpacing) + taskHeight / 2;
+                    const taskStatus = (task.status || 'todo') as 'todo' | 'in-progress' | 'completed' | 'blocked';
+                    const taskPriority = (task.priority || 'medium') as 'low' | 'medium' | 'high' | 'urgent';
+                    const color = statusColor[taskStatus];
                     const isHovered = hoveredTask === task.id;
+                    const isOverdue = isTaskOverdue(task);
+                    const projectId = task.projectId || group.id;
+                    
                     return (
                       <g 
                         key={task.id}
                         className="cursor-pointer"
                         onMouseEnter={() => setHoveredTask(task.id)}
                         onMouseLeave={() => setHoveredTask(null)}
-                        onClick={() => handleTaskClick(task, project.id)}
+                        onClick={() => handleTaskClick(task, projectId)}
                       >
                         <HoverCard>
                           <HoverCardTrigger asChild>
                             <g>
+                              {/* Shadow */}
+                              {isHovered && (
+                                <circle 
+                                  cx={x + 0.5} 
+                                  cy={dotY + 0.5} 
+                                  r={8} 
+                                  fill="black" 
+                                  opacity={0.2}
+                                />
+                              )}
+                              
+                              {/* Main marker with gradient */}
+                              <defs>
+                                <radialGradient id={`dot-grad-${task.id}`}>
+                                  <stop offset="0%" style={{stopColor: color, stopOpacity: 1}} />
+                                  <stop offset="100%" style={{stopColor: color, stopOpacity: 0.8}} />
+                                </radialGradient>
+                              </defs>
+                              
                               <circle 
                                 cx={x} 
                                 cy={dotY} 
-                                r={isHovered ? 7 : 5} 
-                                fill={color} 
-                                opacity={isHovered ? 1 : 0.9}
-                                stroke={isHovered ? 'hsl(var(--background))' : 'none'}
-                                strokeWidth={isHovered ? 2 : 0}
+                                r={isHovered ? 8 : 6} 
+                                fill={`url(#dot-grad-${task.id})`}
+                                stroke={isOverdue ? '#ef4444' : 'white'}
+                                strokeWidth={isOverdue ? 2.5 : 2}
                               />
+                              
+                              {/* Priority ring */}
+                              {(taskPriority === 'high' || taskPriority === 'urgent') && (
+                                <>
+                                  <circle 
+                                    cx={x} 
+                                    cy={dotY} 
+                                    r={10} 
+                                    fill="none" 
+                                    stroke={priorityColor[taskPriority]} 
+                                    strokeWidth={2}
+                                    opacity={0.8}
+                                  />
+                                  {taskPriority === 'urgent' && (
+                                    <circle 
+                                      cx={x} 
+                                      cy={dotY} 
+                                      r={13} 
+                                      fill="none" 
+                                      stroke={priorityColor[taskPriority]} 
+                                      strokeWidth={1}
+                                      opacity={0.4}
+                                    />
+                                  )}
+                                </>
+                              )}
+                              
+                              {/* Hover label with background */}
                               {isHovered && (
-                                <text 
-                                  x={x + 12} 
-                                  y={dotY + 4} 
-                                  fontSize={10} 
-                                  fill="hsl(var(--foreground))" 
-                                  fontWeight="bold"
-                                >
-                                  {task.title}
-                                </text>
+                                <>
+                                  <rect 
+                                    x={x + 14} 
+                                    y={dotY - 10} 
+                                    width={Math.min(task.title.length * 7 + 12, 200)} 
+                                    height={20} 
+                                    rx={4} 
+                                    fill="hsl(var(--popover))" 
+                                    stroke="hsl(var(--border))"
+                                    strokeWidth={1}
+                                    opacity={0.95}
+                                  />
+                                  <text 
+                                    x={x + 20} 
+                                    y={dotY + 4} 
+                                    fontSize={11} 
+                                    fill="hsl(var(--popover-foreground))" 
+                                    fontWeight="600"
+                                  >
+                                    {isOverdue && '⚠ '}{task.title.substring(0, 25)}{task.title.length > 25 ? '...' : ''}
+                                  </text>
+                                </>
                               )}
                             </g>
                           </HoverCardTrigger>
@@ -500,12 +1178,21 @@ export default function ProjectsTimeline() {
                             <div className="flex justify-between space-x-4">
                                <div className="space-y-1">
                                 <h4 className="text-sm font-semibold">{task.title}</h4>
+                                {!group.isProject && task.projectName && (
+                                  <p className="text-xs">
+                                    Project: <span className="font-medium" style={{color: task.projectColor}}>{task.projectName}</span>
+                                  </p>
+                                )}
                                 <p className="text-sm">
-                                  Status: <span className="font-medium" style={{color: color}}>{task.status}</span>
+                                  Status: <span className="font-medium" style={{color: color}}>{taskStatus}</span>
+                                </p>
+                                <p className="text-xs">
+                                  Priority: <span className="font-medium" style={{color: priorityColor[taskPriority]}}>{taskPriority}</span>
                                 </p>
                                 <p className="text-xs text-muted-foreground">
                                   Date: {new Date(d).toLocaleDateString()}
                                 </p>
+                                {isOverdue && <p className="text-xs text-red-500 font-medium">⚠ Overdue!</p>}
                               </div>
                             </div>
                           </HoverCardContent>
@@ -515,20 +1202,21 @@ export default function ProjectsTimeline() {
                   }
 
                   return null;
-                })}
+                  });
+                })()}
               </g>
             );
           })}
 
           {/* Empty state */}
-          {visibleProjects.length === 0 && (
+          {groupedData.length === 0 && (
             <g>
               <rect x={0} y={headerHeight} width={contentWidth} height={120} fill="rgba(148,163,184,0.05)" />
               <text x={contentWidth / 2} y={headerHeight + 50} textAnchor="middle" fontSize={14} fill="hsl(var(--muted-foreground))">
-                No projects found
+                No {groupMode === 'project' ? 'projects' : groupMode === 'status' ? 'tasks' : 'tasks'} found
               </text>
               <text x={contentWidth / 2} y={headerHeight + 75} textAnchor="middle" fontSize={12} fill="hsl(var(--muted-foreground))" opacity={0.7}>
-                {filterMode !== 'all' ? `Try changing the filter to see more projects` : 'Create a project to see it on the timeline'}
+                {quickFilter !== 'none' ? `No tasks match the current filter` : filterMode !== 'all' ? `Try changing the filter` : 'Create a project to see it on the timeline'}
               </text>
             </g>
           )}
