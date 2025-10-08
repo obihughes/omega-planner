@@ -124,7 +124,7 @@ export function Navigation() {
       subViews: [
         { key: 'planner-daily', type: 'planner', mode: 'daily', label: 'Daily', icon: CalendarCheck, active: pathname === '/' && plannerViewMode === 'daily' },
         { key: 'planner-weekly', type: 'planner', mode: 'weekly', label: 'Week Overview', icon: CalendarDays, active: pathname === '/' && plannerViewMode === 'weekly' },
-        // Monthly scheduling is accessed via a header button in Daily view
+        { key: 'planner-monthly', type: 'planner', mode: 'monthly', label: 'Scheduling', icon: CalendarRange, active: pathname === '/' && plannerViewMode === 'monthly' },
         { key: 'calendar-yearly', type: 'calendar', mode: 'yearly', label: 'Yearly Calendar', icon: CalendarDays, active: pathname === '/calendar' && calendarViewMode === 'yearly' }
       ]
     },

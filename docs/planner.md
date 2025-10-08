@@ -14,6 +14,12 @@ The Daily Planner is the core component for task scheduling and timeline managem
 - **Fixed Copy/Paste Rendering Issue**: Resolved bug where copied tasks wouldn't render until page reload by ensuring consistent YYYY-MM-DD date format in the `handleDropCopy` function
 - **Fixed Date Tracking Issue**: Resolved bug where dragged tasks would be reverted to incorrect dates due to improper original date tracking in conflict resolution
 - **Improved Collision Resolution**: Enhanced the drag and drop system to properly handle conflicts and date consistency
+- **Daily Timeline Add/Edit**: Double-click add now uses `createTimelineTask` to set proper creation context; drag/resize commits now use `handleMouseUpGlobal` for reliable saves.
+
+### Scheduling (Monthly) Bulk Actions
+- **Delete Mode**: Toggle a mode that shows an X on each scheduled task in the mini daily timeline; click to delete quickly.
+- **Clear Day**: Remove all tasks for the selected date with one action.
+- **Clone Saved Day**: Entry point provided; navigates to Daily view where Saved Days can be applied.
 
 ### Task Resize
 - **Edge Resizing**: Resize tasks by dragging the start or end edges

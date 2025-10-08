@@ -121,6 +121,7 @@ export default function DailyPlanner() {
     createPoolTask,
     createPoolTaskForDate,
     createQuickTask,
+    createTimelineTask,
     handleDropFromPool,
     savedDays,
     saveSavedDay,
@@ -395,18 +396,10 @@ export default function DailyPlanner() {
   }, [draggingTask, setDraggingTask, tasksByDate]);
 
   const handleMouseUp = useCallback(() => {
-    if (draggingTask && draggingTask.task) {
-        saveTaskFromModal(draggingTask.task, { isNew: false }); 
-        setDraggingTask(null);
-    }
-    
-    if (resizingTask && resizingTask.task) {
-        saveTaskFromModal(resizingTask.task, { isNew: false });
-        setResizingTask(null);
-    }
-    
+    // Delegate commit logic to hook's global handler to avoid context issues
+    handleMouseUpGlobal();
     document.body.style.cursor = '';
-  }, [draggingTask, resizingTask, saveTaskFromModal, setDraggingTask, setResizingTask]);
+  }, [handleMouseUpGlobal]);
 
   // Listen for cross-navigation requests (from calendar pages)
   useEffect(() => {
@@ -533,17 +526,8 @@ export default function DailyPlanner() {
       const snappedNewStartHour = Math.round((baseHourForCalc + hourInBlock) * 4) / 4;
       const targetDateKey = getCalendarDateForColumn(dayOffset);
 
-      const newTaskDefaults: Task = {
-          id: `temp-new-task-${Date.now()}`,
-          name: "New Task", 
-          startHour: snappedNewStartHour,
-          duration: 1,
-          baseDate: targetDateKey, // Use YYYY-MM-DD format directly
-          color: TASK_COLORS[DEFAULT_TASK_COLOR_INDEX],
-          notes: "",
-          completed: false,
-      };
-      openEditModal(newTaskDefaults, { isNew: true });
+      // Use context-aware creation to ensure correct save path
+      createTimelineTask(dateFromDateKey(targetDateKey), snappedNewStartHour);
   };
   
   const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>, dayOffset: number, period: TimelinePeriod) => {

@@ -1,3 +1,14 @@
+## 2025-10-08
+
+- Daily Planner timeline add/edit fixes:
+  - Double-click to add now uses context-aware `createTimelineTask`, ensuring correct `baseDate` and `startHour` handling.
+  - Drag/resize commit now delegates to the hook's `handleMouseUpGlobal` for reliable state updates and conflict checks.
+  - No behavioral change in Monthly view; only Daily timeline interactions affected.
+
+- Scheduling (Monthly) enhancements:
+  - Added Scheduling subview to main navigation under Daily Planner.
+  - Added bulk actions toolbar in Scheduling: Delete Mode (quick X on tasks), Clear Day, and a Clone Saved Day entry point (navigates to Daily view for template actions).
+
 ## Unreleased
 
 - **Enhanced Weekly Goals Edit Options** (2025-10-08)

@@ -156,6 +156,7 @@ export function MonthlyTimelineView({
 }: MonthlyTimelineViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [deleteMode, setDeleteMode] = useState<boolean>(false);
   const { data: calendarData } = useCalendarData();
   // Removed unused state variables for search and filters since we're using mini timeline now
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
@@ -512,7 +513,7 @@ export function MonthlyTimelineView({
         </div>
       </div>
 
-      {/* Right Side - Date Header + Events + Task Pool + Mini Daily Timeline */}
+      {/* Right Side - Date Header + Bulk Actions + Events + Task Pool + Mini Daily Timeline */}
       <div className="flex-1 bg-background p-3 pt-2 overflow-hidden flex flex-col">
         {/* Date header above events/pool per request */}
         <div className="p-2 border-b border-border/60 bg-card/40 rounded-lg mb-2">
@@ -521,8 +522,43 @@ export function MonthlyTimelineView({
               {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}
             </h3>
             <div className="text-xs text-muted-foreground">Now: {new Date().toLocaleTimeString('en-US', { hour: 'numeric' })}</div>
-              </div>
-            </div>
+          </div>
+        </div>
+
+        {/* Bulk Actions Toolbar */}
+        <div className="mb-2 flex items-center gap-2">
+          <Button size="sm" variant={deleteMode ? 'secondary' : 'outline'} onClick={() => setDeleteMode(!deleteMode)} title="Toggle delete mode">
+            <X className="w-4 h-4 mr-1" /> {deleteMode ? 'Exit Delete Mode' : 'Delete Mode'}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              // Clear all scheduled tasks for selected day
+              const key = getDateKey(selectedDate);
+              const tasks = scheduledTasks.get(key) || [];
+              tasks.forEach(t => onDeleteTask(t));
+            }}
+            title="Clear all tasks for this day"
+          >
+            Clear Day
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              // Use saved day templates via DailyPlanner hook API exposed through callbacks if available
+              // Here we leverage openEditModal to surface Saved Days UI is not available; instruct users to use Daily view Saved Days if needed.
+              // Navigate to Daily view for current selected date
+              if (typeof onNavigateToDaily === 'function') {
+                onNavigateToDaily(selectedDate);
+              }
+            }}
+            title="Clone saved day to this date"
+          >
+            Clone Saved Day
+          </Button>
+        </div>
             
         {/* Events/Periods strip like Daily view */}
         <DailyEventsContainer
@@ -582,6 +618,7 @@ export function MonthlyTimelineView({
             showHeader={false}
             showUnscheduled={false}
             fitContainer={true}
+            deleteMode={deleteMode}
           />
         </div>
       </div>

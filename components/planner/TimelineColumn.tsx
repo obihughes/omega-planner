@@ -38,6 +38,10 @@ interface TimelineColumnProps {
     columnHeightPx?: number;
     /** If true, column will stretch to container width (minWidth:100%). Defaults to true */
     fillWidth?: boolean;
+    /** When true, render delete controls and allow quick deletes */
+    deleteMode?: boolean;
+    /** Delete callback for quick-delete mode */
+    onDeleteTask?: (task: Task) => void;
 }
 
 export const TimelineColumn: React.FC<TimelineColumnProps> = ({
@@ -56,7 +60,9 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
     handleDragStart,
     pixelsPerHour,
     columnHeightPx,
-    fillWidth = true
+    fillWidth = true,
+    deleteMode = false,
+    onDeleteTask
 }) => {
     let startHour, endHour;
     switch (period) {
@@ -232,21 +238,34 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
                                     top: 0,
                                 }}
                             >
-                                <MemoizedTaskCard
-                                    task={displayTask}
-                                    onStartEdit={(task, options) => {
-                                        const modalOptions = {
-                                            isNew: options?.isNew ?? false,
-                                            isFromPool: options?.isFromPool ?? false,
-                                        };
-                                        openEditModal(task, modalOptions);
-                                    }}
-                                    onCopy={() => {}}
-                                    onViewNotes={() => {}}
-                                    onResizeStart={() => {}}
-                                    height={columnHeight}
-                                    currentTime={currentTimeForMarker}
-                                />
+                                <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                                    {deleteMode && onDeleteTask && (
+                                        <button
+                                            type="button"
+                                            aria-label="Delete task"
+                                            title="Delete"
+                                            className="absolute -top-1 -right-1 z-[130] bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center shadow hover:bg-red-500"
+                                            onClick={(e) => { e.stopPropagation(); onDeleteTask(displayTask); }}
+                                        >
+                                            ×
+                                        </button>
+                                    )}
+                                    <MemoizedTaskCard
+                                        task={displayTask}
+                                        onStartEdit={(task, options) => {
+                                            const modalOptions = {
+                                                isNew: options?.isNew ?? false,
+                                                isFromPool: options?.isFromPool ?? false,
+                                            };
+                                            openEditModal(task, modalOptions);
+                                        }}
+                                        onCopy={() => {}}
+                                        onViewNotes={() => {}}
+                                        onResizeStart={() => {}}
+                                        height={columnHeight}
+                                        currentTime={currentTimeForMarker}
+                                    />
+                                </div>
                             </div>
                         );
                     })}

@@ -30,6 +30,7 @@ interface MiniDailyTimelineProps {
   showHeader?: boolean;
   showUnscheduled?: boolean;
   fitContainer?: boolean;
+  deleteMode?: boolean;
 }
 
 export function MiniDailyTimeline({
@@ -41,7 +42,8 @@ export function MiniDailyTimeline({
   openEditModal,
   showHeader = true,
   showUnscheduled = true,
-  fitContainer = false
+  fitContainer = false,
+  deleteMode = false
 }: MiniDailyTimelineProps) {
   const dateKey = getDateKey(selectedDate);
   const tasksForDate = tasksByDate.get(dateKey) || [];
@@ -148,11 +150,13 @@ export function MiniDailyTimeline({
             pixelsPerHour={miniPixelsPerHour}
             columnHeightPx={miniColumnHeight}
             fillWidth={true}
+            deleteMode={deleteMode}
+            onDeleteTask={onDeleteTask}
           />
         </div>
       </div>
     );
-  }, [dayOffset, tasksByDate, currentTime, handleDropCopy, onTaskClick, handleDragStart, miniPixelsPerHour, miniColumnHeight]);
+  }, [dayOffset, tasksByDate, currentTime, handleDropCopy, onTaskClick, handleDragStart, miniPixelsPerHour, miniColumnHeight, deleteMode, onDeleteTask]);
 
   return (
     <div className="h-full flex flex-col bg-background">
