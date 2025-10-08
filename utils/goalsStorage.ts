@@ -99,6 +99,22 @@ export const GoalsStorage = {
     return week;
   },
 
+  updateGoal(weekStartKey: string, dateKey: string, goalId: string, updates: Partial<Pick<WeeklyGoal, 'title' | 'notes' | 'goalType'>>): WeekGoals {
+    const week = GoalsStorage.loadWeek(weekStartKey);
+    const list = week.goalsByDate[dateKey] || [];
+    week.goalsByDate[dateKey] = list.map(g => {
+      if (g.id !== goalId) return g;
+      const updated = { ...g };
+      if (updates.title !== undefined) updated.title = String(updates.title).trim();
+      if (updates.notes !== undefined) updated.notes = updates.notes ? String(updates.notes).trim() : undefined;
+      if (updates.goalType !== undefined) updated.goalType = updates.goalType;
+      return updated;
+    });
+    week.updatedAt = new Date().toISOString();
+    GoalsStorage.upsertWeek(week);
+    return week;
+  },
+
   upsertImportantDate(weekStartKey: string, date: ImportantDate): WeekGoals {
     const week = GoalsStorage.loadWeek(weekStartKey);
     const cleaned = GoalsStorage.cleanImportantDate(date);

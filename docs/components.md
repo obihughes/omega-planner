@@ -7,30 +7,49 @@
 
 # Component Documentation
 
-## Projects Timeline (Preview)
+## Projects Timeline (Simplified & Compressed View)
 
 Location: `components/projects/ProjectsTimeline.tsx`
 
-- Purpose: Visual, read-only month view of all projects in swimlanes (Gantt-like).
+- Purpose: Clean, minimal Gantt-like timeline view focused on projects, tasks, and dates.
 - Access: Route `app/projects/timeline/page.tsx` → `/projects/timeline`. A "Timeline" link is also added under Workspace in the main navigation.
 - Rendering: SVG-based. Each project is a row; tasks render as:
   - Bars for tasks with both `startDate` and `dueDate`.
-  - Dots for tasks with only one of `startDate` or `dueDate`.
+  - Compact square cards for tasks with only one of `startDate` or `dueDate`.
   - Color coding by task `status` (todo/in-progress/completed/blocked).
   - View range culling: tasks render only if their date (or date span) overlaps the current visible range to prevent duplicate appearances across months.
+- **Simplified Design** (October 2025):
+  - Task names hidden from bars - shown only on hover via HoverCard
+  - Clear vertical separators between every day for better visual organization
+  - Removed priority/status filter buttons and stats panel
+  - Removed legend - cleaner header with only navigation and view mode controls
+  - Always grouped by project (no group mode toggle)
+  - Focus on clean, minimal interface showing only essential information
+- **Compressed Layout** (October 2025):
+  - Reduced vertical spacing throughout for more compact view
+  - Task height: 16px (down from 18px)
+  - Project label area: 18px (down from 32px)
+  - Task area per project: 50px (down from 80px)
+  - Row gap: 12px (down from 16px)
+  - Project labels aligned horizontally with first task lane for visual cohesion
+  - More information visible on screen without scrolling
+- **Square Task Cards** (matching daily planner style):
+  - Single-day tasks use compact square cards centered in day columns
+  - Border radius: 2px for subtle rounding (more square than round)
+  - Consistent styling with task span bars
+  - Priority indicators shown as colored dots on high/urgent tasks
 - Layout & Responsiveness:
   - Day width is now responsive to the available container width, with sensible min/max bounds. This uses all empty space on the right and adapts to different screen sizes.
-  - Today indicator and week separators scale with the computed layout.
+  - Today indicator and enhanced day/week/month separators scale with the computed layout.
+  - Clear vertical lines for every day, stronger lines for week starts, strongest for month boundaries.
 - Dark Mode:
-  - All SVG labels and helper lines use theme CSS variables (e.g. `hsl(var(--foreground))`, `hsl(var(--muted-foreground) / 0.35)`) for proper contrast in dark mode.
-- Compact defaults:
-  - Week separators only (labels on Mondays), ultra-subtle weekend shading.
-  - Bar labels show when width allows; hover tooltips remain available.
-  - Lighter visuals, more spacing per lane, minimal legend.
+  - All SVG labels and helper lines use theme CSS variables (e.g. `hsl(var(--foreground))`, `hsl(var(--border))`) for proper contrast in dark mode.
 
 Interactions
-- Clicking a project name now toggles a collapsed state that hides its tasks but keeps the label visible so you can click again to expand.
-- Interactions: Month navigation (prev/next). Read-only prototype.
+- Clicking a project name toggles a collapsed state that hides its tasks but keeps the label visible so you can click again to expand.
+- Hover over task bars/cards to see full task details including title, status, priority, and dates.
+- Month navigation (prev/next) and view mode toggle (Week/Month/Quarter).
+- Click on task bars/cards to open editing modal.
 
 This document provides detailed information about the components used in the Daily Planner application.
 
@@ -322,6 +341,7 @@ Left sidebar navigation component.
 - Branded header section
 - Calendar Yearly view available under `Daily Planner` subviews. Monthly view is no longer listed in the sidebar; open it by clicking a month in the Yearly view.
 - Daily Goals page is available as a top-level link: `/goals/weekly`.
+- Under `Workspace`, quick links now include: `Projects`, `Tasks`, `Projects Calendar`, `Projects Timeline`, and `Weekly Projects`.
 
 ### Daily Goals (`app/goals/weekly/page.tsx`)
 Grid-based interface for daily goal planning with visual hierarchy, color-coding, and persistent add controls.
@@ -349,13 +369,21 @@ Grid-based interface for daily goal planning with visual hierarchy, color-coding
   - Enter to submit, Escape to cancel
 - **Fixed Text Overflow**: Long goal names wrap properly with `break-words` and `min-w-0` flex constraints
 - **Color Coding**: 6 color options (Gray, Blue, Green, Yellow, Red, Purple) for visual organization
-- **Actions (No Hover Expansion)**:
-  - Single options menu (⋮) on each goal for actions
-  - Menu entries: Change color, Create task, Remove
+- **Inline Editing** (Enhanced October 2025):
+  - Double-click any goal to enter edit mode
+  - Edit goal title directly with keyboard shortcuts (Enter to save, Escape to cancel)
+  - Add optional notes to goals (toggle via "Add notes" button when editing)
+  - Notes display below goal title with a note icon when present
+  - Save/Cancel buttons for explicit control
+- **Actions Menu** (Hidden by default, shown on hover):
+  - Options menu (⋮) appears on hover for cleaner interface
+  - Menu entries: Edit goal, Toggle goal type (Primary ↔ Supporting), Change color, Create task, Remove
+  - Icons for better visual clarity
   - Color picker expands inline below goal when "Change color" is selected
-- **Task Creation**: Click ExternalLink icon to create a task from a goal (navigates to Tasks page with pre-filled title, due date, and notes)
+- **Task Creation**: Click "Create task" from menu to navigate to Tasks page with pre-filled title, due date, and notes
 - **Visual Feedback**: Colored backgrounds and borders, done state with strikethrough, smooth transitions
-- **LocalStorage Persistence**: Uses `GoalsStorage` (`omega-planner-weekly-goals-v1`) for data storage. Loads goals dynamically across multiple weeks for the visible date range. Goals include `goalType` field ('primary' | 'supporting').
+- **LocalStorage Persistence**: Uses `GoalsStorage` (`omega-planner-weekly-goals-v1`) for data storage. Loads goals dynamically across multiple weeks for the visible date range. Goals include `goalType` field ('primary' | 'supporting'), optional `notes` field, and `color` field.
+- **Storage Functions**: `updateGoal()` function enables updating title, notes, and goalType after creation for flexible goal management.
 
 **Order Update (2025-09-12):**
 - Main order is now: `Daily Planner`, `Workspace`, `Text Canvas`, then `Meals` and `Habits`.

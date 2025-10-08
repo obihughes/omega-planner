@@ -1,5 +1,42 @@
 ## Unreleased
 
+- **Enhanced Weekly Goals Edit Options** (2025-10-08)
+  - Added comprehensive inline editing for goal titles and notes
+  - Double-click any goal or click "Edit goal" from menu to enter edit mode
+  - Added optional notes field for goals (toggle via "Add notes" button when editing)
+  - Notes display below goal title with a note icon when present
+  - Added ability to toggle goal type between Primary and Supporting after creation
+  - Keyboard shortcuts: Enter to save, Escape to cancel editing
+  - New `updateGoal()` function in `GoalsStorage` for updating title, notes, and goalType
+  - Improved menu UI with icons and better organization
+  - Menu button now hidden by default, shown on hover for cleaner appearance
+  - Files affected: `app/goals/weekly/page.tsx`, `utils/goalsStorage.ts`, `docs/changelog.md`
+
+- **Projects Timeline Simplification & Compression** (2025-10-08)
+  - Simplified timeline view to focus on essential information: projects, tasks, and dates
+  - Removed task names from bars - now shown only on hover via HoverCard for cleaner visual
+  - Enhanced day divisions with clear vertical separators between every day
+  - Removed clutter: priority/status filter buttons, stats panel, and legend
+  - Removed group mode toggle - always shows projects view
+  - Cleaner header with only navigation and view mode controls (Week/Month/Quarter)
+  - Improved day separators: subtle lines for days, stronger for weeks, strongest for months
+  - **Compressed vertical spacing**:
+    - Reduced task height from 18px to 16px
+    - Reduced lane spacing from 4px to 3px
+    - Reduced project label area from 32px to 18px (now aligned with first task)
+    - Reduced task area height from 80px to 50px
+    - Reduced row gap from 16px to 12px
+  - **Aligned project labels with task cards**:
+    - Project name label now sits on the same horizontal line as the first task
+    - Project label card has same height (16px) and styling as task cards
+    - More compact and visually cohesive layout
+  - **Square task card styling** (matching daily planner):
+    - Single-day tasks now use compact square cards instead of circles
+    - Reduced border radius to 2px (from 6px) for more square appearance
+    - Compact card width centered in day columns
+    - Consistent styling across all task types (spans and single-day)
+  - Files affected: `components/projects/ProjectsTimeline.tsx`, `docs/components.md`, `docs/changelog.md`
+
 - **Workspace Today Enhancement** (2025-10-07)
   - Merged focus mode functionality into Workspace Today page (`/projects/workspace`)
   - Added session timer with target durations (25/45/60 min) and sound notifications
@@ -42,7 +79,8 @@
   - Drag a project task to the Today pane to set its `dueDate` to today; remove from Today to clear `dueDate`.
 
 - Tasks / Navigation
-  - Tasks page header now includes a "Projects Views" menu linking to Projects, Projects Calendar, Projects Timeline, and Weekly Projects.
+  - Projects views have been added directly under Workspace in the main sidebar: Projects, Projects Calendar, Projects Timeline, Weekly Projects.
+  - Tasks page header keeps a redundant "Projects Views" menu for quick access.
   - Projects page respects `?view=` query param to switch tabs (active | archived | calendar).
   - Added inline Status and Due filters to Tasks controls and Expand/Collapse All when grouped by Project.
 

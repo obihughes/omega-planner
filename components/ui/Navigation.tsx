@@ -136,7 +136,10 @@ export function Navigation() {
       subViews: [
         { key: 'workspace-today', label: 'Workspace Today', icon: CalendarCheck, active: pathname === '/projects/workspace' },
         { key: 'tasks', label: 'Tasks', icon: ClipboardList, active: pathname === '/projects/tasks' },
-        { key: 'active', label: 'Projects', icon: Folder, active: projectsViewMode === 'active' }
+        { key: 'active', label: 'Projects', icon: Folder, active: pathname === '/projects' && projectsViewMode === 'active' },
+        { key: 'calendar', label: 'Projects Calendar', icon: CalendarRange, active: pathname === '/projects' && projectsViewMode === 'calendar' },
+        { key: 'timeline', label: 'Projects Timeline', icon: CalendarRange, active: pathname === '/projects/timeline' },
+        { key: 'weekly', label: 'Weekly Projects', icon: CalendarDays, active: pathname === '/projects/tasks/weekly' }
       ]
     },
     {
@@ -280,6 +283,10 @@ export function Navigation() {
                                 } else if (subView.key === 'timeline') {
                                   if (pathname !== '/projects/timeline') {
                                     router.push('/projects/timeline');
+                                  }
+                                } else if (subView.key === 'weekly') {
+                                  if (pathname !== '/projects/tasks/weekly') {
+                                    router.push('/projects/tasks/weekly');
                                   }
                                 } else {
                                   // Only push route if we're not already on the projects page

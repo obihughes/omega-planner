@@ -3,8 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useProjects } from '@/hooks/useProjects';
 import { getContrastColor } from '@/utils/colorUtils';
-import { ChevronLeft, ChevronRight, Calendar, Filter, Eye, EyeOff, ZoomIn, ZoomOut, AlertCircle, TrendingUp, CheckCircle2, Clock } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { ProjectTaskFormModal } from '@/components/modals/ProjectTaskFormModal';
 import { ProjectTask } from '@/types';
@@ -39,9 +38,9 @@ export default function ProjectsTimeline() {
   const { projects, updateTaskInProject } = useProjects();
   const [monthCursor, setMonthCursor] = useState<Date>(startOfMonth(new Date()));
   const [viewMode, setViewMode] = useState<ViewMode>('month');
-  const [filterMode, setFilterMode] = useState<FilterMode>('all');
-  const [quickFilter, setQuickFilter] = useState<QuickFilter>('none');
-  const [groupMode, setGroupMode] = useState<GroupMode>('project');
+  const [filterMode] = useState<FilterMode>('all'); // Always show all
+  const [quickFilter] = useState<QuickFilter>('none'); // No quick filters
+  const [groupMode] = useState<GroupMode>('project'); // Always group by project
   const [showProjectBars, setShowProjectBars] = useState(true);
   const [showWorkloadDensity, setShowWorkloadDensity] = useState(false);
   // Collapsed state hides tasks but keeps the project row visible so it can be expanded again
@@ -137,12 +136,12 @@ export default function ProjectsTimeline() {
     return lanes.flat();
   };
 
-  const taskHeight = 18; // Height of each task bar
-  const laneSpacing = 4; // Spacing between lanes
-  const projectLabelHeight = 32;
-  const taskAreaHeight = 80; // Space allocated for tasks in each row
+  const taskHeight = 16; // Height of each task bar
+  const laneSpacing = 3; // Spacing between lanes
+  const projectLabelHeight = 18; // Top padding for project timeline bar
+  const taskAreaHeight = 50; // Space allocated for tasks in each row
   const rowHeight = projectLabelHeight + taskAreaHeight;
-  const rowGap = 16;
+  const rowGap = 12;
   const headerHeight = 60;
   const contentWidth = labelColumnWidth + dayTicks.length * dayWidth;
 
@@ -358,203 +357,54 @@ export default function ProjectsTimeline() {
 
   return (
     <div className="h-full w-full flex flex-col bg-background">
-      {/* Enhanced Header with Stats */}
+      {/* Simplified Header */}
       <div className="px-4 py-3 border-b border-border/60 bg-card/30">
-        {/* Top Row - Controls */}
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-          {/* Navigation */}
-          <div className="flex items-center gap-2">
-            <button
-              className="h-8 w-8 rounded border border-border hover:bg-accent flex items-center justify-center"
-              onClick={() => navigateTimeRange('prev')}
-              aria-label={`Previous ${viewMode}`}
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <div className="text-sm font-medium min-w-[140px] text-center">
-              {formatRangeTitle()}
-            </div>
-            <button
-              className="h-8 w-8 rounded border border-border hover:bg-accent flex items-center justify-center"
-              onClick={() => navigateTimeRange('next')}
-              aria-label={`Next ${viewMode}`}
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+            {/* Navigation */}
+            <div className="flex items-center gap-2">
+              <button
+                className="h-8 w-8 rounded border border-border hover:bg-accent flex items-center justify-center"
+                onClick={() => navigateTimeRange('prev')}
+                aria-label={`Previous ${viewMode}`}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <div className="text-sm font-medium min-w-[140px] text-center">
+                {formatRangeTitle()}
+              </div>
+              <button
+                className="h-8 w-8 rounded border border-border hover:bg-accent flex items-center justify-center"
+                onClick={() => navigateTimeRange('next')}
+                aria-label={`Next ${viewMode}`}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
               <button
                 className="ml-1 px-2 py-1 text-xs rounded border border-border hover:bg-accent"
                 onClick={() => setMonthCursor(startOfMonth(new Date()))}
               >
                 Today
-            </button>
-          </div>
-
-          {/* View Mode Toggle */}
-          <div className="flex items-center border border-border rounded overflow-hidden">
-            {(['week', 'month', 'quarter'] as ViewMode[]).map((mode) => (
-              <button
-                key={mode}
-                className={`px-3 py-1 text-xs font-medium transition-colors ${
-                  viewMode === mode 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'bg-background hover:bg-accent text-muted-foreground'
-                }`}
-                onClick={() => setViewMode(mode)}
-              >
-                {mode === 'week' ? 'Week' : mode === 'month' ? 'Month' : 'Quarter'}
               </button>
-            ))}
-          </div>
+            </div>
 
-            {/* Group Mode Toggle */}
+            {/* View Mode Toggle */}
             <div className="flex items-center border border-border rounded overflow-hidden">
-              {(['project', 'status', 'priority'] as GroupMode[]).map((mode) => (
+              {(['week', 'month', 'quarter'] as ViewMode[]).map((mode) => (
                 <button
                   key={mode}
                   className={`px-3 py-1 text-xs font-medium transition-colors ${
-                    groupMode === mode 
+                    viewMode === mode 
                       ? 'bg-primary text-primary-foreground' 
                       : 'bg-background hover:bg-accent text-muted-foreground'
                   }`}
-                  onClick={() => setGroupMode(mode)}
+                  onClick={() => setViewMode(mode)}
                 >
-                  {mode.charAt(0).toUpperCase() + mode.slice(1)}
-              </button>
-            ))}
-          </div>
-
-          {/* Filter Toggle */}
-          <div className="flex items-center border border-border rounded overflow-hidden">
-            <button
-              className={`px-3 py-1 text-xs font-medium transition-colors ${
-                filterMode === 'all' 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'bg-background hover:bg-accent text-muted-foreground'
-              }`}
-              onClick={() => setFilterMode('all')}
-            >
-              All
-            </button>
-            <button
-              className={`px-3 py-1 text-xs font-medium transition-colors ${
-                filterMode === 'active' 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'bg-background hover:bg-accent text-muted-foreground'
-              }`}
-              onClick={() => setFilterMode('active')}
-            >
-              Active
-            </button>
-            <button
-              className={`px-3 py-1 text-xs font-medium transition-colors ${
-                filterMode === 'completed' 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'bg-background hover:bg-accent text-muted-foreground'
-              }`}
-              onClick={() => setFilterMode('completed')}
-            >
-              Done
-            </button>
-            </div>
-
-            {/* Display Options */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <button className="h-8 w-8 rounded border border-border hover:bg-accent flex items-center justify-center">
-                  <Eye className="w-4 h-4" />
+                  {mode === 'week' ? 'Week' : mode === 'month' ? 'Month' : 'Quarter'}
                 </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-64" align="start">
-                <div className="space-y-2">
-                  <div className="text-sm font-medium mb-2">Display Options</div>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={showProjectBars}
-                      onChange={(e) => setShowProjectBars(e.target.checked)}
-                      className="rounded"
-                    />
-                    <span className="text-xs">Show project timeline bars</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={showWorkloadDensity}
-                      onChange={(e) => setShowWorkloadDensity(e.target.checked)}
-                      className="rounded"
-                    />
-                    <span className="text-xs">Show workload density</span>
-                  </label>
-                </div>
-              </PopoverContent>
-            </Popover>
+              ))}
+            </div>
           </div>
-
-          {/* Stats Panel */}
-          <div className="flex items-center gap-4 text-xs">
-            {stats.overdueCount > 0 && (
-              <button 
-                className={`flex items-center gap-1.5 px-2 py-1 rounded hover:bg-accent transition-colors ${
-                  quickFilter === 'overdue' ? 'bg-accent' : ''
-                }`}
-                onClick={() => setQuickFilter(quickFilter === 'overdue' ? 'none' : 'overdue')}
-              >
-                <AlertCircle className="w-3.5 h-3.5 text-red-500" />
-                <span className="font-medium">{stats.overdueCount}</span>
-                <span className="text-muted-foreground">Overdue</span>
-              </button>
-            )}
-            {stats.blockedCount > 0 && (
-              <button 
-                className={`flex items-center gap-1.5 px-2 py-1 rounded hover:bg-accent transition-colors ${
-                  quickFilter === 'blocked' ? 'bg-accent' : ''
-                }`}
-                onClick={() => setQuickFilter(quickFilter === 'blocked' ? 'none' : 'blocked')}
-              >
-                <AlertCircle className="w-3.5 h-3.5 text-red-500" />
-                <span className="font-medium">{stats.blockedCount}</span>
-                <span className="text-muted-foreground">Blocked</span>
-              </button>
-            )}
-            {stats.highPriorityCount > 0 && (
-              <button 
-                className={`flex items-center gap-1.5 px-2 py-1 rounded hover:bg-accent transition-colors ${
-                  quickFilter === 'high-priority' ? 'bg-accent' : ''
-                }`}
-                onClick={() => setQuickFilter(quickFilter === 'high-priority' ? 'none' : 'high-priority')}
-              >
-                <TrendingUp className="w-3.5 h-3.5 text-amber-500" />
-                <span className="font-medium">{stats.highPriorityCount}</span>
-                <span className="text-muted-foreground">High Priority</span>
-              </button>
-            )}
-            {stats.upcomingCount > 0 && (
-              <button 
-                className={`flex items-center gap-1.5 px-2 py-1 rounded hover:bg-accent transition-colors ${
-                  quickFilter === 'upcoming' ? 'bg-accent' : ''
-                }`}
-                onClick={() => setQuickFilter(quickFilter === 'upcoming' ? 'none' : 'upcoming')}
-              >
-                <Clock className="w-3.5 h-3.5 text-blue-500" />
-                <span className="font-medium">{stats.upcomingCount}</span>
-                <span className="text-muted-foreground">Upcoming</span>
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Bottom Row - Legend */}
-        <div className="flex items-center gap-4 text-xs opacity-70">
-          <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: statusColor['todo'] }} /> Todo</div>
-          <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: statusColor['in-progress'] }} /> In Progress</div>
-          <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: statusColor['completed'] }} /> Completed</div>
-          <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: statusColor['blocked'] }} /> Blocked</div>
-          <span className="mx-2">|</span>
-          <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Urgent</div>
-          <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> High</div>
-          <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-blue-400" /> Medium</div>
-          <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-slate-400" /> Low</div>
         </div>
       </div>
 
@@ -583,7 +433,7 @@ export default function ProjectsTimeline() {
             );
           })}
 
-          {/* Enhanced date labels */}
+          {/* Enhanced date labels with clearer divisions */}
           {dayTicks.map((tick, idx) => {
             const x = labelColumnWidth + idx * dayWidth;
             const isMonday = tick.date.getDay() === 1;
@@ -592,25 +442,40 @@ export default function ProjectsTimeline() {
             
             return (
               <g key={`date-${tick.key}`}>
-                {/* Separator line for weeks/months */}
+                {/* Clear vertical separator for every day */}
+                <line 
+                  x1={x} 
+                  x2={x} 
+                  y1={headerHeight} 
+                  y2={headerHeight + groupedData.length * (rowHeight + rowGap)} 
+                  stroke="hsl(var(--border))" 
+                  strokeWidth={0.5}
+                  opacity={0.3}
+                />
+                
+                {/* Stronger separator for weeks */}
                 {isMonday && (
                   <line 
                     x1={x} 
                     x2={x} 
                     y1={headerHeight - 20} 
                     y2={headerHeight + groupedData.length * (rowHeight + rowGap)} 
-                    stroke="hsl(var(--muted-foreground) / 0.25)" 
+                    stroke="hsl(var(--muted-foreground))" 
                     strokeWidth={1}
+                    opacity={0.4}
                   />
                 )}
+                
+                {/* Strongest separator for months */}
                 {isFirstOfMonth && (
                   <line 
                     x1={x} 
                     x2={x} 
                     y1={0} 
                     y2={headerHeight + groupedData.length * (rowHeight + rowGap)} 
-                    stroke="hsl(var(--muted-foreground) / 0.4)" 
-                    strokeWidth={1.5}
+                    stroke="hsl(var(--muted-foreground))" 
+                    strokeWidth={2}
+                    opacity={0.6}
                   />
                 )}
                 
@@ -724,15 +589,15 @@ export default function ProjectsTimeline() {
                 {/* Row separator */}
                 <line x1={0} x2={contentWidth} y1={yBase + rowHeight + rowGap / 2} y2={yBase + rowHeight + rowGap / 2} stroke="hsl(var(--muted-foreground) / 0.25)" strokeWidth={0.5} />
 
-                {/* Enhanced Project/Group label area */}
+                {/* Compact Project/Group label area - aligned with first task lane */}
                 <g>
-                  {/* Label background card */}
+                  {/* Label background card aligned with tasks */}
                   <rect 
                     x={4} 
-                    y={yBase + 4} 
+                    y={yBase + projectLabelHeight} 
                     width={labelColumnWidth - 8} 
-                    height={projectLabelHeight - 4} 
-                    rx={6} 
+                    height={taskHeight} 
+                    rx={2} 
                     fill="hsl(var(--card))" 
                     stroke="hsl(var(--border))"
                     strokeWidth={1}
@@ -743,18 +608,18 @@ export default function ProjectsTimeline() {
                     {/* Color indicator bar */}
                     <rect 
                       x={4} 
-                      y={yBase + 4} 
-                      width={4} 
-                      height={projectLabelHeight - 4} 
-                      rx={6}
+                      y={yBase + projectLabelHeight} 
+                      width={3} 
+                      height={taskHeight} 
+                      rx={2}
                       fill={group.color || '#64748b'} 
                     />
                     
                     {/* Expand/collapse indicator */}
                     <text 
-                      x={16} 
-                      y={yBase + projectLabelHeight / 2 + 4} 
-                      fontSize={12} 
+                      x={14} 
+                      y={yBase + projectLabelHeight + taskHeight / 2 + 4} 
+                      fontSize={11} 
                       fill="hsl(var(--muted-foreground))"
                     >
                       {collapsedProjects.has(group.id) ? '▶' : '▼'}
@@ -762,46 +627,32 @@ export default function ProjectsTimeline() {
                     
                     {/* Project name */}
                     <text 
-                      x={30} 
-                      y={yBase + 16} 
-                      fontSize={13} 
+                      x={26} 
+                      y={yBase + projectLabelHeight + taskHeight / 2 + 4} 
+                      fontSize={12} 
                       fill="hsl(var(--foreground))" 
                       fontWeight="600"
                     >
                       {group.name}
                   </text>
                     
-                    {/* Task count and status */}
-                    <text 
-                      x={30} 
-                      y={yBase + 28} 
-                      fontSize={10} 
-                      fill="hsl(var(--muted-foreground))"
-                    >
-                      {stats.total > 0 ? (
-                        `${stats.completed}/${stats.total} • ${Math.round((stats.completed / stats.total) * 100)}%`
-                      ) : (
-                        'No tasks'
-                      )}
-                  </text>
-                    
                     {/* Compact progress indicator */}
                     {stats.total > 0 && (
                       <g>
                         <rect 
-                          x={labelColumnWidth - 60} 
-                          y={yBase + 12} 
-                          width={48} 
-                          height={8} 
-                          rx={4} 
+                          x={labelColumnWidth - 52} 
+                          y={yBase + projectLabelHeight + taskHeight / 2 - 3} 
+                          width={40} 
+                          height={6} 
+                          rx={3} 
                           fill="hsl(var(--muted) / 0.3)"
                         />
                         <rect 
-                          x={labelColumnWidth - 60} 
-                          y={yBase + 12} 
-                          width={(stats.completed / stats.total) * 48} 
-                          height={8} 
-                          rx={4} 
+                          x={labelColumnWidth - 52} 
+                          y={yBase + projectLabelHeight + taskHeight / 2 - 3} 
+                          width={(stats.completed / stats.total) * 40} 
+                          height={6} 
+                          rx={3} 
                           fill={statusColor['completed']}
                         />
                       </g>
@@ -838,7 +689,7 @@ export default function ProjectsTimeline() {
                       const startX = dateToX(projStart);
                       const endX = dateToX(new Date(projEnd.getFullYear(), projEnd.getMonth(), projEnd.getDate() + 1));
                       const width = Math.max(8, endX - startX - 4);
-                      const barY = yBase + projectLabelHeight - 6;
+                      const barY = yBase + 8; // Position at top of row area
                       
                       return (
                         <>
@@ -847,8 +698,8 @@ export default function ProjectsTimeline() {
                             x={startX} 
                             y={barY} 
                             width={width} 
-                            height={8} 
-                            rx={4} 
+                            height={6} 
+                            rx={2} 
                             fill={group.color} 
                             opacity={0.2}
                             stroke={group.color}
@@ -859,18 +710,18 @@ export default function ProjectsTimeline() {
                             x={startX} 
                             y={barY} 
                             width={width * (stats.completed / Math.max(stats.total, 1))} 
-                            height={8} 
-                            rx={4} 
+                            height={6} 
+                            rx={2} 
                             fill={group.color} 
                             opacity={0.5}
                           />
                           {/* Start milestone diamond */}
-                          <g transform={`translate(${startX}, ${barY + 4}) rotate(45)`}>
-                            <rect x={-4} y={-4} width={8} height={8} fill={group.color} stroke="white" strokeWidth={1.5} />
+                          <g transform={`translate(${startX}, ${barY + 3}) rotate(45)`}>
+                            <rect x={-3} y={-3} width={6} height={6} fill={group.color} stroke="white" strokeWidth={1.5} />
                           </g>
                           {/* End milestone diamond */}
-                          <g transform={`translate(${endX - 2}, ${barY + 4}) rotate(45)`}>
-                            <rect x={-4} y={-4} width={8} height={8} fill={group.color} stroke="white" strokeWidth={1.5} />
+                          <g transform={`translate(${endX - 2}, ${barY + 3}) rotate(45)`}>
+                            <rect x={-3} y={-3} width={6} height={6} fill={group.color} stroke="white" strokeWidth={1.5} />
                           </g>
                         </>
                       );
@@ -929,7 +780,7 @@ export default function ProjectsTimeline() {
                                   y={barY + 1} 
                                   width={width} 
                                   height={taskHeight} 
-                                  rx={6} 
+                                  rx={2} 
                                   fill="black" 
                                   opacity={0.15}
                                 />
@@ -948,7 +799,7 @@ export default function ProjectsTimeline() {
                                 y={barY} 
                                 width={width} 
                                 height={taskHeight} 
-                                rx={6} 
+                                rx={2} 
                                 fill={`url(#grad-${task.id})`}
                                 stroke={isOverdue ? '#ef4444' : isHovered ? color : 'hsl(var(--border))'}
                                 strokeWidth={isOverdue ? 2 : 1}
@@ -962,7 +813,7 @@ export default function ProjectsTimeline() {
                                     y={barY} 
                                     width={Math.max(4, (width * progress) / 100)} 
                                     height={taskHeight} 
-                                    rx={6} 
+                                    rx={2} 
                                     fill={statusColor['completed']} 
                                     opacity={0.4}
                                   />
@@ -1008,19 +859,7 @@ export default function ProjectsTimeline() {
                                 </>
                               )}
                               
-                              {/* Task title with better positioning */}
-                              {width > 40 && (
-                                <text 
-                                  x={start + (taskPriority === 'high' || taskPriority === 'urgent' ? 14 : 8)} 
-                                  y={barY + taskHeight / 2 + 4} 
-                                  fontSize={11} 
-                                  fill={getContrastColor(color)} 
-                                  fontWeight={isHovered ? '600' : '500'}
-                                  style={{ pointerEvents: 'none' }}
-                                >
-                                  {isOverdue && '⚠ '}{task.title.length > 40 ? task.title.substring(0, 40) + '...' : task.title}
-                                </text>
-                              )}
+                              {/* Task title removed - shown only on hover via HoverCard */}
                               
                               {/* Hover glow effect */}
                               {isHovered && (
@@ -1029,7 +868,7 @@ export default function ProjectsTimeline() {
                                   y={barY - 1} 
                                   width={width + 2} 
                                   height={taskHeight + 2} 
-                                  rx={7} 
+                                  rx={3} 
                                   fill="none" 
                                   stroke={color} 
                                   strokeWidth={2}
@@ -1073,14 +912,16 @@ export default function ProjectsTimeline() {
                     if (d < rangeStart || d > rangeEnd) {
                       return null;
                     }
-                    const x = dateToX(d) + dayWidth / 2;
-                    const dotY = yBase + projectLabelHeight + (task.lane || 0) * (taskHeight + laneSpacing) + taskHeight / 2;
+                    const x = dateToX(d);
+                    const barY = yBase + projectLabelHeight + (task.lane || 0) * (taskHeight + laneSpacing);
                     const taskStatus = (task.status || 'todo') as 'todo' | 'in-progress' | 'completed' | 'blocked';
                     const taskPriority = (task.priority || 'medium') as 'low' | 'medium' | 'high' | 'urgent';
                     const color = statusColor[taskStatus];
                     const isHovered = hoveredTask === task.id;
                     const isOverdue = isTaskOverdue(task);
                     const projectId = task.projectId || group.id;
+                    const cardWidth = Math.min(dayWidth - 8, 50); // Compact square card
+                    const startX = x + (dayWidth - cardWidth) / 2; // Center in day column
                     
                     return (
                       <g 
@@ -1093,84 +934,63 @@ export default function ProjectsTimeline() {
                         <HoverCard>
                           <HoverCardTrigger asChild>
                             <g>
-                              {/* Shadow */}
+                              {/* Shadow layer */}
                               {isHovered && (
-                                <circle 
-                                  cx={x + 0.5} 
-                                  cy={dotY + 0.5} 
-                                  r={8} 
+                                <rect 
+                                  x={startX + 1} 
+                                  y={barY + 1} 
+                                  width={cardWidth} 
+                                  height={taskHeight} 
+                                  rx={2} 
                                   fill="black" 
-                                  opacity={0.2}
+                                  opacity={0.15}
                                 />
                               )}
                               
-                              {/* Main marker with gradient */}
+                              {/* Main task card */}
                               <defs>
-                                <radialGradient id={`dot-grad-${task.id}`}>
-                                  <stop offset="0%" style={{stopColor: color, stopOpacity: 1}} />
-                                  <stop offset="100%" style={{stopColor: color, stopOpacity: 0.8}} />
-                                </radialGradient>
+                                <linearGradient id={`single-grad-${task.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                                  <stop offset="0%" style={{stopColor: color, stopOpacity: isHovered ? 0.95 : 0.85}} />
+                                  <stop offset="100%" style={{stopColor: color, stopOpacity: isHovered ? 0.85 : 0.75}} />
+                                </linearGradient>
                               </defs>
                               
-                              <circle 
-                                cx={x} 
-                                cy={dotY} 
-                                r={isHovered ? 8 : 6} 
-                                fill={`url(#dot-grad-${task.id})`}
-                                stroke={isOverdue ? '#ef4444' : 'white'}
-                                strokeWidth={isOverdue ? 2.5 : 2}
+                              <rect 
+                                x={startX} 
+                                y={barY} 
+                                width={cardWidth} 
+                                height={taskHeight} 
+                                rx={2} 
+                                fill={`url(#single-grad-${task.id})`}
+                                stroke={isOverdue ? '#ef4444' : isHovered ? color : 'hsl(var(--border))'}
+                                strokeWidth={isOverdue ? 2 : 1}
                               />
                               
-                              {/* Priority ring */}
+                              {/* Priority indicator */}
                               {(taskPriority === 'high' || taskPriority === 'urgent') && (
-                                <>
-                                  <circle 
-                                    cx={x} 
-                                    cy={dotY} 
-                                    r={10} 
-                                    fill="none" 
-                                    stroke={priorityColor[taskPriority]} 
-                                    strokeWidth={2}
-                                    opacity={0.8}
-                                  />
-                                  {taskPriority === 'urgent' && (
-                                    <circle 
-                                      cx={x} 
-                                      cy={dotY} 
-                                      r={13} 
-                                      fill="none" 
-                                      stroke={priorityColor[taskPriority]} 
-                                      strokeWidth={1}
-                                      opacity={0.4}
-                                    />
-                                  )}
-                                </>
+                                <circle 
+                                  cx={startX + 6} 
+                                  cy={barY + taskHeight / 2} 
+                                  r={3} 
+                                  fill={priorityColor[taskPriority]} 
+                                  stroke="white" 
+                                  strokeWidth={1.5}
+                                />
                               )}
                               
-                              {/* Hover label with background */}
+                              {/* Hover glow effect */}
                               {isHovered && (
-                                <>
-                                  <rect 
-                                    x={x + 14} 
-                                    y={dotY - 10} 
-                                    width={Math.min(task.title.length * 7 + 12, 200)} 
-                                    height={20} 
-                                    rx={4} 
-                                    fill="hsl(var(--popover))" 
-                                    stroke="hsl(var(--border))"
-                                    strokeWidth={1}
-                                    opacity={0.95}
-                                  />
-                                  <text 
-                                    x={x + 20} 
-                                    y={dotY + 4} 
-                                    fontSize={11} 
-                                    fill="hsl(var(--popover-foreground))" 
-                                    fontWeight="600"
-                                  >
-                                    {isOverdue && '⚠ '}{task.title.substring(0, 25)}{task.title.length > 25 ? '...' : ''}
-                                  </text>
-                                </>
+                                <rect 
+                                  x={startX - 1} 
+                                  y={barY - 1} 
+                                  width={cardWidth + 2} 
+                                  height={taskHeight + 2} 
+                                  rx={3} 
+                                  fill="none" 
+                                  stroke={color} 
+                                  strokeWidth={2}
+                                  opacity={0.4}
+                                />
                               )}
                             </g>
                           </HoverCardTrigger>
