@@ -4,7 +4,7 @@ import React, { useState, useRef, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
-  Calendar, CalendarDays, FolderKanban, FileText, ChevronLeft, ChevronRight, 
+  Calendar, CalendarDays, FolderKanban, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
   Clock, Archive, Trash2, CalendarCheck, CalendarRange, Folder, Files, ClipboardList, Settings
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
@@ -28,6 +28,19 @@ export function Navigation() {
   const { viewMode: calendarViewMode, setViewMode: setCalendarViewMode } = useCalendarView();
   
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [expandedNavItems, setExpandedNavItems] = useState<Set<string>>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('omega-planner-nav-expanded');
+      if (saved) {
+        try {
+          return new Set(JSON.parse(saved));
+        } catch {
+          // Fall through to default
+        }
+      }
+    }
+    return new Set(['daily-planner', 'calendar', 'workspace']);
+  });
 
   const isResizing = useRef(false);
   const minWidth = 160;
@@ -111,24 +124,51 @@ export function Navigation() {
     document.removeEventListener('mouseup', handleMouseUp);
   }, [handleMouseMove]);
 
+  const toggleNavItem = (itemKey: string) => {
+    setExpandedNavItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemKey)) {
+        newSet.delete(itemKey);
+      } else {
+        newSet.add(itemKey);
+      }
+      // Persist to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('omega-planner-nav-expanded', JSON.stringify(Array.from(newSet)));
+      }
+      return newSet;
+    });
+  };
+
   if (!mounted) {
     return null; // Prevent hydration mismatch
   }
 
   const navItems = [
     {
+      key: 'daily-planner',
       href: '/',
       label: 'Daily Planner',
-      icon: Calendar,
-      active: pathname === '/' || pathname === '/inbox' || pathname === '/calendar',
+      icon: CalendarCheck,
+      active: pathname === '/' && !pathname.includes('/calendar'),
       subViews: [
         { key: 'planner-daily', type: 'planner', mode: 'daily', label: 'Daily', icon: CalendarCheck, active: pathname === '/' && plannerViewMode === 'daily' },
-        { key: 'planner-weekly', type: 'planner', mode: 'weekly', label: 'Week Overview', icon: CalendarDays, active: pathname === '/' && plannerViewMode === 'weekly' },
-        { key: 'planner-monthly', type: 'planner', mode: 'monthly', label: 'Scheduling', icon: CalendarRange, active: pathname === '/' && plannerViewMode === 'monthly' },
-        { key: 'calendar-yearly', type: 'calendar', mode: 'yearly', label: 'Yearly Calendar', icon: CalendarDays, active: pathname === '/calendar' && calendarViewMode === 'yearly' }
+        { key: 'planner-weekly', type: 'planner', mode: 'weekly', label: 'Week Overview', icon: CalendarDays, active: pathname === '/' && plannerViewMode === 'weekly' }
       ]
     },
     {
+      key: 'calendar',
+      href: '/calendar',
+      label: 'Calendar',
+      icon: Calendar,
+      active: pathname === '/calendar',
+      subViews: [
+        { key: 'calendar-monthly', type: 'calendar', mode: 'monthly', label: 'Monthly', icon: CalendarRange, active: pathname === '/calendar' && calendarViewMode === 'monthly' },
+        { key: 'calendar-yearly', type: 'calendar', mode: 'yearly', label: 'Yearly', icon: CalendarDays, active: pathname === '/calendar' && calendarViewMode === 'yearly' }
+      ]
+    },
+    {
+      key: 'workspace',
       href: '/projects',
       label: 'Workspace',
       icon: FolderKanban,
@@ -136,13 +176,11 @@ export function Navigation() {
       subViews: [
         { key: 'workspace-today', label: 'Workspace Today', icon: CalendarCheck, active: pathname === '/projects/workspace' },
         { key: 'tasks', label: 'Tasks', icon: ClipboardList, active: pathname === '/projects/tasks' },
-        { key: 'active', label: 'Projects', icon: Folder, active: pathname === '/projects' && projectsViewMode === 'active' },
-        { key: 'calendar', label: 'Projects Calendar', icon: CalendarRange, active: pathname === '/projects' && projectsViewMode === 'calendar' },
-        { key: 'timeline', label: 'Projects Timeline', icon: CalendarRange, active: pathname === '/projects/timeline' },
-        { key: 'weekly', label: 'Weekly Projects', icon: CalendarDays, active: pathname === '/projects/tasks/weekly' }
+        { key: 'active', label: 'Projects', icon: Folder, active: pathname === '/projects' && projectsViewMode === 'active' }
       ]
     },
     {
+      key: 'weekly-goals',
       href: '/goals/weekly',
       label: 'Weekly Goals',
       icon: ClipboardList,
@@ -150,16 +188,16 @@ export function Navigation() {
       subViews: []
     },
     {
+      key: 'text-documents',
       href: '/documents',
-      label: 'Text Canvas',
-      icon: FileText,
+      label: 'Text Documents',
+      icon: Files,
       active: pathname === '/documents',
-      subViews: [
-        { key: 'documents', label: 'Documents', icon: Files, active: true }
-      ]
+      subViews: []
     },
     // Focus merged into Workspace Today (/projects/workspace)
     {
+      key: 'meals',
       href: '/meals',
       label: 'Meals',
       icon: ClipboardList,
@@ -167,6 +205,7 @@ export function Navigation() {
       subViews: []
     },
     {
+      key: 'habits',
       href: '/habits',
       label: 'Habits',
       icon: ClipboardList,
@@ -221,33 +260,53 @@ export function Navigation() {
 
               return (
                 <div key={item.href}>
-                  <Link
-                    href={item.href}
-                    className={cn(
-                      "w-full flex items-center font-normal transition-all duration-200 group relative",
-                      isCollapsed ? "justify-center" : "space-x-2",
-                      dynamicSizes.mainPadding,
-                      dynamicSizes.mainTextSize,
-                      item.active
-                        ? "bg-muted text-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/80"
+                  <div className="relative">
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        "w-full flex items-center font-normal transition-all duration-200 group relative",
+                        isCollapsed ? "justify-center" : "space-x-2",
+                        dynamicSizes.mainPadding,
+                        dynamicSizes.mainTextSize,
+                        item.active
+                          ? "bg-muted text-foreground"
+                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/80",
+                        !isCollapsed && item.subViews && item.subViews.length > 0 && "pr-8"
+                      )}
+                      title={isCollapsed ? item.label : undefined}
+                    >
+                      <Icon className={cn(
+                        "transition-all duration-200 flex-shrink-0",
+                        dynamicSizes.iconSize,
+                        item.active 
+                          ? "text-foreground" 
+                          : "text-muted-foreground group-hover:text-foreground"
+                      )} />
+                      {!isCollapsed && (
+                        <span className="font-medium tracking-tight flex-1 truncate">{item.label}</span>
+                      )}
+                    </Link>
+                    {!isCollapsed && item.subViews && item.subViews.length > 0 && item.key && (
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          toggleNavItem(item.key);
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-secondary/50 transition-colors"
+                        title={expandedNavItems.has(item.key) ? "Collapse" : "Expand"}
+                      >
+                        {expandedNavItems.has(item.key) ? (
+                          <ChevronUp className="w-3 h-3 text-muted-foreground" />
+                        ) : (
+                          <ChevronDown className="w-3 h-3 text-muted-foreground" />
+                        )}
+                      </button>
                     )}
-                    title={isCollapsed ? item.label : undefined}
-                  >
-                    <Icon className={cn(
-                      "transition-all duration-200 flex-shrink-0",
-                      dynamicSizes.iconSize,
-                      item.active 
-                        ? "text-foreground" 
-                        : "text-muted-foreground group-hover:text-foreground"
-                    )} />
-                    {!isCollapsed && (
-                      <span className="font-medium tracking-tight flex-1 truncate">{item.label}</span>
-                    )}
-                  </Link>
+                  </div>
                   
                   {/* Sub-Views */}
-                  {showSubViews && item.subViews && (
+                  {showSubViews && item.subViews && item.subViews.length > 0 && (!item.key || expandedNavItems.has(item.key)) && (
                     <div className={cn(
                       "space-y-0.5",
                       isCollapsed 
@@ -260,19 +319,18 @@ export function Navigation() {
                           <button 
                             key={subView.key}
                             onClick={() => {
-                              if (item.href === '/') {
-                                if ((subView as any).type === 'calendar') {
-                                  if (pathname !== '/calendar') {
-                                    router.push('/calendar');
-                                  }
-                                  setCalendarViewMode((subView as any).mode as any);
-                                } else {
-                                  // planner subview
-                                  if (pathname !== '/') {
-                                    router.push(item.href);
-                                  }
-                                  setPlannerViewMode((subView as any).mode as any);
+                              if (item.key === 'daily-planner') {
+                                // planner subview
+                                if (pathname !== '/') {
+                                  router.push(item.href);
                                 }
+                                setPlannerViewMode((subView as any).mode as any);
+                              } else if (item.key === 'calendar') {
+                                // calendar subview
+                                if (pathname !== '/calendar') {
+                                  router.push('/calendar');
+                                }
+                                setCalendarViewMode((subView as any).mode as any);
                               } else if (item.href === '/projects') {
                                 if (subView.key === 'workspace-today') {
                                   if (pathname !== '/projects/workspace') {
@@ -280,14 +338,6 @@ export function Navigation() {
                                   }
                                 } else if (subView.key === 'tasks') {
                                   router.push('/projects/tasks');
-                                } else if (subView.key === 'timeline') {
-                                  if (pathname !== '/projects/timeline') {
-                                    router.push('/projects/timeline');
-                                  }
-                                } else if (subView.key === 'weekly') {
-                                  if (pathname !== '/projects/tasks/weekly') {
-                                    router.push('/projects/tasks/weekly');
-                                  }
                                 } else {
                                   // Only push route if we're not already on the projects page
                                   if (pathname !== '/projects') {
@@ -295,12 +345,6 @@ export function Navigation() {
                                   }
                                   setProjectsViewMode(subView.key as any);
                                 }
-                              } else if (item.href === '/documents') {
-                                // Only push route if we're not already on the documents page
-                                if (pathname !== '/documents') {
-                                  router.push(item.href);
-                                }
-                                // setDocumentsViewMode(subView.key as any); // Removed as per edit hint
                               }
                             }} 
                             className={cn(

@@ -1,5 +1,52 @@
 ## 2025-10-08
 
+- **Weekly Goals UI Improvements** (2025-10-08)
+  - **Fixed z-index layering**: Menus and color picker now properly overlay other elements (z-50)
+  - **Completed task interaction**: Can now interact with completed goals - uncheck, edit, or delete via context menu
+  - **Drag-and-drop functionality**: Goals can be dragged between days with visual feedback (ring highlight on drop target)
+  - **Enhanced primary goal styling**:
+    - Dynamic text sizing: Large text for short titles, automatically reduces for longer titles while maintaining bold
+    - Star icon indicator in top-left corner for quick visual identification
+    - Thicker left border (border-l-4) for additional visual hierarchy
+  - **Improved edit experience**:
+    - Double-click any goal (completed or active) to edit
+    - Edit button always accessible via context menu
+    - Drag handle (grip icon) appears on hover for non-completed items
+  - **Move to day feature**: Context menu includes "Move to day..." submenu showing all 14 visible days
+  - **Better visual feedback**: 
+    - Drag-over state shows ring and background highlight
+    - Clear cursor indicators (grab/grabbing for dragging)
+    - Improved menu organization with separate layouts for active vs completed goals
+  - Files affected: `app/goals/weekly/page.tsx`, `docs/changelog.md`
+
+- **Navigation Restructure with Collapsible Sections** (2025-10-08)
+  - Created new main "Calendar" navigation item as second item (after Daily Planner)
+  - Moved Monthly and Yearly calendar views under new Calendar section
+  - Removed "Scheduling" from Daily Planner navigation
+  - Daily Planner now contains only: Daily and Week Overview
+  - Added collapsible/expandable functionality to all navigation sections with subviews
+  - Added chevron up/down icons to indicate expand/collapse state
+  - **Persistent collapse state**: Navigation expand/collapse state now saves to localStorage (`omega-planner-nav-expanded`)
+  - Collapse state persists across page navigation and browser sessions
+  - All sections with subviews (Daily Planner, Calendar, Workspace) now have toggle buttons
+  - Removed "Weekly Projects", "Projects Calendar", and "Projects Timeline" from Workspace navigation
+  - Workspace navigation now shows only core items: Workspace Today, Tasks, and Projects
+  - **Renamed "Text Canvas" to "Text Documents"** with Files icon (removed subviews)
+  - Navigation sections default to expanded state on initial load
+  - Updated documentation to reflect navigation changes
+  - Files affected: `components/ui/Navigation.tsx`, `ARCHITECTURE.md`, `docs/components.md`, `docs/changelog.md`
+
+- **Workspace Today UI Cleanup** (2025-10-08)
+  - Removed task count display from "Project Tasks Due Today" section for cleaner UI
+  - Implemented hover-based action buttons: only completion/tick button is visible by default, other action buttons (delete, move to backlog, etc.) appear on hover
+  - Added collapsible timer controls: Start/End/Pause buttons and time targets (25m/45m/60m) can be collapsed via toggle button
+  - Added collapsible projects sidebar: entire right sidebar can be collapsed to maximize space for task lists
+  - When projects sidebar is collapsed, task list expands to full width
+  - Removed empty state messages ("No project tasks due today", "No backlog items yet") to reduce visual noise
+  - Added visual separator with horizontal divider line between active tasks (Planned/Project Tasks) and completed/backlog sections for better focus
+  - Maintained quick-add task input fields as requested
+  - Files affected: `app/projects/workspace/page.tsx`, `docs/components.md`, `docs/changelog.md`
+
 - Daily Planner timeline add/edit fixes:
   - Double-click to add now uses context-aware `createTimelineTask`, ensuring correct `baseDate` and `startHour` handling.
   - Drag/resize commit now delegates to the hook's `handleMouseUpGlobal` for reliable state updates and conflict checks.

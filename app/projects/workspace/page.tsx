@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { getDateKey } from '@/utils/dateUtils';
 import { 
   Calendar, Plus, X, Play, Pause, RotateCcw, Clock, 
-  CheckSquare2, GripVertical, Trash2, Square, Bell, BellOff 
+  CheckSquare2, GripVertical, Trash2, Square, Bell, BellOff, ChevronDown, ChevronRight 
 } from 'lucide-react';
 
 // Simple task type (non-project tasks)
@@ -83,6 +83,10 @@ export default function WorkspaceTodayPage() {
   const [newPlannedTitle, setNewPlannedTitle] = useState('');
   const [newBacklogTitle, setNewBacklogTitle] = useState('');
   const [dragOverZone, setDragOverZone] = useState<'planned' | 'backlog' | null>(null);
+  
+  // UI state for collapsible sections
+  const [projectsSidebarCollapsed, setProjectsSidebarCollapsed] = useState(false);
+  const [timerControlsCollapsed, setTimerControlsCollapsed] = useState(false);
 
   // Today key
   const today = useMemo(() => {
@@ -575,28 +579,43 @@ export default function WorkspaceTodayPage() {
                 <div className="font-mono text-xl min-w-[60px]">
                   {loaded ? (targetSeconds > 0 ? formatHMS(Math.max(0, targetSeconds - displayedElapsedSeconds)) : formatHMS(displayedElapsedSeconds)) : '00:00'}
                 </div>
-                {!sessionState.isRunning ? (
-                  <Button size="sm" onClick={startSession} className="h-8">
-                    <Play className="w-3 h-3 mr-1" /> Start
-                  </Button>
-                ) : (
-                  <Button size="sm" variant="secondary" onClick={pauseSession} className="h-8">
-                    <Pause className="w-3 h-3 mr-1" /> Pause
-                  </Button>
+                
+                {!timerControlsCollapsed && (
+                  <>
+                    {!sessionState.isRunning ? (
+                      <Button size="sm" onClick={startSession} className="h-8">
+                        <Play className="w-3 h-3 mr-1" /> Start
+                      </Button>
+                    ) : (
+                      <Button size="sm" variant="secondary" onClick={pauseSession} className="h-8">
+                        <Pause className="w-3 h-3 mr-1" /> Pause
+                      </Button>
+                    )}
+                    <Button size="sm" variant="outline" onClick={endSession} className="h-8">
+                      <RotateCcw className="w-3 h-3 mr-1" /> End
+                    </Button>
+
+                    {/* Target buttons */}
+                    <div className="flex items-center gap-1 ml-2">
+                      <Button size="sm" variant={targetSeconds === 25 * 60 ? 'secondary' : 'ghost'} className="h-7 px-2 text-xs" onClick={() => setTargetSeconds(25 * 60)}>25m</Button>
+                      <Button size="sm" variant={targetSeconds === 45 * 60 ? 'secondary' : 'ghost'} className="h-7 px-2 text-xs" onClick={() => setTargetSeconds(45 * 60)}>45m</Button>
+                      <Button size="sm" variant={targetSeconds === 60 * 60 ? 'secondary' : 'ghost'} className="h-7 px-2 text-xs" onClick={() => setTargetSeconds(60 * 60)}>60m</Button>
+                    </div>
+
+                    <Button size="sm" variant="ghost" onClick={() => setSoundEnabled(v => !v)} className="h-7 w-7 p-0" title={soundEnabled ? 'Sound enabled' : 'Sound disabled'}>
+                      {soundEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+                    </Button>
+                  </>
                 )}
-                <Button size="sm" variant="outline" onClick={endSession} className="h-8">
-                  <RotateCcw className="w-3 h-3 mr-1" /> End
-                </Button>
-
-                {/* Target buttons */}
-                <div className="flex items-center gap-1 ml-2">
-                  <Button size="sm" variant={targetSeconds === 25 * 60 ? 'secondary' : 'ghost'} className="h-7 px-2 text-xs" onClick={() => setTargetSeconds(25 * 60)}>25m</Button>
-                  <Button size="sm" variant={targetSeconds === 45 * 60 ? 'secondary' : 'ghost'} className="h-7 px-2 text-xs" onClick={() => setTargetSeconds(45 * 60)}>45m</Button>
-                  <Button size="sm" variant={targetSeconds === 60 * 60 ? 'secondary' : 'ghost'} className="h-7 px-2 text-xs" onClick={() => setTargetSeconds(60 * 60)}>60m</Button>
-                </div>
-
-                <Button size="sm" variant="ghost" onClick={() => setSoundEnabled(v => !v)} className="h-7 w-7 p-0" title={soundEnabled ? 'Sound enabled' : 'Sound disabled'}>
-                  {soundEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+                
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  onClick={() => setTimerControlsCollapsed(v => !v)} 
+                  className="h-7 w-7 p-0"
+                  title={timerControlsCollapsed ? 'Show controls' : 'Hide controls'}
+                >
+                  {timerControlsCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </Button>
               </div>
             </div>
@@ -618,7 +637,7 @@ export default function WorkspaceTodayPage() {
         {/* Main Content */}
         <div className="flex-1 flex overflow-hidden">
           {/* Left: Today's Tasks */}
-          <div className="w-2/3 shrink-0 border-r border-border/40 flex flex-col overflow-hidden">
+          <div className={cn("shrink-0 border-r border-border/40 flex flex-col overflow-hidden", projectsSidebarCollapsed ? "flex-1" : "w-2/3")}>
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {/* Planned Simple Tasks */}
               <div className="border border-border rounded-lg bg-card/50">
@@ -645,13 +664,10 @@ export default function WorkspaceTodayPage() {
                   onDragLeave={handleDragLeave('planned')}
                   onDrop={handleDropTo('planned')}
                 >
-                  {sessionState.plannedTasks.length === 0 && (
-                    <div className="text-xs text-muted-foreground">No planned tasks. Add above or drag from backlog.</div>
-                  )}
                   {sessionState.plannedTasks.map(t => (
                     <div
                       key={t.id}
-                      className="flex items-center justify-between p-2 border border-border/40 bg-background rounded hover:bg-accent/20 transition-colors"
+                      className="group flex items-center justify-between p-2 border border-border/40 bg-background rounded hover:bg-accent/20 transition-colors"
                       draggable
                       onDragStart={handleTaskDragStart('planned', t.id)}
                     >
@@ -663,10 +679,10 @@ export default function WorkspaceTodayPage() {
                         <Button size="sm" variant="ghost" onClick={completePlannedTask(t.id)} title="Complete" className="h-7 w-7 p-0">
                           <Square className="w-4 h-4" />
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={() => returnPlannedToBacklog(t.id)} title="Move to backlog" className="h-7 w-7 p-0">
+                        <Button size="sm" variant="ghost" onClick={() => returnPlannedToBacklog(t.id)} title="Move to backlog" className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
                           <RotateCcw className="w-4 h-4" />
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={() => deletePlannedTask(t.id)} title="Delete" className="h-7 w-7 p-0 text-destructive">
+                        <Button size="sm" variant="ghost" onClick={() => deletePlannedTask(t.id)} title="Delete" className="h-7 w-7 p-0 text-destructive opacity-0 group-hover:opacity-100 transition-opacity">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -679,16 +695,12 @@ export default function WorkspaceTodayPage() {
               <div className="border border-border rounded-lg bg-card/50">
                 <div className="p-3 border-b border-border/40">
                   <h2 className="text-sm font-semibold">Project Tasks Due Today</h2>
-                  <div className="text-xs text-muted-foreground mt-1">{projectTasksDueToday.length} tasks</div>
                 </div>
                 <div
                   className="p-3 space-y-2 min-h-[100px]"
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={handleDropProjectTaskOnToday}
                 >
-                  {projectTasksDueToday.length === 0 && (
-                    <div className="text-xs text-muted-foreground">No project tasks due today. Drag from projects →</div>
-                  )}
                   {projectTasksDueToday.map(t => (
                     <div key={t.id} className="flex items-center gap-3 p-2 border border-border/40 bg-background rounded">
                       <button
@@ -711,22 +723,26 @@ export default function WorkspaceTodayPage() {
               </div>
               </div>
 
+              {/* Visual Separator */}
+              <div className="relative py-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-border/50"></div>
+                </div>
+              </div>
+
               {/* Completed Tasks */}
               <div className="border border-border rounded-lg bg-card/50">
                 <div className="p-3 border-b border-border/40">
                   <h2 className="text-sm font-semibold">Completed</h2>
                 </div>
                 <div className="p-3 space-y-2">
-                  {sessionState.completedTasks.length === 0 && (
-                    <div className="text-xs text-muted-foreground">Nothing completed yet.</div>
-                  )}
                   {sessionState.completedTasks.map(t => (
-                    <div key={t.id} className="flex items-center justify-between p-2 border border-border/40 bg-background rounded">
+                    <div key={t.id} className="group flex items-center justify-between p-2 border border-border/40 bg-background rounded">
                       <div className="flex items-center gap-2 min-w-0">
                         <CheckSquare2 className="w-4 h-4 text-green-600 flex-shrink-0" />
                         <span className="text-sm truncate line-through text-muted-foreground">{t.title}</span>
                       </div>
-                      <Button size="sm" variant="ghost" onClick={() => deleteCompletedTask(t.id)} title="Remove" className="h-7 w-7 p-0 text-destructive">
+                      <Button size="sm" variant="ghost" onClick={() => deleteCompletedTask(t.id)} title="Remove" className="h-7 w-7 p-0 text-destructive opacity-0 group-hover:opacity-100 transition-opacity">
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
@@ -759,13 +775,10 @@ export default function WorkspaceTodayPage() {
                   onDragLeave={handleDragLeave('backlog')}
                   onDrop={handleDropTo('backlog')}
                 >
-                  {sessionState.backlogTasks.length === 0 && (
-                    <div className="text-xs text-muted-foreground">No backlog items yet.</div>
-                  )}
                   {sessionState.backlogTasks.map(t => (
                     <div
                       key={t.id}
-                      className="flex items-center justify-between p-2 border border-border/40 bg-background rounded hover:bg-accent/20 transition-colors"
+                      className="group flex items-center justify-between p-2 border border-border/40 bg-background rounded hover:bg-accent/20 transition-colors"
                       draggable
                       onDragStart={handleTaskDragStart('backlog', t.id)}
                     >
@@ -777,7 +790,7 @@ export default function WorkspaceTodayPage() {
                         <Button size="sm" variant="ghost" onClick={() => moveBacklogToPlanned(t.id)} title="Move to planned" className="h-7 w-7 p-0">
                           <Plus className="w-4 h-4" />
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={() => deleteBacklogTask(t.id)} title="Delete" className="h-7 w-7 p-0 text-destructive">
+                        <Button size="sm" variant="ghost" onClick={() => deleteBacklogTask(t.id)} title="Delete" className="h-7 w-7 p-0 text-destructive opacity-0 group-hover:opacity-100 transition-opacity">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -788,65 +801,93 @@ export default function WorkspaceTodayPage() {
             </div>
           </div>
 
-          {/* Right: Projects (drag sources) */}
-          <div className="w-1/3 shrink-0 p-4 overflow-y-auto overflow-x-hidden">
-            <div className="text-sm font-semibold mb-3">Projects</div>
-            <div className="space-y-3">
-              {activeProjects.map(project => (
-                <div key={project.id} className="border border-border rounded bg-card/40 overflow-hidden">
-                  <div className="px-2.5 py-1.5 border-b border-border/50 flex items-center gap-2 min-w-0">
-                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: project.color }} />
-                    <div className="text-xs font-medium truncate" title={project.name}>{project.name}</div>
-                  </div>
-                  <div className="p-2 space-y-1.5">
-                  {project.tasks.length === 0 ? (
-                    <div className="text-xs text-muted-foreground italic">No tasks</div>
-                  ) : (
-                    project.tasks.map(task => (
-                      <div
-                        key={task.id}
-                        draggable
-                        onDragStart={(e) => {
-                          e.dataTransfer.setData('application/json', JSON.stringify({ taskId: task.id, projectId: project.id }));
-                          e.dataTransfer.effectAllowed = 'move';
-                          try {
-                            const ghost = document.createElement('div');
-                            ghost.textContent = task.title;
-                            ghost.style.position = 'fixed';
-                            ghost.style.top = '-1000px';
-                            ghost.style.left = '-1000px';
-                            ghost.style.padding = '4px 8px';
-                            ghost.style.fontSize = '12px';
-                            ghost.style.background = 'var(--card)';
-                            ghost.style.border = '1px solid var(--border)';
-                            ghost.style.borderRadius = '6px';
-                            ghost.style.boxShadow = '0 4px 12px rgba(0,0,0,0.12)';
-                            document.body.appendChild(ghost);
-                            e.dataTransfer.setDragImage(ghost, 6, 6);
-                            setTimeout(() => document.body.removeChild(ghost), 0);
-                          } catch {}
-                        }}
-                          className="border bg-background hover:bg-accent/40 transition-colors px-1.5 py-1 flex items-center gap-1.5 rounded cursor-move min-w-0"
-                        title={task.title}
-                      >
-                          <div className={cn('w-3.5 h-3.5 border flex-shrink-0', task.status === 'completed' ? 'bg-green-500 border-green-600' : 'bg-background')} />
-                          <div className="min-w-0 flex-1 overflow-hidden max-w-[460px]">
-                            <div className="text-xs font-medium truncate" title={task.title}>{task.title}</div>
-                          {task.dueDate && (
-                              <div className="text-[9px] text-muted-foreground truncate">Due {task.dueDate}</div>
-                          )}
-                        </div>
-                          <Button size="sm" variant="outline" className="h-6 px-1.5 text-[10px] flex-shrink-0 ml-auto" onClick={(e) => { e.stopPropagation(); quickAddToToday(project.id, task.id); }}>
-                            <Plus className="w-2.5 h-2.5" />
-                        </Button>
-                      </div>
-                    ))
-                  )}
-                </div>
+          {/* Right: Projects (drag sources) - Collapsible */}
+          {!projectsSidebarCollapsed && (
+            <div className="w-1/3 shrink-0 p-4 overflow-y-auto overflow-x-hidden border-l border-border/40">
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-sm font-semibold">Projects</div>
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  onClick={() => setProjectsSidebarCollapsed(true)} 
+                  className="h-6 w-6 p-0"
+                  title="Collapse sidebar"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
               </div>
-            ))}
+              <div className="space-y-3">
+                {activeProjects.map(project => (
+                  <div key={project.id} className="border border-border rounded bg-card/40 overflow-hidden">
+                    <div className="px-2.5 py-1.5 border-b border-border/50 flex items-center gap-2 min-w-0">
+                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: project.color }} />
+                      <div className="text-xs font-medium truncate" title={project.name}>{project.name}</div>
+                    </div>
+                    <div className="p-2 space-y-1.5">
+                    {project.tasks.length === 0 ? (
+                      <div className="text-xs text-muted-foreground italic">No tasks</div>
+                    ) : (
+                      project.tasks.map(task => (
+                        <div
+                          key={task.id}
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData('application/json', JSON.stringify({ taskId: task.id, projectId: project.id }));
+                            e.dataTransfer.effectAllowed = 'move';
+                            try {
+                              const ghost = document.createElement('div');
+                              ghost.textContent = task.title;
+                              ghost.style.position = 'fixed';
+                              ghost.style.top = '-1000px';
+                              ghost.style.left = '-1000px';
+                              ghost.style.padding = '4px 8px';
+                              ghost.style.fontSize = '12px';
+                              ghost.style.background = 'var(--card)';
+                              ghost.style.border = '1px solid var(--border)';
+                              ghost.style.borderRadius = '6px';
+                              ghost.style.boxShadow = '0 4px 12px rgba(0,0,0,0.12)';
+                              document.body.appendChild(ghost);
+                              e.dataTransfer.setDragImage(ghost, 6, 6);
+                              setTimeout(() => document.body.removeChild(ghost), 0);
+                            } catch {}
+                          }}
+                            className="border bg-background hover:bg-accent/40 transition-colors px-1.5 py-1 flex items-center gap-1.5 rounded cursor-move min-w-0"
+                          title={task.title}
+                        >
+                            <div className={cn('w-3.5 h-3.5 border flex-shrink-0', task.status === 'completed' ? 'bg-green-500 border-green-600' : 'bg-background')} />
+                            <div className="min-w-0 flex-1 overflow-hidden max-w-[460px]">
+                              <div className="text-xs font-medium truncate" title={task.title}>{task.title}</div>
+                            {task.dueDate && (
+                                <div className="text-[9px] text-muted-foreground truncate">Due {task.dueDate}</div>
+                            )}
+                          </div>
+                            <Button size="sm" variant="outline" className="h-6 px-1.5 text-[10px] flex-shrink-0 ml-auto" onClick={(e) => { e.stopPropagation(); quickAddToToday(project.id, task.id); }}>
+                              <Plus className="w-2.5 h-2.5" />
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              ))}
+              </div>
             </div>
-          </div>
+          )}
+          
+          {/* Collapsed sidebar toggle button */}
+          {projectsSidebarCollapsed && (
+            <div className="w-8 shrink-0 border-l border-border/40 flex items-start justify-center pt-4">
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                onClick={() => setProjectsSidebarCollapsed(false)} 
+                className="h-8 w-8 p-0"
+                title="Expand projects sidebar"
+              >
+                <ChevronDown className="w-4 h-4 transform -rotate-90" />
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </AppLayout>

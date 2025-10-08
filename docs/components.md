@@ -339,12 +339,34 @@ Left sidebar navigation component.
 - Theme toggle functionality
 - Active state indicators
 - Branded header section
-- Calendar Yearly view available under `Daily Planner` subviews. Monthly view is no longer listed in the sidebar; open it by clicking a month in the Yearly view.
+- **Collapsible Navigation Sections**: Expand/collapse controls for nav items with subviews
+- **Calendar Section**: Separate main nav item with Monthly and Yearly calendar views
+- **Daily Planner Section**: Contains Daily and Week Overview modes (Scheduling removed from nav)
 - Daily Goals page is available as a top-level link: `/goals/weekly`.
-- Under `Workspace`, quick links now include: `Projects`, `Tasks`, `Projects Calendar`, `Projects Timeline`, and `Weekly Projects`.
+- Under `Workspace`, quick links now include: `Workspace Today`, `Tasks`, and `Projects`.
+
+**Navigation Structure:**
+1. Daily Planner (collapsible)
+   - Daily
+   - Week Overview
+2. Calendar (collapsible)
+   - Monthly
+   - Yearly
+3. Workspace (collapsible)
+   - Workspace Today
+   - Tasks
+   - Projects
+4. Weekly Goals
+5. Text Documents
+6. Meals (if enabled)
+7. Habits
+
+**Navigation Persistence:**
+- Collapse/expand state is persisted to localStorage (`omega-planner-nav-expanded`)
+- Navigation sections remember their collapsed/expanded state across page navigation and browser sessions
 
 ### Daily Goals (`app/goals/weekly/page.tsx`)
-Grid-based interface for daily goal planning with visual hierarchy, color-coding, and persistent add controls.
+Grid-based interface for daily goal planning with visual hierarchy, color-coding, drag-and-drop, and persistent add controls.
 
 **Key Features:**
 - **7-Column Grid Layout**: Shows 2 weeks (14 days) in a 7-column grid (Mon-Sun) across 2 rows for efficient space usage
@@ -354,13 +376,15 @@ Grid-based interface for daily goal planning with visual hierarchy, color-coding
 - **3 Goals Per Day**: Hard limit enforced at storage and UI level
 - **Goal Types with Visual Hierarchy**:
   - **Primary Goals**: For important events (exams, deadlines, appointments)
-    - Larger text (text-base), bold font weight
-    - Larger checkbox (20px) and icons (16px)
-    - Thicker border (border-2) for emphasis
+    - Dynamic text sizing: Large (text-lg) for short titles, automatically reduces to text-base or text-sm for longer titles
+    - Bold font weight for emphasis
+    - Larger checkbox (20px)
+    - Thicker border (border-2) with extra-thick left border (border-l-4) for visual distinction
+    - Star icon indicator in top-left corner
     - More padding for visual prominence
   - **Supporting Tasks**: For regular daily tasks
     - Standard text size (text-sm), normal font weight
-    - Standard checkbox (16px) and icons (14px)
+    - Standard checkbox (16px)
     - Standard border, compact padding
 - **Persistent Add UI** (non-disruptive):
   - Small fixed "+" button in each day header opens the add form
@@ -369,21 +393,32 @@ Grid-based interface for daily goal planning with visual hierarchy, color-coding
   - Enter to submit, Escape to cancel
 - **Fixed Text Overflow**: Long goal names wrap properly with `break-words` and `min-w-0` flex constraints
 - **Color Coding**: 6 color options (Gray, Blue, Green, Yellow, Red, Purple) for visual organization
+- **Drag-and-Drop** (October 2025):
+  - Drag goals between days to move them
+  - Drag handle (grip icon) appears on hover for non-completed goals
+  - Visual feedback: ring and background highlight on valid drop targets
+  - Cursor changes to grab/grabbing during drag operations
+  - Respects 3-goal-per-day limit (shows alert if target day is full)
 - **Inline Editing** (Enhanced October 2025):
-  - Double-click any goal to enter edit mode
+  - Double-click any goal (completed or active) to enter edit mode
   - Edit goal title directly with keyboard shortcuts (Enter to save, Escape to cancel)
   - Add optional notes to goals (toggle via "Add notes" button when editing)
   - Notes display below goal title with a note icon when present
   - Save/Cancel buttons for explicit control
-- **Actions Menu** (Hidden by default, shown on hover):
+  - Can edit completed goals (no restrictions)
+- **Actions Menu** (Enhanced October 2025):
   - Options menu (⋮) appears on hover for cleaner interface
-  - Menu entries: Edit goal, Toggle goal type (Primary ↔ Supporting), Change color, Create task, Remove
-  - Icons for better visual clarity
+  - Now available for both active AND completed goals
+  - **Completed Goals Menu**: Mark as incomplete, Edit goal, Remove
+  - **Active Goals Menu**: Edit goal, Toggle goal type (Primary ↔ Supporting), Change color, Move to day..., Create task, Remove
+  - Icons for better visual clarity throughout
+  - **Move to Day**: Submenu showing all 14 visible days, current day is disabled
   - Color picker expands inline below goal when "Change color" is selected
+  - Proper z-index layering (z-50) ensures menus appear above other content
 - **Task Creation**: Click "Create task" from menu to navigate to Tasks page with pre-filled title, due date, and notes
-- **Visual Feedback**: Colored backgrounds and borders, done state with strikethrough, smooth transitions
+- **Visual Feedback**: Colored backgrounds and borders, done state with strikethrough, smooth transitions, drag-over states
 - **LocalStorage Persistence**: Uses `GoalsStorage` (`omega-planner-weekly-goals-v1`) for data storage. Loads goals dynamically across multiple weeks for the visible date range. Goals include `goalType` field ('primary' | 'supporting'), optional `notes` field, and `color` field.
-- **Storage Functions**: `updateGoal()` function enables updating title, notes, and goalType after creation for flexible goal management.
+- **Storage Functions**: `updateGoal()` and `moveGoal()` functions enable flexible goal management after creation.
 
 **Order Update (2025-09-12):**
 - Main order is now: `Daily Planner`, `Workspace`, `Text Canvas`, then `Meals` and `Habits`.
@@ -393,7 +428,7 @@ Purpose: Unified workspace combining focus mode session management with project 
 
 **Layout:**
 - Left panel: Today's tasks including simple planned tasks, project tasks due today, completed tasks, and backlog
-- Right panel: All projects with drag-to-today functionality
+- Right panel: All projects with drag-to-today functionality (collapsible)
 
 **Key Features:**
 - **Session Timer**: Built-in timer with target durations (25/45/60 min) and sound notifications
@@ -401,6 +436,8 @@ Purpose: Unified workspace combining focus mode session management with project 
 - **Project Integration**: Drag project tasks to today or use quick-add button
 - **Backlog Management**: Drag tasks between planned and backlog areas
 - **Celebration Feedback**: Confetti and sound effects on task completion (respects sound toggle)
+- **Collapsible UI**: Timer controls and projects sidebar can be collapsed for a cleaner interface
+- **Hover Actions**: Most task action buttons (delete, move, etc.) are hidden until hover, keeping the interface clean
 
 **Persistence:**
 - Session state: `omega-planner-workspace-today-v1`
@@ -409,10 +446,11 @@ Purpose: Unified workspace combining focus mode session management with project 
 - Sound settings: `omega-planner-workspace-sound-v1`
 
 **Controls:**
-- Start, Pause, End Session with wall-clock accurate timer
+- Start, Pause, End Session with wall-clock accurate timer (collapsible)
 - Screen Wake Lock while timer is running (if supported)
 - Drag and drop between planned/backlog areas
 - Quick add buttons for simple and project tasks
+- Collapse/expand timer controls and projects sidebar for reduced clutter
 
 ### Button, Input, Card, etc. (`components/ui/`)
 Reusable UI primitives built with consistent styling.
