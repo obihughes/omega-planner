@@ -6,7 +6,8 @@
   - **Drag-and-drop functionality**: Goals can be dragged between days with visual feedback (ring highlight on drop target)
   - **Enhanced primary goal styling**:
     - Dynamic text sizing: Large text for short titles, automatically reduces for longer titles while maintaining bold
-    - Star icon indicator in top-left corner for quick visual identification
+    - Star icon indicator in top-right corner (moved from left to prevent text wrapping)
+    - Right padding added to primary goals to accommodate star icon
     - Thicker left border (border-l-4) for additional visual hierarchy
   - **Improved edit experience**:
     - Double-click any goal (completed or active) to edit
@@ -17,7 +18,8 @@
     - Drag-over state shows ring and background highlight
     - Clear cursor indicators (grab/grabbing for dragging)
     - Improved menu organization with separate layouts for active vs completed goals
-  - Files affected: `app/goals/weekly/page.tsx`, `docs/changelog.md`
+  - **Compact layout**: Reduced day box height by 30% (from 280px to 196px) for more efficient space usage
+  - Files affected: `app/goals/weekly/page.tsx`, `docs/changelog.md`, `docs/components.md`
 
 - **Navigation Restructure with Collapsible Sections** (2025-10-08)
   - Created new main "Calendar" navigation item as second item (after Daily Planner)

@@ -380,7 +380,8 @@ Grid-based interface for daily goal planning with visual hierarchy, color-coding
     - Bold font weight for emphasis
     - Larger checkbox (20px)
     - Thicker border (border-2) with extra-thick left border (border-l-4) for visual distinction
-    - Star icon indicator in top-left corner
+    - Star icon indicator in top-right corner (positioned to avoid text wrapping)
+    - Right padding to accommodate star icon without text overlap
     - More padding for visual prominence
   - **Supporting Tasks**: For regular daily tasks
     - Standard text size (text-sm), normal font weight

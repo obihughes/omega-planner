@@ -297,7 +297,7 @@ function DayColumn({
 
   return (
     <div 
-      className={`border flex flex-col min-h-[280px] transition-colors ${
+      className={`border flex flex-col min-h-[196px] transition-colors ${
         isToday 
           ? 'bg-primary/5 border-primary/20' 
           : isWeekend 
@@ -514,10 +514,10 @@ function GoalItem({ goal, dateKey, allDays, onToggle, onRemove, onUpdateColor, o
         }
       }}
     >
-      {/* Primary goal indicator */}
+      {/* Primary goal indicator - moved to top-left to free top-right for checkbox */}
       {isPrimary && (
-        <div className="absolute top-2 left-1 text-yellow-500">
-          <Star className="w-3 h-3 fill-current" />
+        <div className="absolute top-1.5 left-1.5 text-yellow-500 opacity-60">
+          <Star className="w-3.5 h-3.5 fill-current" />
         </div>
       )}
       {isEditing ? (
@@ -581,42 +581,25 @@ function GoalItem({ goal, dateKey, allDays, onToggle, onRemove, onUpdateColor, o
         </div>
       ) : (
         <>
-          <div className="flex items-start gap-2 min-w-0">
-            {/* Drag handle - only show for non-completed items */}
+          <div className="relative w-full">
+            {/* Drag handle - overlay, does not consume layout width */}
             {!goal.done && (
-              <div className="opacity-0 group-hover:opacity-50 cursor-grab active:cursor-grabbing flex-shrink-0 mt-0.5">
+              <div className="absolute top-1 left-6 opacity-0 group-hover:opacity-50 cursor-grab active:cursor-grabbing">
                 <GripVertical className="w-4 h-4" />
               </div>
             )}
-            
+
+            {/* Checkbox pinned to top-right */}
             <input
               type="checkbox"
               checked={goal.done}
               onChange={onToggle}
-              className={`${isPrimary ? 'w-5 h-5 mt-1' : 'w-4 h-4 mt-0.5'} cursor-pointer flex-shrink-0`}
+              className={`${isPrimary ? 'w-5 h-5' : 'w-4 h-4'} cursor-pointer absolute top-1 right-1`}
               aria-label="toggle goal"
             />
-            
-            <div className="flex-1 min-w-0">
-              <span 
-                className={`block break-words ${getTextSize()} ${
-                  isPrimary ? 'font-bold' : ''
-                } ${goal.done ? 'line-through opacity-50' : ''} ${colorScheme.text}`}
-                title={goal.title}
-                onDoubleClick={() => setIsEditing(true)}
-              >
-                {goal.title}
-              </span>
-              {goal.notes && (
-                <div className={`text-xs text-muted-foreground mt-1 opacity-70 flex items-start gap-1 ${goal.done ? 'line-through' : ''}`}>
-                  <StickyNote className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                  <span className="break-words">{goal.notes}</span>
-                </div>
-              )}
-            </div>
-            
-            {/* Menu button - now shows for both completed and non-completed */}
-            <div className="relative flex-shrink-0">
+
+            {/* Menu button - overlay bottom-right */}
+            <div className="absolute bottom-1 right-1">
               <button
                 onClick={() => {
                   setMenuOpen(!menuOpen);
@@ -630,7 +613,7 @@ function GoalItem({ goal, dateKey, allDays, onToggle, onRemove, onUpdateColor, o
               >
                 <MoreVertical className="w-4 h-4" />
               </button>
-              
+
               {menuOpen && (
                 <div ref={menuRef} className="absolute right-0 mt-1 z-50 bg-popover border shadow-lg min-w-[180px]">
                   {goal.done ? (
@@ -749,6 +732,25 @@ function GoalItem({ goal, dateKey, allDays, onToggle, onRemove, onUpdateColor, o
                       </button>
                     </>
                   )}
+                </div>
+              )}
+            </div>
+
+            {/* Text occupies full width; padded for overlays (star left, checkbox top-right, menu bottom-right) */}
+            <div className={`w-full ${isPrimary ? 'pl-6 pr-10' : 'pr-8'} pb-7`}>
+              <span 
+                className={`block whitespace-normal break-normal leading-tight ${getTextSize()} ${
+                  isPrimary ? 'font-bold' : ''
+                } ${goal.done ? 'line-through opacity-50' : ''} ${colorScheme.text}`}
+                title={goal.title}
+                onDoubleClick={() => setIsEditing(true)}
+              >
+                {goal.title}
+              </span>
+              {goal.notes && (
+                <div className={`text-xs text-muted-foreground mt-1 opacity-70 flex items-start gap-1 ${goal.done ? 'line-through' : ''}`}>
+                  <StickyNote className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                  <span className="break-words">{goal.notes}</span>
                 </div>
               )}
             </div>
