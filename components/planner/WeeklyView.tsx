@@ -83,26 +83,38 @@ export default function WeeklyView({}: WeeklyViewProps) {
 
   // (moved below weekDates initialization)
 
-  // Calculate week dates (Monday to Sunday, fixed week start)
+  // Calculate week dates (today first, then upcoming days, then previous days)
   const getWeekDates = (offset: number) => {
     const today = new Date();
     today.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
-    
-    // Find Monday of the current week
-    const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, ...
-    const daysSinceMonday = (dayOfWeek + 6) % 7; // 0 for Monday, 6 for Sunday
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - daysSinceMonday + (offset * 7));
-    startOfWeek.setHours(12, 0, 0, 0);
-    
+
+    // Adjust today by the offset (for week navigation)
+    const adjustedToday = new Date(today);
+    adjustedToday.setDate(today.getDate() + (offset * 7));
+    adjustedToday.setHours(12, 0, 0, 0);
+
     const weekDates = [] as Date[];
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(startOfWeek);
-      date.setDate(startOfWeek.getDate() + i);
-      date.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
+
+    // Add today and the remaining days of the week (up to Sunday)
+    const dayOfWeek = adjustedToday.getDay(); // 0 = Sunday, 1 = Monday, ...
+    const daysUntilEndOfWeek = 6 - dayOfWeek; // Days from today to Sunday
+
+    // Add today and future days in this week
+    for (let i = 0; i <= daysUntilEndOfWeek; i++) {
+      const date = new Date(adjustedToday);
+      date.setDate(adjustedToday.getDate() + i);
+      date.setHours(12, 0, 0, 0);
       weekDates.push(date);
     }
-    
+
+    // Add previous days of the week (from Monday to yesterday)
+    for (let i = 1; i <= dayOfWeek; i++) {
+      const date = new Date(adjustedToday);
+      date.setDate(adjustedToday.getDate() - i);
+      date.setHours(12, 0, 0, 0);
+      weekDates.push(date);
+    }
+
     return weekDates;
   };
 
