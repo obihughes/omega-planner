@@ -57,7 +57,7 @@ Main component that orchestrates all planner functionality.
 Renders individual timeline sections with tasks and time markers.
 
 ### WeeklyView
-Displays a 7-day view of scheduled tasks in a horizontal timeline format. Weeks start on Monday and end on Sunday. Features include:
+Displays a 7-day view of scheduled tasks in a horizontal timeline format. Weeks start on Monday and end on Sunday. When opening the weekly overview, the view now auto-scrolls to highlight today within the current week by default. Features include:
 
 - **Enhanced Visual Design**: Modern gradient backgrounds, improved spacing, and better color hierarchy
 - **Smart Time Management**: Focused timeline from 6 AM to 10 PM for optimal productivity planning

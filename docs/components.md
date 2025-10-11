@@ -321,6 +321,37 @@ Main projects management interface with enhanced sorting capabilities.
 - **Folder Management**: Organize projects into folders with custom ordering within folders
 - **Sort Direction Controls**: Ascending/descending order toggle with visual indicators
 
+### Activities View (`/activities`)
+
+Monthly grid for tracking daily notes across custom activities with text inputs instead of checkboxes.
+
+**Location**:
+- Page: `app/activities/page.tsx`
+- Storage (entries): `utils/activitiesStorage.ts` localStorage key `omega-planner-activities-v1`
+- Storage (list): `utils/activitiesStorage.ts` localStorage key `omega-planner-activities-list-v1`
+
+**Layout**:
+- Fixed left column (280px) shows activity names with color indicators
+- Scrollable right area displays all days of the current month (120px per day)
+- Header days row stays aligned with the grid while horizontally scrolling (synced scroll)
+- Each activity row has a textarea for each day
+
+**Features**:
+- Independent, editable Activities list (decoupled from Workspace Projects)
+  - Add, rename, delete activities
+  - Pick a color per activity
+- Month navigation with Prev, Next, and Today controls
+- Optional wrap toggle for long activity names
+- Auto-save on text change
+- Today's column highlighted
+
+Reliability notes (2025-10-10):
+- Persistence guards prevent an empty initial render from overwriting existing data.
+- Storage loaders migrate legacy shapes (plain object for entries, plain array for list) seamlessly.
+
+**Navigation**:
+- Top-level navigation item after Habits
+
 ## UI Components
 
 ### AppLayout (`components/ui/AppLayout.tsx`)
@@ -360,10 +391,21 @@ Left sidebar navigation component.
 5. Text Documents
 6. Meals (if enabled)
 7. Habits
+8. Activities
+9. Beta
 
 **Navigation Persistence:**
 - Collapse/expand state is persisted to localStorage (`omega-planner-nav-expanded`)
 - Navigation sections remember their collapsed/expanded state across page navigation and browser sessions
+
+### Beta (`/beta`)
+- New top-level navigation item labeled "Beta" with a beaker icon.
+- Simple placeholder page for experiments; no separate beta library is required.
+- Contains links to experimental views and pages; initial entries:
+  - Board View: `/beta/boards`
+  - Unified Search: `/beta/search`
+- Backed by a simple registry at `lib/beta.ts` so entries can be added without touching the nav component.
+- Index page at `/beta` lists all beta entries with descriptions.
 
 ### Daily Goals (`app/goals/weekly/page.tsx`)
 Grid-based interface for daily goal planning with visual hierarchy, color-coding, drag-and-drop, and persistent add controls.
@@ -471,6 +513,21 @@ File Updated:
 - `components/ui/AppLayout.tsx`
 
 ## Calendar Components
+
+### MonthlyCalendar (`components/calendar/MonthlyCalendar.tsx`)
+Simplified monthly view focused on readable day-level events.
+
+Key changes (2025-10-10):
+- Removed periods/intervals from Monthly view (available in Year view)
+- Removed bottom legends/lists to reduce clutter
+- Event chips have larger text and automatic high-contrast text color for readability
+- 12 months render vertically; scroll to navigate. Defaults to the current month on open
+- Simplified header (no month prev/next controls); Add Event remains
+- Per-day quick button to open the Daily planner remains on hover
+
+Notes:
+- Period creation/editing remains accessible from `YearCalendar`.
+- URL param `?date=YYYY-MM-DD` will auto-scroll to that month.
 
 ### YearCalendar (`components/calendar/YearCalendar.tsx`)
 Full year calendar view with event and interval management. Accessible under Daily Planner → Yearly Calendar.

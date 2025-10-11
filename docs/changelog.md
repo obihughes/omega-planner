@@ -60,6 +60,32 @@
 
 ## Unreleased
 
+- Beta navigation
+  - Added a single "Beta" item in the main navigation with a beaker icon
+  - Removed beta library dependency; `/beta` is a static placeholder page
+  - New index page at `/beta` listing experimental features from a registry (`lib/beta.ts`)
+  - Initial beta pages:
+    - `/beta/boards` (Board View prototype)
+    - `/beta/search` (Unified Search prototype)
+  - Files affected: `components/ui/Navigation.tsx`, `lib/beta.ts`, `lib/index.ts`, `app/beta/page.tsx`, `app/beta/boards/page.tsx`, `app/beta/search/page.tsx`, `docs/components.md`, `docs/changelog.md`
+
+- Weekly View default focuses on Today
+  - Weekly overview now auto-scrolls to today's row when opening the view for the current week.
+  - Does not auto-scroll when navigating to past/future weeks.
+  - Files affected: `components/planner/WeeklyView.tsx`, `docs/planner.md`, `docs/changelog.md`.
+
+- Activities View
+  - New top-level page at `/activities` that shows a monthly grid with rows for custom activities (not tied to Workspace Projects) and per-day text inputs (notes/journaling).
+  - Fixed left column shows activity names; right area scrolls horizontally showing all days of the month with synchronized header/day labels. Vertical scrolling is handled by the page.
+  - Data persisted in localStorage via `ActivitiesStorage` (entries: `omega-planner-activities-v1`) and `ActivitiesListStorage` (list: `omega-planner-activities-list-v1`).
+  - Manage Activities inline: add, rename, delete, and color pick.
+  - Added as standalone navigation item after Habits.
+  - Files affected: `app/activities/page.tsx`, `components/ui/Navigation.tsx`, `utils/activitiesStorage.ts`, `utils/index.ts`, `docs/components.md`, `docs/changelog.md`.
+  - Persistence reliability fix (2025-10-10):
+    - Guarded initial save of the activities list until after first load to prevent overwriting existing data with an empty array.
+    - Added backward-compatible loaders that migrate legacy storage shapes (direct objects/arrays) to the current schema.
+    - Files affected: `app/activities/page.tsx`, `utils/activitiesStorage.ts`.
+
 - **Enhanced Weekly Goals Edit Options** (2025-10-08)
   - Added comprehensive inline editing for goal titles and notes
   - Double-click any goal or click "Edit goal" from menu to enter edit mode
@@ -186,7 +212,13 @@
 
 - Calendar
   - Year view: Clicking a month name navigates to the Monthly view for that month (`/calendar?view=monthly&date=YYYY-MM-01`).
-  - Monthly view: Event chips show Edit and Delete buttons on hover; Delete prompts for confirmation.
+  - Monthly view (Simplified):
+    - Removed periods/intervals from monthly display (kept in Year view only)
+    - Removed bottom legends/lists for a cleaner layout
+    - Event chips have larger text and high contrast for readability
+    - Switched to a vertically scrollable 12-month layout; defaults to current month on open
+    - Simplified header; navigation is by scrolling, with a quick Add Event button
+    - Daily navigation button remains on each date (opens Daily planner)
 
 - Projects / Tasks
   - Project task rows now always show the due date/time-until-due inline next to the task name. Hover is no longer required to see due information. Editing the due date remains a click on the chip; action buttons (clear date, expand subtasks, add subtask, edit, delete) still appear on hover to keep the layout minimal.

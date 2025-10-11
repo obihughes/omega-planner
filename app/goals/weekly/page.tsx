@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { GoalsStorage, dateFromDateKey } from '@/utils';
 import { WeekGoals, WeeklyGoal } from '@/types';
-import { Trash2, Plus, ExternalLink, MoreVertical, Edit2, Save, X, StickyNote, Star, GripVertical, RotateCcw } from 'lucide-react';
+import { Trash2, Plus, ExternalLink, MoreVertical, Edit2, Save, X, StickyNote } from 'lucide-react';
 
 const GOAL_COLORS = [
   { name: 'Gray', bg: 'bg-gray-500/10', border: 'border-gray-500/30', text: 'text-gray-700 dark:text-gray-300', value: 'gray' },
@@ -112,40 +112,6 @@ export default function WeeklyGoalsPage() {
     setGoalsData(prev => ({ ...prev, [weekKey]: next }));
   }, []);
 
-  const moveGoal = useCallback((fromDateKey: string, toDateKey: string, goalId: string) => {
-    // Remove from source
-    const fromDate = dateFromDateKey(fromDateKey);
-    const fromWeekKey = toWeekStartKey(fromDate);
-    const fromWeekData = goalsData[fromWeekKey];
-    const goal = fromWeekData?.goalsByDate?.[fromDateKey]?.find(g => g.id === goalId);
-    
-    if (!goal) return;
-    
-    // Check if target day has space (max 3 goals)
-    const toDate = dateFromDateKey(toDateKey);
-    const toWeekKey = toWeekStartKey(toDate);
-    const toWeekData = goalsData[toWeekKey];
-    const targetGoals = toWeekData?.goalsByDate?.[toDateKey] || [];
-    
-    if (targetGoals.length >= 3) {
-      alert('Target day already has 3 goals (maximum)');
-      return;
-    }
-    
-    // Remove from source
-    const nextFrom = GoalsStorage.removeGoal(fromWeekKey, fromDateKey, goalId);
-    
-    // Add to target
-    const nextTo = GoalsStorage.addGoal(toWeekKey, toDateKey, goal);
-    
-    // Update state
-    setGoalsData(prev => ({
-      ...prev,
-      [fromWeekKey]: nextFrom,
-      [toWeekKey]: nextTo,
-    }));
-  }, [goalsData]);
-
   const createTaskFromGoal = useCallback((goal: WeeklyGoal, dateKey: string) => {
     // Navigate to tasks page with pre-filled data
     const params = new URLSearchParams({
@@ -185,13 +151,11 @@ export default function WeeklyGoalsPage() {
                   goals={items}
                   isToday={isToday}
                   isWeekend={isWeekend}
-                  allDays={days}
                   onAddGoal={(title, color, goalType) => addGoal(dateKey, title, color, goalType)}
                   onToggleGoal={(id) => toggleGoal(dateKey, id)}
                   onRemoveGoal={(id) => removeGoal(dateKey, id)}
                   onUpdateColor={(id, color) => updateGoalColor(dateKey, id, color)}
                   onUpdateGoal={(id, updates) => updateGoal(dateKey, id, updates)}
-                  onMoveGoal={(goalId, toDateKey) => moveGoal(dateKey, toDateKey, goalId)}
                   onCreateTask={(goal) => createTaskFromGoal(goal, dateKey)}
                   canAddMore={items.length < 3}
                 />
@@ -210,13 +174,11 @@ interface DayColumnProps {
   goals: WeeklyGoal[];
   isToday: boolean;
   isWeekend: boolean;
-  allDays: Date[];
   onAddGoal: (title: string, color: string, goalType: 'primary' | 'supporting') => void;
   onToggleGoal: (id: string) => void;
   onRemoveGoal: (id: string) => void;
   onUpdateColor: (id: string, color: string) => void;
   onUpdateGoal: (id: string, updates: Partial<Pick<WeeklyGoal, 'title' | 'notes' | 'goalType'>>) => void;
-  onMoveGoal: (goalId: string, toDateKey: string) => void;
   onCreateTask: (goal: WeeklyGoal) => void;
   canAddMore: boolean;
 }
@@ -227,13 +189,11 @@ function DayColumn({
   goals, 
   isToday, 
   isWeekend,
-  allDays,
   onAddGoal, 
   onToggleGoal, 
   onRemoveGoal,
   onUpdateColor,
   onUpdateGoal,
-  onMoveGoal,
   onCreateTask,
   canAddMore 
 }: DayColumnProps) {
@@ -241,7 +201,6 @@ function DayColumn({
   const [inputValue, setInputValue] = useState('');
   const [selectedColor, setSelectedColor] = useState('gray');
   const [selectedGoalType, setSelectedGoalType] = useState<'primary' | 'supporting'>('supporting');
-  const [isDragOver, setIsDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -267,46 +226,15 @@ function DayColumn({
     setShowInput(false);
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    if (!canAddMore) return;
-    setIsDragOver(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    
-    if (!canAddMore) {
-      alert('This day already has 3 goals (maximum)');
-      return;
-    }
-
-    const goalId = e.dataTransfer.getData('goalId');
-    const fromDateKey = e.dataTransfer.getData('fromDateKey');
-    
-    if (goalId && fromDateKey && fromDateKey !== dateKey) {
-      onMoveGoal(goalId, dateKey);
-    }
-  };
-
   return (
     <div 
-      className={`border flex flex-col min-h-[196px] transition-colors ${
+      className={`border flex flex-col min-h-[280px] transition-colors ${
         isToday 
           ? 'bg-primary/5 border-primary/20' 
           : isWeekend 
             ? 'bg-muted/30' 
             : 'bg-card'
-      } ${isDragOver ? 'ring-2 ring-primary ring-offset-2 bg-primary/10' : ''}`}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
+      }`}
     >
       <div className="p-3 border-b flex items-center justify-between gap-2">
         <div>
@@ -334,13 +262,10 @@ function DayColumn({
           <GoalItem
             key={goal.id}
             goal={goal}
-            dateKey={dateKey}
-            allDays={allDays}
             onToggle={() => onToggleGoal(goal.id)}
             onRemove={() => onRemoveGoal(goal.id)}
             onUpdateColor={(color) => onUpdateColor(goal.id, color)}
             onUpdate={(updates) => onUpdateGoal(goal.id, updates)}
-            onMoveGoal={(toDateKey) => onMoveGoal(goal.id, toDateKey)}
             onCreateTask={() => onCreateTask(goal)}
           />
         ))}
@@ -416,37 +341,24 @@ function DayColumn({
 
 interface GoalItemProps {
   goal: WeeklyGoal;
-  dateKey: string;
-  allDays: Date[];
   onToggle: () => void;
   onRemove: () => void;
   onUpdateColor: (color: string) => void;
   onUpdate: (updates: Partial<Pick<WeeklyGoal, 'title' | 'notes' | 'goalType'>>) => void;
-  onMoveGoal: (toDateKey: string) => void;
   onCreateTask: () => void;
 }
 
-function GoalItem({ goal, dateKey, allDays, onToggle, onRemove, onUpdateColor, onUpdate, onMoveGoal, onCreateTask }: GoalItemProps) {
+function GoalItem({ goal, onToggle, onRemove, onUpdateColor, onUpdate, onCreateTask }: GoalItemProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
-  const [showMoveMenu, setShowMoveMenu] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const [editedTitle, setEditedTitle] = useState(goal.title);
   const [editedNotes, setEditedNotes] = useState(goal.notes || '');
   const titleInputRef = useRef<HTMLInputElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
   
   const colorScheme = GOAL_COLORS.find(c => c.value === goal.color) || GOAL_COLORS[0];
   const isPrimary = goal.goalType === 'primary';
-  
-  // Dynamic text sizing based on title length
-  const getTextSize = () => {
-    if (!isPrimary) return 'text-sm';
-    if (goal.title.length > 40) return 'text-sm';
-    if (goal.title.length > 25) return 'text-base';
-    return 'text-lg';
-  };
 
   useEffect(() => {
     if (isEditing && titleInputRef.current) {
@@ -485,41 +397,18 @@ function GoalItem({ goal, dateKey, allDays, onToggle, onRemove, onUpdateColor, o
     setMenuOpen(false);
   };
 
-  const handleDragStart = (e: React.DragEvent) => {
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('goalId', goal.id);
-    e.dataTransfer.setData('fromDateKey', dateKey);
-  };
-
-  const handleMoveToDay = (targetDateKey: string) => {
-    if (targetDateKey !== dateKey) {
-      onMoveGoal(targetDateKey);
-    }
-    setShowMoveMenu(false);
-    setMenuOpen(false);
-  };
-
   return (
     <div 
-      className={`border group transition-all relative ${colorScheme.bg} ${colorScheme.border} ${
-        isPrimary ? 'p-3 border-2 border-l-4' : 'p-2'
+      className={`border group transition-all ${colorScheme.bg} ${colorScheme.border} ${
+        isPrimary ? 'p-3 border-2' : 'p-2'
       }`}
-      draggable={!isEditing && !goal.done}
-      onDragStart={handleDragStart}
       onMouseLeave={() => {
         if (!isEditing) {
           setMenuOpen(false);
           setShowColorPicker(false);
-          setShowMoveMenu(false);
         }
       }}
     >
-      {/* Primary goal indicator - moved to top-left to free top-right for checkbox */}
-      {isPrimary && (
-        <div className="absolute top-1.5 left-1.5 text-yellow-500 opacity-60">
-          <Star className="w-3.5 h-3.5 fill-current" />
-        </div>
-      )}
       {isEditing ? (
         <div className="space-y-2">
           <div className="flex items-start gap-2">
@@ -535,7 +424,7 @@ function GoalItem({ goal, dateKey, allDays, onToggle, onRemove, onUpdateColor, o
                   handleCancelEdit();
                 }
               }}
-              className={`flex-1 ${getTextSize()} ${isPrimary ? 'font-bold' : ''} h-auto min-h-[2rem]`}
+              className={`flex-1 ${isPrimary ? 'text-base font-semibold' : 'text-sm'} h-8`}
               placeholder="Goal title..."
             />
           </div>
@@ -581,189 +470,105 @@ function GoalItem({ goal, dateKey, allDays, onToggle, onRemove, onUpdateColor, o
         </div>
       ) : (
         <>
-          <div className="relative w-full">
-            {/* Drag handle - overlay, does not consume layout width */}
-            {!goal.done && (
-              <div className="absolute top-1 left-6 opacity-0 group-hover:opacity-50 cursor-grab active:cursor-grabbing">
-                <GripVertical className="w-4 h-4" />
-              </div>
-            )}
-
-            {/* Checkbox pinned to top-right */}
+          <div className="flex items-start gap-2 min-w-0">
             <input
               type="checkbox"
               checked={goal.done}
               onChange={onToggle}
-              className={`${isPrimary ? 'w-5 h-5' : 'w-4 h-4'} cursor-pointer absolute top-1 right-1`}
+              className={`${isPrimary ? 'w-5 h-5 mt-0.5' : 'w-4 h-4 mt-0.5'} cursor-pointer flex-shrink-0`}
               aria-label="toggle goal"
             />
-
-            {/* Menu button - overlay bottom-right */}
-            <div className="absolute bottom-1 right-1">
-              <button
-                onClick={() => {
-                  setMenuOpen(!menuOpen);
-                  setShowColorPicker(false);
-                  setShowMoveMenu(false);
-                }}
-                className="p-1 hover:bg-muted transition-colors border opacity-0 group-hover:opacity-100"
-                aria-haspopup="menu"
-                aria-expanded={menuOpen}
-                title="Options"
-              >
-                <MoreVertical className="w-4 h-4" />
-              </button>
-
-              {menuOpen && (
-                <div ref={menuRef} className="absolute right-0 mt-1 z-50 bg-popover border shadow-lg min-w-[180px]">
-                  {goal.done ? (
-                    // Menu for completed goals
-                    <>
-                      <button
-                        className="w-full text-left px-3 py-2 hover:bg-muted text-sm flex items-center gap-2"
-                        onClick={() => {
-                          onToggle();
-                          setMenuOpen(false);
-                        }}
-                      >
-                        <RotateCcw className="w-3 h-3" />
-                        Mark as incomplete
-                      </button>
-                      <button
-                        className="w-full text-left px-3 py-2 hover:bg-muted text-sm flex items-center gap-2"
-                        onClick={() => {
-                          setIsEditing(true);
-                          setMenuOpen(false);
-                        }}
-                      >
-                        <Edit2 className="w-3 h-3" />
-                        Edit goal
-                      </button>
-                      <div className="border-t my-1"></div>
-                      <button
-                        className="w-full text-left px-3 py-2 hover:bg-muted text-sm text-destructive flex items-center gap-2"
-                        onClick={onRemove}
-                      >
-                        <Trash2 className="w-3 h-3" />
-                        Remove
-                      </button>
-                    </>
-                  ) : (
-                    // Menu for active goals
-                    <>
-                      <button
-                        className="w-full text-left px-3 py-2 hover:bg-muted text-sm flex items-center gap-2"
-                        onClick={() => {
-                          setIsEditing(true);
-                          setMenuOpen(false);
-                        }}
-                      >
-                        <Edit2 className="w-3 h-3" />
-                        Edit goal
-                      </button>
-                      <button
-                        className="w-full text-left px-3 py-2 hover:bg-muted text-sm"
-                        onClick={handleToggleGoalType}
-                      >
-                        {isPrimary ? '→ Make supporting' : '→ Make primary'}
-                      </button>
-                      <button
-                        className="w-full text-left px-3 py-2 hover:bg-muted text-sm"
-                        onClick={() => {
-                          setShowColorPicker((v) => !v);
-                          setMenuOpen(false);
-                        }}
-                      >
-                        Change color
-                      </button>
-                      <button
-                        className="w-full text-left px-3 py-2 hover:bg-muted text-sm relative"
-                        onClick={() => {
-                          setShowMoveMenu(!showMoveMenu);
-                        }}
-                      >
-                        Move to day...
-                        {showMoveMenu && (
-                          <div 
-                            className="absolute left-full top-0 ml-1 bg-popover border shadow-lg min-w-[150px] max-h-[300px] overflow-y-auto z-50"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {allDays.map((day) => {
-                              const targetDateKey = toDateKey(day);
-                              const isCurrentDay = targetDateKey === dateKey;
-                              return (
-                                <button
-                                  key={targetDateKey}
-                                  className={`w-full text-left px-3 py-2 hover:bg-muted text-sm ${
-                                    isCurrentDay ? 'bg-muted/50 cursor-not-allowed' : ''
-                                  }`}
-                                  onClick={() => !isCurrentDay && handleMoveToDay(targetDateKey)}
-                                  disabled={isCurrentDay}
-                                >
-                                  {day.toLocaleDateString(undefined, { 
-                                    weekday: 'short', 
-                                    month: 'short', 
-                                    day: 'numeric' 
-                                  })}
-                                  {isCurrentDay && ' (current)'}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </button>
-                      <button
-                        className="w-full text-left px-3 py-2 hover:bg-muted text-sm flex items-center gap-2"
-                        onClick={() => {
-                          onCreateTask();
-                          setMenuOpen(false);
-                        }}
-                      >
-                        <ExternalLink className="w-3 h-3" />
-                        Create task
-                      </button>
-                      <div className="border-t my-1"></div>
-                      <button
-                        className="w-full text-left px-3 py-2 hover:bg-muted text-sm text-destructive flex items-center gap-2"
-                        onClick={onRemove}
-                      >
-                        <Trash2 className="w-3 h-3" />
-                        Remove
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Text occupies full width; padded for overlays (star left, checkbox top-right, menu bottom-right) */}
-            <div className={`w-full ${isPrimary ? 'pl-6 pr-10' : 'pr-8'} pb-7`}>
+            <div className="flex-1 min-w-0">
               <span 
-                className={`block whitespace-normal break-normal leading-tight ${getTextSize()} ${
-                  isPrimary ? 'font-bold' : ''
+                className={`block break-words ${
+                  isPrimary ? 'text-base font-semibold' : 'text-sm'
                 } ${goal.done ? 'line-through opacity-50' : ''} ${colorScheme.text}`}
                 title={goal.title}
-                onDoubleClick={() => setIsEditing(true)}
+                onDoubleClick={() => !goal.done && setIsEditing(true)}
               >
                 {goal.title}
               </span>
-              {goal.notes && (
-                <div className={`text-xs text-muted-foreground mt-1 opacity-70 flex items-start gap-1 ${goal.done ? 'line-through' : ''}`}>
+              {goal.notes && !goal.done && (
+                <div className="text-xs text-muted-foreground mt-1 opacity-70 flex items-start gap-1">
                   <StickyNote className="w-3 h-3 mt-0.5 flex-shrink-0" />
                   <span className="break-words">{goal.notes}</span>
                 </div>
               )}
             </div>
+            
+            {!goal.done && (
+              <div className="relative flex-shrink-0">
+                <button
+                  onClick={() => {
+                    setMenuOpen(!menuOpen);
+                    setShowColorPicker(false);
+                  }}
+                  className="p-1 hover:bg-muted transition-colors border opacity-0 group-hover:opacity-100"
+                  aria-haspopup="menu"
+                  aria-expanded={menuOpen}
+                  title="Options"
+                >
+                  <MoreVertical className="w-4 h-4" />
+                </button>
+                {menuOpen && (
+                  <div className="absolute right-0 mt-1 z-10 bg-popover border shadow-lg min-w-[180px]">
+                    <button
+                      className="w-full text-left px-3 py-2 hover:bg-muted text-sm flex items-center gap-2"
+                      onClick={() => {
+                        setIsEditing(true);
+                        setMenuOpen(false);
+                      }}
+                    >
+                      <Edit2 className="w-3 h-3" />
+                      Edit goal
+                    </button>
+                    <button
+                      className="w-full text-left px-3 py-2 hover:bg-muted text-sm"
+                      onClick={handleToggleGoalType}
+                    >
+                      {isPrimary ? '→ Make supporting' : '→ Make primary'}
+                    </button>
+                    <button
+                      className="w-full text-left px-3 py-2 hover:bg-muted text-sm"
+                      onClick={() => {
+                        setShowColorPicker((v) => !v);
+                      }}
+                    >
+                      Change color
+                    </button>
+                    <button
+                      className="w-full text-left px-3 py-2 hover:bg-muted text-sm flex items-center gap-2"
+                      onClick={() => {
+                        onCreateTask();
+                        setMenuOpen(false);
+                      }}
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      Create task
+                    </button>
+                    <div className="border-t my-1"></div>
+                    <button
+                      className="w-full text-left px-3 py-2 hover:bg-muted text-sm text-destructive flex items-center gap-2"
+                      onClick={onRemove}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      Remove
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {showColorPicker && (
-            <div className="flex gap-1 mt-2 pt-2 border-t flex-wrap z-50 relative bg-card">
+            <div className="flex gap-1 mt-2 pt-2 border-t flex-wrap">
               {GOAL_COLORS.map((c) => (
                 <button
                   key={c.value}
                   onClick={() => {
                     onUpdateColor(c.value);
                     setShowColorPicker(false);
+                    setMenuOpen(false);
                   }}
                   className={`${isPrimary ? 'w-6 h-6' : 'w-5 h-5'} border transition-all ${c.bg} ${c.border} ${
                     goal.color === c.value ? 'ring-2 ring-offset-1 ring-primary' : 'hover:scale-110'

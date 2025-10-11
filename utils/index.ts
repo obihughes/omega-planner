@@ -23,3 +23,7 @@ export * from './ingredientUtils';
 
 // Habits utilities
 export { HabitsStorage } from './habitsStorage';
+
+// Activities utilities
+export { ActivitiesStorage, ActivitiesListStorage } from './activitiesStorage';
+export type { ActivitiesByDate, ActivityItem } from './activitiesStorage';

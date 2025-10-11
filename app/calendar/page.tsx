@@ -105,13 +105,9 @@ export default function CalendarPage() {
           <MonthlyCalendar
             data={data}
             onEventAdd={handleEventAdd}
-            onPeriodAdd={handlePeriodAdd}
             onEventEdit={handleEventEdit}
-            onPeriodEdit={handlePeriodEdit}
             onEventDelete={deleteEvent}
-            onPeriodDelete={deletePeriod}
             className="bg-background max-w-5xl mx-auto"
-            compact
             onNavigateToDaily={(date) => {
               // Navigate to home page daily planner with a local-safe YYYY-MM-DD date key
               try {

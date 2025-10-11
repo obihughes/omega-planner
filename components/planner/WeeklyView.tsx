@@ -69,6 +69,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
   const [isSameDayView, setIsSameDayView] = useState(false);
   const [selectedDayOfWeek, setSelectedDayOfWeek] = useState(0); // 0 = Sunday, 1 = Monday, etc.
   const timelineScrollRef = useRef<HTMLDivElement>(null);
+  const didAutoScrollToTodayRef = useRef(false);
 
   // Set initial scroll position to 6am
   useEffect(() => {
@@ -79,6 +80,8 @@ export default function WeeklyView({}: WeeklyViewProps) {
     const initialScrollPosition = WEEKLY_DAY_COLUMN_WIDTH + WEEKLY_EVENTS_COLUMN_WIDTH + (6 * WEEKLY_PIXELS_PER_HOUR);
     scrollContainer.scrollLeft = initialScrollPosition;
   }, [weekOffset, isSameDayView, selectedDayOfWeek]); // Re-run when view changes
+
+  // (moved below weekDates initialization)
 
   // Calculate week dates (Monday to Sunday, fixed week start)
   const getWeekDates = (offset: number) => {
@@ -149,6 +152,33 @@ export default function WeeklyView({}: WeeklyViewProps) {
   const weekDates = isSameDayView 
     ? getSameDayDates(selectedDayOfWeek, weekOffset)
     : getWeekDates(weekOffset);
+  
+  // Auto-scroll vertically to today's row on initial load for current week
+  useEffect(() => {
+    const scrollContainer = timelineScrollRef.current;
+    if (!scrollContainer) return;
+    if (didAutoScrollToTodayRef.current) return; // run once
+
+    // Only auto-scroll for the current week (offset 0)
+    if (weekOffset !== 0) return;
+
+    // Find today's date within the rendered weekDates
+    const todayIndex = weekDates.findIndex((d) => {
+      const today = new Date();
+      return d.toDateString() === today.toDateString();
+    });
+
+    if (todayIndex === -1) return;
+
+    const todayKey = getDateKey(weekDates[todayIndex]);
+    const todayEl = scrollContainer.querySelector<HTMLDivElement>(`[data-date-key="${todayKey}"]`);
+    if (!todayEl) return;
+
+    // Scroll so today's AM row is near the top with a small margin
+    const targetTop = Math.max(0, todayEl.offsetTop - 16);
+    scrollContainer.scrollTop = targetTop;
+    didAutoScrollToTodayRef.current = true;
+  }, [weekOffset, weekDates]);
   // Day names for display (will dynamically show based on actual dates)
   const getDayName = (date: Date) => {
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -628,7 +658,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
       <div className="flex-1 overflow-auto bg-background" ref={timelineScrollRef} style={{ overflowX: 'auto', scrollBehavior: 'smooth' }}>
         <div style={{ minWidth: `${WEEKLY_DAY_COLUMN_WIDTH + (WEEKLY_PIXELS_PER_HOUR * HOURS_PER_ROW)}px` }}>
           {weekDates.map((date, index) => (
-            <div key={getDateKey(date)} className={cn(
+            <div key={getDateKey(date)} data-date-key={getDateKey(date)} className={cn(
               "border-b-2 border-border/60",
               index === 0 && "border-t-2",
               "relative"

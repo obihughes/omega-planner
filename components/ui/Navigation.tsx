@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
   Calendar, CalendarDays, FolderKanban, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
-  Clock, Archive, Trash2, CalendarCheck, CalendarRange, Folder, Files, ClipboardList, Settings
+  Clock, Archive, Trash2, CalendarCheck, CalendarRange, Folder, Files, ClipboardList, Settings, FlaskConical
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
@@ -39,7 +39,7 @@ export function Navigation() {
         }
       }
     }
-    return new Set(['daily-planner', 'calendar', 'workspace']);
+    return new Set(['daily-planner', 'calendar', 'workspace', 'beta-features']);
   });
 
   const isResizing = useRef(false);
@@ -144,6 +144,8 @@ export function Navigation() {
     return null; // Prevent hydration mismatch
   }
 
+  const betaSubViews: any[] = [];
+
   const navItems = [
     {
       key: 'daily-planner',
@@ -210,6 +212,22 @@ export function Navigation() {
       label: 'Habits',
       icon: ClipboardList,
       active: pathname === '/habits',
+      subViews: []
+    },
+    {
+      key: 'activities',
+      href: '/activities',
+      label: 'Activities',
+      icon: Files,
+      active: pathname === '/activities',
+      subViews: []
+    },
+    {
+      key: 'beta',
+      href: '/beta',
+      label: 'Beta',
+      icon: FlaskConical,
+      active: pathname === '/beta',
       subViews: []
     }
   ];
@@ -344,6 +362,11 @@ export function Navigation() {
                                     router.push(item.href);
                                   }
                                   setProjectsViewMode(subView.key as any);
+                                }
+                              } else if (item.key === 'beta-features') {
+                                const target = (subView as any).href;
+                                if (target && pathname !== target) {
+                                  router.push(target);
                                 }
                               }
                             }} 
