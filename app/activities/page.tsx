@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { AppLayout } from '@/components/ui';
+import { AppLayout, Popover, PopoverContent, PopoverTrigger } from '@/components/ui';
 import { ActivitiesStorage, ActivitiesByDate, ActivitiesListStorage, ActivityItem } from '@/utils/activitiesStorage';
-import { Calendar, ChevronLeft, ChevronRight, Plus, Pencil, Trash2, Check, X, GripVertical } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Plus, Pencil, Trash2, Check, X, GripVertical, MoreHorizontal } from 'lucide-react';
 
 export default function ActivitiesPage() {
   // Independent editable Activities list (decoupled from Workspace projects)
@@ -259,9 +259,9 @@ export default function ActivitiesPage() {
 
   return (
     <AppLayout>
-      <div className="h-full flex flex-col p-4">
+      <div className="h-full flex flex-col p-3">
         {/* Page Header */}
-        <div className="flex-shrink-0 mb-6">
+        <div className="flex-shrink-0 mb-3">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Activities</h1>
@@ -287,7 +287,7 @@ export default function ActivitiesPage() {
           </div>
 
           {/* Controls */}
-          <div className="flex flex-col gap-3 mt-4 bg-muted/30 rounded-lg p-3 border">
+          <div className="flex flex-col gap-2 mt-3 bg-muted/30 rounded-lg p-2 border">
             <label className="flex items-center gap-2 text-sm cursor-pointer hover:text-foreground transition-colors">
               <input 
                 type="checkbox" 
@@ -333,8 +333,8 @@ export default function ActivitiesPage() {
           >
             {/* Header for left column */}
             <div className="flex-shrink-0 border-b bg-muted/30">
-              <div className="h-8 flex items-center px-4 text-xs font-medium text-muted-foreground border-b">Day</div>
-              <div className="h-9 flex items-center px-4 text-sm font-medium">Activity</div>
+              <div className="h-6 flex items-center px-4 text-xs font-medium text-muted-foreground border-b">Day</div>
+              <div className="h-7 flex items-center px-4 text-sm font-medium">Activity</div>
             </div>
 
             {/* Activity names list - scrollable (scrollbar hidden, synced with right pane) */}
@@ -343,79 +343,93 @@ export default function ActivitiesPage() {
               ref={leftScrollRef}
             >
               {activities.length === 0 ? (
-                <div className="p-12 text-center text-sm text-muted-foreground">No activities yet</div>
+                <div className="p-6 text-center text-sm text-muted-foreground">No activities yet</div>
               ) : (
                 activities.map((a) => (
-                  <div 
-                    key={a.id} 
-                    className={`px-4 py-3 text-sm flex items-center gap-2 hover:bg-muted/20 transition-colors border-b ${dragOverActivityId === a.id ? 'bg-primary/5' : ''}`}
-                    style={{ height: '88px' }}
+                  <div
+                    key={a.id}
+                    className={`px-3 py-2 text-sm flex items-center justify-between hover:bg-muted/20 transition-colors border-b ${dragOverActivityId === a.id ? 'bg-primary/5' : ''}`}
+                    style={{ height: '60px' }}
                     onDragOver={(e) => handleDragOver(e, a.id)}
                     onDrop={() => handleDrop(a.id)}
                     onDragEnd={handleDragEnd}
                   >
-                    <div 
-                      className="w-1 h-10 rounded-full flex-shrink-0" 
-                      style={{ backgroundColor: a.color || '#64748b' }}
-                    />
-                    <div 
-                      className="h-6 w-6 flex items-center justify-center text-muted-foreground cursor-grab active:cursor-grabbing flex-shrink-0"
-                      title="Drag to reorder"
-                      draggable
-                      onDragStart={() => handleDragStart(a.id)}
-                    >
-                      <GripVertical className="w-3.5 h-3.5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      {editingId === a.id ? (
-                        <div className="flex flex-col gap-1">
-                          <input 
-                            value={editingName}
-                            onChange={(e) => setEditingName(e.target.value)}
-                            onKeyDown={(e) => { if (e.key === 'Enter') commitEdit(a.id); if (e.key === 'Escape') cancelEdit(); }}
-                            className="w-full h-7 px-2 py-1 text-xs bg-background border rounded-md"
-                            autoFocus
-                          />
-                          <div className="flex gap-1">
-                            <button className="flex-1 px-2 py-1 text-xs border rounded-md hover:bg-muted" title="Save" onClick={() => commitEdit(a.id)}>
-                              <Check className="w-3 h-3 mx-auto" />
-                            </button>
-                            <button className="flex-1 px-2 py-1 text-xs border rounded-md hover:bg-muted" title="Cancel" onClick={cancelEdit}>
-                              <X className="w-3 h-3 mx-auto" />
-                            </button>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div
+                        className="w-1 h-10 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: a.color || '#64748b' }}
+                      />
+                      <div
+                        className="h-6 w-6 flex items-center justify-center text-muted-foreground cursor-grab active:cursor-grabbing flex-shrink-0"
+                        title="Drag to reorder"
+                        draggable
+                        onDragStart={() => handleDragStart(a.id)}
+                      >
+                        <GripVertical className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        {editingId === a.id ? (
+                          <div className="flex flex-col gap-1">
+                            <input
+                              value={editingName}
+                              onChange={(e) => setEditingName(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === 'Enter') commitEdit(a.id); if (e.key === 'Escape') cancelEdit(); }}
+                              className="w-full h-7 px-2 py-1 text-sm bg-background border rounded-md"
+                              autoFocus
+                            />
+                            <div className="flex gap-1">
+                              <button className="flex-1 px-2 py-1 text-xs border rounded-md hover:bg-muted" title="Save" onClick={() => commitEdit(a.id)}>
+                                <Check className="w-3 h-3 mx-auto" />
+                              </button>
+                              <button className="flex-1 px-2 py-1 text-xs border rounded-md hover:bg-muted" title="Cancel" onClick={cancelEdit}>
+                                <X className="w-3 h-3 mx-auto" />
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      ) : (
-                        <div>
-                          <div className={`font-medium text-xs ${wrapNames ? 'whitespace-normal break-words' : 'truncate'}`}>
+                        ) : (
+                          <div className={`font-medium text-sm ${wrapNames ? 'whitespace-normal break-words' : 'truncate'}`}>
                             {a.name}
                           </div>
-                          <div className="flex items-center gap-1 mt-1">
-                            <input 
-                              type="color" 
-                              value={a.color || '#64748b'}
-                              onChange={(e) => updateColor(a.id, e.target.value)}
-                              className="h-5 w-5 p-0 border rounded cursor-pointer flex-shrink-0"
-                              title="Change color"
-                            />
-                            <button 
-                              className="p-1 text-xs border rounded hover:bg-muted flex-shrink-0" 
-                              title="Rename" 
+                        )}
+                      </div>
+                    </div>
+                    {editingId !== a.id && (
+                      <div className="flex items-center gap-1 ml-2">
+                        <input
+                          type="color"
+                          value={a.color || '#64748b'}
+                          onChange={(e) => updateColor(a.id, e.target.value)}
+                          className="h-5 w-5 p-0 border rounded cursor-pointer flex-shrink-0"
+                          title="Change color"
+                        />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button
+                              className="p-1 text-xs border rounded hover:bg-muted flex-shrink-0"
+                              title="More options"
+                            >
+                              <MoreHorizontal className="w-3 h-3" />
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-40 p-1" align="end" side="right">
+                            <button
+                              className="w-full text-left px-2 py-1.5 text-xs hover:bg-muted rounded flex items-center gap-2"
                               onClick={() => startEditing(a.id, a.name)}
                             >
                               <Pencil className="w-3 h-3" />
+                              Rename
                             </button>
-                            <button 
-                              className="p-1 text-xs border rounded hover:bg-muted hover:text-red-600 flex-shrink-0" 
-                              title="Delete" 
+                            <button
+                              className="w-full text-left px-2 py-1.5 text-xs hover:bg-muted hover:text-red-600 rounded flex items-center gap-2"
                               onClick={() => deleteActivity(a.id)}
                             >
                               <Trash2 className="w-3 h-3" />
+                              Delete
                             </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    )}
                   </div>
                 ))
               )}
@@ -438,7 +452,7 @@ export default function ActivitiesPage() {
                     return (
                       <div
                         key={`dow-${d}`}
-                        className="h-8 text-[11px] flex items-center justify-center text-muted-foreground uppercase flex-shrink-0"
+                        className="h-6 text-[11px] flex items-center justify-center text-muted-foreground uppercase flex-shrink-0"
                         style={{ width: '120px' }}
                         title={date.toLocaleDateString(undefined, { weekday: 'long' })}
                       >
@@ -458,7 +472,7 @@ export default function ActivitiesPage() {
                     return (
                       <div
                         key={d}
-                        className={`h-9 text-[10px] font-medium flex items-center justify-center transition-all flex-shrink-0 ${
+                        className={`h-7 text-[10px] font-medium flex items-center justify-center transition-all flex-shrink-0 ${
                           isToday 
                             ? 'rounded-md bg-primary text-primary-foreground shadow-sm scale-105' 
                             : isWeekend 
@@ -480,7 +494,7 @@ export default function ActivitiesPage() {
             <div>
               <div style={{ minWidth: `${daysInMonth * 120}px` }}>
                 {activities.length === 0 ? (
-                  <div className="p-12 text-center text-sm text-muted-foreground">Add activities to start tracking</div>
+                  <div className="p-6 text-center text-sm text-muted-foreground">Add activities to start tracking</div>
                 ) : (
                   activities.map((a) => (
                     <div 
@@ -495,12 +509,12 @@ export default function ActivitiesPage() {
                           return t.getFullYear() === year && t.getMonth() === month && t.getDate() === d;
                         })();
                         return (
-                          <div 
-                            key={`${a.id}-${d}`} 
-                            className={`p-1 flex-shrink-0 ${isToday ? 'bg-primary/5' : ''}`}
-                            style={{ 
-                              width: '120px', 
-                              height: '88px', 
+                          <div
+                            key={`${a.id}-${d}`}
+                            className={`p-0.5 flex-shrink-0 ${isToday ? 'bg-primary/5' : ''}`}
+                            style={{
+                              width: '120px',
+                              height: '60px',
                               background: value.trim() ? hexToRgba(a.color, 0.12) : undefined,
                             }}
                           >
@@ -510,7 +524,7 @@ export default function ActivitiesPage() {
                               spellCheck={false}
                               autoCorrect="off"
                               autoCapitalize="off"
-                              className="w-full h-full text-xs bg-transparent border rounded-md px-2 py-1 focus:ring-2 focus:ring-primary/20 focus:outline-none resize-none"
+                              className="w-full h-full text-xs bg-transparent border rounded-md px-1.5 py-0.5 focus:ring-2 focus:ring-primary/20 focus:outline-none resize-none"
                             />
                           </div>
                         );
