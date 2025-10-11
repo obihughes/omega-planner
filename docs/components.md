@@ -345,6 +345,13 @@ Monthly grid for tracking daily notes across custom activities with text inputs 
 - Auto-save on text change
 - Today's column highlighted
 
+Additional enhancements (2025-10-11):
+- Horizontal wheel scrolling in the right pane (mouse wheel translates vertical motion to horizontal). Textareas retain their own vertical scrolling.
+- Default focus on today: when viewing the current month, the view auto-centers today's column on open; clicking Today recenters after month changes.
+- Drag-to-reorder activities in the left column via a grip handle; ordering persists.
+- Notes fields now have spellcheck/autocorrect/capitalize disabled and no placeholder label showing.
+- Day cells tint softly with the activity color when there’s content for quick at-a-glance status.
+
 Reliability notes (2025-10-10):
 - Persistence guards prevent an empty initial render from overwriting existing data.
 - Storage loaders migrate legacy shapes (plain object for entries, plain array for list) seamlessly.

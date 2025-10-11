@@ -58,16 +58,18 @@
   - Added Scheduling subview to main navigation under Daily Planner.
   - Added bulk actions toolbar in Scheduling: Delete Mode (quick X on tasks), Clear Day, and a Clone Saved Day entry point (navigates to Daily view for template actions).
 
-## Unreleased
+## 2025-10-11
 
-- Beta navigation
-  - Added a single "Beta" item in the main navigation with a beaker icon
-  - Removed beta library dependency; `/beta` is a static placeholder page
-  - New index page at `/beta` listing experimental features from a registry (`lib/beta.ts`)
-  - Initial beta pages:
-    - `/beta/boards` (Board View prototype)
-    - `/beta/search` (Unified Search prototype)
-  - Files affected: `components/ui/Navigation.tsx`, `lib/beta.ts`, `lib/index.ts`, `app/beta/page.tsx`, `app/beta/boards/page.tsx`, `app/beta/search/page.tsx`, `docs/components.md`, `docs/changelog.md`
+- Move hidden/experimental pages under Beta
+  - New Beta subroutes:
+    - `/beta/habits` (moved from `/habits`)
+    - `/beta/tasks` and `/beta/tasks/weekly` (mirrors of Projects Tasks views)
+    - `/beta/meals` (Meals beta entry point)
+  - Sidebar navigation:
+    - Replaced top-level `Habits` with `Beta` section containing Habits, Tasks, Weekly Tasks, Recipes
+    - `Beta` item is active for any `/beta` route and collapsible
+  - Documentation updated: `docs/structure.md`
+  - Files affected: `components/ui/Navigation.tsx`, `app/beta/**`, `docs/structure.md`, `docs/changelog.md`
 
 - Weekly View default focuses on Today
   - Weekly overview now auto-scrolls to today's row when opening the view for the current week.
@@ -85,6 +87,14 @@
     - Guarded initial save of the activities list until after first load to prevent overwriting existing data with an empty array.
     - Added backward-compatible loaders that migrate legacy storage shapes (direct objects/arrays) to the current schema.
     - Files affected: `app/activities/page.tsx`, `utils/activitiesStorage.ts`.
+
+  - Enhancements (2025-10-11):
+    - Horizontal wheel scrolling: using mouse wheel now scrolls days horizontally in the right pane (textareas are exempt so you can scroll within them).
+    - Default to Today: on open (if viewing the current month) the view auto-centers today’s column; the Today button also recenters after month jump.
+    - Drag-to-reorder activities: left column now supports reordering activities via a grip handle; order persists.
+    - Notes UX: disabled autocorrect/spellcheck/capitalize underlines in per-day notes and removed placeholder label.
+    - Visual at-a-glance coloring: day cells get a soft tint based on the activity color when there’s content.
+    - Files affected: `app/activities/page.tsx`, `docs/changelog.md`, `docs/components.md`.
 
 - **Enhanced Weekly Goals Edit Options** (2025-10-08)
   - Added comprehensive inline editing for goal titles and notes

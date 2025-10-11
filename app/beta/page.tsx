@@ -1,19 +1,19 @@
 import { AppLayout } from '@/components/ui/AppLayout';
+import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
 export default function BetaIndexPage() {
   return (
     <AppLayout>
       <div className="max-w-3xl mx-auto px-6 py-8">
         <h1 className="text-2xl font-semibold mb-2">Beta</h1>
-        <p className="text-muted-foreground mb-8">
-          This is a placeholder page for experimental or upcoming features. 
-          Use this space for notes, links, or previews you want to try out.
-        </p>
+        <p className="text-muted-foreground mb-6">Quick links to experimental pages.</p>
 
-        <div className="space-y-4 text-sm">
-          <p>
-            Add content here as needed. If a feature becomes stable, move it into the main app and remove it from Beta.
-          </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Link href="/beta/habits" className={cn("border rounded-md p-4 hover:bg-accent/40 transition-colors")}>Habits</Link>
+          <Link href="/beta/tasks" className={cn("border rounded-md p-4 hover:bg-accent/40 transition-colors")}>Tasks</Link>
+          <Link href="/beta/tasks/weekly" className={cn("border rounded-md p-4 hover:bg-accent/40 transition-colors")}>Weekly Tasks</Link>
+          <Link href="/beta/meals" className={cn("border rounded-md p-4 hover:bg-accent/40 transition-colors")}>Meals</Link>
         </div>
       </div>
     </AppLayout>

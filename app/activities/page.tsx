@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { AppLayout } from '@/components/ui';
 import { ActivitiesStorage, ActivitiesByDate, ActivitiesListStorage, ActivityItem } from '@/utils/activitiesStorage';
-import { Calendar, ChevronLeft, ChevronRight, Plus, Pencil, Trash2, Check, X } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Plus, Pencil, Trash2, Check, X, GripVertical } from 'lucide-react';
 
 export default function ActivitiesPage() {
   // Independent editable Activities list (decoupled from Workspace projects)
@@ -19,6 +19,16 @@ export default function ActivitiesPage() {
   const [newActivityColor, setNewActivityColor] = useState<string>('#60a5fa');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState<string>('');
+
+  // Horizontal scroll + today centering
+  const rightScrollRef = useRef<HTMLDivElement | null>(null);
+  const dayHeaderRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const didInitialTodayScroll = useRef<boolean>(false);
+  const [pendingScrollDay, setPendingScrollDay] = useState<number | null>(null);
+
+  // Drag-reorder state for left column
+  const [draggingActivityId, setDraggingActivityId] = useState<string | null>(null);
+  const [dragOverActivityId, setDragOverActivityId] = useState<string | null>(null);
 
   const nameColWidth = 280;
 
@@ -80,6 +90,7 @@ export default function ActivitiesPage() {
     const today = new Date();
     setYear(today.getFullYear());
     setMonth(today.getMonth());
+    setPendingScrollDay(today.getDate());
   };
 
   const monthLabel = useMemo(() => new Date(year, month, 1).toLocaleString(undefined, { month: 'long', year: 'numeric' }), [year, month]);
@@ -127,6 +138,95 @@ export default function ActivitiesPage() {
 
   const updateColor = (id: string, color: string) => {
     setActivities(prev => prev.map(a => a.id === id ? { ...a, color } : a));
+  };
+
+  // Convert a hex color to rgba string with the given alpha (0-1)
+  const hexToRgba = useCallback((hex: string | undefined, alpha: number) => {
+    if (!hex) return `rgba(100, 116, 139, ${alpha})`; // slate-500 fallback
+    let h = hex.trim();
+    if (h.startsWith('#')) h = h.slice(1);
+    if (h.length === 3) h = h.split('').map(ch => ch + ch).join('');
+    const r = parseInt(h.slice(0, 2), 16);
+    const g = parseInt(h.slice(2, 4), 16);
+    const b = parseInt(h.slice(4, 6), 16);
+    if ([r, g, b].some(n => Number.isNaN(n))) return `rgba(100, 116, 139, ${alpha})`;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }, []);
+
+  // Scroll helpers
+  const scrollToDay = useCallback((dayNum: number, behavior: ScrollBehavior = 'smooth') => {
+    const container = rightScrollRef.current;
+    const el = dayHeaderRefs.current[dayNum];
+    if (!container || !el) return;
+    const targetLeft = el.offsetLeft - (container.clientWidth / 2) + (el.clientWidth / 2);
+    container.scrollTo({ left: Math.max(0, targetLeft), behavior });
+  }, []);
+
+  // On mount and when month/year reflects the current month, center today once
+  useEffect(() => {
+    const now = new Date();
+    const isCurrentMonth = now.getFullYear() === year && now.getMonth() === month;
+    if (isCurrentMonth && !didInitialTodayScroll.current) {
+      // Defer to next frame to ensure refs are set
+      requestAnimationFrame(() => {
+        scrollToDay(now.getDate(), 'auto');
+        didInitialTodayScroll.current = true;
+      });
+    }
+  }, [year, month, scrollToDay]);
+
+  // Handle pending scroll requests (e.g., after clicking Today)
+  useEffect(() => {
+    if (pendingScrollDay != null) {
+      // Defer slightly to allow layout to settle after year/month updates
+      const id = setTimeout(() => {
+        scrollToDay(pendingScrollDay);
+        setPendingScrollDay(null);
+      }, 0);
+      return () => clearTimeout(id);
+    }
+  }, [pendingScrollDay, scrollToDay]);
+
+  // Mouse wheel horizontal scroll for the right container
+  useEffect(() => {
+    const container = rightScrollRef.current;
+    if (!container) return;
+    const onWheel = (e: WheelEvent) => {
+      // Don't hijack wheel events when interacting with textareas
+      const target = e.target as HTMLElement | null;
+      if (target && (target.closest('textarea') || target.tagName === 'TEXTAREA')) return;
+      // If vertical intent is higher, translate to horizontal
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        e.preventDefault();
+        container.scrollLeft += e.deltaY;
+      }
+    };
+    container.addEventListener('wheel', onWheel, { passive: false });
+    return () => {
+      container.removeEventListener('wheel', onWheel as any);
+    };
+  }, [rightScrollRef]);
+
+  // Drag & drop reorder handlers
+  const handleDragStart = (id: string) => setDraggingActivityId(id);
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, overId: string) => {
+    e.preventDefault();
+    if (dragOverActivityId !== overId) setDragOverActivityId(overId);
+  };
+  const handleDrop = (overId: string) => {
+    setDragOverActivityId(null);
+    if (!draggingActivityId || draggingActivityId === overId) return;
+    setActivities(prev => {
+      const fromIndex = prev.findIndex(a => a.id === draggingActivityId);
+      const toIndex = prev.findIndex(a => a.id === overId);
+      if (fromIndex < 0 || toIndex < 0) return prev;
+      return ActivitiesListStorage.reorder(prev, fromIndex, toIndex);
+    });
+    setDraggingActivityId(null);
+  };
+  const handleDragEnd = () => {
+    setDraggingActivityId(null);
+    setDragOverActivityId(null);
   };
 
   return (
@@ -217,13 +317,24 @@ export default function ActivitiesPage() {
                 activities.map((a) => (
                   <div 
                     key={a.id} 
-                    className="px-4 py-3 text-sm flex items-center gap-2 hover:bg-muted/20 transition-colors border-b"
+                    className={`px-4 py-3 text-sm flex items-center gap-2 hover:bg-muted/20 transition-colors border-b ${dragOverActivityId === a.id ? 'bg-primary/5' : ''}`}
                     style={{ height: '88px' }}
+                    onDragOver={(e) => handleDragOver(e, a.id)}
+                    onDrop={() => handleDrop(a.id)}
+                    onDragEnd={handleDragEnd}
                   >
                     <div 
                       className="w-1 h-10 rounded-full flex-shrink-0" 
                       style={{ backgroundColor: a.color || '#64748b' }}
                     />
+                    <div 
+                      className="h-6 w-6 flex items-center justify-center text-muted-foreground cursor-grab active:cursor-grabbing flex-shrink-0"
+                      title="Drag to reorder"
+                      draggable
+                      onDragStart={() => handleDragStart(a.id)}
+                    >
+                      <GripVertical className="w-3.5 h-3.5" />
+                    </div>
                     <div className="flex-1 min-w-0">
                       {editingId === a.id ? (
                         <div className="flex flex-col gap-1">
@@ -284,6 +395,7 @@ export default function ActivitiesPage() {
           <div 
             className="absolute top-0 bottom-0 right-0 overflow-auto"
             style={{ left: `${nameColWidth}px` }}
+            ref={rightScrollRef}
           >
             {/* Header row - days */}
             <div className="sticky top-0 z-10 bg-card">
@@ -323,6 +435,7 @@ export default function ActivitiesPage() {
                               : 'text-muted-foreground'
                         }`}
                         style={{ width: '120px' }}
+                        ref={(el) => { dayHeaderRefs.current[d] = el; }}
                       >
                         {d}
                       </div>
@@ -354,13 +467,19 @@ export default function ActivitiesPage() {
                           <div 
                             key={`${a.id}-${d}`} 
                             className={`p-1 flex-shrink-0 ${isToday ? 'bg-primary/5' : ''}`}
-                            style={{ width: '120px', height: '88px' }}
+                            style={{ 
+                              width: '120px', 
+                              height: '88px', 
+                              background: value.trim() ? hexToRgba(a.color, 0.12) : undefined,
+                            }}
                           >
                             <textarea
                               value={value}
                               onChange={(e) => updateEntry(a.id, year, month, d, e.target.value)}
-                              placeholder="Notes"
-                              className="w-full h-full text-xs bg-background border rounded-md px-2 py-1 focus:ring-2 focus:ring-primary/20 focus:outline-none resize-none"
+                              spellCheck={false}
+                              autoCorrect="off"
+                              autoCapitalize="off"
+                              className="w-full h-full text-xs bg-transparent border rounded-md px-2 py-1 focus:ring-2 focus:ring-primary/20 focus:outline-none resize-none"
                             />
                           </div>
                         );

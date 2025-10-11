@@ -144,7 +144,12 @@ export function Navigation() {
     return null; // Prevent hydration mismatch
   }
 
-  const betaSubViews: any[] = [];
+  const betaSubViews: any[] = [
+    { key: 'beta-habits', label: 'Habits', icon: ClipboardList, href: '/beta/habits', active: pathname === '/beta/habits' },
+    { key: 'beta-tasks', label: 'Tasks', icon: ClipboardList, href: '/beta/tasks', active: pathname === '/beta/tasks' },
+    { key: 'beta-tasks-weekly', label: 'Weekly Tasks', icon: CalendarDays, href: '/beta/tasks/weekly', active: pathname === '/beta/tasks/weekly' },
+    { key: 'beta-meals', label: 'Meals', icon: ClipboardList, href: '/beta/meals', active: pathname === '/beta/meals' }
+  ];
 
   const navItems = [
     {
@@ -206,14 +211,7 @@ export function Navigation() {
       active: pathname === '/meals',
       subViews: []
     },
-    {
-      key: 'habits',
-      href: '/habits',
-      label: 'Habits',
-      icon: ClipboardList,
-      active: pathname === '/habits',
-      subViews: []
-    },
+    // Habits moved under Beta
     {
       key: 'activities',
       href: '/activities',
@@ -223,12 +221,12 @@ export function Navigation() {
       subViews: []
     },
     {
-      key: 'beta',
+      key: 'beta-features',
       href: '/beta',
       label: 'Beta',
       icon: FlaskConical,
-      active: pathname === '/beta',
-      subViews: []
+      active: pathname === '/beta' || pathname.startsWith('/beta/'),
+      subViews: betaSubViews
     }
   ];
 
