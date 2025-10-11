@@ -189,27 +189,21 @@ export default function ActivitiesPage() {
   }, [pendingScrollDay, scrollToDay]);
 
   // Mouse wheel behavior on right container:
-  // - Inside notes textareas: translate vertical wheel to horizontal day scroll
-  // - Else: allow normal vertical scrolling; only translate when no vertical scroll is possible
+  // - Always translate vertical wheel to horizontal day scroll for consistent navigation
   useEffect(() => {
     const container = rightScrollRef.current;
     if (!container) return;
     const onWheel = (e: WheelEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (target && (target.closest('textarea') || target.tagName === 'TEXTAREA')) {
-        e.preventDefault();
-        container.scrollLeft += e.deltaY;
-        return;
-      }
-      const canScrollVertically = container.scrollHeight > container.clientHeight;
-      if (!canScrollVertically && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      // Always translate vertical scroll to horizontal scroll for consistent behavior
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
         e.preventDefault();
         container.scrollLeft += e.deltaY;
       }
     };
-    container.addEventListener('wheel', onWheel, { passive: false });
+    // Use capture phase to catch all wheel events in the right pane, including gaps between cards
+    container.addEventListener('wheel', onWheel, { passive: false, capture: true });
     return () => {
-      container.removeEventListener('wheel', onWheel as any);
+      container.removeEventListener('wheel', onWheel as any, true);
     };
   }, [rightScrollRef]);
 
@@ -429,7 +423,7 @@ export default function ActivitiesPage() {
           </div>
 
           {/* Right Scrollable Section */}
-          <div 
+          <div
             className="absolute top-0 bottom-0 right-0 overflow-auto"
             style={{ left: `${nameColWidth}px` }}
             ref={rightScrollRef}
