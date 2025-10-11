@@ -62,11 +62,15 @@
 
 - Move hidden/experimental pages under Beta
   - New Beta subroutes:
+    - `/beta/workspace` (moved from `/projects/workspace`)
     - `/beta/habits` (moved from `/habits`)
     - `/beta/tasks` and `/beta/tasks/weekly` (mirrors of Projects Tasks views)
     - `/beta/meals` (Meals beta entry point)
   - Sidebar navigation:
-    - Replaced top-level `Habits` with `Beta` section containing Habits, Tasks, Weekly Tasks, Recipes
+    - Replaced top-level `Habits` with `Beta` section containing Workspace Today, Habits, Tasks, Weekly Tasks, Meals
+    - Changed "Workspace" nav to "Projects" (points to `/projects` instead of workspace)
+    - Removed Tasks from Workspace/Projects navigation (Tasks now only accessible via Beta section)
+    - Moved Weekly Goals and Activities to top navigation (after Calendar)
     - `Beta` item is active for any `/beta` route and collapsible
   - Documentation updated: `docs/structure.md`
   - Files affected: `components/ui/Navigation.tsx`, `app/beta/**`, `docs/structure.md`, `docs/changelog.md`
@@ -95,6 +99,8 @@
     - Notes UX: disabled autocorrect/spellcheck/capitalize underlines in per-day notes and removed placeholder label.
     - Visual at-a-glance coloring: day cells get a soft tint based on the activity color when there’s content.
     - Files affected: `app/activities/page.tsx`, `docs/changelog.md`, `docs/components.md`.
+    - Single vertical scrollbar: left names column and right grid now share one vertical scroll (left scrollbar hidden, scroll positions synchronized). Horizontal scroll remains independent in the right grid.
+    - Notes area wheel-to-horizontal: when the cursor is inside a note textarea, the mouse wheel scrolls days horizontally in the right grid for rapid lateral navigation.
 
 - **Enhanced Weekly Goals Edit Options** (2025-10-08)
   - Added comprehensive inline editing for goal titles and notes

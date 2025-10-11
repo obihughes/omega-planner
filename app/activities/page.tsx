@@ -22,6 +22,7 @@ export default function ActivitiesPage() {
 
   // Horizontal scroll + today centering
   const rightScrollRef = useRef<HTMLDivElement | null>(null);
+  const leftScrollRef = useRef<HTMLDivElement | null>(null);
   const dayHeaderRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const didInitialTodayScroll = useRef<boolean>(false);
   const [pendingScrollDay, setPendingScrollDay] = useState<number | null>(null);
@@ -187,16 +188,21 @@ export default function ActivitiesPage() {
     }
   }, [pendingScrollDay, scrollToDay]);
 
-  // Mouse wheel horizontal scroll for the right container
+  // Mouse wheel behavior on right container:
+  // - Inside notes textareas: translate vertical wheel to horizontal day scroll
+  // - Else: allow normal vertical scrolling; only translate when no vertical scroll is possible
   useEffect(() => {
     const container = rightScrollRef.current;
     if (!container) return;
     const onWheel = (e: WheelEvent) => {
-      // Don't hijack wheel events when interacting with textareas
       const target = e.target as HTMLElement | null;
-      if (target && (target.closest('textarea') || target.tagName === 'TEXTAREA')) return;
-      // If vertical intent is higher, translate to horizontal
-      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      if (target && (target.closest('textarea') || target.tagName === 'TEXTAREA')) {
+        e.preventDefault();
+        container.scrollLeft += e.deltaY;
+        return;
+      }
+      const canScrollVertically = container.scrollHeight > container.clientHeight;
+      if (!canScrollVertically && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
         e.preventDefault();
         container.scrollLeft += e.deltaY;
       }
@@ -206,6 +212,34 @@ export default function ActivitiesPage() {
       container.removeEventListener('wheel', onWheel as any);
     };
   }, [rightScrollRef]);
+
+  // Sync vertical scrolling between left names list and right grid
+  useEffect(() => {
+    const right = rightScrollRef.current;
+    const left = leftScrollRef.current;
+    if (!right || !left) return;
+    let isSyncing = false;
+    const syncLeftFromRight = () => {
+      if (isSyncing) return;
+      isSyncing = true;
+      left.scrollTop = right.scrollTop;
+      requestAnimationFrame(() => { isSyncing = false; });
+    };
+    const syncRightFromLeft = () => {
+      if (isSyncing) return;
+      isSyncing = true;
+      right.scrollTop = left.scrollTop;
+      requestAnimationFrame(() => { isSyncing = false; });
+    };
+    right.addEventListener('scroll', syncLeftFromRight, { passive: true });
+    left.addEventListener('scroll', syncRightFromLeft, { passive: true });
+    // Ensure initial alignment
+    left.scrollTop = right.scrollTop;
+    return () => {
+      right.removeEventListener('scroll', syncLeftFromRight);
+      left.removeEventListener('scroll', syncRightFromLeft);
+    };
+  }, []);
 
   // Drag & drop reorder handlers
   const handleDragStart = (id: string) => setDraggingActivityId(id);
@@ -309,8 +343,11 @@ export default function ActivitiesPage() {
               <div className="h-9 flex items-center px-4 text-sm font-medium">Activity</div>
             </div>
 
-            {/* Activity names list - scrollable */}
-            <div className="flex-1 overflow-y-auto">
+            {/* Activity names list - scrollable (scrollbar hidden, synced with right pane) */}
+            <div
+              className="flex-1 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+              ref={leftScrollRef}
+            >
               {activities.length === 0 ? (
                 <div className="p-12 text-center text-sm text-muted-foreground">No activities yet</div>
               ) : (

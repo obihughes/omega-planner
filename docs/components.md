@@ -351,6 +351,8 @@ Additional enhancements (2025-10-11):
 - Drag-to-reorder activities in the left column via a grip handle; ordering persists.
 - Notes fields now have spellcheck/autocorrect/capitalize disabled and no placeholder label showing.
 - Day cells tint softly with the activity color when there’s content for quick at-a-glance status.
+ - Single vertical scrollbar: page shows only one vertical scrollbar; left names list syncs its scroll position with the right grid and hides its native scrollbar. Horizontal scroll remains independent on the right.
+ - Notes area wheel-to-horizontal: when the cursor is inside a note textarea, the mouse wheel scrolls days horizontally in the right grid for quick lateral navigation.
 
 Reliability notes (2025-10-10):
 - Persistence guards prevent an empty initial render from overwriting existing data.

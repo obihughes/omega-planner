@@ -145,6 +145,7 @@ export function Navigation() {
   }
 
   const betaSubViews: any[] = [
+    { key: 'beta-workspace', label: 'Workspace Today', icon: CalendarCheck, href: '/beta/workspace', active: pathname === '/beta/workspace' },
     { key: 'beta-habits', label: 'Habits', icon: ClipboardList, href: '/beta/habits', active: pathname === '/beta/habits' },
     { key: 'beta-tasks', label: 'Tasks', icon: ClipboardList, href: '/beta/tasks', active: pathname === '/beta/tasks' },
     { key: 'beta-tasks-weekly', label: 'Weekly Tasks', icon: CalendarDays, href: '/beta/tasks/weekly', active: pathname === '/beta/tasks/weekly' },
@@ -175,23 +176,27 @@ export function Navigation() {
       ]
     },
     {
-      key: 'workspace',
-      href: '/projects',
-      label: 'Workspace',
-      icon: FolderKanban,
-      active: pathname === '/projects' || pathname.startsWith('/projects/'),
-      subViews: [
-        { key: 'workspace-today', label: 'Workspace Today', icon: CalendarCheck, active: pathname === '/projects/workspace' },
-        { key: 'tasks', label: 'Tasks', icon: ClipboardList, active: pathname === '/projects/tasks' },
-        { key: 'active', label: 'Projects', icon: Folder, active: pathname === '/projects' && projectsViewMode === 'active' }
-      ]
-    },
-    {
       key: 'weekly-goals',
       href: '/goals/weekly',
       label: 'Weekly Goals',
       icon: ClipboardList,
       active: pathname === '/goals/weekly',
+      subViews: []
+    },
+    {
+      key: 'activities',
+      href: '/activities',
+      label: 'Activities',
+      icon: Files,
+      active: pathname === '/activities',
+      subViews: []
+    },
+    {
+      key: 'projects',
+      href: '/projects',
+      label: 'Projects',
+      icon: FolderKanban,
+      active: pathname === '/projects' || pathname.startsWith('/projects/'),
       subViews: []
     },
     {
@@ -212,14 +217,6 @@ export function Navigation() {
       subViews: []
     },
     // Habits moved under Beta
-    {
-      key: 'activities',
-      href: '/activities',
-      label: 'Activities',
-      icon: Files,
-      active: pathname === '/activities',
-      subViews: []
-    },
     {
       key: 'beta-features',
       href: '/beta',
@@ -347,20 +344,6 @@ export function Navigation() {
                                   router.push('/calendar');
                                 }
                                 setCalendarViewMode((subView as any).mode as any);
-                              } else if (item.href === '/projects') {
-                                if (subView.key === 'workspace-today') {
-                                  if (pathname !== '/projects/workspace') {
-                                    router.push('/projects/workspace');
-                                  }
-                                } else if (subView.key === 'tasks') {
-                                  router.push('/projects/tasks');
-                                } else {
-                                  // Only push route if we're not already on the projects page
-                                  if (pathname !== '/projects') {
-                                    router.push(item.href);
-                                  }
-                                  setProjectsViewMode(subView.key as any);
-                                }
                               } else if (item.key === 'beta-features') {
                                 const target = (subView as any).href;
                                 if (target && pathname !== target) {
