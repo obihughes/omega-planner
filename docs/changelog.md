@@ -70,10 +70,11 @@
     - Replaced top-level `Habits` with `Beta` section containing Workspace Today, Habits, Tasks, Weekly Tasks, Meals
     - Changed "Workspace" nav to "Projects" (points to `/projects` instead of workspace)
     - Removed Tasks from Workspace/Projects navigation (Tasks now only accessible via Beta section)
-    - Moved Weekly Goals and Activities to top navigation (after Calendar)
+    - Moved Weekly Goals and Activities to top navigation (before Daily Planner)
     - `Beta` item is active for any `/beta` route and collapsible
   - Documentation updated: `docs/structure.md`
   - Files affected: `components/ui/Navigation.tsx`, `app/beta/**`, `docs/structure.md`, `docs/changelog.md`
+  - Added Projects Calendar and Timeline links to Beta landing page for easier access
 
 - Weekly View default focuses on Today
   - Weekly overview now auto-scrolls to today's row when opening the view for the current week.

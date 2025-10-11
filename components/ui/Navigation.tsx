@@ -154,6 +154,22 @@ export function Navigation() {
 
   const navItems = [
     {
+      key: 'weekly-goals',
+      href: '/goals/weekly',
+      label: 'Weekly Goals',
+      icon: ClipboardList,
+      active: pathname === '/goals/weekly',
+      subViews: []
+    },
+    {
+      key: 'activities',
+      href: '/activities',
+      label: 'Activities',
+      icon: Files,
+      active: pathname === '/activities',
+      subViews: []
+    },
+    {
       key: 'daily-planner',
       href: '/',
       label: 'Daily Planner',
@@ -174,22 +190,6 @@ export function Navigation() {
         { key: 'calendar-monthly', type: 'calendar', mode: 'monthly', label: 'Monthly', icon: CalendarRange, active: pathname === '/calendar' && calendarViewMode === 'monthly' },
         { key: 'calendar-yearly', type: 'calendar', mode: 'yearly', label: 'Yearly', icon: CalendarDays, active: pathname === '/calendar' && calendarViewMode === 'yearly' }
       ]
-    },
-    {
-      key: 'weekly-goals',
-      href: '/goals/weekly',
-      label: 'Weekly Goals',
-      icon: ClipboardList,
-      active: pathname === '/goals/weekly',
-      subViews: []
-    },
-    {
-      key: 'activities',
-      href: '/activities',
-      label: 'Activities',
-      icon: Files,
-      active: pathname === '/activities',
-      subViews: []
     },
     {
       key: 'projects',

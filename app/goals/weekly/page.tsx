@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { GoalsStorage, dateFromDateKey } from '@/utils';
 import { WeekGoals, WeeklyGoal } from '@/types';
-import { Trash2, Plus, ExternalLink, MoreVertical, Edit2, Save, X, StickyNote } from 'lucide-react';
+import { Trash2, Plus, ExternalLink, MoreVertical, Edit2, Save, X, StickyNote, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const GOAL_COLORS = [
   { name: 'Gray', bg: 'bg-gray-500/10', border: 'border-gray-500/30', text: 'text-gray-700 dark:text-gray-300', value: 'gray' },
@@ -41,17 +41,24 @@ function toWeekStartKey(date: Date): string {
 
 export default function WeeklyGoalsPage() {
   const router = useRouter();
-  
-  // Generate 14 days: 7 days before today, today, 6 after (2 weeks total)
+
+  // State for week navigation (0 = current week, -1 = previous week, 1 = next week, etc.)
+  const [weekOffset, setWeekOffset] = useState(0);
+
+  // Generate 14 days: 7 days before the start of current week, current week, 6 after (2 weeks total)
   const days = useMemo(() => {
     const today = new Date();
     today.setHours(12, 0, 0, 0);
+    // Calculate the Monday of the target week
+    const targetMonday = new Date(today);
+    targetMonday.setDate(today.getDate() - today.getDay() + 1 + (weekOffset * 7)); // Monday of target week
+
     return Array.from({ length: 14 }, (_, i) => {
-      const d = new Date(today);
-      d.setDate(today.getDate() + i - 7); // 7 days before, then today, then 6 after
+      const d = new Date(targetMonday);
+      d.setDate(targetMonday.getDate() + i - 7); // 7 days before target Monday, then 7 days after
       return d;
     });
-  }, []);
+  }, [weekOffset]);
 
   // Client-only: load goals across visible weeks after mount to avoid SSR hydration mismatch
   const [goalsData, setGoalsData] = useState<Record<string, WeekGoals>>({});
@@ -125,12 +132,75 @@ export default function WeeklyGoalsPage() {
 
   const todayKey = toDateKey(new Date());
 
+  const goToPreviousWeek = useCallback(() => {
+    setWeekOffset(prev => prev - 1);
+  }, []);
+
+  const goToNextWeek = useCallback(() => {
+    setWeekOffset(prev => prev + 1);
+  }, []);
+
+  const goToCurrentWeek = useCallback(() => {
+    setWeekOffset(0);
+  }, []);
+
+  // Calculate current week range for display
+  const currentWeekRange = useMemo(() => {
+    if (days.length === 0) return '';
+    const startDate = days[0];
+    const endDate = days[days.length - 1];
+    const startMonth = startDate.toLocaleDateString(undefined, { month: 'short' });
+    const endMonth = endDate.toLocaleDateString(undefined, { month: 'short' });
+    const startDay = startDate.getDate();
+    const endDay = endDate.getDate();
+    const year = endDate.getFullYear();
+
+    if (startDate.getMonth() === endDate.getMonth()) {
+      return `${startMonth} ${startDay}-${endDay}, ${year}`;
+    } else {
+      return `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${year}`;
+    }
+  }, [days]);
+
   return (
     <AppLayout>
       <div className="h-full flex flex-col">
         <header className="flex items-center justify-between px-6 py-4 border-b">
-          <h1 className="text-xl font-medium">Daily Goals</h1>
-          <div className="text-sm text-muted-foreground">2 Week View · Up to 3 goals per day</div>
+          <div className="flex items-center gap-4">
+            <h1 className="text-xl font-medium">Daily Goals</h1>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={goToPreviousWeek}
+                className="h-8 w-8 p-0"
+                title="Previous week"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <Button
+                variant={weekOffset === 0 ? "default" : "outline"}
+                size="sm"
+                onClick={goToCurrentWeek}
+                className="h-8 px-3 text-xs"
+                title="Go to current week"
+              >
+                Today
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={goToNextWeek}
+                className="h-8 w-8 p-0"
+                title="Next week"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            {currentWeekRange} · Up to 3 goals per day
+          </div>
         </header>
 
         <div className="flex-1 overflow-y-auto px-6 py-6">
