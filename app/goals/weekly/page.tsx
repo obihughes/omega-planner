@@ -45,19 +45,31 @@ export default function WeeklyGoalsPage() {
   // State for week navigation (0 = current week, -1 = previous week, 1 = next week, etc.)
   const [weekOffset, setWeekOffset] = useState(0);
 
-  // Generate 14 days: 7 days before the start of current week, current week, 6 after (2 weeks total)
+  // Generate 14 days: current week Monday-Sunday on top row, next week Monday-Sunday on bottom row
   const days = useMemo(() => {
     const today = new Date();
     today.setHours(12, 0, 0, 0);
+
     // Calculate the Monday of the target week
     const targetMonday = new Date(today);
     targetMonday.setDate(today.getDate() - today.getDay() + 1 + (weekOffset * 7)); // Monday of target week
 
-    return Array.from({ length: 14 }, (_, i) => {
+    // Create array with current week (Monday-Sunday) then next week (Monday-Sunday)
+    const result = [];
+    // Add current week: Monday to Sunday
+    for (let i = 0; i < 7; i++) {
       const d = new Date(targetMonday);
-      d.setDate(targetMonday.getDate() + i - 7); // 7 days before target Monday, then 7 days after
-      return d;
-    });
+      d.setDate(targetMonday.getDate() + i);
+      result.push(d);
+    }
+    // Add next week: Monday to Sunday
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(targetMonday);
+      d.setDate(targetMonday.getDate() + 7 + i);
+      result.push(d);
+    }
+
+    return result;
   }, [weekOffset]);
 
   // Client-only: load goals across visible weeks after mount to avoid SSR hydration mismatch
