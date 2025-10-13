@@ -1,4 +1,5 @@
 export { Button } from './button';
+export { Badge } from './badge';
 export { Card, CardContent } from './card';
 export { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './dialog';
 export { Input } from './input';
@@ -8,5 +9,5 @@ export { Calendar } from './calendar';
 export { Popover, PopoverTrigger, PopoverContent } from './popover';
 export { Textarea } from './textarea';
 export { AppLayout } from './AppLayout';
-export { Navigation } from './Navigation'; 
+export { Navigation } from './Navigation';
 export { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs';

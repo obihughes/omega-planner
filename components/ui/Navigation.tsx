@@ -3,9 +3,9 @@
 import React, { useState, useRef, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { 
+import {
   Calendar, CalendarDays, FolderKanban, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
-  Clock, Archive, Trash2, CalendarCheck, CalendarRange, Folder, Files, ClipboardList, Settings, FlaskConical
+  Clock, Archive, Trash2, CalendarCheck, CalendarRange, Folder, Files, ClipboardList, Settings, FlaskConical, ChefHat
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
@@ -149,7 +149,8 @@ export function Navigation() {
     { key: 'beta-habits', label: 'Habits', icon: ClipboardList, href: '/beta/habits', active: pathname === '/beta/habits' },
     { key: 'beta-tasks', label: 'Tasks', icon: ClipboardList, href: '/beta/tasks', active: pathname === '/beta/tasks' },
     { key: 'beta-tasks-weekly', label: 'Weekly Tasks', icon: CalendarDays, href: '/beta/tasks/weekly', active: pathname === '/beta/tasks/weekly' },
-    { key: 'beta-meals', label: 'Meals', icon: ClipboardList, href: '/beta/meals', active: pathname === '/beta/meals' }
+    { key: 'beta-meals', label: 'Meals', icon: ClipboardList, href: '/beta/meals', active: pathname === '/beta/meals' },
+    { key: 'beta-recipes', label: 'Recipes', icon: ChefHat, href: '/beta/recipes', active: pathname === '/beta/recipes' }
   ];
 
   const navItems = [

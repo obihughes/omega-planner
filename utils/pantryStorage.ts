@@ -57,8 +57,6 @@ export const PantryStorage = {
     return {
       id: String(item.id),
       name: String(item.name || '').trim(),
-      quantity: typeof item.quantity === 'string' ? item.quantity : undefined,
-      category: typeof item.category === 'string' ? item.category : undefined,
       createdAt: String(item.createdAt || new Date().toISOString()),
       updatedAt: String(item.updatedAt || new Date().toISOString())
     };
