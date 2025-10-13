@@ -566,7 +566,7 @@ function GoalItem({ goal, onToggle, onRemove, onUpdateColor, onUpdate, onCreateT
                   isPrimary ? 'text-base font-semibold' : 'text-sm'
                 } ${goal.done ? 'line-through opacity-50' : ''} ${colorScheme.text}`}
                 title={goal.title}
-                onDoubleClick={() => !goal.done && setIsEditing(true)}
+                onDoubleClick={() => setIsEditing(true)}
               >
                 {goal.title}
               </span>
@@ -578,8 +578,8 @@ function GoalItem({ goal, onToggle, onRemove, onUpdateColor, onUpdate, onCreateT
               )}
             </div>
             
-            {!goal.done && (
-              <div className="relative flex-shrink-0">
+            <div className="relative flex-shrink-0 flex items-center gap-1">
+              {!goal.done && (
                 <button
                   onClick={() => {
                     setMenuOpen(!menuOpen);
@@ -592,32 +592,50 @@ function GoalItem({ goal, onToggle, onRemove, onUpdateColor, onUpdate, onCreateT
                 >
                   <MoreVertical className="w-4 h-4" />
                 </button>
-                {menuOpen && (
-                  <div className="absolute right-0 mt-1 z-10 bg-popover border shadow-lg min-w-[180px]">
-                    <button
-                      className="w-full text-left px-3 py-2 hover:bg-muted text-sm flex items-center gap-2"
-                      onClick={() => {
-                        setIsEditing(true);
-                        setMenuOpen(false);
-                      }}
-                    >
-                      <Edit2 className="w-3 h-3" />
-                      Edit goal
-                    </button>
+              )}
+              {goal.done && (
+                <button
+                  onClick={() => {
+                    setMenuOpen(!menuOpen);
+                    setShowColorPicker(false);
+                  }}
+                  className="p-1 hover:bg-muted transition-colors border"
+                  aria-haspopup="menu"
+                  aria-expanded={menuOpen}
+                  title="Options"
+                >
+                  <MoreVertical className="w-4 h-4" />
+                </button>
+              )}
+              {menuOpen && (
+                <div className="absolute right-0 mt-1 z-10 bg-popover border shadow-lg min-w-[180px]">
+                  <button
+                    className="w-full text-left px-3 py-2 hover:bg-muted text-sm flex items-center gap-2"
+                    onClick={() => {
+                      setIsEditing(true);
+                      setMenuOpen(false);
+                    }}
+                  >
+                    <Edit2 className="w-3 h-3" />
+                    Edit goal
+                  </button>
+                  {!goal.done && (
                     <button
                       className="w-full text-left px-3 py-2 hover:bg-muted text-sm"
                       onClick={handleToggleGoalType}
                     >
                       {isPrimary ? '→ Make supporting' : '→ Make primary'}
                     </button>
-                    <button
-                      className="w-full text-left px-3 py-2 hover:bg-muted text-sm"
-                      onClick={() => {
-                        setShowColorPicker((v) => !v);
-                      }}
-                    >
-                      Change color
-                    </button>
+                  )}
+                  <button
+                    className="w-full text-left px-3 py-2 hover:bg-muted text-sm"
+                    onClick={() => {
+                      setShowColorPicker((v) => !v);
+                    }}
+                  >
+                    Change color
+                  </button>
+                  {!goal.done && (
                     <button
                       className="w-full text-left px-3 py-2 hover:bg-muted text-sm flex items-center gap-2"
                       onClick={() => {
@@ -628,18 +646,21 @@ function GoalItem({ goal, onToggle, onRemove, onUpdateColor, onUpdate, onCreateT
                       <ExternalLink className="w-3 h-3" />
                       Create task
                     </button>
-                    <div className="border-t my-1"></div>
-                    <button
-                      className="w-full text-left px-3 py-2 hover:bg-muted text-sm text-destructive flex items-center gap-2"
-                      onClick={onRemove}
-                    >
-                      <Trash2 className="w-3 h-3" />
-                      Remove
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
+                  )}
+                  <div className="border-t my-1"></div>
+                  <button
+                    className="w-full text-left px-3 py-2 hover:bg-muted text-sm text-destructive flex items-center gap-2"
+                    onClick={() => {
+                      onRemove();
+                      setMenuOpen(false);
+                    }}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    Remove
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {showColorPicker && (
