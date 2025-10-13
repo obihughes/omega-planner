@@ -339,7 +339,7 @@ function DayColumn({
         </button>
       </div>
 
-      <div className="flex-1 p-3 space-y-2 overflow-hidden">
+      <div className="flex-1 p-3 space-y-2 overflow-visible">
         {goals.map((goal) => (
           <GoalItem
             key={goal.id}
@@ -608,7 +608,7 @@ function GoalItem({ goal, onToggle, onRemove, onUpdateColor, onUpdate, onCreateT
                 </button>
               )}
               {menuOpen && (
-                <div className="absolute right-0 mt-1 z-10 bg-popover border shadow-lg min-w-[180px]">
+                <div className="absolute right-0 top-full mt-1 z-50 bg-popover border shadow-lg min-w-[180px]">
                   <button
                     className="w-full text-left px-3 py-2 hover:bg-muted text-sm flex items-center gap-2"
                     onClick={() => {
