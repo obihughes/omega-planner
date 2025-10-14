@@ -46,7 +46,7 @@ export function MonthlyCalendar({
     const el = document.getElementById(`month-${targetMonth}`);
     if (el) {
       setTimeout(() => {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        el.scrollIntoView({ behavior: 'auto', block: 'start' });
       }, 100);
     }
   }, [initialDate]);

@@ -337,20 +337,20 @@ export function YearCalendar({
   // Scroll to current month on mount, when year changes, or when component becomes visible
   useEffect(() => {
     if (!isVisible) return; // Don't scroll if component is not visible
-    
+
     const today = new Date();
     const currentMonth = today.getMonth();
     const actualCurrentYear = today.getFullYear();
-    
+
     // Only scroll to current month if we're viewing the current year
     if (currentYear === actualCurrentYear) {
       const currentMonthElement = document.getElementById(`month-${currentMonth}`);
       if (currentMonthElement) {
         // Use a small delay to ensure the DOM is fully rendered
         setTimeout(() => {
-          currentMonthElement.scrollIntoView({ 
-            behavior: 'smooth',
-            block: 'center' 
+          currentMonthElement.scrollIntoView({
+            behavior: 'auto',
+            block: 'center'
           });
         }, 100);
       }
@@ -374,14 +374,14 @@ export function YearCalendar({
           const currentMonth = today.getMonth();
           const currentMonthElement = document.getElementById(`month-${currentMonth}`);
           if (currentMonthElement) {
-            currentMonthElement.scrollIntoView({ 
-              behavior: 'smooth',
-              block: 'center' 
+            currentMonthElement.scrollIntoView({
+              behavior: 'auto',
+              block: 'center'
             });
           }
         } else {
           // For other years, scroll to top (January)
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          window.scrollTo({ top: 0, behavior: 'auto' });
         }
       }, 150);
     }, 0);
