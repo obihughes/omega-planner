@@ -53,7 +53,6 @@ Preview and experimental pages moved under Beta:
 - `app/beta/habits` — Habits tracker (was `/habits`)
 - `app/beta/tasks` — All Tasks view (mirror of `projects/tasks`)
 - `app/beta/tasks/weekly` — Weekly Tasks scheduler (mirror of `projects/tasks/weekly`)
-- `app/beta/meals` — Meals planner (beta entry point)
 
 #### `/planner-backup`
 Backup files for the planner functionality.

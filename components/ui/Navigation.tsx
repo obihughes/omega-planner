@@ -149,7 +149,6 @@ export function Navigation() {
     { key: 'beta-habits', label: 'Habits', icon: ClipboardList, href: '/beta/habits', active: pathname === '/beta/habits' },
     { key: 'beta-tasks', label: 'Tasks', icon: ClipboardList, href: '/beta/tasks', active: pathname === '/beta/tasks' },
     { key: 'beta-tasks-weekly', label: 'Weekly Tasks', icon: CalendarDays, href: '/beta/tasks/weekly', active: pathname === '/beta/tasks/weekly' },
-    { key: 'beta-meals', label: 'Meals', icon: ClipboardList, href: '/beta/meals', active: pathname === '/beta/meals' },
     { key: 'beta-recipes', label: 'Recipes', icon: ChefHat, href: '/beta/recipes', active: pathname === '/beta/recipes' }
   ];
 

@@ -65,9 +65,8 @@
     - `/beta/workspace` (moved from `/projects/workspace`)
     - `/beta/habits` (moved from `/habits`)
     - `/beta/tasks` and `/beta/tasks/weekly` (mirrors of Projects Tasks views)
-    - `/beta/meals` (Meals beta entry point)
   - Sidebar navigation:
-    - Replaced top-level `Habits` with `Beta` section containing Workspace Today, Habits, Tasks, Weekly Tasks, Meals
+    - Replaced top-level `Habits` with `Beta` section containing Workspace Today, Habits, Tasks, Weekly Tasks, Recipes
     - Changed "Workspace" nav to "Projects" (points to `/projects` instead of workspace)
     - Removed Tasks from Workspace/Projects navigation (Tasks now only accessible via Beta section)
     - Moved Weekly Goals and Activities to top navigation (before Daily Planner)
