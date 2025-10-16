@@ -13,6 +13,7 @@ interface ProjectFormModalProps {
   onClose: () => void;
   project?: Project | null;
   folders?: ProjectFolder[];
+  defaultFolderId?: string | undefined;
   onSave: (projectData: Partial<Project>, isNew: boolean) => void;
   onDelete?: (projectId: string) => void;
 }
@@ -38,7 +39,7 @@ const PROJECT_STATUSES: { value: Project['status']; label: string; color: string
   { value: 'cancelled', label: 'Cancelled', color: 'text-red-600' },
 ];
 
-export function ProjectFormModal({ isOpen, onClose, project, folders = [], onSave, onDelete }: ProjectFormModalProps) {
+export function ProjectFormModal({ isOpen, onClose, project, folders = [], defaultFolderId, onSave, onDelete }: ProjectFormModalProps) {
   const isNewProject = !project;
   const isSystemUnassigned = project?.id === 'unassigned';
   const [name, setName] = useState('');
@@ -69,7 +70,7 @@ export function ProjectFormModal({ isOpen, onClose, project, folders = [], onSav
       setDescription('');
       setStatus('planning');
       setColor(PROJECT_COLORS[0]);
-      setFolderId(undefined);
+      setFolderId(defaultFolderId);
       setStartDate(undefined);
       setEndDate(undefined);
     }

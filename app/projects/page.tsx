@@ -405,7 +405,8 @@ function ProjectsPageContent() {
         name: projectData.name || 'New Project',
         description: projectData.description || '',
         status: projectData.status || 'planning',
-        color: projectData.color || '#CCCCCC'
+        color: projectData.color || '#CCCCCC',
+        folderId: projectData.folderId
       });
     } else {
       updateProject(editingProject!.id, projectData);
@@ -819,6 +820,7 @@ function ProjectsPageContent() {
             onSave={handleSaveProject}
             project={editingProject}
             folders={folders}
+            defaultFolderId={selectedFolderId}
           />
         )}
       </Suspense>
