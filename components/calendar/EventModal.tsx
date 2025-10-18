@@ -137,7 +137,7 @@ export function EventModal({
                   }) : "Select a date"}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent className="w-fit p-2" align="center">
                 <Calendar
                   mode="single"
                   selected={date}
