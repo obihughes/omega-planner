@@ -753,7 +753,7 @@ export function YearCalendar({
             const isPast = date < today && !dayInfo.isToday;
 
             if (!dayInfo.isCurrentMonth) {
-              return <div key={date.toISOString()} className="h-8" />;
+              return <div key={date.toISOString()} className="h-12" />;
             }
 
             // Hover highlighting disabled
@@ -800,9 +800,9 @@ export function YearCalendar({
                     key={date.toISOString()}
                     data-date={date.toISOString()}
                     className={cn(`
-                      relative h-8 flex items-center justify-center text-xs border transition-all duration-200`,
-                      isPast 
-                        ? 'text-muted-foreground/40 cursor-default border-border/20' 
+                      relative h-12 flex flex-col items-start justify-start text-xs border transition-all duration-200`,
+                      isPast
+                        ? 'text-muted-foreground/40 cursor-default border-border/20'
                         : 'text-foreground cursor-pointer border-border/40',
                       !periodStyle.backgroundColor && !isPast && 'bg-card',
                       !dayInfo.isCurrentMonth && 'bg-muted/10 border-border/10',
@@ -820,7 +820,7 @@ export function YearCalendar({
                     onMouseMove={dragMode && !isPast ? (e) => handleDragMove(e, date) : undefined}
                   >
                     <span className={cn(
-                      "relative z-20 select-none transition-colors duration-200",
+                      "relative z-20 select-none transition-colors duration-200 text-[10px] leading-none",
                       dayInfo.isToday ? "font-bold text-primary-foreground" : "font-medium",
                       isPast ? "text-muted-foreground/60" : "text-foreground",
                       !dayInfo.isCurrentMonth && "text-muted-foreground/30",
@@ -828,88 +828,43 @@ export function YearCalendar({
                     )}>
                       {date.getDate()}
                     </span>
-                    {renderEventCircles(dayInfo.events)}
+
+                    {/* Events in timeline */}
+                    <div className="absolute top-3 left-0 right-0 bottom-0 flex flex-col gap-0.5 overflow-hidden">
+                      {dayInfo.events.slice(0, 2).map((event, idx) => {
+                        const textColor = getContrastColor(event.color);
+                        return (
+                          <div
+                            key={event.id}
+                            className="h-2.5 px-0.5 py-0 text-[11px] cursor-pointer hover:opacity-95 transition-opacity duration-200 border-l group relative flex items-center rounded-xs truncate"
+                            style={{
+                              backgroundColor: event.color,
+                              borderLeftColor: textColor === '#000' ? '#000' : '#fff',
+                              color: textColor,
+                              borderLeftWidth: '1px'
+                            }}
+                            onClick={(e) => { e.stopPropagation(); handleEventClick(event, e); }}
+                            title={event.title}
+                          >
+                            <span className="truncate font-medium text-[11px] leading-none"
+                              style={{ color: textColor }}
+                            >
+                              {event.title}
+                            </span>
+                          </div>
+                        );
+                      })}
+                      {dayInfo.events.length > 2 && (
+                        <div className="text-[11px] text-muted-foreground leading-none font-medium">
+                          +{dayInfo.events.length - 2}
+                        </div>
+                      )}
+                    </div>
                   </div>
             );
           })}
         </div>
 
-        {/* Events and Periods List */}
-        {(monthEvents.length > 0 || monthPeriods.length > 0) && (
-          <div className={cn("mt-3 space-y-2", inter.className)}>
-            {/* Events Section */}
-            {monthEvents.length > 0 && (
-              <div>
-                <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Events</h4>
-                <div className="flex flex-wrap gap-x-2 gap-y-1">
-                  {monthEvents.map(event => (
-                                      <div 
-                    key={event.id} 
-                    className={`group flex items-center gap-1.5 text-xs px-2 py-1.5 rounded-md border border-transparent bg-card/30 hover:border-accent/50 hover:bg-accent/40 cursor-pointer transition-all duration-300 hover:shadow-sm ${
-                      eraserMode ? 'hover:border-red-300 hover:bg-red-50 dark:hover:border-red-700 dark:hover:bg-red-900/30' : ''
-                    }`}
-                      onClick={(e) => handleEventClick(event, e)}
-                    >
-                      <div 
-                        className="w-2 h-2 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: event.color }}
-                      />
-                      <div className="flex items-center gap-1 flex-1 min-w-0">
-                        <span className="text-foreground truncate font-medium">
-                          {event.title}
-                        </span>
-                        <span className="text-muted-foreground/60 text-[10px] font-normal whitespace-nowrap">
-                          {event.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        </span>
-                      </div>
-                      {eraserMode ? (
-                        <X className="w-3 h-3 text-red-500" />
-                      ) : (
-                        <Edit2 className="w-3 h-3 text-muted-foreground/40" />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Periods Section */}
-            {monthPeriods.length > 0 && (
-              <div>
-                <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Periods</h4>
-                <div className="flex flex-wrap gap-x-2 gap-y-1">
-                  {monthPeriods.map(period => (
-                                      <div 
-                    key={period.id} 
-                    className={`group flex items-center gap-1.5 text-xs px-2 py-1.5 rounded-md border border-transparent bg-card/30 hover:border-accent/50 hover:bg-accent/40 cursor-pointer transition-all duration-300 hover:shadow-sm ${
-                      eraserMode ? 'hover:border-red-300 hover:bg-red-50 dark:hover:border-red-700 dark:hover:bg-red-900/30' : ''
-                    }`}
-                      onClick={(e) => handlePeriodClick(period, e)}
-                      onMouseDown={(e) => {
-                        if (eraserMode) return; // Disable drag in eraser mode
-                        e.stopPropagation(); // Prevent date-level mouse down
-                        handleDragStart(e, period, 'move');
-                      }}
-                    >
-                      <div 
-                        className="w-4 h-1.5 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: period.color }}
-                      />
-                      <span className="text-foreground truncate flex-1 font-medium">
-                        {period.title}
-                      </span>
-                      {eraserMode ? (
-                        <X className="w-3 h-3 text-red-500" />
-                      ) : (
-                        <Edit2 className="w-3 h-3 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     );
   };
@@ -986,7 +941,7 @@ export function YearCalendar({
       
       {/* 12-Month Grid */}
       <div className={cn(
-        "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-x-8 gap-y-12 transition-all duration-300 pt-16 mt-6 px-4 bg-background/50",
+        "grid grid-cols-2 gap-x-8 gap-y-12 transition-all duration-300 pt-16 mt-6 px-4 bg-background/50",
         {
           'cursor-crosshair': eraserMode,
           'opacity-50 pointer-events-none': isLoading
