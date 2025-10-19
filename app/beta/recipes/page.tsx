@@ -8,17 +8,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Edit2, Save, X, ChefHat, ShoppingCart, Star } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, X, ChefHat, Star } from 'lucide-react';
 import { RecipesStorage } from '@/utils/recipesStorage';
-import { PantryStorage } from '@/utils/pantryStorage';
 import { diffMissingNormalized, normalizeIngredientName } from '@/utils/ingredientUtils';
 import { RecipeItem } from '@/types/recipes';
-import { PantryItem } from '@/types/pantry';
 
 export default function BetaRecipesPage() {
   const [activeTab, setActiveTab] = useState('recipes');
   const [recipes, setRecipes] = useState<RecipeItem[]>([]);
-  const [pantryItems, setPantryItems] = useState<PantryItem[]>([]);
+  const [availableIngredients, setAvailableIngredients] = useState<string[]>([]);
+  const [newIngredient, setNewIngredient] = useState('');
   const [showRecipeForm, setShowRecipeForm] = useState(false);
   const [editingRecipe, setEditingRecipe] = useState<RecipeItem | null>(null);
 
@@ -30,22 +29,16 @@ export default function BetaRecipesPage() {
   const [recipeServings, setRecipeServings] = useState('');
   const [recipeCategory, setRecipeCategory] = useState('');
 
-  // Pantry form state
-  const [pantryName, setPantryName] = useState('');
-
   // Load data on mount
   useEffect(() => {
     setRecipes(RecipesStorage.load());
-    setPantryItems(PantryStorage.load());
   }, []);
 
   // Recipe recommendations based on available ingredients
   const recipeRecommendations = useMemo(() => {
-    const pantryNames = pantryItems.map(item => item.name);
-
     return recipes.map(recipe => {
       const requiredIngredients = recipe.ingredients.map(ing => ing.name);
-      const missingIngredients = diffMissingNormalized(requiredIngredients, pantryNames);
+      const missingIngredients = diffMissingNormalized(requiredIngredients, availableIngredients);
       const matchPercentage = ((requiredIngredients.length - missingIngredients.length) / requiredIngredients.length) * 100;
 
       return {
@@ -55,7 +48,7 @@ export default function BetaRecipesPage() {
         canMake: missingIngredients.length === 0
       };
     }).sort((a, b) => b.matchPercentage - a.matchPercentage);
-  }, [recipes, pantryItems]);
+  }, [recipes, availableIngredients]);
 
   // Save recipes to storage
   const saveRecipes = (newRecipes: RecipeItem[]) => {
@@ -63,11 +56,6 @@ export default function BetaRecipesPage() {
     RecipesStorage.save(newRecipes);
   };
 
-  // Save pantry items to storage
-  const savePantryItems = (newItems: PantryItem[]) => {
-    setPantryItems(newItems);
-    PantryStorage.save(newItems);
-  };
 
   // Recipe functions
   const resetRecipeForm = () => {
@@ -139,23 +127,19 @@ export default function BetaRecipesPage() {
     }
   };
 
-  // Pantry functions
-  const handleAddPantryItem = () => {
-    if (!pantryName.trim()) return;
+  // Available ingredients functions
+  const handleAddIngredient = () => {
+    if (!newIngredient.trim()) return;
 
-    const item: PantryItem = {
-      id: `pantry_${Date.now()}`,
-      name: pantryName.trim(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    savePantryItems([...pantryItems, item]);
-    setPantryName('');
+    const normalizedIngredient = normalizeIngredientName(newIngredient.trim());
+    if (!availableIngredients.some(ing => normalizeIngredientName(ing) === normalizedIngredient)) {
+      setAvailableIngredients([...availableIngredients, newIngredient.trim()]);
+    }
+    setNewIngredient('');
   };
 
-  const handleDeletePantryItem = (itemId: string) => {
-    savePantryItems(pantryItems.filter(i => i.id !== itemId));
+  const handleRemoveIngredient = (ingredient: string) => {
+    setAvailableIngredients(availableIngredients.filter(ing => ing !== ingredient));
   };
 
   return (
@@ -170,9 +154,8 @@ export default function BetaRecipesPage() {
 
         <div className="flex-1 overflow-y-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
-            <TabsList className="grid w-full grid-cols-3 mx-6 mt-4">
+            <TabsList className="grid w-full grid-cols-2 mx-6 mt-4">
               <TabsTrigger value="recipes">Recipes</TabsTrigger>
-              <TabsTrigger value="pantry">Pantry</TabsTrigger>
               <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
             </TabsList>
 
@@ -342,63 +325,6 @@ export default function BetaRecipesPage() {
               </div>
             </TabsContent>
 
-            <TabsContent value="pantry" className="px-6 py-4 space-y-4">
-              <div className="flex justify-between items-center">
-                <h2 className="text-lg font-semibold">Your Pantry ({pantryItems.length})</h2>
-              </div>
-
-              {/* Quick Add Input */}
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex gap-2">
-                    <Input
-                      value={pantryName}
-                      onChange={(e) => setPantryName(e.target.value)}
-                      placeholder="Add ingredient to pantry..."
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleAddPantryItem();
-                        }
-                      }}
-                    />
-                    <Button onClick={handleAddPantryItem} disabled={!pantryName.trim()}>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Pantry Items List */}
-              <div className="space-y-2">
-                {pantryItems.length === 0 ? (
-                  <Card>
-                    <CardContent className="py-8 text-center text-muted-foreground">
-                      <ShoppingCart className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                      <p>Add ingredients to your pantry to see recipe recommendations!</p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  pantryItems.map((item) => (
-                    <Card key={item.id}>
-                      <CardContent className="py-4">
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium">{item.name}</span>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleDeletePantryItem(item.id)}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
-              </div>
-            </TabsContent>
 
             <TabsContent value="recommendations" className="px-6 py-4 space-y-4">
               <div className="flex items-center gap-2 mb-4">
@@ -406,11 +332,62 @@ export default function BetaRecipesPage() {
                 <h2 className="text-lg font-semibold">Recipe Recommendations</h2>
               </div>
 
-              {recipeRecommendations.length === 0 ? (
+              {/* Quick Add Ingredients */}
+              <Card className="border-dashed">
+                <CardContent className="pt-6">
+                  <div className="flex gap-2 mb-4">
+                    <Input
+                      value={newIngredient}
+                      onChange={(e) => setNewIngredient(e.target.value)}
+                      placeholder="Add ingredient (e.g., chicken, rice, tomato)..."
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleAddIngredient();
+                        }
+                      }}
+                    />
+                    <Button onClick={handleAddIngredient} disabled={!newIngredient.trim()}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add
+                    </Button>
+                  </div>
+
+                  {/* Available Ingredients Display */}
+                  {availableIngredients.length > 0 && (
+                    <div className="mb-4">
+                      <p className="text-sm font-medium mb-2">Available ingredients:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {availableIngredients.map((ingredient, index) => (
+                          <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                            {ingredient}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-4 w-4 p-0 hover:bg-red-100"
+                              onClick={() => handleRemoveIngredient(ingredient)}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {recipes.length === 0 ? (
                 <Card>
                   <CardContent className="py-8 text-center text-muted-foreground">
                     <ChefHat className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>Add some recipes and pantry items to see recommendations!</p>
+                    <p>Add some recipes first to see recommendations!</p>
+                  </CardContent>
+                </Card>
+              ) : availableIngredients.length === 0 ? (
+                <Card>
+                  <CardContent className="py-8 text-center text-muted-foreground">
+                    <ChefHat className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>Add ingredients above to see recipe recommendations!</p>
                   </CardContent>
                 </Card>
               ) : (
