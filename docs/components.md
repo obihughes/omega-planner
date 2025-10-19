@@ -7,50 +7,6 @@
 
 # Component Documentation
 
-## Projects Timeline (Simplified & Compressed View)
-
-Location: `components/projects/ProjectsTimeline.tsx`
-
-- Purpose: Clean, minimal Gantt-like timeline view focused on projects, tasks, and dates.
-- Access: Route `app/projects/timeline/page.tsx` → `/projects/timeline`. A "Timeline" link is also added under Workspace in the main navigation.
-- Rendering: SVG-based. Each project is a row; tasks render as:
-  - Bars for tasks with both `startDate` and `dueDate`.
-  - Compact square cards for tasks with only one of `startDate` or `dueDate`.
-  - Color coding by task `status` (todo/in-progress/completed/blocked).
-  - View range culling: tasks render only if their date (or date span) overlaps the current visible range to prevent duplicate appearances across months.
-- **Simplified Design** (October 2025):
-  - Task names hidden from bars - shown only on hover via HoverCard
-  - Clear vertical separators between every day for better visual organization
-  - Removed priority/status filter buttons and stats panel
-  - Removed legend - cleaner header with only navigation and view mode controls
-  - Always grouped by project (no group mode toggle)
-  - Focus on clean, minimal interface showing only essential information
-- **Compressed Layout** (October 2025):
-  - Reduced vertical spacing throughout for more compact view
-  - Task height: 16px (down from 18px)
-  - Project label area: 18px (down from 32px)
-  - Task area per project: 50px (down from 80px)
-  - Row gap: 12px (down from 16px)
-  - Project labels aligned horizontally with first task lane for visual cohesion
-  - More information visible on screen without scrolling
-- **Square Task Cards** (matching daily planner style):
-  - Single-day tasks use compact square cards centered in day columns
-  - Border radius: 2px for subtle rounding (more square than round)
-  - Consistent styling with task span bars
-  - Priority indicators shown as colored dots on high/urgent tasks
-- Layout & Responsiveness:
-  - Day width is now responsive to the available container width, with sensible min/max bounds. This uses all empty space on the right and adapts to different screen sizes.
-  - Today indicator and enhanced day/week/month separators scale with the computed layout.
-  - Clear vertical lines for every day, stronger lines for week starts, strongest for month boundaries.
-- Dark Mode:
-  - All SVG labels and helper lines use theme CSS variables (e.g. `hsl(var(--foreground))`, `hsl(var(--border))`) for proper contrast in dark mode.
-
-Interactions
-- Clicking a project name toggles a collapsed state that hides its tasks but keeps the label visible so you can click again to expand.
-- Hover over task bars/cards to see full task details including title, status, priority, and dates.
-- Month navigation (prev/next) and view mode toggle (Week/Month/Quarter).
-- Click on task bars/cards to open editing modal.
-
 This document provides detailed information about the components used in the Daily Planner application.
 
 Projects Calendar compact sizing

@@ -15,7 +15,6 @@ export default function BetaIndexPage() {
           <Link href="/beta/tasks" className={cn("border rounded-md p-4 hover:bg-accent/40 transition-colors")}>Tasks</Link>
           <Link href="/beta/tasks/weekly" className={cn("border rounded-md p-4 hover:bg-accent/40 transition-colors")}>Weekly Tasks</Link>
           <Link href="/projects?view=calendar" className={cn("border rounded-md p-4 hover:bg-accent/40 transition-colors")}>Projects Calendar</Link>
-          <Link href="/projects/timeline" className={cn("border rounded-md p-4 hover:bg-accent/40 transition-colors")}>Projects Timeline</Link>
           <Link href="/beta/recipes" className={cn("border rounded-md p-4 hover:bg-accent/40 transition-colors")}>Recipes</Link>
         </div>
       </div>
