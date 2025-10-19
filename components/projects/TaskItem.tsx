@@ -503,7 +503,7 @@ export function TaskItem({
                   onClick={startEditingDescription}
                   title={task.description ? "Click to edit description" : "Click to add description"}
                 >
-                  {task.description ? task.description : 'Add description...'}
+                  {task.description || ''}
                 </p>
               )}
               
