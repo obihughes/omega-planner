@@ -459,6 +459,15 @@ Purpose: Unified workspace combining focus mode session management with project 
 - Drag and drop between planned/backlog areas
 - Quick add buttons for simple and project tasks
 - Collapse/expand timer controls and projects sidebar for reduced clutter
+- **Mini Timer Window**: Click the external link icon to open a floating mini timer window
+
+**Mini Timer Window** (`app/focus/mini/page.tsx`):
+- Displays countdown or elapsed time in a separate popup window
+- Shows running/paused status with animated indicator
+- Progress bar (when target duration is set)
+- Automatically syncs with main workspace via BroadcastChannel API
+- Works perfectly on localhost and production
+- Can be positioned anywhere on screen, stays independent of main window
 
 ### Button, Input, Card, etc. (`components/ui/`)
 Reusable UI primitives built with consistent styling.

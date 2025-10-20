@@ -1,3 +1,23 @@
+## 2025-10-20
+
+- **Mini Timer Window** (2025-10-20)
+  - Added floating mini timer window feature for focus mode
+  - **New route**: `/focus/mini` displays a clean, minimalist timer view
+  - **Popup functionality**: Click external link icon in Workspace Today timer controls to open mini window
+  - **Real-time sync**: Uses BroadcastChannel API to sync timer state between main window and mini window
+  - **Features**:
+    - Large, readable countdown/elapsed time display
+    - Animated status indicator (running/paused)
+    - Progress bar when target duration is set
+    - Beautiful gradient background (slate-900 to slate-800)
+    - Independent positioning - can be placed anywhere on screen
+  - **Technical details**:
+    - Works on localhost and production environments
+    - No external dependencies required
+    - Lightweight implementation (~50 lines of code)
+    - Window size: 350x280px, resizable
+  - Files affected: `app/focus/mini/page.tsx`, `app/projects/workspace/page.tsx`, `docs/components.md`, `docs/changelog.md`
+
 ## 2025-10-08
 
 - **Weekly Goals UI Improvements** (2025-10-08)

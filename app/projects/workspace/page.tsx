@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { getDateKey } from '@/utils/dateUtils';
 import { 
   Calendar, Plus, X, Play, Pause, RotateCcw, Clock, 
-  CheckSquare2, GripVertical, Trash2, Square, Bell, BellOff, ChevronDown, ChevronRight 
+  CheckSquare2, GripVertical, Trash2, Square, Bell, BellOff, ChevronDown, ChevronRight, ExternalLink 
 } from 'lucide-react';
 
 // Simple task type (non-project tasks)
@@ -78,6 +78,8 @@ export default function WorkspaceTodayPage() {
   const notifiedFiveRef = useRef<boolean>(false);
   const notifiedTimeUpRef = useRef<boolean>(false);
   const wakeLockRef = useRef<any>(null);
+  const timerChannel = useRef<BroadcastChannel | null>(null);
+  const pipWindow = useRef<Window | null>(null);
 
   // Input states
   const [newPlannedTitle, setNewPlannedTitle] = useState('');
@@ -375,6 +377,191 @@ export default function WorkspaceTodayPage() {
     };
   }, [sessionState.isRunning]);
 
+  // Initialize BroadcastChannel for mini timer window
+  useEffect(() => {
+    timerChannel.current = new BroadcastChannel('omega-focus-timer');
+    return () => {
+      timerChannel.current?.close();
+      timerChannel.current = null;
+    };
+  }, []);
+
+  // Broadcast timer state to mini timer window
+  useEffect(() => {
+    if (timerChannel.current) {
+      timerChannel.current.postMessage({
+        elapsedSeconds: displayedElapsedSeconds,
+        isRunning: sessionState.isRunning,
+        targetSeconds,
+      });
+    }
+  }, [displayedElapsedSeconds, sessionState.isRunning, targetSeconds]);
+
+  // Update PiP window content when timer state changes
+  useEffect(() => {
+    if ((window as any).__updatePiPContent) {
+      (window as any).__updatePiPContent();
+    }
+  }, [displayedElapsedSeconds, sessionState.isRunning, targetSeconds]);
+
+  // Open mini timer in popup window
+  const openMiniTimer = () => {
+    window.open(
+      '/focus/mini',
+      'OmegaFocusTimer',
+      'width=350,height=280,top=100,left=100,resizable=yes'
+    );
+  };
+
+  // Open mini timer using Document Picture-in-Picture (stays on top)
+  const openMiniTimerPiP = async () => {
+    if (!(window as any).documentPictureInPicture) {
+      alert('Picture-in-Picture is supported in Chrome 116+ and Edge 116+. Falling back to popup window.');
+      openMiniTimer();
+      return;
+    }
+
+    try {
+      const pipWin = await (window as any).documentPictureInPicture.requestWindow({
+        width: 350,
+        height: 280,
+      });
+
+      pipWindow.current = pipWin;
+
+      // Create the timer content HTML
+      const createTimerHTML = () => {
+        const displayTime = targetSeconds > 0 
+          ? formatHMS(Math.max(0, targetSeconds - displayedElapsedSeconds))
+          : formatHMS(displayedElapsedSeconds);
+        
+        const percentage = targetSeconds > 0 
+          ? Math.min(100, (displayedElapsedSeconds / targetSeconds) * 100)
+          : 0;
+
+        return `
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1">
+              <style>
+                * {
+                  margin: 0;
+                  padding: 0;
+                  box-sizing: border-box;
+                }
+                body {
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+                  color: white;
+                  height: 100vh;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  justify-content: center;
+                  padding: 24px;
+                  overflow: hidden;
+                }
+                .timer-display {
+                  font-size: 72px;
+                  font-weight: 700;
+                  font-family: 'Courier New', monospace;
+                  letter-spacing: 0.05em;
+                  margin-bottom: 16px;
+                  line-height: 1;
+                }
+                .status {
+                  display: flex;
+                  align-items: center;
+                  gap: 12px;
+                  font-size: 18px;
+                  margin-bottom: 24px;
+                  color: #cbd5e1;
+                }
+                .status-dot {
+                  width: 16px;
+                  height: 16px;
+                  border-radius: 50%;
+                  ${sessionState.isRunning ? 'background: #22c55e; animation: pulse 2s infinite;' : 'background: #ef4444;'}
+                }
+                @keyframes pulse {
+                  0%, 100% { opacity: 1; }
+                  50% { opacity: 0.5; }
+                }
+                .progress-container {
+                  width: 100%;
+                  max-width: 280px;
+                }
+                .progress-bar {
+                  width: 100%;
+                  height: 12px;
+                  background: #475569;
+                  border-radius: 9999px;
+                  overflow: hidden;
+                }
+                .progress-fill {
+                  height: 100%;
+                  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+                  border-radius: 9999px;
+                  transition: width 0.3s ease-out;
+                  width: ${percentage}%;
+                }
+                .progress-text {
+                  font-size: 12px;
+                  color: #94a3b8;
+                  text-align: center;
+                  margin-top: 8px;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="timer-display">${displayTime}</div>
+              <div class="status">
+                <div class="status-dot"></div>
+                <span>${sessionState.isRunning ? 'Running' : 'Paused'}</span>
+              </div>
+              ${targetSeconds > 0 ? `
+                <div class="progress-container">
+                  <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                  </div>
+                  <div class="progress-text">${Math.round(percentage)}% complete</div>
+                </div>
+              ` : ''}
+            </body>
+          </html>
+        `;
+      };
+
+      pipWin.document.open();
+      pipWin.document.write(createTimerHTML());
+      pipWin.document.close();
+
+      // Listen for window close
+      pipWin.addEventListener('pagehide', () => {
+        pipWindow.current = null;
+      });
+
+      // Store update function reference for later use
+      (window as any).__updatePiPContent = () => {
+        if (pipWindow.current && !pipWindow.current.closed) {
+          try {
+            pipWindow.current.document.open();
+            pipWindow.current.document.write(createTimerHTML());
+            pipWindow.current.document.close();
+          } catch (e) {
+            // Window might be closed
+          }
+        }
+      };
+    } catch (error) {
+      console.error('Failed to open PiP window:', error);
+      alert('Failed to open Picture-in-Picture. Try using a popup window instead.');
+      openMiniTimer();
+    }
+  };
+
   // Session controls
   const startSession = () => {
     ensureAudioContext();
@@ -604,6 +791,10 @@ export default function WorkspaceTodayPage() {
 
                     <Button size="sm" variant="ghost" onClick={() => setSoundEnabled(v => !v)} className="h-7 w-7 p-0" title={soundEnabled ? 'Sound enabled' : 'Sound disabled'}>
                       {soundEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+                    </Button>
+
+                    <Button size="sm" variant="ghost" onClick={openMiniTimerPiP} className="h-7 w-7 p-0" title="Open mini timer window">
+                      <ExternalLink className="w-4 h-4" />
                     </Button>
                   </>
                 )}

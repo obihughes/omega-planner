@@ -52,20 +52,21 @@ export default function WeeklyGoalsPage() {
 
     // Calculate the Monday of the target week
     const targetMonday = new Date(today);
-    targetMonday.setDate(today.getDate() - today.getDay() + 1 + (weekOffset * 7)); // Monday of target week
+    targetMonday.setDate(targetMonday.getDate() + (weekOffset * 7));
+    const targetMondayStart = getMondayStart(targetMonday);
 
     // Create array with current week (Monday-Sunday) then next week (Monday-Sunday)
     const result = [];
     // Add current week: Monday to Sunday
     for (let i = 0; i < 7; i++) {
-      const d = new Date(targetMonday);
-      d.setDate(targetMonday.getDate() + i);
+      const d = new Date(targetMondayStart);
+      d.setDate(targetMondayStart.getDate() + i);
       result.push(d);
     }
     // Add next week: Monday to Sunday
     for (let i = 0; i < 7; i++) {
-      const d = new Date(targetMonday);
-      d.setDate(targetMonday.getDate() + 7 + i);
+      const d = new Date(targetMondayStart);
+      d.setDate(targetMondayStart.getDate() + 7 + i);
       result.push(d);
     }
 
