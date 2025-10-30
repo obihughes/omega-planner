@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-export type CalendarViewMode = 'monthly' | 'yearly' | 'timeline';
+export type CalendarViewMode = 'monthly' | 'yearly' | 'timeline' | 'weekly-goals';
 
 interface CalendarViewContextType {
   viewMode: CalendarViewMode;

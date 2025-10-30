@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { AppLayout } from '@/components/ui/AppLayout';
-import { YearCalendar, MonthlyCalendar, MonthlyTimelineView } from '@/components/calendar';
+import { YearCalendar, MonthlyCalendar, MonthlyTimelineView, WeeklyGoalsCalendarView } from '@/components/calendar';
 import { useCalendarData } from '@/hooks/useCalendarData';
 import { CalendarEvent, CalendarPeriod } from '@/types/calendar';
 import { Settings, Download, RefreshCw, Trash2 } from 'lucide-react';
@@ -145,6 +145,24 @@ export default function CalendarPage() {
               }}
             />
           )
+        ) : currentView === 'weekly-goals' ? (
+          <WeeklyGoalsCalendarView
+            calendarData={data}
+            onNavigateToDaily={(date) => {
+              // Navigate to home page daily planner with a local-safe YYYY-MM-DD date key
+              try {
+                const d = new Date(date);
+                d.setHours(0, 0, 0, 0);
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                const dateKey = `${year}-${month}-${day}`;
+                window.location.href = `/?date=${dateKey}`;
+              } catch {
+                window.location.href = `/`;
+              }
+            }}
+          />
         ) : (
           <YearCalendar
             data={data}
