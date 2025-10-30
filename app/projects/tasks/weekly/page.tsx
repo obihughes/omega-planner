@@ -162,7 +162,7 @@ export default function WeeklySchedulerPage() {
                     key={dayKey}
                     className={cn(
                       "min-h-[280px] flex flex-col transition-all duration-300 hover:shadow-lg",
-                      isToday && "ring-2 ring-primary/20 border-primary/30 shadow-md"
+                      isToday && "ring-2 ring-green-500 border-2 border-green-500/20"
                     )}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => { e.preventDefault(); handleTaskDropOnDate(day, e.dataTransfer); }}

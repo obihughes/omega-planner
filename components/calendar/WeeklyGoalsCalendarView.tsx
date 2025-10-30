@@ -325,10 +325,8 @@ function DayColumn({
     <div
       className={`border flex flex-col min-h-[320px] transition-colors ${
         isToday
-          ? 'bg-primary/5 border-primary/20'
-          : isWeekend
-            ? 'bg-muted/30'
-            : 'bg-card'
+          ? 'border-green-500'
+          : 'bg-muted/20'
       }`}
     >
       <div className="p-3 border-b flex items-center justify-between gap-2">
