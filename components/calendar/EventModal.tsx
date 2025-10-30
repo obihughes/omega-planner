@@ -71,22 +71,23 @@ export function EventModal({
   const handleSave = () => {
     if (!title.trim()) return;
 
-    onSave({
+    const eventData = {
       title: title.trim(),
       notes: notes.trim(),
       date,
       color,
-      type: 'event'
-    });
+      type: 'event' as const
+    };
+    onSave(eventData);
 
-    onClose();
+    // Don't call onClose here - let the parent handle modal closing
   };
 
   const handleDelete = () => {
     if (event && onDelete) {
       if (confirm('Delete this event?')) {
         onDelete(event.id);
-        onClose();
+        // Don't call onClose here - let the parent handle modal closing
       }
     }
   };

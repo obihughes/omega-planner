@@ -32,7 +32,6 @@ export function MonthlyCalendar({
   initialDate,
   compact = false,
 }: MonthlyCalendarProps) {
-  const [showDayDetails, setShowDayDetails] = useState(false);
   const [showEventModal, setShowEventModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -50,11 +49,6 @@ export function MonthlyCalendar({
       }, 100);
     }
   }, [initialDate]);
-
-  const handleDateClick = (date: Date) => {
-    setSelectedDate(date);
-    setShowDayDetails(true);
-  };
 
   const handleDateDoubleClick = (date: Date) => {
     setSelectedDate(date);
@@ -82,7 +76,6 @@ export function MonthlyCalendar({
     setShowEventModal(false);
     setEditingEvent(null);
     setSelectedDate(null);
-    setShowDayDetails(false);
   };
 
   const handleEventDelete = () => {
@@ -94,56 +87,6 @@ export function MonthlyCalendar({
 
   return (
     <div className={cn("space-y-6", className)}>
-      {/* Day Details Modal (click-to-open summary) */}
-      {showDayDetails && selectedDate && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-background border shadow-lg max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="text-lg font-semibold">
-                {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-              </h3>
-              <Button variant="ghost" size="sm" onClick={() => setShowDayDetails(false)}>
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-            <div className="p-4 space-y-4">
-              {(() => {
-                const dayEvents = data.events.filter(e => e.date.toDateString() === selectedDate.toDateString());
-                return (
-                  <>
-                    {dayEvents.length === 0 && (
-                      <p className="text-muted-foreground text-center py-8">No events on this day</p>
-                    )}
-                    {dayEvents.length > 0 && (
-                      <div>
-                        <h4 className="font-medium mb-2 text-sm text-muted-foreground uppercase tracking-wide">Events</h4>
-                        <div className="space-y-2">
-                          {dayEvents.map(event => (
-                            <div key={event.id} className="flex items-center gap-3 p-3 border cursor-pointer transition-colors" onClick={() => { setEditingEvent(event); setShowEventModal(true); setShowDayDetails(false); }}>
-                              <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: event.color }} />
-                              <div className="flex-1">
-                                <div className="font-medium">{event.title}</div>
-                                {(event.notes || event.description) && (
-                                  <div className="text-sm text-foreground mt-1 p-2 bg-muted/50 rounded-md whitespace-pre-wrap border border-border max-h-24 overflow-y-auto">{event.notes || event.description}</div>
-                                )}
-                              </div>
-                              {onEventDelete && (
-                                <Button variant="destructive" size="sm" onClick={(e) => { e.stopPropagation(); if (confirm('Delete this event?')) { onEventDelete(event.id); } }}>
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </>
-                );
-              })()}
-            </div>
-          </div>
-        </div>
-      )}
       {/* Header - simplified. Scroll to navigate months. */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -226,7 +169,6 @@ export function MonthlyCalendar({
                         isToday && "border-primary border-2 bg-primary/10 ring-2 ring-primary/30",
                         selectedDate && date.toDateString() === selectedDate.toDateString() && "border-accent-foreground/60 bg-accent/10"
                       )}
-                      onClick={() => handleDateClick(date)}
                       onDoubleClick={() => handleDateDoubleClick(date)}
                     >
                       {onNavigateToDaily && (
@@ -308,16 +250,14 @@ export function MonthlyCalendar({
 
 
       {/* Event Modal */}
-      {showEventModal && (
-        <EventModal
-          isOpen={showEventModal}
-          onClose={handleModalClose}
-          onSave={handleEventSave}
-          onDelete={editingEvent ? handleEventDelete : undefined}
-          event={editingEvent}
-          initialDate={selectedDate || new Date()}
-        />
-      )}
+      <EventModal
+        isOpen={showEventModal}
+        onClose={handleModalClose}
+        onSave={handleEventSave}
+        onDelete={editingEvent ? handleEventDelete : undefined}
+        event={editingEvent}
+        initialDate={selectedDate || new Date()}
+      />
     </div>
   );
 } 

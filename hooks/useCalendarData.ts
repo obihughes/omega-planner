@@ -154,12 +154,12 @@ export function useCalendarData() {
       id: generateId(),
       date: new Date(eventData.date) // Ensure it's a Date object
     };
-    
+
     setData(prev => ({
       ...prev,
       events: [...prev.events, newEvent]
     }));
-    
+
     return newEvent;
   }, []);
 
