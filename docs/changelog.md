@@ -1,3 +1,12 @@
+## 2025-10-30
+
+- **Removed Old Weekly Goals Page** (2025-10-30)
+  - Removed the standalone weekly goals page at `/goals/weekly` (formerly "Daily Goals")
+  - Weekly goals functionality remains available through the Calendar view (`/calendar?view=weekly-goals`)
+  - Removed navigation link to the standalone page while keeping calendar integration
+  - Updated documentation to reflect the change
+  - Files affected: `app/goals/weekly/page.tsx`, `components/ui/Navigation.tsx`, `docs/components.md`, `docs/changelog.md`
+
 ## 2025-10-20
 
 - **Mini Timer Window** (2025-10-20)

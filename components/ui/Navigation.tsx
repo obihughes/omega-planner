@@ -154,14 +154,6 @@ export function Navigation() {
 
   const navItems = [
     {
-      key: 'weekly-goals',
-      href: '/goals/weekly',
-      label: 'Weekly Goals',
-      icon: ClipboardList,
-      active: pathname === '/goals/weekly',
-      subViews: []
-    },
-    {
       key: 'activities',
       href: '/activities',
       label: 'Activities',
