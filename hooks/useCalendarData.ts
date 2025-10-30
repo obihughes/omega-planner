@@ -166,9 +166,14 @@ export function useCalendarData() {
   const updateEvent = useCallback((eventId: string, eventData: Partial<CalendarEvent>) => {
     setData(prev => ({
       ...prev,
-      events: prev.events.map(event => 
-        event.id === eventId 
-          ? { ...event, ...eventData }
+      events: prev.events.map(event =>
+        event.id === eventId
+          ? {
+              ...event,
+              ...eventData,
+              // Update dateKey if date has changed
+              ...(eventData.date && { dateKey: getDateKey(eventData.date) })
+            }
           : event
       )
     }));
@@ -201,9 +206,15 @@ export function useCalendarData() {
   const updatePeriod = useCallback((periodId: string, periodData: Partial<CalendarPeriod>) => {
     setData(prev => ({
       ...prev,
-      periods: prev.periods.map(period => 
-        period.id === periodId 
-          ? { ...period, ...periodData }
+      periods: prev.periods.map(period =>
+        period.id === periodId
+          ? {
+              ...period,
+              ...periodData,
+              // Update dateKeys if dates have changed
+              ...(periodData.startDate && { startDateKey: getDateKey(periodData.startDate) }),
+              ...(periodData.endDate && { endDateKey: getDateKey(periodData.endDate) })
+            }
           : period
       )
     }));
