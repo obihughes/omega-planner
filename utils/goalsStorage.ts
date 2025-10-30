@@ -90,16 +90,7 @@ export const GoalsStorage = {
     return week;
   },
 
-  updateGoalColor(weekStartKey: string, dateKey: string, goalId: string, color: string): WeekGoals {
-    const week = GoalsStorage.loadWeek(weekStartKey);
-    const list = week.goalsByDate[dateKey] || [];
-    week.goalsByDate[dateKey] = list.map(g => g.id === goalId ? { ...g, color } : g);
-    week.updatedAt = new Date().toISOString();
-    GoalsStorage.upsertWeek(week);
-    return week;
-  },
-
-  updateGoal(weekStartKey: string, dateKey: string, goalId: string, updates: Partial<Pick<WeeklyGoal, 'title' | 'notes' | 'goalType'>>): WeekGoals {
+  updateGoal(weekStartKey: string, dateKey: string, goalId: string, updates: Partial<Pick<WeeklyGoal, 'title' | 'notes' | 'goalType' | 'color'>>): WeekGoals {
     const week = GoalsStorage.loadWeek(weekStartKey);
     const list = week.goalsByDate[dateKey] || [];
     week.goalsByDate[dateKey] = list.map(g => {
@@ -108,8 +99,18 @@ export const GoalsStorage = {
       if (updates.title !== undefined) updated.title = String(updates.title).trim();
       if (updates.notes !== undefined) updated.notes = updates.notes ? String(updates.notes).trim() : undefined;
       if (updates.goalType !== undefined) updated.goalType = updates.goalType;
+      if (updates.color !== undefined) updated.color = String(updates.color);
       return updated;
     });
+    week.updatedAt = new Date().toISOString();
+    GoalsStorage.upsertWeek(week);
+    return week;
+  },
+
+  updateGoalColor(weekStartKey: string, dateKey: string, goalId: string, color: string): WeekGoals {
+    const week = GoalsStorage.loadWeek(weekStartKey);
+    const list = week.goalsByDate[dateKey] || [];
+    week.goalsByDate[dateKey] = list.map(g => g.id === goalId ? { ...g, color } : g);
     week.updatedAt = new Date().toISOString();
     GoalsStorage.upsertWeek(week);
     return week;

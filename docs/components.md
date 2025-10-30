@@ -464,6 +464,61 @@ Modal for creating and editing calendar events.
 ### PeriodModal (`components/calendar/PeriodModal.tsx`)
 Modal for creating and editing calendar periods.
 
+### WeeklyGoalsCalendarView (`components/calendar/WeeklyGoalsCalendarView.tsx`)
+Weekly goals management interface with goal creation, editing, and completion tracking.
+
+**Location**: `components/calendar/WeeklyGoalsCalendarView.tsx`
+**Storage**: `utils/goalsStorage.ts` (localStorage key: `omega-planner-weekly-goals-v1`)
+
+**Key Features:**
+- **7-Day Grid View**: Display goals organized by day (Monday-Sunday)
+- **Goal Types**: Primary goals and supporting tasks with visual distinction
+  - **Primary Goals**: Larger text, thicker border (2px), featured styling
+  - **Supporting Tasks**: Compact text, standard border
+- **Goal Limit**: Maximum 3 goals per day
+- **Color System**: 6 color options (Gray, Blue, Green, Yellow, Red, Purple)
+- **Goal Management**:
+  - Completion tracking via checkbox
+  - In-place toggle for done/active status
+  - Full editing via modal dialog
+  - Quick goal creation with color and type selection
+  - Notes support with persistent storage
+- **Modal-Based Editing**: Clean modal dialog with:
+  - Goal title field (required)
+  - Goal type toggle (Primary/Supporting)
+  - Color picker with visual indicators
+  - Notes field (optional)
+  - Save/Cancel actions
+  - Additional actions: Create Task, Delete Goal
+  - Keyboard shortcuts: Escape to close, Ctrl+Enter to save
+- **Navigation**:
+  - Week navigation (Previous/Next/Today)
+  - Display range indicator (e.g., "Oct 28 - Nov 10, 2025")
+  - Support for historical and future weeks
+- **Visual Design**:
+  - Color-coded background for each goal
+  - Completed goals with strikethrough text and reduced opacity
+  - Hover effects on goal cards
+  - Rounded corners and smooth transitions
+- **Calendar Integration**:
+  - Shows calendar events for each day (up to 2 with overflow indicator)
+  - Click event to navigate to Daily view
+  - Today highlighting with green border
+
+**Goal Item Component**:
+- **Checkbox**: Toggle completion status
+- **Title Display**: Click to open edit modal
+- **Edit Button**: Visible on hover, opens modal
+- **Notes Indicator**: Shows note icon if goal has notes
+- **Color Coding**: Background reflects selected color scheme
+
+**Goal Edit Modal**:
+- Focused editing interface
+- Clear section organization (Title, Type, Color, Notes)
+- Visual color selection with checkmark indicator
+- Proper form validation and error handling
+- Consistent with application design system
+
 ## Documents Components
 
 ### Documents (`components/documents/Documents.tsx`)

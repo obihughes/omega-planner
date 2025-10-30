@@ -7,6 +7,29 @@
   - Updated documentation to reflect the change
   - Files affected: `app/goals/weekly/page.tsx`, `components/ui/Navigation.tsx`, `docs/components.md`, `docs/changelog.md`
 
+- **Weekly Goals Edit Modal UI Rework** (2025-10-30)
+  - **Complete UI redesign** of the weekly goals edit experience
+  - **Replaced inline editing** with a proper modal dialog pattern
+  - **Improved UX**:
+    - Clean, focused modal with backdrop overlay
+    - All editing controls in one organized interface
+    - Goal type selection prominently displayed as primary/supporting toggle
+    - Color picker with visual selection indicator (✓ checkmark)
+    - Notes field always visible with proper labeling
+    - Save/Cancel actions with validation
+    - Additional action buttons (Create Task, Delete) in footer section
+  - **Removed problematic patterns**:
+    - No more menu that disappears on mouse leave
+    - No cramped inline color picker
+    - No awkward notes toggle
+    - Simplified view-only display with single edit button
+  - **Better interaction model**:
+    - Click title or edit button to open modal
+    - Modal stays open until user saves or cancels
+    - Keyboard shortcuts: Escape to close, Ctrl+Enter to save
+    - Proper focus management with title field auto-selected
+  - **Files affected**: `components/calendar/WeeklyGoalsCalendarView.tsx`, `utils/goalsStorage.ts`
+
 ## 2025-10-20
 
 - **Mini Timer Window** (2025-10-20)

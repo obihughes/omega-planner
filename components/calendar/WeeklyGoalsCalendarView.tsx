@@ -454,268 +454,279 @@ function DayColumn({
   );
 }
 
+interface GoalEditModalProps {
+  goal: WeeklyGoal | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (updates: Partial<Pick<WeeklyGoal, 'title' | 'notes' | 'goalType' | 'color'>>) => void;
+  onDelete: () => void;
+  onCreateTask: () => void;
+}
+
+function GoalEditModal({ goal, isOpen, onClose, onSave, onDelete, onCreateTask }: GoalEditModalProps) {
+  const [editedTitle, setEditedTitle] = useState(goal?.title || '');
+  const [editedNotes, setEditedNotes] = useState(goal?.notes || '');
+  const [selectedColor, setSelectedColor] = useState(goal?.color || 'gray');
+  const [selectedGoalType, setSelectedGoalType] = useState<'primary' | 'supporting'>(goal?.goalType || 'supporting');
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (goal) {
+      setEditedTitle(goal.title);
+      setEditedNotes(goal.notes || '');
+      setSelectedColor(goal.color || 'gray');
+      setSelectedGoalType(goal.goalType || 'supporting');
+    }
+  }, [goal]);
+
+  useEffect(() => {
+    if (isOpen && titleInputRef.current) {
+      titleInputRef.current.focus();
+      titleInputRef.current.select();
+    }
+  }, [isOpen]);
+
+  if (!isOpen || !goal) return null;
+
+  const handleSave = () => {
+    const trimmedTitle = editedTitle.trim();
+    if (!trimmedTitle) return;
+
+    onSave({
+      title: trimmedTitle,
+      notes: editedNotes.trim() || undefined,
+      color: selectedColor,
+      goalType: selectedGoalType,
+    });
+    onClose();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      onClose();
+    } else if (e.key === 'Enter' && e.ctrlKey) {
+      handleSave();
+    }
+  };
+
+  const colorScheme = GOAL_COLORS.find(c => c.value === selectedColor) || GOAL_COLORS[0];
+
+  return (
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-[1000] p-4">
+      <div className="bg-card rounded-xl shadow-2xl p-6 w-full max-w-md border border-border text-foreground flex flex-col gap-5">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Edit Goal</h2>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-muted rounded-lg transition-colors"
+            aria-label="Close"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Title */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Goal Title</label>
+          <Input
+            ref={titleInputRef}
+            value={editedTitle}
+            onChange={(e) => setEditedTitle(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Enter goal title..."
+            className="text-base"
+          />
+        </div>
+
+        {/* Goal Type */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Goal Type</label>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setSelectedGoalType('primary')}
+              className={`flex-1 px-3 py-2 border transition-all rounded-lg text-sm font-medium ${
+                selectedGoalType === 'primary'
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-card hover:bg-muted border-border'
+              }`}
+            >
+              Primary Goal
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedGoalType('supporting')}
+              className={`flex-1 px-3 py-2 border transition-all rounded-lg text-sm font-medium ${
+                selectedGoalType === 'supporting'
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-card hover:bg-muted border-border'
+              }`}
+            >
+              Supporting Task
+            </button>
+          </div>
+        </div>
+
+        {/* Color Picker */}
+        <div className="space-y-3">
+          <label className="text-sm font-medium">Color</label>
+          <div className="flex gap-2 flex-wrap">
+            {GOAL_COLORS.map((c) => (
+              <button
+                key={c.value}
+                onClick={() => setSelectedColor(c.value)}
+                className={`w-8 h-8 border-2 transition-all rounded-lg flex items-center justify-center ${c.bg} ${c.border} ${
+                  selectedColor === c.value ? 'ring-2 ring-offset-2 ring-primary' : 'hover:scale-110'
+                }`}
+                title={c.name}
+                type="button"
+              >
+                {selectedColor === c.value && <span className="text-xs font-bold">✓</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Notes */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium flex items-center gap-2">
+            <StickyNote className="w-4 h-4" />
+            Notes (Optional)
+          </label>
+          <Textarea
+            value={editedNotes}
+            onChange={(e) => setEditedNotes(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Add any notes or context..."
+            className="text-sm min-h-[80px]"
+          />
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-2 pt-2">
+          <Button
+            onClick={handleSave}
+            className="flex-1"
+            disabled={!editedTitle.trim()}
+          >
+            <Save className="w-4 h-4 mr-2" />
+            Save Changes
+          </Button>
+          <Button
+            onClick={onClose}
+            variant="outline"
+            className="flex-1"
+          >
+            Cancel
+          </Button>
+        </div>
+
+        {/* Additional Actions */}
+        <div className="flex gap-2 pt-2 border-t">
+          <Button
+            onClick={() => {
+              onCreateTask();
+              onClose();
+            }}
+            variant="outline"
+            size="sm"
+            className="flex-1"
+          >
+            <ExternalLink className="w-3 h-3 mr-1" />
+            Create Task
+          </Button>
+          <Button
+            onClick={() => {
+              onDelete();
+              onClose();
+            }}
+            variant="outline"
+            size="sm"
+            className="flex-1 text-destructive hover:text-destructive"
+          >
+            <Trash2 className="w-3 h-3 mr-1" />
+            Delete
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface GoalItemProps {
   goal: WeeklyGoal;
   onToggle: () => void;
   onRemove: () => void;
   onUpdateColor: (color: string) => void;
-  onUpdate: (updates: Partial<Pick<WeeklyGoal, 'title' | 'notes' | 'goalType'>>) => void;
+  onUpdate: (updates: Partial<Pick<WeeklyGoal, 'title' | 'notes' | 'goalType' | 'color'>>) => void;
   onCreateTask: () => void;
 }
 
 function GoalItem({ goal, onToggle, onRemove, onUpdateColor, onUpdate, onCreateTask }: GoalItemProps) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [showColorPicker, setShowColorPicker] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [showNotes, setShowNotes] = useState(false);
-  const [editedTitle, setEditedTitle] = useState(goal.title);
-  const [editedNotes, setEditedNotes] = useState(goal.notes || '');
-  const titleInputRef = useRef<HTMLInputElement>(null);
-
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const colorScheme = GOAL_COLORS.find(c => c.value === goal.color) || GOAL_COLORS[0];
   const isPrimary = goal.goalType === 'primary';
 
-  useEffect(() => {
-    if (isEditing && titleInputRef.current) {
-      titleInputRef.current.focus();
-      titleInputRef.current.select();
-    }
-  }, [isEditing]);
-
-  const handleSaveEdit = () => {
-    const trimmedTitle = editedTitle.trim();
-    if (!trimmedTitle) {
-      setEditedTitle(goal.title);
-      setIsEditing(false);
-      return;
-    }
-
-    onUpdate({
-      title: trimmedTitle,
-      notes: editedNotes.trim() || undefined,
-    });
-    setIsEditing(false);
-    setShowNotes(false);
-  };
-
-  const handleCancelEdit = () => {
-    setEditedTitle(goal.title);
-    setEditedNotes(goal.notes || '');
-    setIsEditing(false);
-    setShowNotes(false);
-  };
-
-  const handleToggleGoalType = () => {
-    onUpdate({
-      goalType: isPrimary ? 'supporting' : 'primary',
-    });
-    setMenuOpen(false);
+  const handleSaveEdit = (updates: Partial<Pick<WeeklyGoal, 'title' | 'notes' | 'goalType' | 'color'>>) => {
+    onUpdate(updates);
+    setIsEditModalOpen(false);
   };
 
   return (
-    <div
-      className={`border group transition-all ${colorScheme.bg} ${colorScheme.border} ${
-        isPrimary ? 'p-3 border-2' : 'p-2'
-      }`}
-      onMouseLeave={() => {
-        if (!isEditing) {
-          setMenuOpen(false);
-          setShowColorPicker(false);
-        }
-      }}
-    >
-      {isEditing ? (
-        <div className="space-y-2">
-          <div className="flex items-start gap-2">
-            <Input
-              ref={titleInputRef}
-              value={editedTitle}
-              onChange={(e) => setEditedTitle(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSaveEdit();
-                } else if (e.key === 'Escape') {
-                  handleCancelEdit();
-                }
-              }}
-              className={`flex-1 ${isPrimary ? 'text-base font-semibold' : 'text-sm'} h-8`}
-              placeholder="Goal title..."
-            />
-          </div>
-
-          <div className="space-y-2">
-            <button
-              type="button"
-              onClick={() => setShowNotes(!showNotes)}
-              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+    <>
+      <div
+        className={`border group transition-all ${colorScheme.bg} ${colorScheme.border} ${
+          isPrimary ? 'p-3 border-2' : 'p-2'
+        } rounded-lg cursor-pointer hover:shadow-md`}
+      >
+        <div className="flex items-start gap-2 min-w-0">
+          <input
+            type="checkbox"
+            checked={goal.done}
+            onChange={onToggle}
+            className={`${isPrimary ? 'w-5 h-5 mt-0.5' : 'w-4 h-4 mt-0.5'} cursor-pointer flex-shrink-0 rounded`}
+            aria-label="toggle goal"
+          />
+          <div className="flex-1 min-w-0 flex-col flex">
+            <span
+              className={`block break-words ${
+                isPrimary ? 'text-base font-semibold' : 'text-sm'
+              } ${goal.done ? 'line-through opacity-50' : ''} ${colorScheme.text}`}
+              title={goal.title}
+              onClick={() => setIsEditModalOpen(true)}
             >
-              <StickyNote className="w-3 h-3" />
-              {showNotes ? 'Hide notes' : 'Add notes'}
-            </button>
-
-            {showNotes && (
-              <Textarea
-                value={editedNotes}
-                onChange={(e) => setEditedNotes(e.target.value)}
-                placeholder="Add notes (optional)..."
-                className="text-xs min-h-[60px]"
-              />
+              {goal.title}
+            </span>
+            {goal.notes && !goal.done && (
+              <div className="text-xs text-muted-foreground mt-1 opacity-70 flex items-start gap-1">
+                <StickyNote className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                <span className="break-words">{goal.notes}</span>
+              </div>
             )}
           </div>
 
-          <div className="flex gap-2">
-            <Button
-              onClick={handleSaveEdit}
-              size="sm"
-              className="flex-1 h-7 text-xs"
+          <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={() => setIsEditModalOpen(true)}
+              className="p-1.5 hover:bg-muted transition-colors border rounded-lg"
+              title="Edit goal"
+              type="button"
             >
-              <Save className="w-3 h-3 mr-1" />
-              Save
-            </Button>
-            <Button
-              onClick={handleCancelEdit}
-              size="sm"
-              variant="outline"
-              className="h-7 text-xs"
-            >
-              <X className="w-3 h-3" />
-            </Button>
+              <Edit2 className="w-4 h-4" />
+            </button>
           </div>
         </div>
-      ) : (
-        <>
-          <div className="flex items-start gap-2 min-w-0">
-            <input
-              type="checkbox"
-              checked={goal.done}
-              onChange={onToggle}
-              className={`${isPrimary ? 'w-5 h-5 mt-0.5' : 'w-4 h-4 mt-0.5'} cursor-pointer flex-shrink-0`}
-              aria-label="toggle goal"
-            />
-            <div className="flex-1 min-w-0">
-              <span
-                className={`block break-words ${
-                  isPrimary ? 'text-base font-semibold' : 'text-sm'
-                } ${goal.done ? 'line-through opacity-50' : ''} ${colorScheme.text}`}
-                title={goal.title}
-                onDoubleClick={() => setIsEditing(true)}
-              >
-                {goal.title}
-              </span>
-              {goal.notes && !goal.done && (
-                <div className="text-xs text-muted-foreground mt-1 opacity-70 flex items-start gap-1">
-                  <StickyNote className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                  <span className="break-words">{goal.notes}</span>
-                </div>
-              )}
-            </div>
+      </div>
 
-            <div className="relative flex-shrink-0 flex items-center gap-1">
-              {!goal.done && (
-                <button
-                  onClick={() => {
-                    setMenuOpen(!menuOpen);
-                    setShowColorPicker(false);
-                  }}
-                  className="p-1 hover:bg-muted transition-colors border opacity-0 group-hover:opacity-100"
-                  aria-haspopup="menu"
-                  aria-expanded={menuOpen}
-                  title="Options"
-                >
-                  <MoreVertical className="w-4 h-4" />
-                </button>
-              )}
-              {goal.done && (
-                <button
-                  onClick={() => {
-                    setMenuOpen(!menuOpen);
-                    setShowColorPicker(false);
-                  }}
-                  className="p-1 hover:bg-muted transition-colors border"
-                  aria-haspopup="menu"
-                  aria-expanded={menuOpen}
-                  title="Options"
-                >
-                  <MoreVertical className="w-4 h-4" />
-                </button>
-              )}
-              {menuOpen && (
-                <div className="absolute right-0 top-full mt-1 z-50 bg-popover border shadow-lg min-w-[180px]">
-                  <button
-                    className="w-full text-left px-3 py-2 hover:bg-muted text-sm flex items-center gap-2"
-                    onClick={() => {
-                      setIsEditing(true);
-                      setMenuOpen(false);
-                    }}
-                  >
-                    <Edit2 className="w-3 h-3" />
-                    Edit goal
-                  </button>
-                  {!goal.done && (
-                    <button
-                      className="w-full text-left px-3 py-2 hover:bg-muted text-sm"
-                      onClick={handleToggleGoalType}
-                    >
-                      {isPrimary ? '→ Make supporting' : '→ Make primary'}
-                    </button>
-                  )}
-                  <button
-                    className="w-full text-left px-3 py-2 hover:bg-muted text-sm"
-                    onClick={() => {
-                      setShowColorPicker((v) => !v);
-                    }}
-                  >
-                    Change color
-                  </button>
-                  {!goal.done && (
-                    <button
-                      className="w-full text-left px-3 py-2 hover:bg-muted text-sm flex items-center gap-2"
-                      onClick={() => {
-                        onCreateTask();
-                        setMenuOpen(false);
-                      }}
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                      Create task
-                    </button>
-                  )}
-                  <div className="border-t my-1"></div>
-                  <button
-                    className="w-full text-left px-3 py-2 hover:bg-muted text-sm text-destructive flex items-center gap-2"
-                    onClick={() => {
-                      onRemove();
-                      setMenuOpen(false);
-                    }}
-                  >
-                    <Trash2 className="w-3 h-3" />
-                    Remove
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {showColorPicker && (
-            <div className="flex gap-1 mt-2 pt-2 border-t flex-wrap">
-              {GOAL_COLORS.map((c) => (
-                <button
-                  key={c.value}
-                  onClick={() => {
-                    onUpdateColor(c.value);
-                    setShowColorPicker(false);
-                    setMenuOpen(false);
-                  }}
-                  className={`${isPrimary ? 'w-6 h-6' : 'w-5 h-5'} border transition-all ${c.bg} ${c.border} ${
-                    goal.color === c.value ? 'ring-2 ring-offset-1 ring-primary' : 'hover:scale-110'
-                  }`}
-                  title={c.name}
-                />
-              ))}
-            </div>
-          )}
-        </>
-      )}
-    </div>
+      <GoalEditModal
+        goal={isEditModalOpen ? goal : null}
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSave={handleSaveEdit}
+        onDelete={onRemove}
+        onCreateTask={onCreateTask}
+      />
+    </>
   );
 }
