@@ -47,7 +47,7 @@ export function WeeklyGoalsCalendarView({ calendarData, onNavigateToDaily }: Wee
   // State for week navigation (0 = current week, -1 = previous week, 1 = next week, etc.)
   const [weekOffset, setWeekOffset] = useState(0);
 
-  // Generate 14 days: current week Monday-Sunday on top row, next week Monday-Sunday on bottom row
+  // Generate 28 days: current week Monday-Sunday, next 3 weeks (4 rows total)
   const days = useMemo(() => {
     const today = new Date();
     today.setHours(12, 0, 0, 0);
@@ -57,19 +57,15 @@ export function WeeklyGoalsCalendarView({ calendarData, onNavigateToDaily }: Wee
     targetMonday.setDate(targetMonday.getDate() + (weekOffset * 7));
     const targetMondayStart = getMondayStart(targetMonday);
 
-    // Create array with current week (Monday-Sunday) then next week (Monday-Sunday)
+    // Create array with 4 weeks: current week and next 3 weeks
     const result = [];
-    // Add current week: Monday to Sunday
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(targetMondayStart);
-      d.setDate(targetMondayStart.getDate() + i);
-      result.push(d);
-    }
-    // Add next week: Monday to Sunday
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(targetMondayStart);
-      d.setDate(targetMondayStart.getDate() + 7 + i);
-      result.push(d);
+    // Add 4 weeks: Monday to Sunday for each week
+    for (let week = 0; week < 4; week++) {
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(targetMondayStart);
+        d.setDate(targetMondayStart.getDate() + (week * 7) + i);
+        result.push(d);
+      }
     }
 
     return result;
