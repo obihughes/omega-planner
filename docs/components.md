@@ -444,7 +444,7 @@ Notes:
 - URL param `?date=YYYY-MM-DD` will auto-scroll to that month.
 
 ### YearCalendar (`components/calendar/YearCalendar.tsx`)
-Full year calendar view with event and interval management. Accessible under Daily Planner → Yearly Calendar.
+Full year calendar view displaying all 12 months in a 6×2 grid layout, where each month uses the same calendar layout as the Monthly view. Includes event and interval management. Accessible under Daily Planner → Yearly Calendar.
 
 **Key Interactions:**
 - Clicking a date opens a Day Details modal listing events and intervals for that day (or an empty-state message).

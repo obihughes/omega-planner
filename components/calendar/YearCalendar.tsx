@@ -703,21 +703,26 @@ export function YearCalendar({
   };
 
   const renderMonth = (month: number) => {
-    const monthDates = getMonthDates(currentYear, month);
-    
-    const monthEvents = (eventsByMonth[month] || []).slice().sort((a, b) => a.date.getTime() - b.date.getTime());
-    
-    const monthPeriods = getPeriodSegmentsForMonth(data.periods, currentYear, month)
-      .slice()
-      .sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
-    
+    // Build a 6x7 grid for each month (like monthly calendar)
+    const firstOfMonth = new Date(currentYear, month, 1);
+    const startDate = new Date(firstOfMonth);
+    const firstDayWeekday = firstOfMonth.getDay();
+    startDate.setDate(firstOfMonth.getDate() - firstDayWeekday);
+
+    const days: Date[] = [];
+    for (let i = 0; i < 42; i++) {
+      const d = new Date(startDate);
+      d.setDate(startDate.getDate() + i);
+      days.push(d);
+    }
+
     return (
-      <div key={month} id={`month-${month}`}>
-        {/* Month Header */}
-        <div className="mb-4">
+      <div key={month} id={`month-${month}`} className="bg-card overflow-hidden border border-border/50 rounded-lg">
+        {/* Month header */}
+        <div className="flex items-center justify-between px-3 py-2 border-b border-border/40 bg-card/70">
           <button
             type="button"
-            className="text-lg font-bold text-center text-foreground tracking-tight w-full hover:underline cursor-pointer"
+            className="text-sm font-bold text-foreground hover:underline cursor-pointer flex-1 text-left"
             title="Open this month in Monthly view"
             onClick={() => {
               try {
@@ -730,38 +735,38 @@ export function YearCalendar({
               }
             }}
           >
-            {getMonthName(month)}
+            {firstOfMonth.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
           </button>
         </div>
 
-        {/* Week Days Header */}
-        <div className="grid grid-cols-7 gap-1 mb-2">
-          {weekDays.map((day, index) => (
-            <div key={`${day}-${index}`} className={cn("text-xs font-semibold text-muted-foreground/80 text-center py-1.5 tracking-wide", inter.className)}>
-              {day}
-            </div>
-          ))}
+        {/* Day headers */}
+        <div className="grid grid-cols-7 border-b border-border/40 text-center font-semibold text-muted-foreground bg-card">
+          <div className="p-2 text-[10px]">Sun</div>
+          <div className="p-2 text-[10px]">Mon</div>
+          <div className="p-2 text-[10px]">Tue</div>
+          <div className="p-2 text-[10px]">Wed</div>
+          <div className="p-2 text-[10px]">Thu</div>
+          <div className="p-2 text-[10px]">Fri</div>
+          <div className="p-2 text-[10px]">Sat</div>
         </div>
 
-        {/* Calendar Grid - with subtle background */}
-        <div className="grid grid-cols-7 gap-y-1 relative bg-card/30 border border-border/20 rounded-md p-1">
-          {monthDates.map((date, index) => {
-            const dayInfo = getDayInfo(date, month, data.events, data.periods, monthDates);
-            
+        {/* Days grid */}
+        <div className="grid grid-cols-7">
+          {days.map((date, index) => {
+            const isCurrentMonth = date.getMonth() === month;
+            const isToday = date.toDateString() === new Date().toDateString();
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-            const isPast = date < today && !dayInfo.isToday;
+            const isPast = date < today && !isToday;
 
-            if (!dayInfo.isCurrentMonth) {
-              return <div key={date.toISOString()} className="h-12" />;
-            }
+            const dayEvents = data.events
+              .filter(event => event.date.toDateString() === date.toDateString())
+              .slice()
+              .sort((a, b) => a.date.getTime() - b.date.getTime());
 
-            // Hover highlighting disabled
-
-            // Remove the old border-style event indicator - replaced with color circles
-            
-            const periodStyle: React.CSSProperties = {};
-            let periodClasses = '';
+            const dayPeriods = data.periods.filter(p =>
+              p.startDate <= date && p.endDate >= date
+            );
 
             // Convert hex to rgba for transparency
             const hexToRgba = (hex: string, alpha: number) => {
@@ -771,100 +776,90 @@ export function YearCalendar({
               return `rgba(${r}, ${g}, ${b}, ${alpha})`;
             };
 
-            if (dayInfo.periods.length === 1) {
-              const period = dayInfo.periods[0];
-              const baseColor = period.color;
-              const opacity = isPast ? 0.15 : 0.25; // Much more subtle opacity like monthly view
-              
-              periodStyle.backgroundColor = hexToRgba(baseColor, opacity);
-              periodStyle.color = getContrastColor(baseColor);
-
-            } else if (dayInfo.periods.length >= 2) {
-              const p1 = dayInfo.periods[0];
-              const p2 = dayInfo.periods[1];
-              const opacity = isPast ? 0.15 : 0.25; // Much more subtle opacity like monthly view
-              
-              // Horizontal split: top half p1, bottom half p2
+            const periodStyle: React.CSSProperties = {};
+            if (dayPeriods.length === 1) {
+              const period = dayPeriods[0];
+              const opacity = isPast ? 0.15 : 0.25;
+              periodStyle.backgroundColor = hexToRgba(period.color, opacity);
+            } else if (dayPeriods.length >= 2) {
+              const p1 = dayPeriods[0];
+              const p2 = dayPeriods[1];
+              const opacity = isPast ? 0.15 : 0.25;
               periodStyle.background = `linear-gradient(to bottom, ${hexToRgba(p1.color, opacity)} 50%, ${hexToRgba(p2.color, opacity)} 50%)`;
-              periodStyle.color = getContrastColor(p1.color);
-              periodStyle.textShadow = '0 1px 1px rgba(0,0,0,0.5)';
             }
-
-            // Removed hasEventIndicator - no longer needed with new circle system
-            
-            // Visual feedback for drag mode
-            const isDragTarget = dragMode && draggedPeriod && dayInfo.periods.some(p => p.id === draggedPeriod.id);
 
             return (
               <div
-                    key={date.toISOString()}
-                    data-date={date.toISOString()}
-                    className={cn(`
-                      relative h-12 flex flex-col items-start justify-start text-xs border transition-all duration-200`,
-                      isPast
-                        ? 'text-muted-foreground/40 cursor-default border-border/20'
-                        : 'text-foreground cursor-pointer border-border/40',
-                      !periodStyle.backgroundColor && !isPast && 'bg-card',
-                      !dayInfo.isCurrentMonth && 'bg-muted/10 border-border/10',
-                      dayInfo.isToday && 'bg-primary/20 text-primary-foreground font-bold border-primary/60 shadow-md ring-2 ring-primary/40 ring-offset-1 ring-offset-background',
-                      selectedDate && isSameDay(date, selectedDate) && !periodStyle.backgroundColor && 'bg-accent/30 border-accent-foreground/40',
-                      isDragTarget && 'ring-2 ring-blue-400/60 shadow-lg',
-                      dragMode && dayInfo.periods.length > 0 && 'cursor-grabbing'
-                    )}
-                    style={{ ...periodStyle }}
-                    onClick={() => !isPast && handleDateClick(date)}
-                    onDoubleClick={() => !isPast && handleDateDoubleClick(date)}
-                    onMouseDown={(e) => !isPast && dayInfo.periods.length > 0 ? handlePeriodMouseDown(e, date, dayInfo.periods[0]) : handleDateMouseDown(e, date)}
-                    onMouseUp={handleDateMouseUp}
-                    onMouseLeave={handleDateMouseUp}
-                    onMouseMove={dragMode && !isPast ? (e) => handleDragMove(e, date) : undefined}
-                  >
-                    <span className={cn(
-                      "relative z-20 select-none transition-colors duration-200 text-[10px] leading-none",
-                      dayInfo.isToday ? "font-bold text-primary-foreground" : "font-medium",
-                      isPast ? "text-muted-foreground/60" : "text-foreground",
-                      !dayInfo.isCurrentMonth && "text-muted-foreground/30",
-                      inter.className
-                    )}>
-                      {date.getDate()}
-                    </span>
+                key={`${month}-${index}`}
+                className={cn(
+                  "min-h-[80px] border-r border-b border-border/30 last:border-r-0 transition-all duration-200 cursor-pointer relative group",
+                  !isCurrentMonth && "text-muted-foreground/50",
+                  isPast && "opacity-50",
+                  isToday && "border-primary border-2 bg-primary/10 ring-2 ring-primary/30",
+                  selectedDate && date.toDateString() === selectedDate.toDateString() && "border-accent-foreground/60 bg-accent/10"
+                )}
+                style={periodStyle}
+                onClick={() => !isPast && handleDateClick(date)}
+                onDoubleClick={() => !isPast && handleDateDoubleClick(date)}
+                onMouseDown={(e) => !isPast && dayPeriods.length > 0 ? handlePeriodMouseDown(e, date, dayPeriods[0]) : handleDateMouseDown(e, date)}
+                onMouseUp={handleDateMouseUp}
+                onMouseLeave={handleDateMouseUp}
+              >
+                {/* Background */}
+                <div className={cn(
+                  "absolute inset-0",
+                  !isCurrentMonth && "bg-muted/20",
+                  isCurrentMonth && !periodStyle.backgroundColor && "bg-background",
+                  isToday && "bg-primary/15"
+                )} />
 
-                    {/* Events in timeline */}
-                    <div className="absolute top-3 left-0 right-0 bottom-0 flex flex-col gap-0.5 overflow-hidden">
-                      {dayInfo.events.slice(0, 2).map((event, idx) => {
-                        const textColor = getContrastColor(event.color);
-                        return (
-                          <div
-                            key={event.id}
-                            className="h-2.5 px-0.5 py-0 text-[11px] cursor-pointer hover:opacity-95 transition-opacity duration-200 border-l group relative flex items-center rounded-xs truncate"
-                            style={{
-                              backgroundColor: event.color,
-                              borderLeftColor: textColor === '#000' ? '#000' : '#fff',
-                              color: textColor,
-                              borderLeftWidth: '1px'
-                            }}
-                            onClick={(e) => { e.stopPropagation(); handleEventClick(event, e); }}
-                            title={event.title}
-                          >
-                            <span className="truncate font-medium text-[11px] leading-none"
-                              style={{ color: textColor }}
-                            >
-                              {event.title}
-                            </span>
-                          </div>
-                        );
-                      })}
-                      {dayInfo.events.length > 2 && (
-                        <div className="text-[11px] text-muted-foreground leading-none font-medium">
-                          +{dayInfo.events.length - 2}
-                        </div>
-                      )}
-                    </div>
+                {/* Content */}
+                <div className="relative z-10 h-full p-1">
+                  <div className={cn(
+                    "text-xs mb-1 font-medium transition-colors duration-200 relative z-10",
+                    !isCurrentMonth && "text-muted-foreground",
+                    isToday && "text-primary font-bold"
+                  )}>
+                    {date.getDate()}
                   </div>
+
+                  {/* Events */}
+                  <div className="space-y-1 relative z-10">
+                    {dayEvents.slice(0, 2).map(event => {
+                      const textColor = getContrastColor(event.color);
+                      return (
+                        <div
+                          key={event.id}
+                          className="h-5 px-1.5 py-0.5 text-[11px] cursor-pointer hover:opacity-95 transition-opacity duration-200 border group relative flex items-center rounded-sm truncate"
+                          style={{
+                            backgroundColor: event.color,
+                            borderColor: event.color,
+                            color: textColor,
+                            borderLeftWidth: '3px',
+                            borderLeftColor: textColor === '#000' ? '#000' : '#fff'
+                          }}
+                          onClick={(e) => handleEventClick(event, e)}
+                          title={`${event.title}${(event.notes || event.description) ? ` - ${event.notes || event.description}` : ''}`}
+                        >
+                          <span className="truncate font-semibold text-[11px]"
+                            style={{ color: textColor }}
+                          >
+                            {event.title}
+                          </span>
+                        </div>
+                      );
+                    })}
+                    {dayEvents.length > 2 && (
+                      <div className="text-[10px] text-muted-foreground px-1 font-medium">
+                        +{dayEvents.length - 2}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             );
           })}
         </div>
-
       </div>
     );
   };
@@ -939,9 +934,9 @@ export function YearCalendar({
         </div>
       </div>
       
-      {/* 12-Month Grid */}
+      {/* 12-Month Grid - 6 rows x 2 columns */}
       <div className={cn(
-        "grid grid-cols-2 gap-x-8 gap-y-12 transition-all duration-300 pt-16 mt-6 px-4 bg-background/50",
+        "grid grid-cols-2 gap-x-3 gap-y-4 transition-all duration-300 pt-16 mt-6 px-0 bg-background/50",
         {
           'cursor-crosshair': eraserMode,
           'opacity-50 pointer-events-none': isLoading
