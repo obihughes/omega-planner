@@ -830,18 +830,16 @@ export function YearCalendar({
                       return (
                         <div
                           key={event.id}
-                          className="h-5 px-1.5 py-0.5 text-[11px] cursor-pointer hover:opacity-95 transition-opacity duration-200 border group relative flex items-center rounded-sm truncate"
+                          className="h-4 px-1.5 py-0.5 text-[9px] cursor-pointer hover:opacity-95 transition-opacity duration-200 border group relative flex items-center rounded-sm truncate"
                           style={{
                             backgroundColor: event.color,
                             borderColor: event.color,
-                            color: textColor,
-                            borderLeftWidth: '3px',
-                            borderLeftColor: textColor === '#000' ? '#000' : '#fff'
+                            color: textColor
                           }}
                           onClick={(e) => handleEventClick(event, e)}
                           title={`${event.title}${(event.notes || event.description) ? ` - ${event.notes || event.description}` : ''}`}
                         >
-                          <span className="truncate font-semibold text-[11px]"
+                          <span className="truncate font-semibold text-[9px]"
                             style={{ color: textColor }}
                           >
                             {event.title}
