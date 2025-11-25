@@ -10,12 +10,35 @@ import { WeekGoals, WeeklyGoal } from '@/types';
 import { Trash2, Plus, ExternalLink, MoreVertical, Edit2, Save, X, StickyNote, ChevronLeft, ChevronRight, Calendar, Clock } from 'lucide-react';
 
 const GOAL_COLORS = [
-  { name: 'Gray', bg: 'bg-gray-500/10', border: 'border-gray-500/30', text: 'text-gray-700 dark:text-gray-300', value: 'gray' },
-  { name: 'Blue', bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-700 dark:text-blue-300', value: 'blue' },
-  { name: 'Green', bg: 'bg-green-500/10', border: 'border-green-500/30', text: 'text-green-700 dark:text-green-300', value: 'green' },
-  { name: 'Yellow', bg: 'bg-yellow-500/10', border: 'border-yellow-500/30', text: 'text-yellow-700 dark:text-yellow-300', value: 'yellow' },
+  // Warm gradient
   { name: 'Red', bg: 'bg-red-500/10', border: 'border-red-500/30', text: 'text-red-700 dark:text-red-300', value: 'red' },
+  { name: 'Orange', bg: 'bg-orange-500/10', border: 'border-orange-500/30', text: 'text-orange-700 dark:text-orange-300', value: 'orange' },
+  { name: 'Amber', bg: 'bg-amber-500/10', border: 'border-amber-500/30', text: 'text-amber-700 dark:text-amber-300', value: 'amber' },
+  { name: 'Yellow', bg: 'bg-yellow-500/10', border: 'border-yellow-500/30', text: 'text-yellow-700 dark:text-yellow-300', value: 'yellow' },
+  
+  // Cool gradient
+  { name: 'Lime', bg: 'bg-lime-500/10', border: 'border-lime-500/30', text: 'text-lime-700 dark:text-lime-300', value: 'lime' },
+  { name: 'Green', bg: 'bg-green-500/10', border: 'border-green-500/30', text: 'text-green-700 dark:text-green-300', value: 'green' },
+  { name: 'Emerald', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', text: 'text-emerald-700 dark:text-emerald-300', value: 'emerald' },
+  { name: 'Teal', bg: 'bg-teal-500/10', border: 'border-teal-500/30', text: 'text-teal-700 dark:text-teal-300', value: 'teal' },
+  
+  // Blue gradient
+  { name: 'Cyan', bg: 'bg-cyan-500/10', border: 'border-cyan-500/30', text: 'text-cyan-700 dark:text-cyan-300', value: 'cyan' },
+  { name: 'Blue', bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-700 dark:text-blue-300', value: 'blue' },
+  { name: 'Indigo', bg: 'bg-indigo-500/10', border: 'border-indigo-500/30', text: 'text-indigo-700 dark:text-indigo-300', value: 'indigo' },
+  { name: 'Violet', bg: 'bg-violet-500/10', border: 'border-violet-500/30', text: 'text-violet-700 dark:text-violet-300', value: 'violet' },
+  
+  // Purple & Pink gradient
   { name: 'Purple', bg: 'bg-purple-500/10', border: 'border-purple-500/30', text: 'text-purple-700 dark:text-purple-300', value: 'purple' },
+  { name: 'Fuchsia', bg: 'bg-fuchsia-500/10', border: 'border-fuchsia-500/30', text: 'text-fuchsia-700 dark:text-fuchsia-300', value: 'fuchsia' },
+  { name: 'Pink', bg: 'bg-pink-500/10', border: 'border-pink-500/30', text: 'text-pink-700 dark:text-pink-300', value: 'pink' },
+  { name: 'Rose', bg: 'bg-rose-500/10', border: 'border-rose-500/30', text: 'text-rose-700 dark:text-rose-300', value: 'rose' },
+  
+  // Neutral
+  { name: 'Gray', bg: 'bg-gray-500/10', border: 'border-gray-500/30', text: 'text-gray-700 dark:text-gray-300', value: 'gray' },
+  { name: 'Slate', bg: 'bg-slate-500/10', border: 'border-slate-500/30', text: 'text-slate-700 dark:text-slate-300', value: 'slate' },
+  { name: 'Stone', bg: 'bg-stone-500/10', border: 'border-stone-500/30', text: 'text-stone-700 dark:text-stone-300', value: 'stone' },
+  { name: 'Zinc', bg: 'bg-zinc-500/10', border: 'border-zinc-500/30', text: 'text-zinc-700 dark:text-zinc-300', value: 'zinc' },
 ];
 
 function getMondayStart(date: Date): Date {
@@ -509,10 +532,10 @@ function GoalEditModal({ goal, isOpen, onClose, onSave, onDelete, onCreateTask }
 
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-[1000] p-4">
-      <div className="bg-card rounded-xl shadow-2xl p-6 w-full max-w-md border border-border text-foreground flex flex-col gap-5">
+      <div className="bg-card rounded-xl shadow-2xl p-4 w-full max-w-md border border-border text-foreground flex flex-col gap-3">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Edit Goal</h2>
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="text-base font-semibold">Edit Goal</h2>
           <button
             onClick={onClose}
             className="p-1 hover:bg-muted rounded-lg transition-colors"
@@ -523,26 +546,26 @@ function GoalEditModal({ goal, isOpen, onClose, onSave, onDelete, onCreateTask }
         </div>
 
         {/* Title */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Goal Title</label>
+        <div className="space-y-1">
+          <label className="text-xs font-medium">Goal Title</label>
           <Input
             ref={titleInputRef}
             value={editedTitle}
             onChange={(e) => setEditedTitle(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Enter goal title..."
-            className="text-base"
+            className="text-sm py-1.5"
           />
         </div>
 
         {/* Goal Type */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Goal Type</label>
+        <div className="space-y-1">
+          <label className="text-xs font-medium">Goal Type</label>
           <div className="flex gap-2">
             <button
               type="button"
               onClick={() => setSelectedGoalType('primary')}
-              className={`flex-1 px-3 py-2 border transition-all rounded-lg text-sm font-medium ${
+              className={`flex-1 px-3 py-1.5 border transition-all rounded-lg text-xs font-medium ${
                 selectedGoalType === 'primary'
                   ? 'bg-primary text-primary-foreground border-primary'
                   : 'bg-card hover:bg-muted border-border'
@@ -553,7 +576,7 @@ function GoalEditModal({ goal, isOpen, onClose, onSave, onDelete, onCreateTask }
             <button
               type="button"
               onClick={() => setSelectedGoalType('supporting')}
-              className={`flex-1 px-3 py-2 border transition-all rounded-lg text-sm font-medium ${
+              className={`flex-1 px-3 py-1.5 border transition-all rounded-lg text-xs font-medium ${
                 selectedGoalType === 'supporting'
                   ? 'bg-primary text-primary-foreground border-primary'
                   : 'bg-card hover:bg-muted border-border'
@@ -565,29 +588,27 @@ function GoalEditModal({ goal, isOpen, onClose, onSave, onDelete, onCreateTask }
         </div>
 
         {/* Color Picker */}
-        <div className="space-y-3">
-          <label className="text-sm font-medium">Color</label>
-          <div className="flex gap-2 flex-wrap">
+        <div className="space-y-1">
+          <label className="text-xs font-medium">Color</label>
+          <div className="flex gap-1 flex-wrap">
             {GOAL_COLORS.map((c) => (
               <button
                 key={c.value}
                 onClick={() => setSelectedColor(c.value)}
-                className={`w-8 h-8 border-2 transition-all rounded-lg flex items-center justify-center ${c.bg} ${c.border} ${
-                  selectedColor === c.value ? 'ring-2 ring-offset-2 ring-primary' : 'hover:scale-110'
+                className={`w-8 h-8 border-2 transition-all rounded ${c.bg} ${
+                  selectedColor === c.value ? 'ring-2 ring-offset-1 ring-primary scale-110 opacity-100' : 'opacity-100 hover:opacity-100'
                 }`}
                 title={c.name}
                 type="button"
-              >
-                {selectedColor === c.value && <span className="text-xs font-bold">✓</span>}
-              </button>
+              />
             ))}
           </div>
         </div>
 
         {/* Notes */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium flex items-center gap-2">
-            <StickyNote className="w-4 h-4" />
+        <div className="space-y-1">
+          <label className="text-xs font-medium flex items-center gap-2">
+            <StickyNote className="w-3 h-3" />
             Notes (Optional)
           </label>
           <Textarea
@@ -595,31 +616,31 @@ function GoalEditModal({ goal, isOpen, onClose, onSave, onDelete, onCreateTask }
             onChange={(e) => setEditedNotes(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Add any notes or context..."
-            className="text-sm min-h-[80px]"
+            className="text-xs min-h-[60px] py-1.5"
           />
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-2 pt-2">
+        <div className="flex gap-2 pt-1">
           <Button
             onClick={handleSave}
-            className="flex-1"
+            className="flex-1 py-1.5 text-sm"
             disabled={!editedTitle.trim()}
           >
-            <Save className="w-4 h-4 mr-2" />
+            <Save className="w-3 h-3 mr-1" />
             Save Changes
           </Button>
           <Button
             onClick={onClose}
             variant="outline"
-            className="flex-1"
+            className="flex-1 py-1.5 text-sm"
           >
             Cancel
           </Button>
         </div>
 
         {/* Additional Actions */}
-        <div className="flex gap-2 pt-2 border-t">
+        <div className="flex gap-2 pt-1 border-t border-border/50">
           <Button
             onClick={() => {
               onCreateTask();
@@ -627,7 +648,7 @@ function GoalEditModal({ goal, isOpen, onClose, onSave, onDelete, onCreateTask }
             }}
             variant="outline"
             size="sm"
-            className="flex-1"
+            className="flex-1 py-1 text-xs"
           >
             <ExternalLink className="w-3 h-3 mr-1" />
             Create Task
@@ -639,7 +660,7 @@ function GoalEditModal({ goal, isOpen, onClose, onSave, onDelete, onCreateTask }
             }}
             variant="outline"
             size="sm"
-            className="flex-1 text-destructive hover:text-destructive"
+            className="flex-1 py-1 text-xs text-destructive hover:text-destructive"
           >
             <Trash2 className="w-3 h-3 mr-1" />
             Delete
