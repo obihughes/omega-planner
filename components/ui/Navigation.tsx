@@ -145,6 +145,7 @@ export function Navigation() {
   }
 
   const betaSubViews: any[] = [
+    { key: 'beta-activities', label: 'Activities', icon: Files, href: '/activities', active: pathname === '/activities' },
     { key: 'beta-workspace', label: 'Workspace Today', icon: CalendarCheck, href: '/beta/workspace', active: pathname === '/beta/workspace' },
     { key: 'beta-habits', label: 'Habits', icon: ClipboardList, href: '/beta/habits', active: pathname === '/beta/habits' },
     { key: 'beta-tasks', label: 'Tasks', icon: ClipboardList, href: '/beta/tasks', active: pathname === '/beta/tasks' },
@@ -154,11 +155,11 @@ export function Navigation() {
 
   const navItems = [
     {
-      key: 'activities',
-      href: '/activities',
-      label: 'Activities',
-      icon: Files,
-      active: pathname === '/activities',
+      key: 'weekly-overview',
+      href: '/calendar',
+      label: 'Weekly Overview',
+      icon: ClipboardList,
+      active: pathname === '/calendar' && calendarViewMode === 'weekly-goals',
       subViews: []
     },
     {
@@ -169,7 +170,7 @@ export function Navigation() {
       active: pathname === '/' && !pathname.includes('/calendar'),
       subViews: [
         { key: 'planner-daily', type: 'planner', mode: 'daily', label: 'Daily', icon: CalendarCheck, active: pathname === '/' && plannerViewMode === 'daily' },
-        { key: 'planner-weekly', type: 'planner', mode: 'weekly', label: 'Week Overview', icon: CalendarDays, active: pathname === '/' && plannerViewMode === 'weekly' }
+        { key: 'planner-weekly', type: 'planner', mode: 'weekly', label: 'Week', icon: CalendarDays, active: pathname === '/' && plannerViewMode === 'weekly' }
       ]
     },
     {
@@ -180,8 +181,7 @@ export function Navigation() {
       active: pathname === '/calendar',
       subViews: [
         { key: 'calendar-monthly', type: 'calendar', mode: 'monthly', label: 'Monthly', icon: CalendarRange, active: pathname === '/calendar' && calendarViewMode === 'monthly' },
-        { key: 'calendar-yearly', type: 'calendar', mode: 'yearly', label: 'Yearly', icon: CalendarDays, active: pathname === '/calendar' && calendarViewMode === 'yearly' },
-        { key: 'calendar-weekly-goals', type: 'calendar', mode: 'weekly-goals', label: 'Weekly Goals', icon: ClipboardList, active: pathname === '/calendar' && calendarViewMode === 'weekly-goals' }
+        { key: 'calendar-yearly', type: 'calendar', mode: 'yearly', label: 'Yearly', icon: CalendarDays, active: pathname === '/calendar' && calendarViewMode === 'yearly' }
       ]
     },
     {
@@ -269,6 +269,15 @@ export function Navigation() {
                   <div className="relative">
                     <Link
                       href={item.href}
+                      onClick={(e) => {
+                        if (item.key === 'weekly-overview') {
+                          // Navigate to calendar and set weekly goals view mode
+                          if (pathname !== '/calendar') {
+                            router.push('/calendar');
+                          }
+                          setCalendarViewMode('weekly-goals' as any);
+                        }
+                      }}
                       className={cn(
                         "w-full flex items-center font-normal transition-all duration-200 group relative",
                         isCollapsed ? "justify-center" : "space-x-2",
