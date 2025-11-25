@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   Calendar, CalendarDays, FolderKanban, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
-  Clock, Archive, Trash2, CalendarCheck, CalendarRange, Folder, Files, ClipboardList, Settings, FlaskConical, ChefHat
+  Clock, Archive, Trash2, CalendarCheck, CalendarRange, Folder, Files, ClipboardList, Settings, FlaskConical, ChefHat, CheckSquare2
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
@@ -198,6 +198,14 @@ export function Navigation() {
       label: 'Text Documents',
       icon: Files,
       active: pathname === '/documents',
+      subViews: []
+    },
+    {
+      key: 'checklist',
+      href: '/checklist',
+      label: 'Checklist',
+      icon: CheckSquare2,
+      active: pathname === '/checklist',
       subViews: []
     },
     // Focus merged into Workspace Today (/projects/workspace)
