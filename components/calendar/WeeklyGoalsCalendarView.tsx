@@ -674,45 +674,43 @@ function GoalItem({ goal, onToggle, onRemove, onUpdateColor, onUpdate, onCreateT
       <div
         className={`border group transition-all ${colorScheme.bg} ${colorScheme.border} ${
           isPrimary ? 'p-3 border-2' : 'p-2'
-        } rounded-lg cursor-pointer hover:shadow-md`}
+        } rounded-lg cursor-pointer hover:shadow-md relative overflow-hidden`}
       >
-        <div className="flex items-start gap-2 min-w-0">
-          <input
-            type="checkbox"
-            checked={goal.done}
-            onChange={onToggle}
-            className={`${isPrimary ? 'w-5 h-5 mt-0.5' : 'w-4 h-4 mt-0.5'} cursor-pointer flex-shrink-0 rounded`}
-            aria-label="toggle goal"
-          />
-          <div className="flex-1 min-w-0 flex-col flex">
-            <span
-              className={`block break-words ${
-                isPrimary ? 'text-base font-semibold' : 'text-sm'
-              } ${goal.done ? 'line-through opacity-50' : ''} ${colorScheme.text}`}
-              title={goal.title}
-              onClick={() => setIsEditModalOpen(true)}
-            >
-              {goal.title}
-            </span>
-            {goal.notes && !goal.done && (
-              <div className="text-xs text-muted-foreground mt-1 opacity-70 flex items-start gap-1">
-                <StickyNote className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                <span className="break-words">{goal.notes}</span>
-              </div>
-            )}
-          </div>
-
-          <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              onClick={() => setIsEditModalOpen(true)}
-              className="p-1.5 hover:bg-muted transition-colors border rounded-lg"
-              title="Edit goal"
-              type="button"
-            >
-              <Edit2 className="w-4 h-4" />
-            </button>
-          </div>
+        <div className="flex-1 min-w-0 flex-col flex">
+          <span
+            className={`block break-words ${
+              isPrimary ? 'text-base font-semibold' : 'text-sm'
+            } ${goal.done ? 'line-through opacity-50' : ''} ${colorScheme.text}`}
+            title={goal.title}
+            onClick={() => setIsEditModalOpen(true)}
+          >
+            {goal.title}
+          </span>
+          {goal.notes && !goal.done && (
+            <div className="text-xs text-muted-foreground mt-1 opacity-70 flex items-start gap-1">
+              <StickyNote className="w-3 h-3 mt-0.5 flex-shrink-0" />
+              <span className="break-words">{goal.notes}</span>
+            </div>
+          )}
         </div>
+
+        {/* Checkbox in lower right corner - absolutely positioned, no space taken */}
+        <input
+          type="checkbox"
+          checked={goal.done}
+          onChange={onToggle}
+          className={`${isPrimary ? 'w-5 h-5' : 'w-4 h-4'} cursor-pointer rounded absolute bottom-0.5 right-0.5 pointer-events-auto`}
+          aria-label="toggle goal"
+        />
+
+        <button
+          onClick={() => setIsEditModalOpen(true)}
+          className="absolute top-0.5 right-0.5 p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted rounded"
+          title="Edit goal"
+          type="button"
+        >
+          <Edit2 className="w-3 h-3" />
+        </button>
       </div>
 
       <GoalEditModal
