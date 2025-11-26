@@ -174,6 +174,14 @@ export function Navigation() {
       ]
     },
     {
+      key: 'class-schedule',
+      href: '/class-schedule',
+      label: 'Class Schedule',
+      icon: Clock,
+      active: pathname === '/class-schedule',
+      subViews: []
+    },
+    {
       key: 'calendar',
       href: '/calendar',
       label: 'Calendar',

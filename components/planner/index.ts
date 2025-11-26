@@ -1,4 +1,5 @@
 export { default as DailyPlanner } from './DailyPlanner';
+export { default as ClassSchedule } from './ClassSchedule';
 export { TaskCard } from './TaskCard'; 
 export { TaskInboxSidebar } from './TaskInboxSidebar';
 export { PinnedTasksSidebar } from './PinnedTasksSidebar';

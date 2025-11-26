@@ -86,13 +86,66 @@ export interface PinnedTask extends Task {
 export interface SavedDay {
   /** Unique identifier for the saved day */
   id: string;
-  
+
   /** Name/title of the saved day */
   name: string;
-  
+
   /** Date key in YYYY-MM-DD format */
   dateKey: string;
-  
+
   /** Timestamp when the saved day was created */
   createdAt: string;
-} 
+}
+
+/**
+ * Class schedule task interface representing a recurring class entry
+ * stored by day-of-week instead of a specific calendar date.
+ *
+ * dayOfWeek follows JavaScript's convention: 0 = Sunday, 6 = Saturday.
+ */
+export interface ClassScheduleTask {
+  /** Unique identifier for the class task */
+  id: string;
+
+  /** Name/title of the class (e.g., \"Math 101\") */
+  name: string;
+
+  /** Start time in decimal hours (e.g., 8.5 for 8:30 AM) */
+  startHour: number;
+
+  /** Duration in decimal hours */
+  duration: number;
+
+  /** CSS background color class for the task (Tailwind class name) */
+  color: string;
+
+  /** Notes associated with the class */
+  notes: string;
+
+  /** Completion flag (not typically used for recurring classes but kept for consistency) */
+  completed: boolean;
+
+  /** Day of week this class belongs to (0 = Sunday ... 6 = Saturday) */
+  dayOfWeek: number;
+
+  /** ISO timestamp when the class entry was created */
+  createdAt?: string;
+
+  /** ISO timestamp when the class entry was last updated */
+  updatedAt?: string;
+}
+
+/**
+ * Storage payload for class schedule tasks
+ */
+export interface ClassScheduleStorageData {
+  /** Version of the storage schema */
+  version: string;
+
+  /** Array of recurring class schedule tasks */
+  tasks: ClassScheduleTask[];
+
+  /** Timestamp of when the data was last updated */
+  lastUpdated: string;
+}
+ 

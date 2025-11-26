@@ -91,6 +91,9 @@ Modal for editing the details of a task.
 ### ViewTaskNotesModal
 Modal for viewing the notes of a task.
 
+### ClassSchedule Page
+The Class Schedule view (`/class-schedule`) provides a recurring weekly timetable where entries are stored by day-of-week instead of a specific date. It reuses the same timeline visualization as the Daily view but always shows the same schedule for each Monday, Tuesday, etc. Implementation is in `components/planner/ClassSchedule.tsx` with state handled by `hooks/useClassScheduleState.ts` and storage handled by `utils/classScheduleStorage.ts`.
+
 ## Usage
 
 ```typescript
