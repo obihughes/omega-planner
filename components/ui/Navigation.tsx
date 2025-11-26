@@ -146,6 +146,7 @@ export function Navigation() {
 
   const betaSubViews: any[] = [
     { key: 'beta-activities', label: 'Activities', icon: Files, href: '/activities', active: pathname === '/activities' },
+    { key: 'beta-class-schedule', label: 'Class Schedule', icon: Clock, href: '/class-schedule', active: pathname === '/class-schedule' },
     { key: 'beta-workspace', label: 'Workspace Today', icon: CalendarCheck, href: '/beta/workspace', active: pathname === '/beta/workspace' },
     { key: 'beta-habits', label: 'Habits', icon: ClipboardList, href: '/beta/habits', active: pathname === '/beta/habits' },
     { key: 'beta-tasks', label: 'Tasks', icon: ClipboardList, href: '/beta/tasks', active: pathname === '/beta/tasks' },
@@ -172,14 +173,6 @@ export function Navigation() {
         { key: 'planner-daily', type: 'planner', mode: 'daily', label: 'Daily', icon: CalendarCheck, active: pathname === '/' && plannerViewMode === 'daily' },
         { key: 'planner-weekly', type: 'planner', mode: 'weekly', label: 'Week', icon: CalendarDays, active: pathname === '/' && plannerViewMode === 'weekly' }
       ]
-    },
-    {
-      key: 'class-schedule',
-      href: '/class-schedule',
-      label: 'Class Schedule',
-      icon: Clock,
-      active: pathname === '/class-schedule',
-      subViews: []
     },
     {
       key: 'calendar',
@@ -281,7 +274,7 @@ export function Navigation() {
               const showSubViews = true;
 
               return (
-                <div key={item.href}>
+                <div key={item.key}>
                   <div className="relative">
                     <Link
                       href={item.href}

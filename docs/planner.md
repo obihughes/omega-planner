@@ -92,7 +92,29 @@ Modal for editing the details of a task.
 Modal for viewing the notes of a task.
 
 ### ClassSchedule Page
-The Class Schedule view (`/class-schedule`) provides a recurring weekly timetable where entries are stored by day-of-week instead of a specific date. It reuses the same timeline visualization as the Daily view but always shows the same schedule for each Monday, Tuesday, etc. Implementation is in `components/planner/ClassSchedule.tsx` with state handled by `hooks/useClassScheduleState.ts` and storage handled by `utils/classScheduleStorage.ts`.
+The Class Schedule view (`/class-schedule`) provides a recurring weekly timetable where entries are stored by day-of-week instead of a specific date. Implementation is in `components/planner/ClassSchedule.tsx` with state handled by `hooks/useClassScheduleState.ts` and storage handled by `utils/classScheduleStorage.ts`.
+
+**Key Features:**
+- **Daily View**: Traditional timeline showing one day at a time with 4 time periods (night, morning, afternoon, evening)
+- **Weekly View**: AM/PM row-based layout matching the daily planner's WeeklyView design
+  - Each day shows two rows: AM (12:00 AM - 11:59 AM) and PM (12:00 PM - 11:59 PM)
+  - Sticky day labels showing day name, date, and month
+  - Timeline headers with hourly markers
+  - Current time indicator on today's row
+  - Double-click any timeline to create a class at that time
+  - Horizontal scrollable layout for better viewing
+- **Add Classes**: Click "+ Add Class" button or double-click timeline to create new recurring classes
+- **Edit Classes**: Click any existing class card to edit name, time, duration, color, and notes
+- **Delete Classes**: Delete classes via the edit modal
+- **View Toggle**: Switch between Daily and Weekly views with a simple toggle button
+- **Persistence**: All class schedules are saved to localStorage and persist across sessions
+- **Day Navigation**: Quick day selector tabs in daily view for easy navigation between weekdays
+
+**Technical Notes:**
+- Classes are stored by day-of-week (0 = Sunday ... 6 = Saturday) rather than specific dates
+- Each class repeats weekly on its assigned day
+- Uses the same task card rendering as the daily planner for consistency
+- Weekly view constants: 90px per hour, 60px row height, 95px day column width
 
 ## Usage
 

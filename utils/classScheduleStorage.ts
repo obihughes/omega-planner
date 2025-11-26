@@ -5,34 +5,72 @@ const STORAGE_VERSION = '1.0';
 
 export const ClassScheduleStorage = {
   load(): ClassScheduleTask[] {
-    if (typeof window === 'undefined') return [];
+    console.log('🔍 [ClassScheduleStorage] load() called');
+    if (typeof window === 'undefined') {
+      console.log('⚠️ [ClassScheduleStorage] load() called on server-side, returning empty array');
+      return [];
+    }
+
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
+    console.log('🔍 [ClassScheduleStorage] Raw localStorage value:', raw);
+
+    if (!raw) {
+      console.log('ℹ️ [ClassScheduleStorage] No stored class schedule found in localStorage');
+      return [];
+    }
 
     try {
       const data: ClassScheduleStorageData = JSON.parse(raw);
-      if (!data || !Array.isArray(data.tasks)) return [];
+      console.log('🔍 [ClassScheduleStorage] Parsed data:', data);
 
-      return data.tasks
+      if (!data || !Array.isArray(data.tasks)) {
+        console.log('⚠️ [ClassScheduleStorage] Invalid data structure, returning empty array');
+        return [];
+      }
+
+      const loaded = data.tasks
         .map(ClassScheduleStorage.clean)
         .filter(ClassScheduleStorage.isValid);
+      console.log('✅ [ClassScheduleStorage] Successfully loaded', loaded.length, 'tasks:', loaded);
+      return loaded;
     } catch (e) {
-      console.error('Failed to load class schedule storage', e);
+      console.error('❌ [ClassScheduleStorage] Failed to load:', e);
+      console.error('❌ [ClassScheduleStorage] Raw data that failed to parse:', raw);
       return [];
     }
   },
 
   save(tasks: ClassScheduleTask[]): void {
-    if (typeof window === 'undefined') return;
+    console.log('💾 [ClassScheduleStorage] save() called with', tasks.length, 'tasks:', tasks);
+    if (typeof window === 'undefined') {
+      console.log('⚠️ [ClassScheduleStorage] save() called on server-side, skipping');
+      return;
+    }
+
     try {
+      const cleanedTasks = tasks.map(ClassScheduleStorage.clean);
+      console.log('🧹 [ClassScheduleStorage] Cleaned tasks:', cleanedTasks);
+
       const payload: ClassScheduleStorageData = {
         version: STORAGE_VERSION,
-        tasks: tasks.map(ClassScheduleStorage.clean),
+        tasks: cleanedTasks,
         lastUpdated: new Date().toISOString(),
       };
+
+      console.log('📦 [ClassScheduleStorage] Payload to save:', payload);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+
+      // Verify the save worked
+      const verifyRaw = localStorage.getItem(STORAGE_KEY);
+      if (verifyRaw) {
+        const verifyData = JSON.parse(verifyRaw);
+        console.log('✅ [ClassScheduleStorage] Save verified, stored', verifyData.tasks.length, 'tasks');
+      } else {
+        console.error('❌ [ClassScheduleStorage] Save verification failed - could not read back from localStorage');
+      }
     } catch (e) {
-      console.error('Failed to save class schedule storage', e);
+      console.error('❌ [ClassScheduleStorage] Failed to save:', e);
+      console.error('❌ [ClassScheduleStorage] Tasks that failed to save:', tasks);
     }
   },
 
@@ -41,6 +79,7 @@ export const ClassScheduleStorage = {
       task &&
       typeof task.id === 'string' &&
       typeof task.name === 'string' &&
+      typeof task.startHour === 'number' &&
       typeof task.duration === 'number' &&
       typeof task.color === 'string' &&
       typeof task.dayOfWeek === 'number'
@@ -76,5 +115,6 @@ export const ClassScheduleStorage = {
     };
   },
 };
+
 
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ClassScheduleTask, Task } from '@/types/planner';
 import { ClassScheduleStorage } from '@/utils/classScheduleStorage';
 import { dateFromDateKey, getDateKey } from '@/utils/dateUtils';
@@ -40,16 +40,25 @@ export interface UseClassScheduleStateResult {
  * timeline components can be reused without impacting the main planner.
  */
 export function useClassScheduleState(): UseClassScheduleStateResult {
-  const [classTasks, setClassTasks] = useState<ClassScheduleTask[]>([]);
-
-  // Load from localStorage on mount
-  useEffect(() => {
+  // Initialize state directly from localStorage to avoid race condition
+  const [classTasks, setClassTasks] = useState<ClassScheduleTask[]>(() => {
+    console.log('🔄 [useClassScheduleState] Initializing state from storage');
     const loaded = ClassScheduleStorage.load();
-    setClassTasks(loaded);
+    console.log('✅ [useClassScheduleState] Initial state loaded with', loaded.length, 'tasks');
+    return loaded;
+  });
+
+  // Track mount/unmount
+  useEffect(() => {
+    console.log('🎬 [useClassScheduleState] Hook mounted with', classTasks.length, 'tasks');
+    return () => {
+      console.log('🔚 [useClassScheduleState] Hook unmounting');
+    };
   }, []);
 
   // Persist whenever tasks change
   useEffect(() => {
+    console.log('💾 [useClassScheduleState] Tasks changed, saving', classTasks.length, 'tasks');
     ClassScheduleStorage.save(classTasks);
   }, [classTasks]);
 
@@ -103,6 +112,12 @@ export function useClassScheduleState(): UseClassScheduleStateResult {
   }, [classTasks, weekMeta]);
 
   const upsertFromModal = useCallback((taskFromModal: Task, isNew?: boolean) => {
+    console.log('✏️ [useClassScheduleState] upsertFromModal called:', {
+      taskId: taskFromModal.id,
+      taskName: taskFromModal.name,
+      isNew,
+    });
+
     // Determine day-of-week from the task's baseDate
     const baseDateKey = taskFromModal.baseDate;
     const date = dateFromDateKey(baseDateKey);
@@ -111,6 +126,7 @@ export function useClassScheduleState(): UseClassScheduleStateResult {
 
     setClassTasks((prev) => {
       const index = prev.findIndex((t) => t.id === taskFromModal.id);
+      console.log('🔍 [useClassScheduleState] Task index in array:', index, 'out of', prev.length, 'tasks');
 
       const common: ClassScheduleTask = {
         id: taskFromModal.id,
@@ -125,8 +141,10 @@ export function useClassScheduleState(): UseClassScheduleStateResult {
         updatedAt: undefined,
       };
 
+      let newTasks;
       if (index === -1 || isNew) {
-        return [
+        console.log('➕ [useClassScheduleState] Adding new task for day', dayOfWeek);
+        newTasks = [
           ...prev,
           {
             ...common,
@@ -134,22 +152,31 @@ export function useClassScheduleState(): UseClassScheduleStateResult {
             updatedAt: nowIso,
           },
         ];
+      } else {
+        console.log('📝 [useClassScheduleState] Updating existing task at index', index);
+        const next = [...prev];
+        const previous = next[index];
+        next[index] = {
+          ...previous,
+          ...common,
+          createdAt: previous.createdAt ?? nowIso,
+          updatedAt: nowIso,
+        };
+        newTasks = next;
       }
 
-      const next = [...prev];
-      const previous = next[index];
-      next[index] = {
-        ...previous,
-        ...common,
-        createdAt: previous.createdAt ?? nowIso,
-        updatedAt: nowIso,
-      };
-      return next;
+      console.log('✅ [useClassScheduleState] New task array length:', newTasks.length);
+      return newTasks;
     });
   }, []);
 
   const deleteTaskById = useCallback((taskId: string) => {
-    setClassTasks((prev) => prev.filter((t) => t.id !== taskId));
+    console.log('🗑️ [useClassScheduleState] deleteTaskById called for task:', taskId);
+    setClassTasks((prev) => {
+      const filtered = prev.filter((t) => t.id !== taskId);
+      console.log('✅ [useClassScheduleState] Deleted task. Before:', prev.length, 'After:', filtered.length);
+      return filtered;
+    });
   }, []);
 
   return {
@@ -160,5 +187,6 @@ export function useClassScheduleState(): UseClassScheduleStateResult {
     deleteTaskById,
   };
 }
+
 
 

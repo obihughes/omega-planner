@@ -42,7 +42,7 @@ interface EditTaskModalProps {
  * It includes fields for task name, date, start time, duration, color, and notes.
  * Provides options to save, delete, pin, or move tasks to a pool.
  */
-export const EditTaskModal: React.FC<EditTaskModalProps> = ({
+export const EditTaskModal: React.FC<EditTaskModalProps> = React.memo(({
   taskToEdit,
   onSave,
   onClose,
@@ -53,12 +53,6 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   pinnedTasks = [],
   onCopyAndEnterPasteMode,
 }) => {
-  console.log('🐛 [EditTaskModal] Rendered with:', {
-    task: taskToEdit,
-    context: taskToEdit?.creationContext
-  });
-  console.log('🐛 [EditTaskModal] isOpen calculated:', !!taskToEdit);
-  console.log('🐛 [EditTaskModal] Should render modal:', !!taskToEdit);
 
   const [name, setName] = useState(taskToEdit.name);
   const [startHour, setStartHour] = useState(taskToEdit.startHour);
@@ -433,4 +427,4 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
       </div>
     </div>
   );
-};
+});

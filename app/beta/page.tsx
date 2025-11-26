@@ -10,6 +10,8 @@ export default function BetaIndexPage() {
         <p className="text-muted-foreground mb-6">Quick links to experimental pages.</p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Link href="/activities" className={cn("border rounded-md p-4 hover:bg-accent/40 transition-colors")}>Activities</Link>
+          <Link href="/class-schedule" className={cn("border rounded-md p-4 hover:bg-accent/40 transition-colors")}>Class Schedule</Link>
           <Link href="/beta/workspace" className={cn("border rounded-md p-4 hover:bg-accent/40 transition-colors")}>Workspace Today</Link>
           <Link href="/beta/habits" className={cn("border rounded-md p-4 hover:bg-accent/40 transition-colors")}>Habits</Link>
           <Link href="/beta/tasks" className={cn("border rounded-md p-4 hover:bg-accent/40 transition-colors")}>Tasks</Link>

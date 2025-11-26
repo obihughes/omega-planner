@@ -1,3 +1,27 @@
+## 2025-11-26
+
+- **Class Schedule Enhanced Features** (2025-11-26)
+  - **Redesigned Weekly View**: Completely rewritten to match daily planner's WeeklyView design
+    - AM/PM row-based layout (12-hour periods per row)
+    - Sticky day label columns showing day name, date, and month
+    - Timeline headers with hourly markers for each row
+    - Current time marker on today's row
+    - Horizontal scrollable layout for comfortable viewing
+    - 90px per hour, 60px row height, 95px day column width
+  - **View Mode Toggle**: Switch between Daily and Weekly views with intuitive toggle button
+  - **Enhanced Add Functionality**: 
+    - New "+ Add Class" button in header for easy class creation
+    - Double-click on timeline (both views) to quick-add classes at specific times
+  - **Improved UI/UX**:
+    - Day selector tabs now only show in Daily view for cleaner interface
+    - Current time marker works in both views
+    - Consistent task card rendering across both views
+    - Weekend days have distinct background styling
+  - **Bug Fixes**:
+    - Fixed persistence bug in `useClassScheduleState` hook (missing `date` variable declaration)
+    - Fixed runtime error where `referenceDate` property was incorrectly referenced (changed to `dateKey`)
+  - **Files affected**: `components/planner/ClassSchedule.tsx`, `hooks/useClassScheduleState.ts`, `docs/planner.md`, `docs/changelog.md`
+
 ## 2025-10-30
 
 - **Removed Old Weekly Goals Page** (2025-10-30)
