@@ -232,7 +232,7 @@ export function WeeklyGoalsCalendarView({ calendarData, onNavigateToDaily }: Wee
           </div>
         </div>
         <div className="text-sm text-muted-foreground">
-          {currentWeekRange} · Up to 3 goals per day
+          {currentWeekRange} · Up to 6 goals per day
         </div>
       </header>
 
@@ -242,7 +242,7 @@ export function WeeklyGoalsCalendarView({ calendarData, onNavigateToDaily }: Wee
             const dateKey = toDateKey(d);
             const weekKey = toWeekStartKey(d);
             const weekData = goalsData[weekKey];
-            const items = (weekData?.goalsByDate?.[dateKey] || []).slice(0, 3);
+            const items = (weekData?.goalsByDate?.[dateKey] || []).slice(0, 6);
             const isToday = dateKey === todayKey;
             const isWeekend = d.getDay() === 0 || d.getDay() === 6;
 
@@ -268,7 +268,7 @@ export function WeeklyGoalsCalendarView({ calendarData, onNavigateToDaily }: Wee
                 onUpdateGoal={(id, updates) => updateGoal(dateKey, id, updates)}
                 onCreateTask={(goal) => createTaskFromGoal(goal, dateKey)}
                 onNavigateToDaily={onNavigateToDaily}
-                canAddMore={items.length < 3}
+                canAddMore={items.length < 6}
               />
             );
           })}
