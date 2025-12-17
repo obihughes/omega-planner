@@ -67,6 +67,8 @@ Displays a 7-day view of scheduled tasks in a horizontal timeline format. Weeks 
 - **Task Collision Handling**: Automatic lane assignment for overlapping tasks
 - **Inbox Integration**: Separate section for unscheduled tasks with clear visual distinction
 - **Interactive Elements**: Hover effects, smooth animations, and click-to-add functionality
+- **Enhanced Scrollbar**: Larger, more accessible scrollbar for easier timeline navigation
+- **Improved Mouse Wheel Navigation**: Faster horizontal scrolling with enhanced sensitivity for better timeline control
 
 ### TaskCard
 Individual task representation with drag/resize handles.

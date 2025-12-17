@@ -93,6 +93,28 @@ module.exports = {
           '&::-webkit-scrollbar': {
             display: 'none'
           }
+        },
+        '.scrollbar-thick': {
+          /* Safari and Chrome */
+          '&::-webkit-scrollbar': {
+            width: '16px',
+            height: '16px'
+          },
+          '&::-webkit-scrollbar-track': {
+            background: 'hsl(var(--muted))',
+            borderRadius: '8px'
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: 'hsl(var(--muted-foreground))',
+            borderRadius: '8px',
+            border: '2px solid hsl(var(--muted))'
+          },
+          '&::-webkit-scrollbar-thumb:hover': {
+            background: 'hsl(var(--foreground))'
+          },
+          /* Firefox */
+          'scrollbar-width': 'auto',
+          'scrollbar-color': 'hsl(var(--muted-foreground)) hsl(var(--muted))'
         }
       })
     }

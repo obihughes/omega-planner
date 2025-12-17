@@ -93,7 +93,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
         e.preventDefault();
         
         // Apply scroll immediately with high sensitivity
-        scrollContainer.scrollLeft += e.deltaY * 2;
+        scrollContainer.scrollLeft += e.deltaY * 4;
         lastWheelTime = Date.now();
       }
     };
@@ -627,9 +627,9 @@ export default function WeeklyView({}: WeeklyViewProps) {
       </div>
 
       {/* Main Scrollable Timeline */}
-      <div 
-        className="flex-1 overflow-auto bg-background/50 relative" 
-        ref={timelineScrollRef} 
+      <div
+        className="flex-1 overflow-auto bg-background/50 relative scrollbar-thick"
+        ref={timelineScrollRef}
         style={{ scrollBehavior: 'smooth' }}
       >
         <div style={{ width: 'fit-content', minWidth: '100%' }}>

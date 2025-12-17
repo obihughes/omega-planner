@@ -17,6 +17,8 @@
     - Current time marker works in both views
     - Consistent task card rendering across both views
     - Weekend days have distinct background styling
+    - Enhanced scrollbar in Weekly View for easier timeline navigation
+    - Improved mouse wheel sensitivity for faster horizontal timeline scrolling
   - **Bug Fixes**:
     - Fixed persistence bug in `useClassScheduleState` hook (missing `date` variable declaration)
     - Fixed runtime error where `referenceDate` property was incorrectly referenced (changed to `dateKey`)
