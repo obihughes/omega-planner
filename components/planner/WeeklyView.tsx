@@ -8,8 +8,6 @@ import {
   ChevronRight, 
   Calendar,
   Plus,
-  ToggleLeft,
-  ToggleRight
 } from 'lucide-react';
 import { Task } from '@/types';
 import { useDailyPlanner } from '@/hooks/useDailyPlannerState';
@@ -19,24 +17,15 @@ import { getDateKey } from '@/utils/dateUtils';
 import { MemoizedWeeklyTaskCard } from './WeeklyTaskCard';
 import { WeeklyEventsDisplay } from './WeeklyEventsDisplay';
 import { EditTaskModal } from './EditTaskModal';
-import { 
-  TIMELINE_START_HOUR as APP_TIMELINE_START_HOUR,
-  TIMELINE_END_HOUR as APP_TIMELINE_END_HOUR,
-  PIXELS_PER_HOUR as APP_PIXELS_PER_HOUR,
-  TIMELINE_COLUMN_HEIGHT,
-  TASK_BASE_TOP,
-  TASK_BASE_BOTTOM_PADDING,
-  MIN_TASK_DURATION as APP_MIN_TASK_DURATION
-} from '../../lib/constants';
 
 // Weekly view specific constants for row-based layout
-const WEEKLY_PIXELS_PER_HOUR = 90; // Original width
-const WEEKLY_ROW_HEIGHT = 60; // Increased height for better date display and events visibility
-const WEEKLY_TASK_HEIGHT = 39; // Reduced from 41 (another 5% smaller)  
-const WEEKLY_DAY_COLUMN_WIDTH = 95; // Increased for proper date display visibility
-const WEEKLY_EVENTS_COLUMN_WIDTH = 85; // Slightly reduced for better balance
-const WEEKLY_TIMELINE_HEADER_HEIGHT = 26; // Increased for better header visibility
-const HOURS_PER_ROW = 12; // 12 hours per row (AM/PM split)
+const WEEKLY_PIXELS_PER_HOUR = 80;
+const WEEKLY_ROW_HEIGHT = 80; // Increased height for single row
+const WEEKLY_TASK_HEIGHT = 42; 
+const WEEKLY_DAY_COLUMN_WIDTH = 100;
+const WEEKLY_EVENTS_COLUMN_WIDTH = 100; // Slightly wider for events
+const WEEKLY_TIMELINE_HEADER_HEIGHT = 32; 
+const HOURS_PER_ROW = 24; // Full day
 
 interface WeeklyViewProps {}
 
@@ -45,10 +34,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
     tasksByDate,
     getPoolTasksForDate,
     openEditModal,
-    handleTaskCompletionToggle,
-    startCopy,
     openViewNotesModal,
-    isClient,
     activeEditModalTask,
     closeEditModal,
     saveTaskFromModal,
@@ -76,12 +62,22 @@ export default function WeeklyView({}: WeeklyViewProps) {
     const scrollContainer = timelineScrollRef.current;
     if (!scrollContainer) return;
 
-    // Set initial scroll position to 6am (day column + events column + 6 * pixels per hour)
-    const initialScrollPosition = WEEKLY_DAY_COLUMN_WIDTH + WEEKLY_EVENTS_COLUMN_WIDTH + (6 * WEEKLY_PIXELS_PER_HOUR);
-    scrollContainer.scrollLeft = initialScrollPosition;
-  }, [weekOffset, isSameDayView, selectedDayOfWeek]); // Re-run when view changes
-
-  // (moved below weekDates initialization)
+    // Set initial scroll position to 7am (day column + events column + 7 * pixels per hour)
+    const initialScrollPosition = 0 + (7 * WEEKLY_PIXELS_PER_HOUR); // Columns are sticky, so we scroll the body? No, with sticky, the container scrolls.
+    // However, if we scroll left, the sticky columns stay. 
+    // We want to scroll to 7am relative to the timeline start.
+    // The timeline starts after (Day + Events) columns.
+    // But since they are sticky inside the container, we just scroll the container.
+    // The content inside has padding-left or the columns are part of the flow.
+    // If sticky, they are part of the flow.
+    // So scrollLeft should be 7 * 80 = 560px.
+    
+    // Actually, we should check if we need to account for the sticky columns width if they are not overlaying.
+    // Sticky position keeps them in view, but they still occupy space at start.
+    // So scroll 0 is "at the start".
+    // 6am is at (6 * 80).
+    scrollContainer.scrollLeft = 6 * WEEKLY_PIXELS_PER_HOUR;
+  }, [weekOffset, isSameDayView, selectedDayOfWeek]);
 
   // Calculate week dates (Monday to Sunday for the current week)
   const getWeekDates = (offset: number) => {
@@ -161,6 +157,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
     : getWeekDates(weekOffset);
   
   // Auto-scroll vertically to today's row on initial load for current week
+  // With the new layout (single row per day), this is simpler.
   useEffect(() => {
     const scrollContainer = timelineScrollRef.current;
     if (!scrollContainer) return;
@@ -177,15 +174,21 @@ export default function WeeklyView({}: WeeklyViewProps) {
 
     if (todayIndex === -1) return;
 
-    const todayKey = getDateKey(weekDates[todayIndex]);
-    const todayEl = scrollContainer.querySelector<HTMLDivElement>(`[data-date-key="${todayKey}"]`);
-    if (!todayEl) return;
-
-    // Scroll so today's AM row is near the top with a small margin
-    const targetTop = Math.max(0, todayEl.offsetTop - 16);
-    scrollContainer.scrollTop = targetTop;
+    // Since we have vertical scroll for the list of days (if they don't fit), we can scroll to the day.
+    // But typically 7 rows * 80px = 560px fits on screen.
+    // If not, we scroll.
+    const rowTop = todayIndex * (WEEKLY_ROW_HEIGHT + 1) + WEEKLY_TIMELINE_HEADER_HEIGHT; // +1 for border
+    
+    // If the container is vertically scrollable:
+    if (scrollContainer.scrollHeight > scrollContainer.clientHeight) {
+        // Center the day
+        const targetTop = Math.max(0, rowTop - (scrollContainer.clientHeight / 2) + (WEEKLY_ROW_HEIGHT / 2));
+        scrollContainer.scrollTop = targetTop;
+    }
+    
     didAutoScrollToTodayRef.current = true;
   }, [weekOffset, weekDates]);
+
   // Day names for display (will dynamically show based on actual dates)
   const getDayName = (date: Date) => {
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -252,33 +255,27 @@ export default function WeeklyView({}: WeeklyViewProps) {
     return Math.floor((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   };
 
-  // Render timeline header with period-specific hours
-  const renderTimelineHeader = useCallback((isAM: boolean) => {
-    const baseHour = isAM ? 0 : 12;
-    const hours = Array.from({ length: HOURS_PER_ROW }, (_, i) => baseHour + i);
+  // Render global timeline header
+  const renderTimelineHeader = useCallback(() => {
+    const hours = Array.from({ length: HOURS_PER_ROW }, (_, i) => i);
     
     return (
-      <div className="flex border-b border-border/20 bg-card/80" style={{ height: `${WEEKLY_TIMELINE_HEADER_HEIGHT}px` }}>
-        {/* Empty spacer for day column */}
-        <div className="flex-shrink-0 border-r border-border/30 bg-card" style={{ width: `${WEEKLY_DAY_COLUMN_WIDTH}px` }}>
+      <div className="flex border-b border-border bg-card shadow-sm sticky top-0 z-[60]" style={{ height: `${WEEKLY_TIMELINE_HEADER_HEIGHT}px`, minWidth: 'fit-content' }}>
+        {/* Sticky Spacers */}
+        <div className="sticky left-0 z-[70] flex bg-card border-r border-border">
+            <div className="flex-shrink-0 bg-card" style={{ width: `${WEEKLY_DAY_COLUMN_WIDTH}px` }} />
+            <div className="flex-shrink-0 bg-card" style={{ width: `${WEEKLY_EVENTS_COLUMN_WIDTH}px` }} />
         </div>
         
-        {/* Events column header */}
-        <div className="flex-shrink-0 border-r border-border/30 bg-card flex items-center justify-center" style={{ width: `${WEEKLY_EVENTS_COLUMN_WIDTH}px` }}>
-          <span className="text-[11px] font-medium text-muted-foreground/80 tracking-wide">Events</span>
-        </div>
-        
-        {/* Timeline hours for this period */}
-        <div className="flex" style={{ minWidth: `${WEEKLY_PIXELS_PER_HOUR * HOURS_PER_ROW}px` }}>
+        {/* Timeline hours */}
+        <div className="flex">
           {hours.map((hour) => (
             <div
               key={hour}
-              className="flex-none border-r border-border/10 flex items-center justify-start pl-1 bg-muted/5"
+              className="flex-none border-r border-border/10 flex items-center justify-start pl-2 bg-card text-xs text-muted-foreground font-medium"
               style={{ width: `${WEEKLY_PIXELS_PER_HOUR}px` }}
             >
-              <div className={`text-[11px] font-medium ${hour % 6 === 0 ? 'text-foreground/60' : 'text-muted-foreground/40'}`}>
-                {formatTime(hour)}
-              </div>
+              {formatTime(hour)}
             </div>
           ))}
         </div>
@@ -287,116 +284,80 @@ export default function WeeklyView({}: WeeklyViewProps) {
   }, []);
 
   // Handle task creation
-  const handleTimelineDoubleClick = (e: React.MouseEvent<HTMLDivElement>, date: Date, isAM: boolean) => {
+  const handleTimelineDoubleClick = (e: React.MouseEvent<HTMLDivElement>, date: Date) => {
     const rect = e.currentTarget.getBoundingClientRect();
+    // Adjust x for scroll and sticky offset if needed, but relative click on the timeline div should be correct
+    // The timeline div starts AFTER the columns.
     const x = e.clientX - rect.left;
     const hourFloat = x / WEEKLY_PIXELS_PER_HOUR;
-    const baseHour = isAM ? 0 : 12; // AM starts at 0, PM starts at 12
-    const snappedNewStartHour = baseHour + Math.round(hourFloat * 4) / 4;
+    const snappedNewStartHour = Math.round(hourFloat * 4) / 4;
     const dayOffset = getDayOffsetFromToday(date);
     
     openEditModal(undefined, {
       isFromPool: false,
       initialDayOffset: dayOffset,
-      initialStartHour: Math.min(snappedNewStartHour, 23.75), // Ensure max is 23:45
+      initialStartHour: Math.min(snappedNewStartHour, 23.75),
       isNew: true
     });
   };
 
-  // Render individual day with AM/PM rows
-  const renderDayRows = useCallback((date: Date, index: number) => {
+  // Render individual day row
+  const renderDayRow = useCallback((date: Date, index: number) => {
     const dateKey = getDateKey(date);
     const dayTasks = tasksByDate.get(dateKey) || [];
     const poolTasks = getPoolTasksForDate(dateKey);
     const isCurrentDay = isToday(date);
     const isWeekendDay = isWeekend(date);
-    const dayOffset = getDayOffsetFromToday(date);
     
-    // Filter scheduled tasks (exclude unscheduled tasks with startHour 0 or undefined)
+    // Filter scheduled tasks
     type ScheduledTask = Task & { startHour: number };
     const isScheduled = (t: Task): t is ScheduledTask =>
-      typeof t.startHour === 'number' && t.startHour > 0;
+      typeof t.startHour === 'number' && t.startHour >= 0; // >= 0 for 24h view
     const scheduledTasks: ScheduledTask[] = dayTasks.filter(isScheduled);
     
-    // Split tasks into AM (0-11.99) and PM (12-23.99)
-    // Tasks that cross the AM/PM boundary should appear in both periods
-    const amTasks: ScheduledTask[] = scheduledTasks.filter(task => task.startHour < 12);
-    const pmTasks: ScheduledTask[] = scheduledTasks.filter(task => 
-      task.startHour >= 12 || (task.startHour < 12 && task.startHour + task.duration > 12)
-    );
-    
-    // Current time marker for today
-    const getCurrentTimeMarker = (isAM: boolean) => {
+    // Current time marker
+    const getCurrentTimeMarker = () => {
       if (!isCurrentDay) return null;
       
       const now = new Date();
       const currentHourFloat = now.getHours() + now.getMinutes() / 60;
       
-      // Check if current time is in this period
-      const isCurrentPeriod = isAM ? currentHourFloat < 12 : currentHourFloat >= 12;
-      if (!isCurrentPeriod) return null;
-      
-      const periodHour = isAM ? currentHourFloat : currentHourFloat - 12;
-      const markerLeft = periodHour * WEEKLY_PIXELS_PER_HOUR;
+      const markerLeft = currentHourFloat * WEEKLY_PIXELS_PER_HOUR;
       
       return (
         <div 
-          className="absolute top-0 bottom-0 w-[2px] bg-red-500/70 z-50 pointer-events-none"
+          className="absolute top-0 bottom-0 w-[2px] bg-red-500 z-50 pointer-events-none"
           style={{ left: `${markerLeft}px` }}
         >
-          {/* Glow */}
-          <div className="absolute inset-y-0 -left-[2px] -right-[2px] bg-red-500/10" />
-          {/* Dot and label */}
-          <div className="absolute -top-1 -left-1 w-2 h-2 rounded-full bg-red-500 ring-2 ring-red-500/30" />
-          <div className="absolute top-0 left-2 text-[10px] px-1 py-0.5 rounded bg-background/80 backdrop-blur border border-border/50 text-foreground/80">
-            Now
-          </div>
+          <div className="absolute -top-1 -left-1 w-2 h-2 rounded-full bg-red-500" />
         </div>
       );
     };
     
-    // Render tasks for a specific period (AM or PM)
-    const renderTasks = (tasks: ScheduledTask[], isAM: boolean) => {
+    // Render tasks
+    const renderTasks = (tasks: ScheduledTask[]) => {
       return tasks.map((task) => {
-        const taskStartHour: number = task.startHour; // guaranteed by type guard
-        const taskEndHour = Math.min(isAM ? 12 : 24, task.startHour + task.duration);
+        const taskStartHour: number = task.startHour;
+        const taskEndHour = Math.min(24, task.startHour + task.duration);
         
-        // Calculate position within the 12-hour period
-        const periodStartHour = isAM ? taskStartHour : taskStartHour - 12;
-        const periodEndHour = isAM ? taskEndHour : taskEndHour - 12;
-        
-        // Handle tasks that span across AM/PM boundary
-        let renderStartHour = periodStartHour;
-        let renderEndHour = periodEndHour;
-        
-        if (isAM && taskEndHour > 12) {
-          renderEndHour = 12; // Cap AM tasks at 12
-        } else if (!isAM && taskStartHour < 12) {
-          renderStartHour = 0; // Start PM tasks at 0 if they began in AM
-        }
-        
-        // Skip if task doesn't belong in this period
-        if (isAM && taskStartHour >= 12) return null;
-        if (!isAM && taskEndHour <= 12) return null;
-        
-        const renderLeft = Math.max(0, renderStartHour) * WEEKLY_PIXELS_PER_HOUR;
-        const renderWidth = (renderEndHour - Math.max(0, renderStartHour)) * WEEKLY_PIXELS_PER_HOUR;
+        const renderLeft = Math.max(0, taskStartHour) * WEEKLY_PIXELS_PER_HOUR;
+        const renderWidth = (taskEndHour - Math.max(0, taskStartHour)) * WEEKLY_PIXELS_PER_HOUR;
         
         if (renderWidth <= 0) return null;
         
         const taskStyle: React.CSSProperties = {
-          left: `${renderLeft + 1}px`,
-          width: `${Math.max(renderWidth - 2, 30)}px`,
-          top: `0px`,
-          height: `${WEEKLY_ROW_HEIGHT}px`,
+          left: `${renderLeft + 2}px`, // +2 for gap
+          width: `${Math.max(renderWidth - 4, 30)}px`,
+          top: `6px`, // Centered vertically roughly
+          height: `${WEEKLY_TASK_HEIGHT}px`,
           zIndex: 40,
         };
 
         return (
-          <div key={`${task.id}-${isAM ? 'am' : 'pm'}`} className="absolute" style={taskStyle}>
+          <div key={`${task.id}`} className="absolute" style={taskStyle}>
             <MemoizedWeeklyTaskCard
               task={task}
-              height={WEEKLY_ROW_HEIGHT}
+              height={WEEKLY_TASK_HEIGHT}
               onStartEdit={(taskToEdit, options) => openEditModal(taskToEdit, options)} 
               onViewNotes={openViewNotesModal}
               currentTime={new Date()}
@@ -406,125 +367,87 @@ export default function WeeklyView({}: WeeklyViewProps) {
       });
     };
     
-    // Render a period row (AM or PM)
-    const renderPeriodRow = (isAM: boolean) => {
-      const tasks = isAM ? amTasks : pmTasks;
-      const periodLabel = isAM ? 'AM' : 'PM';
-      
-              return (
-          <div 
-            key={`${dateKey}-${periodLabel}`} 
-            className={cn(
-              "flex",
-              !isAM && "border-t border-border/20"
-            )}
-          >
-          {/* Day label column */}
-          <div 
-            className={cn(
-              "flex-shrink-0 border-r border-border/30 px-3 py-2 flex flex-col justify-center sticky left-0 z-50 relative bg-card",
-              isCurrentDay && "after:absolute after:inset-y-0 after:left-0 after:w-1 after:bg-primary"
-            )}
-            style={{ 
-              width: `${WEEKLY_DAY_COLUMN_WIDTH}px`, 
-              height: `${WEEKLY_ROW_HEIGHT}px`
-            }}
-          >
-            <div className="text-center">
-              {isAM ? (
-                <>
-                  <div className={cn(
-                    "text-[11px] font-medium uppercase tracking-wide mb-1",
-                    isCurrentDay ? "text-foreground" : "text-muted-foreground"
-                  )}>
-                    {isSameDayView ? getFullDayName(selectedDayOfWeek).slice(0, 3).toUpperCase() : getDayName(date).toUpperCase()}
-                  </div>
-                  
-                  <div className={cn(
-                    "text-2xl font-extrabold leading-none mb-1",
-                    "text-foreground"
-                  )}>
-                    {date.getDate()}
-                  </div>
-                  
-                  <div className={cn(
-                    "text-[11px] font-medium text-muted-foreground",
-                  )}>
-                    {date.toLocaleDateString('en-US', { month: 'short' })}
-                  </div>
-                </>
-              ) : (
-                <div className={cn(
-                  "text-[12px] font-medium text-muted-foreground",
-                )}>
-                  {periodLabel}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Events Column */}
-          <div 
-            className={cn(
-              "flex-shrink-0 border-r border-border/30 relative",
-              isCurrentDay ? "bg-primary/5" : isWeekendDay ? "bg-muted/30" : "bg-background"
-            )}
-            style={{ 
-              width: `${WEEKLY_EVENTS_COLUMN_WIDTH}px`,
-              height: `${WEEKLY_ROW_HEIGHT}px`
-            }}
-          >
-            {/* Events for this day (only show in AM row) */}
-            {isAM && (
-              <div className="absolute inset-2 flex flex-col justify-start">
-                <WeeklyEventsDisplay
-                  events={calendarData.events}
-                  date={date}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* 12-hour Timeline */}
-          <div 
-            className={cn(
-              "relative transition-colors duration-200 cursor-pointer",
-              isCurrentDay ? "bg-primary/5 hover:bg-primary/10" : isWeekendDay ? "bg-muted/30 hover:bg-muted/40" : "bg-background hover:bg-muted/10"
-            )}
-            style={{ 
-              width: `${WEEKLY_PIXELS_PER_HOUR * HOURS_PER_ROW}px`,
-              height: `${WEEKLY_ROW_HEIGHT}px`
-            }}
-            onDoubleClick={(e) => handleTimelineDoubleClick(e, date, isAM)}
-          >
-            {/* Grid lines for 12 hours - only in timeline area */}
-            {Array.from({ length: HOURS_PER_ROW }, (_, i) => (
-              <div 
-                key={`grid-${i}`} 
-                className={`absolute h-full ${i % 6 === 0 ? 'border-l border-border/40' : 'border-l border-border/10'} pointer-events-none`}
-                style={{ left: `${i * WEEKLY_PIXELS_PER_HOUR}px` }} 
-              />
-            ))}
-
-            {/* Current time marker */}
-            {getCurrentTimeMarker(isAM)}
-
-            {/* Tasks for this period */}
-            {renderTasks(tasks, isAM)}
-          </div>
-        </div>
-      );
-    };
-    
     return (
-      <Fragment key={dateKey}>
-        {renderTimelineHeader(true)}    {/* AM timeline header */}
-        {renderPeriodRow(true)}         {/* AM row */}
-        {renderTimelineHeader(false)}   {/* PM timeline header */}
-        {renderPeriodRow(false)}        {/* PM row */}
-      </Fragment>
+      <div 
+        key={dateKey} 
+        className={cn(
+          "flex border-b border-border/50 transition-colors",
+          isCurrentDay ? "bg-primary/5" : "bg-card hover:bg-muted/5"
+        )}
+        style={{ height: `${WEEKLY_ROW_HEIGHT}px`, minWidth: 'fit-content' }}
+      >
+        {/* Sticky Container for Day & Events */}
+        <div className="sticky left-0 z-50 flex border-r border-border/50 bg-card shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+            {/* Day label column */}
+            <div 
+                className={cn(
+                "flex-shrink-0 border-r border-border/30 px-3 flex flex-col justify-center items-center bg-card",
+                isCurrentDay && "bg-primary/5"
+                )}
+                style={{ width: `${WEEKLY_DAY_COLUMN_WIDTH}px` }}
+            >
+                <div className="text-center">
+                    <div className={cn(
+                        "text-[10px] font-bold uppercase tracking-wider mb-0.5",
+                        isCurrentDay ? "text-primary" : "text-muted-foreground"
+                    )}>
+                        {isSameDayView ? getFullDayName(selectedDayOfWeek).slice(0, 3).toUpperCase() : getDayName(date).toUpperCase()}
+                    </div>
+                    
+                    <div className={cn(
+                        "text-xl font-bold leading-none mb-0.5",
+                        isCurrentDay ? "text-primary" : "text-foreground"
+                    )}>
+                        {date.getDate()}
+                    </div>
+                    
+                    <div className="text-[10px] text-muted-foreground">
+                        {date.toLocaleDateString('en-US', { month: 'short' })}
+                    </div>
+                </div>
+            </div>
+
+            {/* Events Column */}
+            <div 
+                className={cn(
+                "flex-shrink-0 relative overflow-hidden bg-card",
+                isCurrentDay && "bg-primary/5"
+                )}
+                style={{ width: `${WEEKLY_EVENTS_COLUMN_WIDTH}px` }}
+            >
+                <div className="absolute inset-1">
+                    <WeeklyEventsDisplay
+                    events={calendarData.events}
+                    date={date}
+                    />
+                </div>
+            </div>
+        </div>
+
+        {/* 24-hour Timeline */}
+        <div 
+          className="relative h-full"
+          style={{ width: `${WEEKLY_PIXELS_PER_HOUR * HOURS_PER_ROW}px` }}
+          onDoubleClick={(e) => handleTimelineDoubleClick(e, date)}
+        >
+          {/* Grid lines */}
+          {Array.from({ length: HOURS_PER_ROW }, (_, i) => (
+            <div 
+              key={`grid-${i}`} 
+              className={`absolute h-full top-0 ${i % 6 === 0 ? 'border-l border-border/30' : 'border-l border-border/10'} pointer-events-none`}
+              style={{ left: `${i * WEEKLY_PIXELS_PER_HOUR}px` }} 
+            />
+          ))}
+
+          {/* Current time marker */}
+          {getCurrentTimeMarker()}
+
+          {/* Tasks */}
+          {renderTasks(scheduledTasks)}
+        </div>
+      </div>
     );
-  }, [tasksByDate, getPoolTasksForDate, openEditModal, openViewNotesModal, isSameDayView, selectedDayOfWeek]);
+  }, [tasksByDate, getPoolTasksForDate, openEditModal, openViewNotesModal, isSameDayView, selectedDayOfWeek, calendarData.events]);
 
   // Get week statistics
   const getWeekStats = () => {
@@ -551,9 +474,9 @@ export default function WeeklyView({}: WeeklyViewProps) {
   const weekStats = getWeekStats();
 
   return (
-    <div className="h-full bg-card border border-border rounded-lg shadow-sm overflow-hidden flex flex-col">
-      {/* Sticky Header - Fixed at top */}
-      <div className="px-4 py-3 border-b border-border bg-card z-50 shadow-sm shrink-0">
+    <div className="h-full bg-background border border-border rounded-lg shadow-sm flex flex-col overflow-hidden">
+      {/* Top Bar - View Controls */}
+      <div className="px-4 py-3 border-b border-border bg-card z-40 shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
@@ -561,17 +484,14 @@ export default function WeeklyView({}: WeeklyViewProps) {
               <h2 className="text-xl font-bold text-foreground">Weekly View</h2>
             </div>
             
-            {/* View Toggle and Navigation */}
-            <div className="flex items-center gap-4">
-              {/* View Mode Toggle */}
-              <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg border border-border/50">
                 <button
                   onClick={() => setIsSameDayView(false)}
                   className={cn(
-                    "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+                    "px-3 py-1 rounded-md text-xs font-medium transition-all",
                     !isSameDayView 
-                      ? "bg-primary text-primary-foreground" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                      ? "bg-background shadow-sm text-foreground" 
+                      : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   This Week
@@ -579,22 +499,21 @@ export default function WeeklyView({}: WeeklyViewProps) {
                 <button
                   onClick={() => setIsSameDayView(true)}
                   className={cn(
-                    "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+                    "px-3 py-1 rounded-md text-xs font-medium transition-all",
                     isSameDayView 
-                      ? "bg-primary text-primary-foreground" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                      ? "bg-background shadow-sm text-foreground" 
+                      : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   Same Day
                 </button>
-              </div>
+            </div>
 
-              {/* Day Selector for Same Day View */}
               {isSameDayView && (
                 <select
                   value={selectedDayOfWeek}
                   onChange={(e) => setSelectedDayOfWeek(Number(e.target.value))}
-                  className="px-2 py-1 text-xs bg-background border border-border rounded-md"
+                  className="px-2 py-1 text-xs bg-background border border-border rounded-md h-8"
                 >
                   <option value={0}>Sunday</option>
                   <option value={1}>Monday</option>
@@ -606,36 +525,27 @@ export default function WeeklyView({}: WeeklyViewProps) {
                 </select>
               )}
 
-              {/* Week Navigation */}
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={goToPreviousWeek}>
+              <div className="flex items-center gap-1 border border-border/50 rounded-md bg-card shadow-sm h-8">
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={goToPreviousWeek}>
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
-                <Button variant="ghost" onClick={goToCurrentWeek} className="min-w-52 font-medium text-sm">
+                <div className="px-3 text-sm font-medium border-l border-r border-border/50 h-full flex items-center min-w-[140px] justify-center">
                   {getWeekRangeString()}
-                </Button>
-                <Button variant="ghost" size="sm" onClick={goToNextWeek}>
+                </div>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={goToNextWeek}>
                   <ChevronRight className="w-4 h-4" />
                 </Button>
-                {getRelativeWeekLabel() && (
-                  <span className="text-xs text-muted-foreground px-2 py-1 bg-muted rounded-md">
-                    {getRelativeWeekLabel()}
-                  </span>
-                )}
               </div>
-            </div>
           </div>
 
-          {/* Add Task Button and Stats */}
           <div className="flex items-center gap-4">
-            {/* Quick Add Task Button */}
             <Button 
               size="sm" 
               className="flex items-center gap-2 h-8"
               onClick={() => {
                 openEditModal(undefined, {
                   isFromPool: false,
-                  initialDayOffset: 0, // Default to today
+                  initialDayOffset: 0,
                   initialStartHour: new Date().getHours(),
                   isNew: true
                 });
@@ -645,34 +555,36 @@ export default function WeeklyView({}: WeeklyViewProps) {
               Add Task
             </Button>
 
-            {/* Stats */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 bg-muted/30 px-3 py-1.5 rounded-md border border-border/30">
               <div className="text-xs text-muted-foreground">
                 <span className="font-semibold text-foreground">{weekStats.total}</span> tasks
               </div>
+              <div className="w-px h-3 bg-border" />
               <div className="text-xs text-muted-foreground">
                 <span className="font-semibold text-foreground">{weekStats.completed}</span> done
               </div>
+              <div className="w-px h-3 bg-border" />
               <div className="text-xs text-muted-foreground">
-                <span className="font-semibold text-foreground">{weekStats.completionRate}%</span> complete
+                <span className="font-semibold text-foreground">{weekStats.completionRate}%</span> rate
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Scrollable Content */}
-      <div className="flex-1 overflow-auto bg-background" ref={timelineScrollRef} style={{ overflowX: 'auto', scrollBehavior: 'smooth' }}>
-        <div style={{ minWidth: `${WEEKLY_DAY_COLUMN_WIDTH + (WEEKLY_PIXELS_PER_HOUR * HOURS_PER_ROW)}px` }}>
-          {weekDates.map((date, index) => (
-            <div key={getDateKey(date)} data-date-key={getDateKey(date)} className={cn(
-              "border-b-2 border-border/60",
-              index === 0 && "border-t-2",
-              "relative"
-            )}>
-              {renderDayRows(date, index)}
+      {/* Main Scrollable Timeline */}
+      <div 
+        className="flex-1 overflow-auto bg-background/50 relative scrollbar-hide" 
+        ref={timelineScrollRef} 
+        style={{ scrollBehavior: 'smooth' }}
+      >
+        <div style={{ width: 'fit-content', minWidth: '100%' }}>
+            {renderTimelineHeader()}
+            
+            {/* Days Rows */}
+            <div className="flex flex-col">
+                {weekDates.map((date, index) => renderDayRow(date, index))}
             </div>
-          ))}
         </div>
       </div>
 
@@ -691,4 +603,4 @@ export default function WeeklyView({}: WeeklyViewProps) {
       )}
     </div>
   );
-} 
+}
