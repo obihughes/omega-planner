@@ -56,9 +56,7 @@ export function FolderCard({
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm('Are you sure you want to delete this folder? Projects in this folder will be moved to "Unsorted Projects".')) {
-      onDelete(folder.id);
-    }
+    onDelete(folder.id);
   };
 
   return (

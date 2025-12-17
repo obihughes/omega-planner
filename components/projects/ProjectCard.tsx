@@ -203,9 +203,7 @@ function ProjectCardComponent({
 
   const handlePermanentlyDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm('Are you sure you want to permanently delete this project? This action cannot be undone.')) {
-      onPermanentlyDelete?.(project.id);
-    }
+    onPermanentlyDelete?.(project.id);
   };
 
   const handleMoveToFolder = (folderId: string | undefined) => {
