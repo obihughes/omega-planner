@@ -79,6 +79,29 @@ export default function WeeklyView({}: WeeklyViewProps) {
     scrollContainer.scrollLeft = 6 * WEEKLY_PIXELS_PER_HOUR;
   }, [weekOffset, isSameDayView, selectedDayOfWeek]);
 
+  // Handle mouse wheel for horizontal scrolling with velocity
+  useEffect(() => {
+    const scrollContainer = timelineScrollRef.current;
+    if (!scrollContainer) return;
+
+    let scrollVelocity = 0;
+    let lastWheelTime = 0;
+
+    const handleWheel = (e: WheelEvent) => {
+      // Only intercept if scrolling primarily vertically
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        e.preventDefault();
+        
+        // Apply scroll immediately with high sensitivity
+        scrollContainer.scrollLeft += e.deltaY * 2;
+        lastWheelTime = Date.now();
+      }
+    };
+
+    scrollContainer.addEventListener('wheel', handleWheel, { passive: false });
+    return () => scrollContainer.removeEventListener('wheel', handleWheel);
+  }, []);
+
   // Calculate week dates (Monday to Sunday for the current week)
   const getWeekDates = (offset: number) => {
     const today = new Date();
@@ -536,6 +559,37 @@ export default function WeeklyView({}: WeeklyViewProps) {
                   <ChevronRight className="w-4 h-4" />
                 </Button>
               </div>
+
+              {/* Timeline Scroll Navigation */}
+              <div className="flex items-center gap-1 border border-border/50 rounded-md bg-card shadow-sm h-8">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-7 w-7"
+                  title="Scroll left (earlier times)"
+                  onClick={() => {
+                    if (timelineScrollRef.current) {
+                      timelineScrollRef.current.scrollLeft -= WEEKLY_PIXELS_PER_HOUR * 3; // Scroll back 3 hours
+                    }
+                  }}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <span className="text-xs text-muted-foreground px-2">Timeline</span>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-7 w-7"
+                  title="Scroll right (later times)"
+                  onClick={() => {
+                    if (timelineScrollRef.current) {
+                      timelineScrollRef.current.scrollLeft += WEEKLY_PIXELS_PER_HOUR * 3; // Scroll forward 3 hours
+                    }
+                  }}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
           </div>
 
           <div className="flex items-center gap-4">
@@ -574,7 +628,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
 
       {/* Main Scrollable Timeline */}
       <div 
-        className="flex-1 overflow-auto bg-background/50 relative scrollbar-hide" 
+        className="flex-1 overflow-auto bg-background/50 relative" 
         ref={timelineScrollRef} 
         style={{ scrollBehavior: 'smooth' }}
       >
