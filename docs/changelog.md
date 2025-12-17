@@ -1,3 +1,19 @@
+## 2025-12-16
+
+- **Daily Planner Day View Fix** (2025-12-16)
+  - Fixed bottom day view to correctly default to tomorrow instead of today
+  - Removed persistence of day view offsets (they are relative to "today" and should not be saved)
+  - Bottom view now always shows tomorrow (offset 1) on app load
+  - Top view continues to show today (offset 0) on app load
+  - Users can still navigate to other dates during a session
+  - **Files affected**: `hooks/useDailyPlannerState.ts`, `docs/changelog.md`
+
+- **Weekly View Scrolling Improvements** (2025-12-16)
+  - Enhanced scrollbar size (16px) for easier dragging and better visibility
+  - Increased mouse wheel scroll sensitivity (8x) for faster timeline navigation
+  - Theme-matching scrollbar colors with hover effects
+  - **Files affected**: `components/planner/WeeklyView.tsx`, `tailwind.config.js`, `docs/planner.md`, `docs/changelog.md`
+
 ## 2025-11-26
 
 - **Class Schedule Enhanced Features** (2025-11-26)

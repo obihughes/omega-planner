@@ -905,12 +905,12 @@ export function useDailyPlanner() {
     setTaskIdCounter(effectiveLastUsedId);
     taskIdCounterRef.current = effectiveLastUsedId;
     
-    // --- MODIFIED DAY VIEW SETTINGS LOGIC ---
+    // --- DAY VIEW SETTINGS LOGIC ---
+    // Note: Day offsets are relative to "today" so they should NOT be persisted.
+    // Always reset to defaults on app load to show today (top) and tomorrow (bottom).
     _setTopDayOffset(DEFAULT_TOP_DAY_OFFSET);
     _setBottomDayOffset(DEFAULT_BOTTOM_DAY_OFFSET);
-
-    TaskStorage.saveDayViewSettings({ topDayOffset: DEFAULT_TOP_DAY_OFFSET, bottomDayOffset: DEFAULT_BOTTOM_DAY_OFFSET });
-    // --- END MODIFIED LOGIC ---
+    // --- END LOGIC ---
 
     // Mark initial load as complete after a short delay to allow state updates to settle
     setTimeout(() => {
@@ -952,14 +952,9 @@ export function useDailyPlanner() {
     }
   }, [poolTasksByDate]);
 
-  // Removed sidebar collapsed state saving since we moved to top horizontal layout
-
-  // Save day view settings whenever they change
-  useEffect(() => {
-    if (initialLoadComplete.current && typeof window !== 'undefined') {
-        TaskStorage.saveDayViewSettings({ topDayOffset, bottomDayOffset });
-    }
-  }, [topDayOffset, bottomDayOffset]);
+  // Note: Removed day view settings persistence because day offsets are relative to "today"
+  // Persisting them would cause the view to show incorrect dates on subsequent loads.
+  // The view will always default to showing today (top) and tomorrow (bottom).
 
   // Effect to add and remove global mouse up listener
   useEffect(() => {
