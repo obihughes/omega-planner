@@ -164,6 +164,36 @@ export function WeeklyGoalsCalendarView({ calendarData, onNavigateToDaily }: Wee
     window.location.href = `/projects/tasks?${params.toString()}`;
   }, []);
 
+  const moveGoal = useCallback((goalId: string, fromDateKey: string, toDateKey: string) => {
+    // Find the goal in the from date and move it to the to date
+    const fromDate = dateFromDateKey(fromDateKey);
+    const toDate = dateFromDateKey(toDateKey);
+    const fromWeekKey = toWeekStartKey(fromDate);
+    const toWeekKey = toWeekStartKey(toDate);
+
+    // Get the goal data
+    const fromWeekData = goalsData[fromWeekKey];
+    if (!fromWeekData?.goalsByDate?.[fromDateKey]) return;
+
+    const goalIndex = fromWeekData.goalsByDate[fromDateKey].findIndex(g => g.id === goalId);
+    if (goalIndex === -1) return;
+
+    const goal = fromWeekData.goalsByDate[fromDateKey][goalIndex];
+
+    // Remove from old date
+    const updatedFromWeek = GoalsStorage.removeGoal(fromWeekKey, fromDateKey, goalId);
+
+    // Add to new date
+    const updatedToWeek = GoalsStorage.addGoal(toWeekKey, toDateKey, goal);
+
+    // Update state
+    setGoalsData(prev => ({
+      ...prev,
+      [fromWeekKey]: updatedFromWeek,
+      [toWeekKey]: updatedToWeek
+    }));
+  }, [goalsData]);
+
   const todayKey = toDateKey(new Date());
 
   const goToPreviousWeek = useCallback(() => {
@@ -267,6 +297,7 @@ export function WeeklyGoalsCalendarView({ calendarData, onNavigateToDaily }: Wee
                 onUpdateColor={(id, color) => updateGoalColor(dateKey, id, color)}
                 onUpdateGoal={(id, updates) => updateGoal(dateKey, id, updates)}
                 onCreateTask={(goal) => createTaskFromGoal(goal, dateKey)}
+                onMoveGoal={moveGoal}
                 onNavigateToDaily={onNavigateToDaily}
                 canAddMore={items.length < 6}
               />
@@ -291,6 +322,7 @@ interface DayColumnProps {
   onUpdateColor: (id: string, color: string) => void;
   onUpdateGoal: (id: string, updates: Partial<Pick<WeeklyGoal, 'title' | 'notes' | 'goalType'>>) => void;
   onCreateTask: (goal: WeeklyGoal) => void;
+  onMoveGoal: (goalId: string, fromDateKey: string, toDateKey: string) => void;
   onNavigateToDaily?: (date: Date) => void;
   canAddMore: boolean;
 }
@@ -308,6 +340,7 @@ function DayColumn({
   onUpdateColor,
   onUpdateGoal,
   onCreateTask,
+  onMoveGoal,
   onNavigateToDaily,
   canAddMore
 }: DayColumnProps) {
@@ -315,6 +348,7 @@ function DayColumn({
   const [inputValue, setInputValue] = useState('');
   const [selectedColor, setSelectedColor] = useState('gray');
   const [selectedGoalType, setSelectedGoalType] = useState<'primary' | 'supporting'>('supporting');
+  const [isDragOver, setIsDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -340,13 +374,50 @@ function DayColumn({
     setShowInput(false);
   };
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    // Only set drag over to false if we're actually leaving the element (not entering a child)
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsDragOver(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+
+    try {
+      const raw = e.dataTransfer.getData('application/json');
+      if (!raw) return;
+      const payload = JSON.parse(raw) as { goalId: string; fromDateKey: string };
+      if (payload.fromDateKey !== dateKey) {
+        onMoveGoal(payload.goalId, payload.fromDateKey, dateKey);
+      }
+    } catch {}
+  };
+
   return (
     <div
       className={`border flex flex-col min-h-[320px] transition-colors ${
         isToday
           ? 'border-green-500'
+          : isDragOver
+          ? 'border-primary bg-primary/5'
           : 'bg-muted/20'
       }`}
+      onDragOver={handleDragOver}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
     >
       <div className="p-3 border-b flex items-center justify-between gap-2">
         <div>
@@ -396,6 +467,7 @@ function DayColumn({
           <GoalItem
             key={goal.id}
             goal={goal}
+            dateKey={dateKey}
             onToggle={() => onToggleGoal(goal.id)}
             onRemove={() => onRemoveGoal(goal.id)}
             onUpdateColor={(color) => onUpdateColor(goal.id, color)}
@@ -673,6 +745,7 @@ function GoalEditModal({ goal, isOpen, onClose, onSave, onDelete, onCreateTask }
 
 interface GoalItemProps {
   goal: WeeklyGoal;
+  dateKey: string;
   onToggle: () => void;
   onRemove: () => void;
   onUpdateColor: (color: string) => void;
@@ -680,7 +753,7 @@ interface GoalItemProps {
   onCreateTask: () => void;
 }
 
-function GoalItem({ goal, onToggle, onRemove, onUpdateColor, onUpdate, onCreateTask }: GoalItemProps) {
+function GoalItem({ goal, dateKey, onToggle, onRemove, onUpdateColor, onUpdate, onCreateTask }: GoalItemProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const colorScheme = GOAL_COLORS.find(c => c.value === goal.color) || GOAL_COLORS[0];
   const isPrimary = goal.goalType === 'primary';
@@ -693,9 +766,13 @@ function GoalItem({ goal, onToggle, onRemove, onUpdateColor, onUpdate, onCreateT
   return (
     <>
       <div
+        draggable
+        onDragStart={(e) => {
+          e.dataTransfer.setData('application/json', JSON.stringify({ goalId: goal.id, fromDateKey: dateKey }));
+        }}
         className={`border group transition-all ${colorScheme.bg} ${colorScheme.border} ${
           isPrimary ? 'p-3 border-2' : 'p-2'
-        } rounded-lg cursor-pointer hover:shadow-md relative overflow-hidden`}
+        } rounded-lg cursor-grab active:cursor-grabbing hover:shadow-md relative overflow-hidden`}
       >
         <div className="flex-1 min-w-0 flex-col flex">
           <span

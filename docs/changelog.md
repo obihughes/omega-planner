@@ -1,3 +1,12 @@
+## 2025-12-18
+
+- **Weekly Goals Overview - Goal Movement** (2025-12-18)
+  - Enhanced weekly goals overview with drag-and-drop functionality
+  - Goals can now be dragged between different days to easily reschedule them
+  - Added visual feedback during drag operations (highlighted drop zones, cursor changes)
+  - Goals in day columns are now draggable with grab cursor for better UX
+  - **Files affected**: `components/calendar/WeeklyGoalsCalendarView.tsx`, `docs/changelog.md`
+
 ## 2025-12-16
 
 - **Daily Planner Day View Fix** (2025-12-16)
