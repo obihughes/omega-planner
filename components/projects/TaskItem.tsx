@@ -37,7 +37,6 @@ interface TaskItemProps {
   onEdit: (task: ProjectTask) => void;
   onDelete: (taskId: string) => void;
   onUpdateTask?: (taskId: string, updates: Partial<ProjectTask>) => void;
-  onAddSubtask?: (taskId: string, subtask: Omit<SubTask, 'id' | 'createdAt' | 'updatedAt' | 'order'>) => void;
   onUpdateSubtask?: (taskId: string, subtaskId: string, updates: Partial<SubTask>) => void;
   onDeleteSubtask?: (taskId: string, subtaskId: string) => void;
   onCloneEdit?: (task: ProjectTask) => void;
@@ -124,16 +123,15 @@ function SubTaskItem({ subtask, onStatusChange, onEdit, onDelete, seriesName, on
   );
 }
 
-export function TaskItem({ 
-  id, 
-  task, 
-  taskIndex, 
-  totalTasks, 
-  onStatusChange, 
-  onEdit, 
+export function TaskItem({
+  id,
+  task,
+  taskIndex,
+  totalTasks,
+  onStatusChange,
+  onEdit,
   onDelete,
   onUpdateTask,
-  onAddSubtask,
   onUpdateSubtask,
   onDeleteSubtask,
   onCloneEdit,
@@ -143,8 +141,6 @@ export function TaskItem({
   onUpdateSubtaskSeries
 }: TaskItemProps) {
   const [isExpanded, setIsExpanded] = React.useState(false);
-  const [showAddSubtask, setShowAddSubtask] = React.useState(false);
-  const [newSubtaskTitle, setNewSubtaskTitle] = React.useState('');
   const [isAnimating, setIsAnimating] = React.useState(false);
   
   // Series Modal state for subtasks
@@ -233,17 +229,6 @@ export function TaskItem({
     }
   };
 
-  const handleAddSubtask = () => {
-    if (!newSubtaskTitle.trim() || !onAddSubtask) return;
-    
-    onAddSubtask(task.id, {
-      title: newSubtaskTitle.trim(),
-      status: 'todo'
-    });
-    
-    setNewSubtaskTitle('');
-    setShowAddSubtask(false);
-  };
 
   const handleSubtaskStatusChange = (subtaskId: string, status: SubTask['status']) => {
     if (!onUpdateSubtask) return;
@@ -454,7 +439,7 @@ export function TaskItem({
         ref={setNodeRef}
         style={style}
         className={cn(
-          "border border-border/40 bg-card/60 backdrop-blur-sm p-3 group",
+          "relative border border-border/40 bg-card/60 backdrop-blur-sm p-3 group",
           "hover:shadow-md hover:border-primary/30 transition-all duration-200",
           "font-['Inter',sans-serif]",
           isDragging && "opacity-50"
@@ -651,32 +636,14 @@ export function TaskItem({
                     </button>
                   )}
                   
-                  {/* Add Subtask/Series Menu */}
-                  <div className="relative group/menu">
-                     <button
-                        onClick={() => setShowAddSubtask(!showAddSubtask)}
-                        className="p-2 hover:bg-accent rounded-md transition-colors"
-                        title="Add Subtask"
-                     >
-                        <Plus className="w-4 h-4" />
-                     </button>
-                     {/* Hover Menu for Quick Add vs Series */}
-                     <div className="absolute right-0 top-full mt-1 w-32 bg-popover border border-border rounded-lg shadow-lg hidden group-hover/menu:block z-20">
-                        <button
-                          onClick={() => { setShowAddSubtask(true); }}
-                          className="w-full text-left px-3 py-2 text-xs hover:bg-accent first:rounded-t-lg"
-                        >
-                           Single Subtask
-                        </button>
-                        <button
-                          onClick={() => { openSubtaskSeriesModal(); }}
-                          className="w-full text-left px-3 py-2 text-xs hover:bg-accent last:rounded-b-lg flex items-center gap-1"
-                        >
-                           <Layers className="w-3 h-3" />
-                           Add Series
-                        </button>
-                     </div>
-                  </div>
+                  {/* Add Subtask Series */}
+                  <button
+                     onClick={() => openSubtaskSeriesModal()}
+                     className="p-2 hover:bg-accent rounded-md transition-colors"
+                     title="Add Subtask Series"
+                  >
+                     <Layers className="w-4 h-4" />
+                  </button>
                   
                   {/* Clone & Edit */}
                   {onCloneEdit && (
@@ -710,42 +677,6 @@ export function TaskItem({
           </div>
         </div>
 
-        {/* Add Subtask Input */}
-        {showAddSubtask && (
-          <div className="mt-4 ml-12 flex items-center gap-2">
-            <input
-              type="text"
-              placeholder="Enter subtask title..."
-              value={newSubtaskTitle}
-              onChange={(e) => setNewSubtaskTitle(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleAddSubtask();
-                if (e.key === 'Escape') {
-                  setShowAddSubtask(false);
-                  setNewSubtaskTitle('');
-                }
-              }}
-              className="flex-1 px-3 py-2 text-sm bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
-              autoFocus
-            />
-            <button
-              onClick={handleAddSubtask}
-              disabled={!newSubtaskTitle.trim()}
-              className="px-3 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Add
-            </button>
-            <button
-              onClick={() => {
-                setShowAddSubtask(false);
-                setNewSubtaskTitle('');
-              }}
-              className="px-3 py-2 text-sm bg-muted text-muted-foreground rounded-md hover:bg-muted/80"
-            >
-              Cancel
-            </button>
-          </div>
-        )}
 
         {/* Subtasks List */}
         {isExpanded && task.subtasks && task.subtasks.length > 0 && (

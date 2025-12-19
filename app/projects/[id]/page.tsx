@@ -53,11 +53,10 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
     addTaskSeriesToProject,
     addProjectSeries,
     updateProjectSeries,
-    updateTaskInProject, 
+    updateTaskInProject,
     deleteTaskFromProject,
     reorderTasksInProject,
     updateProject,
-    addSubtaskToTask,
     updateSubtaskInTask,
     deleteSubtaskFromTask,
     addTaskSeries,
@@ -534,9 +533,6 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
                       onCloneEdit={handleCloneAndEdit}
                       onUpdateTask={(taskId, updates) => {
                         if (project) updateTaskInProject(project.id, taskId, updates);
-                      }}
-                      onAddSubtask={(taskId, subtaskData) => {
-                        if (project) addSubtaskToTask(project.id, taskId, subtaskData);
                       }}
                       onUpdateSubtask={(taskId, subtaskId, updates) => {
                         if (project) updateSubtaskInTask(project.id, taskId, subtaskId, updates);
