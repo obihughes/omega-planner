@@ -285,6 +285,10 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   const handleSaveSeries = useCallback((seriesData: Omit<ProjectSeries, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (!project) return;
     
+    // Close modal first
+    setIsSeriesModalOpen(false);
+    setEditingSeries(undefined);
+    
     if (editingSeries) {
       updateProjectSeries(project.id, editingSeries.id, seriesData);
     } else {

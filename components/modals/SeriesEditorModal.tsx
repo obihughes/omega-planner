@@ -190,6 +190,11 @@ export const SeriesEditorModal = ({
         ]);
         setExcludedIndices([]);
       }
+    } else {
+      // Reset state when modal closes
+      setName('');
+      setSegments([]);
+      setExcludedIndices([]);
     }
   }, [isOpen, initialSeries, mode]);
 
