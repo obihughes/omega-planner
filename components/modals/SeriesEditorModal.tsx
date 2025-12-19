@@ -6,9 +6,6 @@ import {
   Plus, 
   Trash2, 
   GripVertical, 
-  Type, 
-  Hash, 
-  CaseUpper 
 } from 'lucide-react';
 import {
   DndContext,
@@ -33,6 +30,7 @@ interface SeriesEditorModalProps {
   onClose: () => void;
   onSave: (seriesData: Omit<ProjectSeries, 'id' | 'createdAt' | 'updatedAt'>) => void;
   initialSeries?: ProjectSeries; // If editing existing
+  mode?: 'task' | 'subtask'; // 'task' for project-level, 'subtask' for task-level
 }
 
 const SegmentItem = ({ 
@@ -167,7 +165,13 @@ const SegmentItem = ({
   );
 };
 
-export const SeriesEditorModal = ({ isOpen, onClose, onSave, initialSeries }: SeriesEditorModalProps) => {
+export const SeriesEditorModal = ({ 
+  isOpen, 
+  onClose, 
+  onSave, 
+  initialSeries,
+  mode = 'task'
+}: SeriesEditorModalProps) => {
   const [name, setName] = useState('');
   const [segments, setSegments] = useState<SeriesSegment[]>([]);
   const [excludedIndices, setExcludedIndices] = useState<number[]>([]);
@@ -181,13 +185,13 @@ export const SeriesEditorModal = ({ isOpen, onClose, onSave, initialSeries }: Se
       } else {
         setName('');
         setSegments([
-          { id: '1', type: 'text', value: 'Task ' },
+          { id: '1', type: 'text', value: mode === 'subtask' ? 'Step ' : 'Task ' },
           { id: '2', type: 'number', start: 1, end: 5, step: 1 }
         ]);
         setExcludedIndices([]);
       }
     }
-  }, [isOpen, initialSeries]);
+  }, [isOpen, initialSeries, mode]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -252,7 +256,7 @@ export const SeriesEditorModal = ({ isOpen, onClose, onSave, initialSeries }: Se
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
           <h2 className="text-xl font-semibold">
-            {initialSeries ? 'Edit Series' : 'Create New Series'}
+            {initialSeries ? `Edit ${mode === 'subtask' ? 'Subtask' : ''} Series` : `Create New ${mode === 'subtask' ? 'Subtask' : ''} Series`}
           </h2>
           <button onClick={onClose} className="p-2 hover:bg-accent rounded-full transition-colors">
             <X className="w-5 h-5" />
@@ -270,7 +274,7 @@ export const SeriesEditorModal = ({ isOpen, onClose, onSave, initialSeries }: Se
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Phase 1 Tasks"
+                  placeholder={mode === 'subtask' ? "e.g. Checklist Steps" : "e.g. Phase 1 Tasks"}
                   className="w-full bg-background border border-input rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:outline-none"
                   autoFocus
                 />

@@ -38,6 +38,7 @@ export function useProjects() {
             order: project.order ?? index, // Ensure order exists
             tasks: project.tasks.map((task, index) => ({
               ...task,
+              series: task.series || [], // Ensure task series exists
               order: task.order ?? index,
             })),
           }));
@@ -215,6 +216,7 @@ export function useProjects() {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             order: project.tasks.length,
+            series: [] // Initialize empty series array
           };
           const updatedTasks = [...project.tasks, newTask];
           const completedTasks = updatedTasks.filter(t => t.status === 'completed').length;
@@ -255,6 +257,7 @@ export function useProjects() {
           createdAt: nowIso,
           updatedAt: nowIso,
           order: startingOrder + i,
+          series: []
         }));
 
         createdTasks.push(...newTasks);
@@ -309,7 +312,8 @@ export function useProjects() {
              updatedAt: nowIso,
              order: startingOrder + index, // This might leave gaps if filtering nulls, but that's fine for sorting
              seriesId: seriesId,
-             seriesIndex: index
+             seriesIndex: index,
+             series: []
            };
         }).filter((t): t is ProjectTask => t !== null);
 
@@ -362,9 +366,6 @@ export function useProjects() {
         titles.forEach((title, index) => {
            // Check exclusion
            if (updatedSeriesDef.excludedIndices?.includes(index)) {
-             // If excluded, we should delete the task if it exists?
-             // Or keep it but detach?
-             // Plan says "delete_task" for removal. Exclusion is effectively removal from active series.
              return; 
            }
 
@@ -390,16 +391,13 @@ export function useProjects() {
                updatedAt: new Date().toISOString(),
                order: maxOrder,
                seriesId: seriesId,
-               seriesIndex: index
+               seriesIndex: index,
+               series: []
              });
            }
         });
 
         // 2. Identify tasks to remove (indices that no longer exist or are excluded)
-        // We do this by filtering the project's tasks.
-        // Keep non-series tasks.
-        // For series tasks, only keep those present in syncedTasks (by ID).
-        
         const syncedTaskIds = new Set(syncedTasks.map(t => t.id));
         const finalTasks = currentTasks.filter(t => {
           if (t.seriesId !== seriesId) return true; // Keep other tasks
@@ -606,6 +604,167 @@ export function useProjects() {
     );
   }, []);
 
+  // NEW: Robust Subtask Series Management
+  const addTaskSeries = useCallback((
+    projectId: string,
+    taskId: string,
+    seriesData: Omit<ProjectSeries, 'id' | 'createdAt' | 'updatedAt'>
+  ) => {
+    updateProjectsState(prevProjects =>
+      prevProjects.map(project => {
+        if (project.id !== projectId) return project;
+
+        const updatedTasks = project.tasks.map(task => {
+          if (task.id !== taskId) return task;
+
+          const seriesId = `series-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          const nowIso = new Date().toISOString();
+
+          const newSeries: ProjectSeries = {
+            ...seriesData,
+            id: seriesId,
+            createdAt: nowIso,
+            updatedAt: nowIso
+          };
+
+          const titles = generateSeriesTitles(seriesData.segments);
+          const currentSubtasks = task.subtasks || [];
+          const startingOrder = currentSubtasks.length;
+
+          const newSubtasks: SubTask[] = titles.map((title, index) => {
+            if (seriesData.excludedIndices?.includes(index)) return null;
+
+            return {
+              id: `subtask-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
+              title,
+              status: 'todo',
+              createdAt: nowIso,
+              updatedAt: nowIso,
+              order: startingOrder + index,
+              seriesId: seriesId,
+              seriesIndex: index
+            };
+          }).filter((t): t is SubTask => t !== null);
+
+          // Fix orders
+          newSubtasks.forEach((t, i) => t.order = startingOrder + i);
+
+          return {
+            ...task,
+            subtasks: [...currentSubtasks, ...newSubtasks],
+            series: [...(task.series || []), newSeries],
+            updatedAt: nowIso
+          };
+        });
+
+        return { ...project, tasks: updatedTasks, updatedAt: new Date().toISOString() };
+      })
+    );
+  }, []);
+
+  const updateTaskSeries = useCallback((
+    projectId: string,
+    taskId: string,
+    seriesId: string,
+    updates: Partial<ProjectSeries>
+  ) => {
+    updateProjectsState(prevProjects =>
+      prevProjects.map(project => {
+        if (project.id !== projectId) return project;
+
+        const updatedTasks = project.tasks.map(task => {
+          if (task.id !== taskId) return task;
+
+          const existingSeries = task.series?.find(s => s.id === seriesId);
+          if (!existingSeries) return task;
+
+          const updatedSeriesDef = { ...existingSeries, ...updates, updatedAt: new Date().toISOString() };
+          const titles = generateSeriesTitles(updatedSeriesDef.segments);
+
+          // Sync subtasks
+          const currentSubtasks = [...(task.subtasks || [])];
+          let maxOrder = currentSubtasks.reduce((max, t) => Math.max(max, t.order), -1);
+
+          const seriesSubtasks = currentSubtasks.filter(t => t.seriesId === seriesId);
+          const syncedSubtasks: SubTask[] = [];
+
+          titles.forEach((title, index) => {
+            if (updatedSeriesDef.excludedIndices?.includes(index)) return;
+
+            const existingSubtask = seriesSubtasks.find(t => t.seriesIndex === index);
+
+            if (existingSubtask) {
+              syncedSubtasks.push({
+                ...existingSubtask,
+                title,
+                updatedAt: new Date().toISOString()
+              });
+            } else {
+              maxOrder++;
+              syncedSubtasks.push({
+                id: `subtask-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
+                title,
+                status: 'todo',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                order: maxOrder,
+                seriesId: seriesId,
+                seriesIndex: index
+              });
+            }
+          });
+
+          // Identify removals
+          const syncedIds = new Set(syncedSubtasks.map(t => t.id));
+          const finalSubtasks = currentSubtasks.filter(t => {
+            if (t.seriesId !== seriesId) return true;
+            return syncedIds.has(t.id);
+          });
+
+          // Add new
+          const existingIds = new Set(currentSubtasks.map(t => t.id));
+          const newToAdd = syncedSubtasks.filter(t => !existingIds.has(t.id));
+
+          const allSubtasks = [...finalSubtasks, ...newToAdd];
+          const allSeries = task.series?.map(s => s.id === seriesId ? updatedSeriesDef : s) || [];
+
+          return {
+            ...task,
+            subtasks: allSubtasks,
+            series: allSeries,
+            updatedAt: new Date().toISOString()
+          };
+        });
+
+        return { ...project, tasks: updatedTasks, updatedAt: new Date().toISOString() };
+      })
+    );
+  }, []);
+
+  const deleteTaskSeries = useCallback((projectId: string, taskId: string, seriesId: string) => {
+    updateProjectsState(prevProjects =>
+      prevProjects.map(project => {
+        if (project.id !== projectId) return project;
+
+        const updatedTasks = project.tasks.map(task => {
+          if (task.id !== taskId) return task;
+
+          const updatedSeries = task.series?.filter(s => s.id !== seriesId) || [];
+          const updatedSubtasks = (task.subtasks || []).filter(t => t.seriesId !== seriesId);
+
+          return {
+            ...task,
+            subtasks: updatedSubtasks,
+            series: updatedSeries,
+            updatedAt: new Date().toISOString()
+          };
+        });
+
+        return { ...project, tasks: updatedTasks, updatedAt: new Date().toISOString() };
+      })
+    );
+  }, []);
+
   // Get all tasks from all active projects with project metadata
   const getAllProjectTasks = useCallback(() => {
     return projects
@@ -747,6 +906,11 @@ export function useProjects() {
     addSubtaskToTask,
     updateSubtaskInTask,
     deleteSubtaskFromTask,
+    // Subtask series functions
+    addTaskSeries,
+    updateTaskSeries,
+    deleteTaskSeries,
+    // Other functions
     getAllProjectTasks,
     getTaskStats,
     createUnassignedTask,

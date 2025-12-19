@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { ProjectTask, SubTask } from '@/types';
+import React, { useState, useMemo, useRef, useEffect, Suspense, lazy } from 'react';
+import { ProjectTask, SubTask, ProjectSeries } from '@/types';
 import { 
   GripVertical, 
   Plus, 
@@ -16,12 +16,17 @@ import {
   ChevronDown,
   ChevronRight,
   Copy,
-  Layers
+  Layers,
+  MoreHorizontal
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { formatDueDate, normalizeDueDate, dateFromDateKey } from '@/utils/dateUtils';
+// Import hooks directly for local component usage if needed, or pass props from parent
+// Since TaskItem is deeply nested, passing props is cleaner.
+
+const SeriesEditorModal = lazy(() => import('@/components/modals/SeriesEditorModal').then(module => ({ default: module.SeriesEditorModal })));
 
 interface TaskItemProps {
   id: string;
@@ -38,6 +43,9 @@ interface TaskItemProps {
   onCloneEdit?: (task: ProjectTask) => void;
   seriesName?: string;
   onEditSeries?: () => void;
+  // Subtask Series Props
+  onAddSubtaskSeries?: (taskId: string, seriesData: Omit<ProjectSeries, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  onUpdateSubtaskSeries?: (taskId: string, seriesId: string, updates: Partial<ProjectSeries>) => void;
 }
 
 // SubTask Item Component
@@ -46,9 +54,11 @@ interface SubTaskItemProps {
   onStatusChange: (status: SubTask['status']) => void;
   onEdit: () => void;
   onDelete: () => void;
+  seriesName?: string;
+  onEditSeries?: () => void;
 }
 
-function SubTaskItem({ subtask, onStatusChange, onEdit, onDelete }: SubTaskItemProps) {
+function SubTaskItem({ subtask, onStatusChange, onEdit, onDelete, seriesName, onEditSeries }: SubTaskItemProps) {
   const getStatusIcon = (status: SubTask['status']) => {
     switch (status) {
       case 'completed':
@@ -74,13 +84,24 @@ function SubTaskItem({ subtask, onStatusChange, onEdit, onDelete }: SubTaskItemP
         {getStatusIcon(subtask.status)}
       </button>
       
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
         <span className={cn(
           "text-sm",
           subtask.status === 'completed' && "line-through text-muted-foreground"
         )}>
           {subtask.title}
         </span>
+        
+        {seriesName && (
+          <span 
+            onClick={(e) => { e.stopPropagation(); onEditSeries?.(); }}
+            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-secondary/50 text-secondary-foreground cursor-pointer hover:bg-secondary/70 transition-colors"
+            title="Part of a series - Click to edit"
+          >
+            <Layers className="w-3 h-3" />
+            {seriesName}
+          </span>
+        )}
       </div>
       
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -117,13 +138,19 @@ export function TaskItem({
   onDeleteSubtask,
   onCloneEdit,
   seriesName,
-  onEditSeries
+  onEditSeries,
+  onAddSubtaskSeries,
+  onUpdateSubtaskSeries
 }: TaskItemProps) {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [showAddSubtask, setShowAddSubtask] = React.useState(false);
   const [newSubtaskTitle, setNewSubtaskTitle] = React.useState('');
   const [isAnimating, setIsAnimating] = React.useState(false);
   
+  // Series Modal state for subtasks
+  const [isSubtaskSeriesModalOpen, setIsSubtaskSeriesModalOpen] = useState(false);
+  const [editingSubtaskSeries, setEditingSubtaskSeries] = useState<ProjectSeries | undefined>(undefined);
+
   // Inline editing state
   const [isEditingTitle, setIsEditingTitle] = React.useState(false);
   const [editingValue, setEditingValue] = React.useState('');
@@ -226,6 +253,30 @@ export function TaskItem({
   const handleDeleteSubtask = (subtaskId: string) => {
     if (!onDeleteSubtask) return;
     onDeleteSubtask(task.id, subtaskId);
+  };
+
+  // Subtask Series Handlers
+  const openSubtaskSeriesModal = (seriesId?: string) => {
+    if (seriesId) {
+      const series = task.series?.find(s => s.id === seriesId);
+      if (series) {
+        setEditingSubtaskSeries(series);
+        setIsSubtaskSeriesModalOpen(true);
+      }
+    } else {
+      setEditingSubtaskSeries(undefined);
+      setIsSubtaskSeriesModalOpen(true);
+    }
+  };
+
+  const handleSaveSubtaskSeries = (seriesData: Omit<ProjectSeries, 'id' | 'createdAt' | 'updatedAt'>) => {
+    if (editingSubtaskSeries) {
+      onUpdateSubtaskSeries?.(task.id, editingSubtaskSeries.id, seriesData);
+    } else {
+      onAddSubtaskSeries?.(task.id, seriesData);
+      // Ensure subtasks are expanded to see the new ones
+      setIsExpanded(true);
+    }
   };
 
   // Inline editing functions
@@ -398,302 +449,337 @@ export function TaskItem({
   };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={cn(
-        "border border-border/40 bg-card/60 backdrop-blur-sm p-3 group",
-        "hover:shadow-md hover:border-primary/30 transition-all duration-200",
-        "font-['Inter',sans-serif]",
-        isDragging && "opacity-50"
-      )}
-    >
-      <div className="flex items-start gap-2">
-        {/* Drag Handle */}
-        <div 
-          className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing p-1 rounded hover:bg-accent transition-opacity flex-shrink-0 mt-0.5"
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical className="w-4 h-4 text-muted-foreground" />
-        </div>
+    <>
+      <div
+        ref={setNodeRef}
+        style={style}
+        className={cn(
+          "border border-border/40 bg-card/60 backdrop-blur-sm p-3 group",
+          "hover:shadow-md hover:border-primary/30 transition-all duration-200",
+          "font-['Inter',sans-serif]",
+          isDragging && "opacity-50"
+        )}
+      >
+        <div className="flex items-start gap-2">
+          {/* Drag Handle */}
+          <div 
+            className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing p-1 rounded hover:bg-accent transition-opacity flex-shrink-0 mt-0.5"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="w-4 h-4 text-muted-foreground" />
+          </div>
 
-        {/* Status Toggle */}
-        <button
-          onClick={(e) => {
-            const nextStatus = task.status === 'completed' ? 'todo' : 'completed';
-            
-            // Trigger exciting animation when completing a task
-            if (nextStatus === 'completed') {
-              setIsAnimating(true);
+          {/* Status Toggle */}
+          <button
+            onClick={(e) => {
+              const nextStatus = task.status === 'completed' ? 'todo' : 'completed';
               
-              // Create confetti particles
-              createConfettiParticles(e.currentTarget as HTMLElement);
+              // Trigger exciting animation when completing a task
+              if (nextStatus === 'completed') {
+                setIsAnimating(true);
+                
+                // Create confetti particles
+                createConfettiParticles(e.currentTarget as HTMLElement);
+                
+                // Reset animation state
+                setTimeout(() => {
+                  setIsAnimating(false);
+                }, 1000);
+              }
               
-              // Reset animation state
-              setTimeout(() => {
-                setIsAnimating(false);
-              }, 1000);
-            }
-            
-            onStatusChange(task.id, nextStatus);
-          }}
-          className={cn(
-            "flex-shrink-0 transition-all duration-300 relative mt-0.5",
-            "hover:scale-110 active:scale-95",
-            isAnimating && "animate-bounce"
-          )}
-          style={{
-            transform: isAnimating ? 'scale(1.2)' : undefined,
-            transition: 'transform 0.3s ease-in-out'
-          }}
-        >
-          {getStatusIcon()}
-        </button>
+              onStatusChange(task.id, nextStatus);
+            }}
+            className={cn(
+              "flex-shrink-0 transition-all duration-300 relative mt-0.5",
+              "hover:scale-110 active:scale-95",
+              isAnimating && "animate-bounce"
+            )}
+            style={{
+              transform: isAnimating ? 'scale(1.2)' : undefined,
+              transition: 'transform 0.3s ease-in-out'
+            }}
+          >
+            {getStatusIcon()}
+          </button>
 
-        {/* Task Content */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between">
-            <div className="flex-1 min-w-0">
-              {isEditingTitle ? (
-                <input
-                  type="text"
-                  value={editingValue}
-                  onChange={(e) => setEditingValue(e.target.value)}
-                  onBlur={saveEditTitle}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') saveEditTitle();
-                    if (e.key === 'Escape') cancelEditTitle();
-                  }}
-                  ref={editInputRef}
-                  className="w-full font-medium text-foreground mb-1 bg-transparent border-none outline-none focus:bg-accent/50 rounded px-1 -mx-1 leading-snug"
-                />
-              ) : (
-                <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                  <h4 
-                    className={cn(
-                      "font-medium text-foreground break-words leading-snug cursor-pointer hover:bg-accent/20 rounded px-1 -mx-1 transition-colors",
-                      task.status === 'completed' && "line-through text-muted-foreground"
-                    )}
-                    onClick={startEditingTitle}
-                    title="Click to edit task name"
-                  >
-                    {task.title}
-                  </h4>
-                  
-                  {seriesName && (
-                    <span 
-                      onClick={(e) => { e.stopPropagation(); onEditSeries?.(); }}
-                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary cursor-pointer hover:bg-primary/20 transition-colors"
-                      title="Part of a series - Click to edit series"
-                    >
-                      <Layers className="w-3 h-3" />
-                      {seriesName}
-                    </span>
-                  )}
-                </div>
-              )}
-              
-              {/* Description display / editing */}
-              {isEditingDescription ? (
-                <div className="mt-1">
-                  <textarea
-                    ref={descTextareaRef}
-                    value={editingDescription}
-                    onChange={(e) => setEditingDescription(e.target.value)}
-                    onBlur={saveEditDescription}
+          {/* Task Content */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between">
+              <div className="flex-1 min-w-0">
+                {isEditingTitle ? (
+                  <input
+                    type="text"
+                    value={editingValue}
+                    onChange={(e) => setEditingValue(e.target.value)}
+                    onBlur={saveEditTitle}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) saveEditDescription();
-                      if (e.key === 'Escape') cancelEditDescription();
+                      if (e.key === 'Enter') saveEditTitle();
+                      if (e.key === 'Escape') cancelEditTitle();
                     }}
-                    placeholder="Add description..."
-                    className="w-full text-sm bg-transparent border border-border rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary resize-none"
-                    rows={2}
+                    ref={editInputRef}
+                    className="w-full font-medium text-foreground mb-1 bg-transparent border-none outline-none focus:bg-accent/50 rounded px-1 -mx-1 leading-snug"
                   />
-                  <div className="text-xs text-muted-foreground mt-1">Press Ctrl+Enter to save, Escape to cancel</div>
-                </div>
-              ) : (
-                <p
-                  className={cn(
-                    "text-sm break-words leading-snug",
-                    task.description ? "text-muted-foreground" : "text-muted-foreground/70 italic cursor-text hover:text-foreground/80"
-                  )}
-                  onClick={startEditingDescription}
-                  title={task.description ? "Click to edit description" : "Click to add description"}
-                >
-                  {task.description || ''}
-                </p>
-              )}
-              
-              {/* Subtask Progress Indicator */}
-              {subtaskStats.total > 0 && (
-                <div className="flex items-center gap-2 mt-1">
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <span>{subtaskStats.completed}/{subtaskStats.total} subtasks</span>
+                ) : (
+                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                    <h4 
+                      className={cn(
+                        "font-medium text-foreground break-words leading-snug cursor-pointer hover:bg-accent/20 rounded px-1 -mx-1 transition-colors",
+                        task.status === 'completed' && "line-through text-muted-foreground"
+                      )}
+                      onClick={startEditingTitle}
+                      title="Click to edit task name"
+                    >
+                      {task.title}
+                    </h4>
+                    
+                    {seriesName && (
+                      <span 
+                        onClick={(e) => { e.stopPropagation(); onEditSeries?.(); }}
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary cursor-pointer hover:bg-primary/20 transition-colors"
+                        title="Part of a series - Click to edit series"
+                      >
+                        <Layers className="w-3 h-3" />
+                        {seriesName}
+                      </span>
+                    )}
                   </div>
-                  <div className="h-1.5 w-16 bg-muted rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-green-500 transition-all duration-300"
-                      style={{ width: `${subtaskStats.percentage}%` }}
+                )}
+                
+                {/* Description display / editing */}
+                {isEditingDescription ? (
+                  <div className="mt-1">
+                    <textarea
+                      ref={descTextareaRef}
+                      value={editingDescription}
+                      onChange={(e) => setEditingDescription(e.target.value)}
+                      onBlur={saveEditDescription}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) saveEditDescription();
+                        if (e.key === 'Escape') cancelEditDescription();
+                      }}
+                      placeholder="Add description..."
+                      className="w-full text-sm bg-transparent border border-border rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                      rows={2}
                     />
+                    <div className="text-xs text-muted-foreground mt-1">Press Ctrl+Enter to save, Escape to cancel</div>
                   </div>
-                  <span className="text-xs text-muted-foreground">
-                    {Math.round(subtaskStats.percentage)}%
-                  </span>
-                </div>
-              )}
-            </div>
+                ) : (
+                  <p
+                    className={cn(
+                      "text-sm break-words leading-snug",
+                      task.description ? "text-muted-foreground" : "text-muted-foreground/70 italic cursor-text hover:text-foreground/80"
+                    )}
+                    onClick={startEditingDescription}
+                    title={task.description ? "Click to edit description" : "Click to add description"}
+                  >
+                    {task.description || ''}
+                  </p>
+                )}
+                
+                {/* Subtask Progress Indicator */}
+                {subtaskStats.total > 0 && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <span>{subtaskStats.completed}/{subtaskStats.total} subtasks</span>
+                    </div>
+                    <div className="h-1.5 w-16 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-green-500 transition-all duration-300"
+                        style={{ width: `${subtaskStats.percentage}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {Math.round(subtaskStats.percentage)}%
+                    </span>
+                  </div>
+                )}
+              </div>
 
-            {/* Due date (always visible) and actions (on hover) */}
-            <div className="flex items-center gap-2 ml-4">
-              {/* Due Date Chip / Editor (always visible) */}
-              {isEditingDueDate ? (
-                <input
-                  ref={dueInputRef}
-                  type="date"
-                  value={editingDueDate}
-                  onChange={(e) => setEditingDueDate(e.target.value)}
-                  onBlur={saveEditDueDate}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') saveEditDueDate();
-                    if (e.key === 'Escape') setIsEditingDueDate(false);
-                  }}
-                  className="text-xs bg-transparent border border-primary rounded px-1 py-0.5 focus:outline-none"
-                />
-              ) : (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    startEditingDueDate();
-                  }}
-                  className={cn(
-                    "text-xs px-2 py-1 rounded-full border",
-                    dueInfo?.isOverdue ? "border-red-500 text-red-600 bg-red-50" : "border-border text-muted-foreground hover:text-foreground hover:bg-accent/40"
+              {/* Due date (always visible) and actions (on hover) */}
+              <div className="flex items-center gap-2 ml-4">
+                {/* Due Date Chip / Editor (always visible) */}
+                {isEditingDueDate ? (
+                  <input
+                    ref={dueInputRef}
+                    type="date"
+                    value={editingDueDate}
+                    onChange={(e) => setEditingDueDate(e.target.value)}
+                    onBlur={saveEditDueDate}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveEditDueDate();
+                      if (e.key === 'Escape') setIsEditingDueDate(false);
+                    }}
+                    className="text-xs bg-transparent border border-primary rounded px-1 py-0.5 focus:outline-none"
+                  />
+                ) : (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      startEditingDueDate();
+                    }}
+                    className={cn(
+                      "text-xs px-2 py-1 rounded-full border",
+                      dueInfo?.isOverdue ? "border-red-500 text-red-600 bg-red-50" : "border-border text-muted-foreground hover:text-foreground hover:bg-accent/40"
+                    )}
+                    title={task.dueDate ? (fullDueHoverTitle || "Click to edit due date") : "Click to set due date"}
+                  >
+                    {task.dueDate ? (dueInfo?.text || 'Due date') : 'Add due date'}
+                  </button>
+                )}
+
+                {/* Action buttons (hidden until hover) */}
+                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {task.dueDate && !isEditingDueDate && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); clearDueDate(); }}
+                      className="text-xs text-muted-foreground hover:text-foreground"
+                      title="Clear due date"
+                    >
+                      ×
+                    </button>
                   )}
-                  title={task.dueDate ? (fullDueHoverTitle || "Click to edit due date") : "Click to set due date"}
-                >
-                  {task.dueDate ? (dueInfo?.text || 'Due date') : 'Add due date'}
-                </button>
-              )}
 
-              {/* Action buttons (hidden until hover) */}
-              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                {task.dueDate && !isEditingDueDate && (
+                  {/* Expand/Collapse Subtasks */}
+                  {(task.subtasks && task.subtasks.length > 0) && (
+                    <button
+                      onClick={() => setIsExpanded(!isExpanded)}
+                      className="p-2 hover:bg-accent rounded-md transition-colors"
+                      title={isExpanded ? "Collapse subtasks" : "Expand subtasks"}
+                    >
+                      {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                    </button>
+                  )}
+                  
+                  {/* Add Subtask/Series Menu */}
+                  <div className="relative group/menu">
+                     <button
+                        onClick={() => setShowAddSubtask(!showAddSubtask)}
+                        className="p-2 hover:bg-accent rounded-md transition-colors"
+                        title="Add Subtask"
+                     >
+                        <Plus className="w-4 h-4" />
+                     </button>
+                     {/* Hover Menu for Quick Add vs Series */}
+                     <div className="absolute right-0 top-full mt-1 w-32 bg-popover border border-border rounded-lg shadow-lg hidden group-hover/menu:block z-20">
+                        <button
+                          onClick={() => { setShowAddSubtask(true); }}
+                          className="w-full text-left px-3 py-2 text-xs hover:bg-accent first:rounded-t-lg"
+                        >
+                           Single Subtask
+                        </button>
+                        <button
+                          onClick={() => { openSubtaskSeriesModal(); }}
+                          className="w-full text-left px-3 py-2 text-xs hover:bg-accent last:rounded-b-lg flex items-center gap-1"
+                        >
+                           <Layers className="w-3 h-3" />
+                           Add Series
+                        </button>
+                     </div>
+                  </div>
+                  
+                  {/* Clone & Edit */}
+                  {onCloneEdit && (
+                    <button
+                      onClick={() => onCloneEdit(task)}
+                      className="p-2 hover:bg-accent rounded-md transition-colors"
+                      title="Clone & Edit"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  )}
+                  
                   <button
-                    onClick={(e) => { e.stopPropagation(); clearDueDate(); }}
-                    className="text-xs text-muted-foreground hover:text-foreground"
-                    title="Clear due date"
-                  >
-                    ×
-                  </button>
-                )}
-
-                {/* Expand/Collapse Subtasks */}
-                {(task.subtasks && task.subtasks.length > 0) && (
-                  <button
-                    onClick={() => setIsExpanded(!isExpanded)}
+                    onClick={() => onEdit(task)}
                     className="p-2 hover:bg-accent rounded-md transition-colors"
-                    title={isExpanded ? "Collapse subtasks" : "Expand subtasks"}
+                    title="Edit task"
                   >
-                    {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                    <Edit className="w-4 h-4" />
                   </button>
-                )}
-                
-                {/* Add Subtask */}
-                <button
-                  onClick={() => setShowAddSubtask(!showAddSubtask)}
-                  className="p-2 hover:bg-accent rounded-md transition-colors"
-                  title="Add subtask"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-                
-                {/* Clone & Edit */}
-                {onCloneEdit && (
+                  
                   <button
-                    onClick={() => onCloneEdit(task)}
-                    className="p-2 hover:bg-accent rounded-md transition-colors"
-                    title="Clone & Edit"
+                    onClick={() => onDelete(task.id)}
+                    className="p-2 hover:bg-accent rounded-md transition-colors text-destructive"
+                    title="Delete task"
                   >
-                    <Copy className="w-4 h-4" />
+                    <Trash2 className="w-4 h-4" />
                   </button>
-                )}
-                
-                <button
-                  onClick={() => onEdit(task)}
-                  className="p-2 hover:bg-accent rounded-md transition-colors"
-                  title="Edit task"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
-                
-                <button
-                  onClick={() => onDelete(task.id)}
-                  className="p-2 hover:bg-accent rounded-md transition-colors text-destructive"
-                  title="Delete task"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Add Subtask Input */}
-      {showAddSubtask && (
-        <div className="mt-4 ml-12 flex items-center gap-2">
-          <input
-            type="text"
-            placeholder="Enter subtask title..."
-            value={newSubtaskTitle}
-            onChange={(e) => setNewSubtaskTitle(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleAddSubtask();
-              if (e.key === 'Escape') {
+        {/* Add Subtask Input */}
+        {showAddSubtask && (
+          <div className="mt-4 ml-12 flex items-center gap-2">
+            <input
+              type="text"
+              placeholder="Enter subtask title..."
+              value={newSubtaskTitle}
+              onChange={(e) => setNewSubtaskTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleAddSubtask();
+                if (e.key === 'Escape') {
+                  setShowAddSubtask(false);
+                  setNewSubtaskTitle('');
+                }
+              }}
+              className="flex-1 px-3 py-2 text-sm bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
+              autoFocus
+            />
+            <button
+              onClick={handleAddSubtask}
+              disabled={!newSubtaskTitle.trim()}
+              className="px-3 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Add
+            </button>
+            <button
+              onClick={() => {
                 setShowAddSubtask(false);
                 setNewSubtaskTitle('');
-              }
-            }}
-            className="flex-1 px-3 py-2 text-sm bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
-            autoFocus
-          />
-          <button
-            onClick={handleAddSubtask}
-            disabled={!newSubtaskTitle.trim()}
-            className="px-3 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Add
-          </button>
-          <button
-            onClick={() => {
-              setShowAddSubtask(false);
-              setNewSubtaskTitle('');
-            }}
-            className="px-3 py-2 text-sm bg-muted text-muted-foreground rounded-md hover:bg-muted/80"
-          >
-            Cancel
-          </button>
-        </div>
-      )}
-
-      {/* Subtasks List */}
-      {isExpanded && task.subtasks && task.subtasks.length > 0 && (
-        <div className="mt-4 ml-12 space-y-2">
-          {task.subtasks.map((subtask) => (
-            <SubTaskItem
-              key={subtask.id}
-              subtask={subtask}
-              onStatusChange={(status) => handleSubtaskStatusChange(subtask.id, status)}
-              onEdit={() => {
-                // TODO: Implement subtask editing modal
-                console.log('Edit subtask:', subtask);
               }}
-              onDelete={() => handleDeleteSubtask(subtask.id)}
-            />
-          ))}
-        </div>
-      )}
-    </div>
+              className="px-3 py-2 text-sm bg-muted text-muted-foreground rounded-md hover:bg-muted/80"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+
+        {/* Subtasks List */}
+        {isExpanded && task.subtasks && task.subtasks.length > 0 && (
+          <div className="mt-4 ml-12 space-y-2">
+            {task.subtasks.map((subtask) => (
+              <SubTaskItem
+                key={subtask.id}
+                subtask={subtask}
+                onStatusChange={(status) => handleSubtaskStatusChange(subtask.id, status)}
+                onEdit={() => {
+                  // TODO: Implement subtask editing modal if needed, or inline
+                  console.log('Edit subtask:', subtask);
+                }}
+                onDelete={() => handleDeleteSubtask(subtask.id)}
+                seriesName={subtask.seriesId ? task.series?.find(s => s.id === subtask.seriesId)?.name : undefined}
+                onEditSeries={() => subtask.seriesId && openSubtaskSeriesModal(subtask.seriesId)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Subtask Series Modal */}
+      <Suspense fallback={null}>
+        {isSubtaskSeriesModalOpen && (
+          <SeriesEditorModal
+            isOpen={isSubtaskSeriesModalOpen}
+            onClose={() => setIsSubtaskSeriesModalOpen(false)}
+            onSave={handleSaveSubtaskSeries}
+            initialSeries={editingSubtaskSeries}
+            mode="subtask"
+          />
+        )}
+      </Suspense>
+    </>
   );
 }

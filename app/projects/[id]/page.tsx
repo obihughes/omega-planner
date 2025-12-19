@@ -59,7 +59,9 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
     updateProject,
     addSubtaskToTask,
     updateSubtaskInTask,
-    deleteSubtaskFromTask
+    deleteSubtaskFromTask,
+    addTaskSeries,
+    updateTaskSeries
   } = useProjects();
   
   const [statusFilter, setStatusFilter] = useState<ProjectTask['status'] | 'all'>('all');
@@ -540,6 +542,12 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
                       }}
                       seriesName={task.seriesId ? project.series?.find(s => s.id === task.seriesId)?.name : undefined}
                       onEditSeries={() => task.seriesId && handleEditSeries(task.seriesId)}
+                      onAddSubtaskSeries={(taskId, seriesData) => {
+                        if (project) addTaskSeries(project.id, taskId, seriesData);
+                      }}
+                      onUpdateSubtaskSeries={(taskId, seriesId, updates) => {
+                        if (project) updateTaskSeries(project.id, taskId, seriesId, updates);
+                      }}
                     />
                   ))}
                 </div>

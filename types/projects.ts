@@ -2,6 +2,31 @@
  * Project Management Types
  */
 
+export type SeriesSegmentType = 'text' | 'number' | 'letter';
+
+export interface SeriesSegment {
+  id: string;
+  type: SeriesSegmentType;
+  /** For text type */
+  value?: string;
+  /** For number/letter type */
+  start?: number | string;
+  /** For number/letter type */
+  end?: number | string;
+  /** Step for number ranges */
+  step?: number;
+}
+
+export interface ProjectSeries {
+  id: string;
+  name: string;
+  segments: SeriesSegment[];
+  /** Indices of generated items to exclude */
+  excludedIndices?: number[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface SubTask {
   /** Unique identifier for the subtask */
   id: string;
@@ -29,6 +54,12 @@ export interface SubTask {
   
   /** Display order for the subtask within a task */
   order: number;
+
+  /** ID of the series this subtask belongs to */
+  seriesId?: string;
+
+  /** Index of this subtask within the series generation (0-based) */
+  seriesIndex?: number;
 }
 
 export interface ProjectTask {
@@ -80,6 +111,9 @@ export interface ProjectTask {
   /** Subtasks for hierarchical task management */
   subtasks?: SubTask[];
 
+  /** Series definitions for subtasks within this task */
+  series?: ProjectSeries[];
+
   /** ID of the series this task belongs to */
   seriesId?: string;
 
@@ -114,31 +148,6 @@ export interface ProjectFolder {
   
   /** Whether the folder is expanded in the UI */
   isExpanded?: boolean;
-}
-
-export type SeriesSegmentType = 'text' | 'number' | 'letter';
-
-export interface SeriesSegment {
-  id: string;
-  type: SeriesSegmentType;
-  /** For text type */
-  value?: string;
-  /** For number/letter type */
-  start?: number | string;
-  /** For number/letter type */
-  end?: number | string;
-  /** Step for number ranges */
-  step?: number;
-}
-
-export interface ProjectSeries {
-  id: string;
-  name: string;
-  segments: SeriesSegment[];
-  /** Indices of generated items to exclude */
-  excludedIndices?: number[];
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface Project {
