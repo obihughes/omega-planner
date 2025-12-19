@@ -15,7 +15,8 @@ import {
   Edit,
   ChevronDown,
   ChevronRight,
-  Copy
+  Copy,
+  Layers
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSortable } from '@dnd-kit/sortable';
@@ -35,6 +36,8 @@ interface TaskItemProps {
   onUpdateSubtask?: (taskId: string, subtaskId: string, updates: Partial<SubTask>) => void;
   onDeleteSubtask?: (taskId: string, subtaskId: string) => void;
   onCloneEdit?: (task: ProjectTask) => void;
+  seriesName?: string;
+  onEditSeries?: () => void;
 }
 
 // SubTask Item Component
@@ -112,7 +115,9 @@ export function TaskItem({
   onAddSubtask,
   onUpdateSubtask,
   onDeleteSubtask,
-  onCloneEdit
+  onCloneEdit,
+  seriesName,
+  onEditSeries
 }: TaskItemProps) {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [showAddSubtask, setShowAddSubtask] = React.useState(false);
@@ -464,16 +469,29 @@ export function TaskItem({
                   className="w-full font-medium text-foreground mb-1 bg-transparent border-none outline-none focus:bg-accent/50 rounded px-1 -mx-1 leading-snug"
                 />
               ) : (
-                <h4 
-                  className={cn(
-                    "font-medium text-foreground mb-0.5 break-words leading-snug cursor-pointer hover:bg-accent/20 rounded px-1 -mx-1 transition-colors",
-                    task.status === 'completed' && "line-through text-muted-foreground"
+                <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                  <h4 
+                    className={cn(
+                      "font-medium text-foreground break-words leading-snug cursor-pointer hover:bg-accent/20 rounded px-1 -mx-1 transition-colors",
+                      task.status === 'completed' && "line-through text-muted-foreground"
+                    )}
+                    onClick={startEditingTitle}
+                    title="Click to edit task name"
+                  >
+                    {task.title}
+                  </h4>
+                  
+                  {seriesName && (
+                    <span 
+                      onClick={(e) => { e.stopPropagation(); onEditSeries?.(); }}
+                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary cursor-pointer hover:bg-primary/20 transition-colors"
+                      title="Part of a series - Click to edit series"
+                    >
+                      <Layers className="w-3 h-3" />
+                      {seriesName}
+                    </span>
                   )}
-                  onClick={startEditingTitle}
-                  title="Click to edit task name"
-                >
-                  {task.title}
-                </h4>
+                </div>
               )}
               
               {/* Description display / editing */}
@@ -678,4 +696,4 @@ export function TaskItem({
       )}
     </div>
   );
-} 
+}

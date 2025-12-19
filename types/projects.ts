@@ -79,6 +79,12 @@ export interface ProjectTask {
   
   /** Subtasks for hierarchical task management */
   subtasks?: SubTask[];
+
+  /** ID of the series this task belongs to */
+  seriesId?: string;
+
+  /** Index of this task within the series generation (0-based) */
+  seriesIndex?: number;
 }
 
 export interface ProjectFolder {
@@ -110,6 +116,31 @@ export interface ProjectFolder {
   isExpanded?: boolean;
 }
 
+export type SeriesSegmentType = 'text' | 'number' | 'letter';
+
+export interface SeriesSegment {
+  id: string;
+  type: SeriesSegmentType;
+  /** For text type */
+  value?: string;
+  /** For number/letter type */
+  start?: number | string;
+  /** For number/letter type */
+  end?: number | string;
+  /** Step for number ranges */
+  step?: number;
+}
+
+export interface ProjectSeries {
+  id: string;
+  name: string;
+  segments: SeriesSegment[];
+  /** Indices of generated items to exclude */
+  excludedIndices?: number[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Project {
   /** Unique identifier for the project */
   id: string;
@@ -137,6 +168,9 @@ export interface Project {
   
   /** Project tasks */
   tasks: ProjectTask[];
+  
+  /** Project series definitions */
+  series?: ProjectSeries[];
   
   /** Creation timestamp */
   createdAt: string;
@@ -169,4 +203,4 @@ export interface ProjectsStorageData {
   
   /** Timestamp of when the data was last updated */
   lastUpdated: string;
-} 
+}

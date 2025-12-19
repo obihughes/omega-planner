@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProjects } from '@/hooks/useProjects';
-import { Project, ProjectTask } from '@/types';
+import { Project, ProjectTask, ProjectSeries } from '@/types';
 import { TaskItem } from '@/components/projects/TaskItem';
 import { AppLayout } from '@/components/ui/AppLayout';
 import { 
@@ -31,6 +31,7 @@ import {
   Calendar,
   Edit,
   MoreVertical,
+  Layers
 } from 'lucide-react';
 import { getDateKey, dateFromDateKey } from '@/utils/dateUtils';
 
@@ -41,6 +42,7 @@ interface ProjectDetailPageProps {
 // Lazy load the modals to reduce initial bundle size
 const ProjectTaskFormModal = lazy(() => import('@/components/modals/ProjectTaskFormModal').then(module => ({ default: module.ProjectTaskFormModal })));
 const ProjectFormModal = lazy(() => import('@/components/modals/ProjectFormModal').then(module => ({ default: module.ProjectFormModal })));
+const SeriesEditorModal = lazy(() => import('@/components/modals/SeriesEditorModal').then(module => ({ default: module.SeriesEditorModal })));
 
 export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   const router = useRouter();
@@ -49,6 +51,8 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
     loading, 
     addTaskToProject, 
     addTaskSeriesToProject,
+    addProjectSeries,
+    updateProjectSeries,
     updateTaskInProject, 
     deleteTaskFromProject,
     reorderTasksInProject,
@@ -62,8 +66,6 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [sortBy, setSortBy] = useState<'custom' | 'dueDate' | 'created' | 'title' | 'status'>('custom');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [seriesBaseTitle, setSeriesBaseTitle] = useState('');
-  const [seriesCount, setSeriesCount] = useState('');
   
   // Task form modal state
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
@@ -71,6 +73,10 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   
   // Project form modal state
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+
+  // Series modal state
+  const [isSeriesModalOpen, setIsSeriesModalOpen] = useState(false);
+  const [editingSeries, setEditingSeries] = useState<ProjectSeries | undefined>(undefined);
 
   const project = projects.find(p => p.id === params.id);
   
@@ -258,6 +264,31 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   const handleCloseProjectModal = useCallback(() => {
     setIsProjectModalOpen(false);
   }, []);
+
+  // Series Handlers
+  const handleCreateSeries = useCallback(() => {
+    setEditingSeries(undefined);
+    setIsSeriesModalOpen(true);
+  }, []);
+
+  const handleEditSeries = useCallback((seriesId: string) => {
+    if (!project) return;
+    const series = project.series?.find(s => s.id === seriesId);
+    if (series) {
+      setEditingSeries(series);
+      setIsSeriesModalOpen(true);
+    }
+  }, [project]);
+
+  const handleSaveSeries = useCallback((seriesData: Omit<ProjectSeries, 'id' | 'createdAt' | 'updatedAt'>) => {
+    if (!project) return;
+    
+    if (editingSeries) {
+      updateProjectSeries(project.id, editingSeries.id, seriesData);
+    } else {
+      addProjectSeries(project.id, seriesData);
+    }
+  }, [project, editingSeries, updateProjectSeries, addProjectSeries]);
 
   // Early returns after all hooks are defined
   if (loading) {
@@ -458,38 +489,16 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
               <Plus className="w-4 h-4" />
               <span>Add Task</span>
             </button>
-            {/* Add Series (bulk) */}
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={seriesBaseTitle}
-                onChange={(e) => setSeriesBaseTitle(e.target.value)}
-                placeholder="Series base title"
-                className="w-40 px-3 py-3 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-sm"
-              />
-              <input
-                type="number"
-                min={1}
-                inputMode="numeric"
-                value={seriesCount}
-                onChange={(e) => setSeriesCount(e.target.value)}
-                placeholder="#"
-                className="w-20 px-3 py-3 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-sm"
-              />
-              <button
-                onClick={() => {
-                  const count = parseInt(seriesCount || '0', 10);
-                  if (!project || !seriesBaseTitle.trim() || !count || count < 1) return;
-                  addTaskSeriesToProject(project.id, seriesBaseTitle.trim(), count);
-                  setSeriesBaseTitle('');
-                  setSeriesCount('');
-                }}
-                className="px-3 py-3 bg-secondary text-secondary-foreground hover:bg-secondary/90 transition-colors rounded-lg text-sm"
-                title="Add series of tasks with _N suffix"
-              >
-                Add Series
-              </button>
-            </div>
+            
+            {/* Add Series (robust) */}
+            <button
+              onClick={handleCreateSeries}
+              className="px-4 py-3 bg-secondary text-secondary-foreground hover:bg-secondary/90 transition-colors rounded-lg flex items-center space-x-2 text-sm font-medium shadow-sm"
+              title="Create a series of tasks with patterns (e.g. A-Z, 1-10)"
+            >
+              <Layers className="w-4 h-4" />
+              <span>Add Series</span>
+            </button>
           </div>
         </div>
 
@@ -529,6 +538,8 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
                       onDeleteSubtask={(taskId, subtaskId) => {
                         if (project) deleteSubtaskFromTask(project.id, taskId, subtaskId);
                       }}
+                      seriesName={task.seriesId ? project.series?.find(s => s.id === task.seriesId)?.name : undefined}
+                      onEditSeries={() => task.seriesId && handleEditSeries(task.seriesId)}
                     />
                   ))}
                 </div>
@@ -591,6 +602,18 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
           />
         )}
       </Suspense>
+
+      {/* Series Editor Modal */}
+      <Suspense fallback={null}>
+        {isSeriesModalOpen && (
+          <SeriesEditorModal
+            isOpen={isSeriesModalOpen}
+            onClose={() => setIsSeriesModalOpen(false)}
+            onSave={handleSaveSeries}
+            initialSeries={editingSeries}
+          />
+        )}
+      </Suspense>
     </AppLayout>
   );
-} 
+}
