@@ -20,12 +20,14 @@ import { EditTaskModal } from './EditTaskModal';
 
 // Weekly view specific constants for row-based layout
 const WEEKLY_PIXELS_PER_HOUR = 80;
-const WEEKLY_ROW_HEIGHT = 80; // Increased height for single row
-const WEEKLY_TASK_HEIGHT = 42; 
+const WEEKLY_ROW_HEIGHT = 60; // Reduced height for split rows (AM/PM)
+const WEEKLY_TASK_HEIGHT = 40; 
 const WEEKLY_DAY_COLUMN_WIDTH = 100;
 const WEEKLY_EVENTS_COLUMN_WIDTH = 100; // Slightly wider for events
 const WEEKLY_TIMELINE_HEADER_HEIGHT = 32; 
-const HOURS_PER_ROW = 24; // Full day
+const HOURS_PER_ROW = 12; // 12-hour view
+const ROWS_PER_DAY = 2; // AM and PM rows
+const DAYS_TO_DISPLAY = 10; // Show 10 days
 
 interface WeeklyViewProps {}
 
@@ -62,20 +64,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
     const scrollContainer = timelineScrollRef.current;
     if (!scrollContainer) return;
 
-    // Set initial scroll position to 7am (day column + events column + 7 * pixels per hour)
-    const initialScrollPosition = 0 + (7 * WEEKLY_PIXELS_PER_HOUR); // Columns are sticky, so we scroll the body? No, with sticky, the container scrolls.
-    // However, if we scroll left, the sticky columns stay. 
-    // We want to scroll to 7am relative to the timeline start.
-    // The timeline starts after (Day + Events) columns.
-    // But since they are sticky inside the container, we just scroll the container.
-    // The content inside has padding-left or the columns are part of the flow.
-    // If sticky, they are part of the flow.
-    // So scrollLeft should be 7 * 80 = 560px.
-    
-    // Actually, we should check if we need to account for the sticky columns width if they are not overlaying.
-    // Sticky position keeps them in view, but they still occupy space at start.
-    // So scroll 0 is "at the start".
-    // 6am is at (6 * 80).
+    // Scroll to 6 (6 AM)
     scrollContainer.scrollLeft = 6 * WEEKLY_PIXELS_PER_HOUR;
   }, [weekOffset, isSameDayView, selectedDayOfWeek]);
 
@@ -121,8 +110,8 @@ export default function WeeklyView({}: WeeklyViewProps) {
 
     const weekDates = [] as Date[];
 
-    // Add 7 days starting from Monday
-    for (let i = 0; i < 7; i++) {
+    // Add 10 days starting from Monday
+    for (let i = 0; i < DAYS_TO_DISPLAY; i++) {
       const date = new Date(monday);
       date.setDate(monday.getDate() + i);
       date.setHours(12, 0, 0, 0);
@@ -156,8 +145,8 @@ export default function WeeklyView({}: WeeklyViewProps) {
     // Add the offset for navigation
     startDate.setDate(startDate.getDate() + (weeksBack * 7));
     
-    // Get 7 instances of the same day going backwards
-    for (let i = 0; i < 7; i++) {
+    // Get 10 instances of the same day going backwards
+    for (let i = 0; i < DAYS_TO_DISPLAY; i++) {
       const date = new Date(startDate);
       date.setDate(startDate.getDate() - (i * 7));
       date.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
@@ -180,7 +169,6 @@ export default function WeeklyView({}: WeeklyViewProps) {
     : getWeekDates(weekOffset);
   
   // Auto-scroll vertically to today's row on initial load for current week
-  // With the new layout (single row per day), this is simpler.
   useEffect(() => {
     const scrollContainer = timelineScrollRef.current;
     if (!scrollContainer) return;
@@ -197,15 +185,14 @@ export default function WeeklyView({}: WeeklyViewProps) {
 
     if (todayIndex === -1) return;
 
-    // Since we have vertical scroll for the list of days (if they don't fit), we can scroll to the day.
-    // But typically 7 rows * 80px = 560px fits on screen.
-    // If not, we scroll.
-    const rowTop = todayIndex * (WEEKLY_ROW_HEIGHT + 1) + WEEKLY_TIMELINE_HEADER_HEIGHT; // +1 for border
+    // Calculate row top with 2 rows per day
+    const rowHeightTotal = WEEKLY_ROW_HEIGHT * ROWS_PER_DAY;
+    const rowTop = todayIndex * (rowHeightTotal + 1) + WEEKLY_TIMELINE_HEADER_HEIGHT; // +1 for border
     
     // If the container is vertically scrollable:
     if (scrollContainer.scrollHeight > scrollContainer.clientHeight) {
         // Center the day
-        const targetTop = Math.max(0, rowTop - (scrollContainer.clientHeight / 2) + (WEEKLY_ROW_HEIGHT / 2));
+        const targetTop = Math.max(0, rowTop - (scrollContainer.clientHeight / 2) + (rowHeightTotal / 2));
         scrollContainer.scrollTop = targetTop;
     }
     
@@ -234,27 +221,12 @@ export default function WeeklyView({}: WeeklyViewProps) {
     if (isSameDayView) {
       const dayName = getFullDayName(selectedDayOfWeek);
       const firstDay = weekDates[0];
-      const lastDay = weekDates[6];
+      const lastDay = weekDates[weekDates.length - 1];
       return `${dayName}s: ${firstDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${lastDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
     } else {
       const firstDay = weekDates[0];
-      const lastDay = weekDates[6];
+      const lastDay = weekDates[weekDates.length - 1];
       return `${firstDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${lastDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
-    }
-  };
-
-  // Get relative week label
-  const getRelativeWeekLabel = () => {
-    if (isSameDayView) {
-      if (weekOffset === 0) return `Recent ${getFullDayName(selectedDayOfWeek)}s`;
-      if (weekOffset === -1) return `Previous ${getFullDayName(selectedDayOfWeek)}s`;
-      if (weekOffset === 1) return `Future ${getFullDayName(selectedDayOfWeek)}s`;
-      return null;
-    } else {
-      if (weekOffset === 0) return 'This Week';
-      if (weekOffset === -1) return 'Last Week';
-      if (weekOffset === 1) return 'Next Week';
-      return null;
     }
   };
 
@@ -292,28 +264,31 @@ export default function WeeklyView({}: WeeklyViewProps) {
         
         {/* Timeline hours */}
         <div className="flex">
-          {hours.map((hour) => (
-            <div
-              key={hour}
-              className="flex-none border-r border-border/10 flex items-center justify-start pl-2 bg-card text-xs text-muted-foreground font-medium"
-              style={{ width: `${WEEKLY_PIXELS_PER_HOUR}px` }}
-            >
-              {formatTime(hour)}
-            </div>
-          ))}
+          {hours.map((hour) => {
+            const displayHour = hour === 0 ? 12 : hour;
+            return (
+              <div
+                key={hour}
+                className="flex-none border-r border-border/10 flex items-center justify-start pl-2 bg-card text-xs text-muted-foreground font-medium"
+                style={{ width: `${WEEKLY_PIXELS_PER_HOUR}px` }}
+              >
+                {displayHour}
+                <span className="text-[10px] ml-0.5 opacity-50"></span>
+              </div>
+            );
+          })}
         </div>
       </div>
     );
   }, []);
 
   // Handle task creation
-  const handleTimelineDoubleClick = (e: React.MouseEvent<HTMLDivElement>, date: Date) => {
+  const handleTimelineDoubleClick = (e: React.MouseEvent<HTMLDivElement>, date: Date, hourOffset: number) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    // Adjust x for scroll and sticky offset if needed, but relative click on the timeline div should be correct
-    // The timeline div starts AFTER the columns.
     const x = e.clientX - rect.left;
     const hourFloat = x / WEEKLY_PIXELS_PER_HOUR;
-    const snappedNewStartHour = Math.round(hourFloat * 4) / 4;
+    const snappedNewStartHour = Math.round(hourFloat * 4) / 4 + hourOffset;
+    
     const dayOffset = getDayOffsetFromToday(date);
     
     openEditModal(undefined, {
@@ -335,36 +310,49 @@ export default function WeeklyView({}: WeeklyViewProps) {
     // Filter scheduled tasks
     type ScheduledTask = Task & { startHour: number };
     const isScheduled = (t: Task): t is ScheduledTask =>
-      typeof t.startHour === 'number' && t.startHour >= 0; // >= 0 for 24h view
+      typeof t.startHour === 'number' && t.startHour >= 0; 
     const scheduledTasks: ScheduledTask[] = dayTasks.filter(isScheduled);
     
-    // Current time marker
-    const getCurrentTimeMarker = () => {
+    // Current time marker helper
+    const getCurrentTimeMarker = (hourOffset: number) => {
       if (!isCurrentDay) return null;
       
       const now = new Date();
-      const currentHourFloat = now.getHours() + now.getMinutes() / 60;
+      const currentHourTotal = now.getHours() + now.getMinutes() / 60;
       
-      const markerLeft = currentHourFloat * WEEKLY_PIXELS_PER_HOUR;
-      
-      return (
-        <div 
-          className="absolute top-0 bottom-0 w-[2px] bg-red-500 z-50 pointer-events-none"
-          style={{ left: `${markerLeft}px` }}
-        >
-          <div className="absolute -top-1 -left-1 w-2 h-2 rounded-full bg-red-500" />
-        </div>
-      );
+      // Check if current time is within this row's range
+      if (currentHourTotal >= hourOffset && currentHourTotal < hourOffset + HOURS_PER_ROW) {
+        const relativeHour = currentHourTotal - hourOffset;
+        const markerLeft = relativeHour * WEEKLY_PIXELS_PER_HOUR;
+        
+        return (
+          <div 
+            className="absolute top-0 bottom-0 w-[2px] bg-red-500 z-50 pointer-events-none"
+            style={{ left: `${markerLeft}px` }}
+          >
+            <div className="absolute -top-1 -left-1 w-2 h-2 rounded-full bg-red-500" />
+          </div>
+        );
+      }
+      return null;
     };
     
-    // Render tasks
-    const renderTasks = (tasks: ScheduledTask[]) => {
+    // Render tasks for a specific row (AM or PM)
+    const renderTasksForRow = (tasks: ScheduledTask[], hourOffset: number) => {
+      const rowEndHour = hourOffset + HOURS_PER_ROW;
+
       return tasks.map((task) => {
         const taskStartHour: number = task.startHour;
         const taskEndHour = Math.min(24, task.startHour + task.duration);
         
-        const renderLeft = Math.max(0, taskStartHour) * WEEKLY_PIXELS_PER_HOUR;
-        const renderWidth = (taskEndHour - Math.max(0, taskStartHour)) * WEEKLY_PIXELS_PER_HOUR;
+        // Check if task overlaps with this row
+        const visibleStart = Math.max(taskStartHour, hourOffset);
+        const visibleEnd = Math.min(taskEndHour, rowEndHour);
+        
+        if (visibleEnd <= visibleStart) return null;
+        
+        const renderLeft = (visibleStart - hourOffset) * WEEKLY_PIXELS_PER_HOUR;
+        const renderWidth = (visibleEnd - visibleStart) * WEEKLY_PIXELS_PER_HOUR;
         
         if (renderWidth <= 0) return null;
         
@@ -377,7 +365,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
         };
 
         return (
-          <div key={`${task.id}`} className="absolute" style={taskStyle}>
+          <div key={`${task.id}-${hourOffset}`} className="absolute" style={taskStyle}>
             <MemoizedWeeklyTaskCard
               task={task}
               height={WEEKLY_TASK_HEIGHT}
@@ -397,10 +385,10 @@ export default function WeeklyView({}: WeeklyViewProps) {
           "flex border-b border-border/50 transition-colors",
           isCurrentDay ? "bg-primary/5" : "bg-card hover:bg-muted/5"
         )}
-        style={{ height: `${WEEKLY_ROW_HEIGHT}px`, minWidth: 'fit-content' }}
+        style={{ height: `${WEEKLY_ROW_HEIGHT * ROWS_PER_DAY}px`, minWidth: 'fit-content' }}
       >
-        {/* Sticky Container for Day & Events */}
-        <div className="sticky left-0 z-50 flex border-r border-border/50 bg-card shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+        {/* Sticky Container for Day & Events - Spans full height */}
+        <div className="sticky left-0 z-50 flex border-r border-border/50 bg-card shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] h-full">
             {/* Day label column */}
             <div 
                 className={cn(
@@ -447,26 +435,53 @@ export default function WeeklyView({}: WeeklyViewProps) {
             </div>
         </div>
 
-        {/* 24-hour Timeline */}
-        <div 
-          className="relative h-full"
-          style={{ width: `${WEEKLY_PIXELS_PER_HOUR * HOURS_PER_ROW}px` }}
-          onDoubleClick={(e) => handleTimelineDoubleClick(e, date)}
-        >
-          {/* Grid lines */}
-          {Array.from({ length: HOURS_PER_ROW }, (_, i) => (
+        {/* 12-hour Timelines (AM and PM rows) */}
+        <div className="flex flex-col flex-1">
+            {/* AM Row */}
             <div 
-              key={`grid-${i}`} 
-              className={`absolute h-full top-0 ${i % 6 === 0 ? 'border-l border-border/30' : 'border-l border-border/10'} pointer-events-none`}
-              style={{ left: `${i * WEEKLY_PIXELS_PER_HOUR}px` }} 
-            />
-          ))}
+                className="relative border-b border-border/10 flex-1"
+                style={{ width: `${WEEKLY_PIXELS_PER_HOUR * HOURS_PER_ROW}px` }}
+                onDoubleClick={(e) => handleTimelineDoubleClick(e, date, 0)}
+            >
+                {/* Row Label (AM) - Absolute positioned on left */}
+                <div className="absolute left-2 top-2 text-[10px] font-bold text-muted-foreground/30 pointer-events-none z-10">
+                    AM
+                </div>
 
-          {/* Current time marker */}
-          {getCurrentTimeMarker()}
+                {/* Grid lines */}
+                {Array.from({ length: HOURS_PER_ROW }, (_, i) => (
+                    <div 
+                    key={`grid-am-${i}`} 
+                    className={`absolute h-full top-0 ${i % 12 === 0 ? 'border-l border-border/30' : 'border-l border-border/10'} pointer-events-none`}
+                    style={{ left: `${i * WEEKLY_PIXELS_PER_HOUR}px` }} 
+                    />
+                ))}
+                {getCurrentTimeMarker(0)}
+                {renderTasksForRow(scheduledTasks, 0)}
+            </div>
 
-          {/* Tasks */}
-          {renderTasks(scheduledTasks)}
+            {/* PM Row */}
+            <div 
+                className="relative flex-1"
+                style={{ width: `${WEEKLY_PIXELS_PER_HOUR * HOURS_PER_ROW}px` }}
+                onDoubleClick={(e) => handleTimelineDoubleClick(e, date, 12)}
+            >
+                {/* Row Label (PM) */}
+                <div className="absolute left-2 top-2 text-[10px] font-bold text-muted-foreground/30 pointer-events-none z-10">
+                    PM
+                </div>
+
+                {/* Grid lines */}
+                {Array.from({ length: HOURS_PER_ROW }, (_, i) => (
+                    <div 
+                    key={`grid-pm-${i}`} 
+                    className={`absolute h-full top-0 ${i % 12 === 0 ? 'border-l border-border/30' : 'border-l border-border/10'} pointer-events-none`}
+                    style={{ left: `${i * WEEKLY_PIXELS_PER_HOUR}px` }} 
+                    />
+                ))}
+                {getCurrentTimeMarker(12)}
+                {renderTasksForRow(scheduledTasks, 12)}
+            </div>
         </div>
       </div>
     );
