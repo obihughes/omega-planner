@@ -28,6 +28,7 @@ export function FiveYearVisualizer({
   const [startYear, setStartYear] = useState(new Date().getFullYear());
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPeriod, setEditingPeriod] = useState<CalendarPeriod | null>(null);
+  const [initialDate, setInitialDate] = useState<Date | undefined>(undefined);
   
   // Create 5 years array
   const years = useMemo(() => Array.from({ length: 5 }, (_, i) => startYear + i), [startYear]);
@@ -109,13 +110,15 @@ export function FiveYearVisualizer({
     return segments;
   }, [periods, years, startYear]);
 
-  const handleAddClick = () => {
+  const handleAddClick = (date?: Date) => {
     setEditingPeriod(null);
+    setInitialDate(date);
     setModalOpen(true);
   };
 
   const handleEditClick = (period: CalendarPeriod) => {
     setEditingPeriod(period);
+    setInitialDate(undefined);
     setModalOpen(true);
   };
 
@@ -155,7 +158,7 @@ export function FiveYearVisualizer({
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
-          <Button onClick={handleAddClick} className="bg-primary hover:bg-primary/90">
+          <Button onClick={() => handleAddClick()} className="bg-primary hover:bg-primary/90">
             Add Item
           </Button>
         </div>
@@ -183,52 +186,66 @@ export function FiveYearVisualizer({
               <div className="border-r bg-card/30 flex flex-col justify-center items-center font-bold text-xl text-muted-foreground">
                 <div className="flex-1 w-full flex items-center justify-center border-b border-border/10 text-xs text-muted-foreground/50 h-1/3">1</div>
                 <div className="flex-1 w-full flex items-center justify-center border-b border-border/10 text-xs text-muted-foreground/50 h-1/3 relative">
-                  <span className="absolute -left-3 top-1/2 -translate-y-1/2 -rotate-90 origin-center whitespace-nowrap text-lg text-foreground/80 font-bold w-20 text-center">
+                  <span className="text-lg text-foreground/80 font-bold">
                     {year}
                   </span>
-                  2
                 </div>
                 <div className="flex-1 w-full flex items-center justify-center text-xs text-muted-foreground/50 h-1/3">3</div>
               </div>
 
               {/* Grid Cells Background - 3 Rows per year */}
-              <div className="col-span-12 grid grid-rows-3 relative h-[150px]">
-                {/* Background Grid Lines */}
-                <div className="absolute inset-0 grid grid-cols-12 pointer-events-none">
-                  {Array.from({ length: 12 }).map((_, i) => (
-                    <div key={i} className="border-r border-border/20 h-full last:border-r-0" />
+              <div className="col-span-12 grid grid-rows-3 relative h-[180px]">
+                {/* Background Grid Lines & Interactive Cells */}
+                <div className="absolute inset-0 grid grid-rows-3">
+                  {[0, 1, 2].map((lane) => (
+                    <div key={lane} className="grid grid-cols-12 h-full border-b border-border/20 last:border-b-0">
+                      {Array.from({ length: 12 }).map((_, monthIndex) => (
+                        <div 
+                          key={monthIndex} 
+                          className="border-r border-border/20 h-full last:border-r-0 hover:bg-muted/30 cursor-pointer transition-colors"
+                          onClick={() => handleAddClick(new Date(year, monthIndex, 1))}
+                        />
+                      ))}
+                    </div>
                   ))}
-                </div>
-                <div className="absolute inset-0 grid grid-rows-3 pointer-events-none">
-                   <div className="border-b border-border/20 w-full" />
-                   <div className="border-b border-border/20 w-full" />
                 </div>
 
                 {/* Items */}
-                {periodSegments
-                  .filter(seg => seg.year === year)
-                  .map((seg, idx) => {
-                    const startCol = seg.startMonth + 2; // +1 for 1-based grid, +1 for year column? No, we are in a col-span-12 div.
-                    // Wait, the container is col-span-12. So gridColumnStart 1 is Jan.
-                    const startColumn = seg.startMonth + 1;
-                    const span = seg.endMonth - seg.startMonth + 1;
-                    
-                    return (
-                      <div
-                        key={`${seg.period.id}-${year}-${idx}`}
-                        className="m-1 rounded-md p-2 text-xs font-medium text-white shadow-sm cursor-pointer hover:brightness-110 transition-all overflow-hidden whitespace-normal leading-tight flex items-center justify-center text-center"
-                        style={{
-                          gridColumnStart: startColumn,
-                          gridColumnEnd: `span ${span}`,
-                          gridRowStart: seg.lane + 1,
-                          backgroundColor: seg.period.color || '#3b82f6',
-                        }}
-                        onClick={() => handleEditClick(seg.period)}
-                      >
-                         {seg.period.title}
-                      </div>
-                    );
-                  })}
+                <div className="absolute inset-0 pointer-events-none">
+                  <div className="grid grid-cols-12 grid-rows-3 h-full w-full">
+                    {periodSegments
+                      .filter(seg => seg.year === year)
+                      .flatMap((seg, idx) => {
+                        const startMonthIndex = seg.startMonth; // 0-based
+                        const duration = seg.endMonth - seg.startMonth + 1;
+                        
+                        // Create an array of blocks, one per month in the duration
+                        return Array.from({ length: duration }).map((_, i) => {
+                          const monthIndex = startMonthIndex + i;
+                          const column = monthIndex + 1; // 1-based grid column
+                          
+                          return (
+                            <div
+                              key={`${seg.period.id}-${year}-${idx}-${i}`}
+                              className="m-1 rounded-lg p-2 text-xs font-medium text-white shadow-sm cursor-pointer hover:brightness-110 transition-all overflow-hidden whitespace-normal leading-snug flex items-center justify-center text-center pointer-events-auto"
+                              style={{
+                                gridColumnStart: column,
+                                gridColumnEnd: 'span 1',
+                                gridRowStart: seg.lane + 1,
+                                backgroundColor: seg.period.color || '#3b82f6',
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditClick(seg.period);
+                              }}
+                            >
+                               <span className="line-clamp-3 break-words w-full">{seg.period.title}</span>
+                            </div>
+                          );
+                        });
+                      })}
+                  </div>
+                </div>
               </div>
             </div>
           ))}
@@ -241,6 +258,7 @@ export function FiveYearVisualizer({
         onSave={handleSavePeriod}
         onDelete={onPeriodDelete}
         period={editingPeriod}
+        initialDate={initialDate}
       />
     </div>
   );

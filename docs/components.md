@@ -470,8 +470,15 @@ Modal for creating and editing calendar periods.
 
 A 5-year high-level visualizer for long-term planning.
 - **5-Year Grid**: Displays 5 years vertically, with months horizontally.
-- **Lanes**: 3 lanes per year to stack overlapping periods.
-- **Interaction**: Add/Edit/Delete periods via `PeriodModal`.
+- **Lanes**: 3 fixed-height lanes per year (180px total height) to stack overlapping periods.
+- **Interaction**: 
+  - Add/Edit/Delete periods via `PeriodModal`.
+  - Click any empty grid cell to add a new interval starting from that month.
+- **Visuals**:
+  - Items are rendered as **discrete blocks per month** (not continuous bars), separated by gaps.
+  - Multi-line text support (up to 3 lines) with text wrapping in each block.
+  - **Horizontal year labels** for better readability.
+  - Rounded corners ("curved edges") on all blocks.
 - **Navigation**: Navigate previous/next 5-year blocks.
 
 ### WeeklyGoalsCalendarView (`components/calendar/WeeklyGoalsCalendarView.tsx`)
