@@ -45,7 +45,8 @@ Project documentation including setup guides, component documentation, and devel
 Additional feature routes in `/app` include:
 - `app/meals` — Meals planner page
 - `app/projects/tasks/weekly` — Weekly scheduler for project tasks (drag to set due dates)
- - `app/projects/workspace` — Project-only workspace: Today vertical list (project tasks with dueDate=today), Projects/Tasks on right; drag or “+ Today” to set dueDate
+- `app/projects/workspace` — Project-only workspace: Today vertical list (project tasks with dueDate=today), Projects/Tasks on right; drag or “+ Today” to set dueDate
+- `app/visualizer` — 5-Year Visualizer (Calendar high-level view)
 
 #### `/app/beta`
 Preview and experimental pages moved under Beta:

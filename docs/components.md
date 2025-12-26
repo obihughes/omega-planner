@@ -464,6 +464,16 @@ Modal for creating and editing calendar events.
 ### PeriodModal (`components/calendar/PeriodModal.tsx`)
 Modal for creating and editing calendar periods.
 
+### FiveYearVisualizer (`components/visualizer/FiveYearVisualizer.tsx`)
+**Location**: `components/visualizer/FiveYearVisualizer.tsx`
+**Page**: `app/visualizer/page.tsx`
+
+A 5-year high-level visualizer for long-term planning.
+- **5-Year Grid**: Displays 5 years vertically, with months horizontally.
+- **Lanes**: 3 lanes per year to stack overlapping periods.
+- **Interaction**: Add/Edit/Delete periods via `PeriodModal`.
+- **Navigation**: Navigate previous/next 5-year blocks.
+
 ### WeeklyGoalsCalendarView (`components/calendar/WeeklyGoalsCalendarView.tsx`)
 Weekly goals management interface with goal creation, editing, and completion tracking.
 
