@@ -142,7 +142,11 @@ export function PeriodModal({
                     )}
                   >
                     <CalendarIcon className="mr-1 h-3 w-3" />
-                    {startDate ? startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : "Start"}
+                    {startDate ? startDate.toLocaleDateString('en-US', { 
+                      month: 'short', 
+                      day: 'numeric',
+                      year: startDate.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+                    }) : "Start"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-fit p-2" align="center">
@@ -152,7 +156,7 @@ export function PeriodModal({
                     onSelect={(selectedDate) => {
                       if (selectedDate) {
                         setStartDate(selectedDate);
-                        // Adjust end date if it's before start date
+                        // Adjust end date if it's before start date - set to same day or next day
                         if (endDate < selectedDate) {
                           const newEndDate = new Date(selectedDate);
                           newEndDate.setDate(selectedDate.getDate() + 1);
@@ -161,6 +165,9 @@ export function PeriodModal({
                         setIsStartDatePickerOpen(false);
                       }
                     }}
+                    captionLayout="dropdown"
+                    fromYear={new Date().getFullYear() - 10}
+                    toYear={new Date().getFullYear() + 50}
                     initialFocus
                   />
                 </PopoverContent>
@@ -182,13 +189,18 @@ export function PeriodModal({
                     )}
                   >
                     <CalendarIcon className="mr-1 h-3 w-3" />
-                    {endDate ? endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : "End"}
+                    {endDate ? endDate.toLocaleDateString('en-US', { 
+                      month: 'short', 
+                      day: 'numeric',
+                      year: endDate.getFullYear() !== startDate.getFullYear() || endDate.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+                    }) : "End"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-fit p-2" align="center">
                   <Calendar
                     mode="single"
                     selected={endDate}
+                    defaultMonth={startDate}
                     onSelect={(selectedDate) => {
                       if (selectedDate && selectedDate >= startDate) {
                         setEndDate(selectedDate);
@@ -196,6 +208,9 @@ export function PeriodModal({
                       }
                     }}
                     disabled={(date) => date < startDate}
+                    captionLayout="dropdown"
+                    fromYear={new Date().getFullYear() - 10}
+                    toYear={new Date().getFullYear() + 50}
                     initialFocus
                   />
                 </PopoverContent>

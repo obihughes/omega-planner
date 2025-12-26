@@ -5,7 +5,14 @@ import { CalendarPeriod } from '@/types/calendar';
 import { Button } from '@/components/ui/button';
 import { PeriodModal } from '@/components/calendar/PeriodModal';
 import { cn } from '@/lib/utils';
-import { ChevronLeft, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Maximize2, Minimize2, Calendar as CalendarIcon } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface FiveYearVisualizerProps {
   periods: CalendarPeriod[];
@@ -244,7 +251,7 @@ export function FiveYearVisualizer({
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-white">5-Year Visualizer</h1>
         <div className="flex items-center gap-4">
-           <div className="flex items-center space-x-2 bg-[#1e293b] border border-[#334155] rounded-md p-1">
+          <div className="flex items-center space-x-2 bg-[#1e293b] border border-[#334155] rounded-md p-1">
             <Button 
               variant="ghost" 
               size="icon" 
@@ -253,9 +260,23 @@ export function FiveYearVisualizer({
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="font-semibold w-24 text-center text-slate-200">
-              {startYear} - {startYear + 4}
-            </span>
+            
+            <Select 
+              value={startYear.toString()} 
+              onValueChange={(value) => setStartYear(parseInt(value))}
+            >
+              <SelectTrigger className="w-[180px] h-8 bg-transparent border-none text-slate-200 font-semibold focus:ring-0">
+                <SelectValue placeholder="Select Year" />
+              </SelectTrigger>
+              <SelectContent className="bg-[#1e293b] border-[#334155] text-slate-200">
+                {Array.from({ length: 30 }, (_, i) => new Date().getFullYear() - 5 + i).map(year => (
+                  <SelectItem key={year} value={year.toString()} className="hover:bg-[#334155] focus:bg-[#334155]">
+                    {year} - {year + 4}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             <Button 
               variant="ghost" 
               size="icon" 
@@ -266,18 +287,28 @@ export function FiveYearVisualizer({
             </Button>
           </div>
 
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setStartYear(new Date().getFullYear())}
+            className="border-[#334155] text-slate-300 hover:bg-[#1e293b] hover:text-white gap-2 bg-[#0f172a] h-10"
+          >
+            <CalendarIcon className="h-4 w-4" />
+            Today
+          </Button>
+
           <Button 
             onClick={() => setIsFullScreen(!isFullScreen)}
             variant="outline"
-            className="border-[#334155] text-slate-300 hover:bg-[#1e293b] hover:text-white gap-2 bg-[#0f172a]"
+            className="border-[#334155] text-slate-300 hover:bg-[#1e293b] hover:text-white gap-2 bg-[#0f172a] h-10"
           >
             {isFullScreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-            {isFullScreen ? 'Exit Full Screen' : 'Full Screen'}
+            {isFullScreen ? 'Exit' : 'Full Screen'}
           </Button>
 
           <Button 
             onClick={() => handleAddClick()} 
-            className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-lg px-6 py-2 font-semibold shadow-lg"
+            className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-lg px-6 py-2 font-semibold shadow-lg h-10"
           >
             Add Item
           </Button>
@@ -313,7 +344,11 @@ export function FiveYearVisualizer({
             >
               {/* Year Label Column */}
               <div className="flex border-r border-[#334155] bg-[#1e293b]">
-                <div className="w-2/3 flex items-center justify-center text-slate-500 text-2xl font-bold border-r border-[#334155] bg-[#1e293b]">
+                <div 
+                  className="w-2/3 flex items-center justify-center text-slate-500 text-2xl font-bold border-r border-[#334155] bg-[#1e293b] cursor-pointer hover:text-white hover:bg-[#334155] transition-colors"
+                  onClick={() => setStartYear(year)}
+                  title={`Set ${year} as start year`}
+                >
                     {year}
                 </div>
                 <div className="w-1/3 flex flex-col bg-[#1e293b]">

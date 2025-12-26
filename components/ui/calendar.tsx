@@ -53,6 +53,7 @@ function Calendar({
         range_middle:
           "aria-selected:bg-accent aria-selected:text-accent-foreground",
         hidden: "invisible",
+        caption_dropdowns: "flex justify-center gap-1",
         ...classNames,
       }}
       components={{
