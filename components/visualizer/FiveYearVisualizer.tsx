@@ -204,7 +204,7 @@ export function FiveYearVisualizer({
               Year / L
             </div>
             {MONTHS.map(month => (
-              <div key={month} className="p-4 font-bold text-center text-xs border-r border-[#334155] last:border-r-0 text-cyan-400 tracking-widest uppercase">
+              <div key={month} className="p-4 font-bold text-center text-xs border-r border-[#334155] last:border-r-0 text-white tracking-widest uppercase">
                 {month}
               </div>
             ))}
@@ -215,10 +215,10 @@ export function FiveYearVisualizer({
             <div key={year} className="grid grid-cols-[120px_repeat(12,1fr)] border-b border-[#334155] last:border-b-0">
               {/* Year Label Column */}
               <div className="flex border-r border-[#334155] bg-[#1e293b]">
-                <div className="w-2/3 flex items-center justify-center text-slate-500 text-2xl font-bold border-r border-[#334155] bg-[#0f172a]">
+                <div className="w-2/3 flex items-center justify-center text-slate-500 text-2xl font-bold border-r border-[#334155] bg-[#1e293b]">
                     {year}
                 </div>
-                <div className="w-1/3 flex flex-col bg-[#0f172a]">
+                <div className="w-1/3 flex flex-col bg-[#1e293b]">
                     <div className="flex-1 flex items-center justify-center text-slate-500 text-xs font-medium border-b border-[#334155]">1</div>
                     <div className="flex-1 flex items-center justify-center text-slate-500 text-xs font-medium border-b border-[#334155]">2</div>
                     <div className="flex-1 flex items-center justify-center text-slate-500 text-xs font-medium">3</div>
@@ -226,7 +226,7 @@ export function FiveYearVisualizer({
               </div>
 
               {/* Grid Cells - 3 Rows per year */}
-              <div className="col-span-12 relative h-[280px]">
+              <div className="col-span-12 relative h-[216px]">
                 {/* Background Grid Lines & Interactive Cells */}
                 <div className="absolute inset-0 grid grid-rows-3">
                   {[0, 1, 2].map((lane) => (
@@ -234,7 +234,7 @@ export function FiveYearVisualizer({
                       {Array.from({ length: 12 }).map((_, monthIndex) => (
                         <div 
                           key={monthIndex} 
-                          className="border-r border-[#334155] h-full last:border-r-0 hover:bg-[#334155]/30 cursor-pointer transition-colors bg-[#1e293b]"
+                          className="border-r border-[#334155] h-full last:border-r-0 hover:bg-[#334155]/30 cursor-pointer transition-colors bg-[#0f172a]"
                           onClick={() => handleAddClick(new Date(year, monthIndex, 1))}
                         />
                       ))}
@@ -259,7 +259,7 @@ export function FiveYearVisualizer({
                           return (
                             <div
                               key={`${seg.period.id}-${year}-${idx}-${i}`}
-                              className="m-1 rounded-md p-3 text-xs font-semibold text-white shadow-lg cursor-pointer hover:brightness-110 transition-all overflow-hidden flex items-center justify-center text-center pointer-events-auto leading-snug"
+                              className="m-1 rounded-xl p-2 text-xs font-bold text-white shadow-lg cursor-pointer hover:brightness-110 transition-all overflow-hidden flex items-center justify-center text-center pointer-events-auto leading-snug"
                               style={{
                                 gridColumnStart: column,
                                 gridColumnEnd: 'span 1',
@@ -271,7 +271,7 @@ export function FiveYearVisualizer({
                                 handleEditClick(seg.period);
                               }}
                             >
-                               <span className="line-clamp-3 break-words w-full">{seg.period.title}</span>
+                               <span className="line-clamp-3 break-normal hyphens-none w-full">{seg.period.title}</span>
                             </div>
                           );
                         });
