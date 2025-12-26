@@ -145,18 +145,18 @@ export function FiveYearVisualizer({
 
   return (
     <div className={cn(
-      "bg-[#0F172A] text-slate-200 font-sans transition-all duration-300",
+      "bg-[#0f172a] text-slate-200 font-sans transition-all duration-300",
       isFullScreen ? "fixed inset-0 z-50 overflow-auto p-8" : "min-h-screen p-6"
     )}>
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-white">5-Year Visualizer</h1>
         <div className="flex items-center gap-4">
-           <div className="flex items-center space-x-2 bg-slate-800 border border-slate-700 rounded-md p-1">
+           <div className="flex items-center space-x-2 bg-[#1e293b] border border-[#334155] rounded-md p-1">
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-8 w-8 text-slate-400 hover:text-white hover:bg-slate-700"
+              className="h-8 w-8 text-slate-400 hover:text-white hover:bg-[#334155]"
               onClick={() => setStartYear(prev => prev - 1)}
             >
               <ChevronLeft className="h-4 w-4" />
@@ -167,7 +167,7 @@ export function FiveYearVisualizer({
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-8 w-8 text-slate-400 hover:text-white hover:bg-slate-700"
+              className="h-8 w-8 text-slate-400 hover:text-white hover:bg-[#334155]"
               onClick={() => setStartYear(prev => prev + 1)}
             >
               <ChevronRight className="h-4 w-4" />
@@ -177,7 +177,7 @@ export function FiveYearVisualizer({
           <Button 
             onClick={() => setIsFullScreen(!isFullScreen)}
             variant="outline"
-            className="border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white gap-2 bg-slate-900"
+            className="border-[#334155] text-slate-300 hover:bg-[#1e293b] hover:text-white gap-2 bg-[#0f172a]"
           >
             {isFullScreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
             {isFullScreen ? 'Exit Full Screen' : 'Full Screen'}
@@ -185,7 +185,7 @@ export function FiveYearVisualizer({
 
           <Button 
             onClick={() => handleAddClick()} 
-            className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded px-6 py-2 font-semibold shadow-lg shadow-blue-900/20"
+            className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-lg px-6 py-2 font-semibold shadow-lg"
           >
             Add Item
           </Button>
@@ -194,17 +194,17 @@ export function FiveYearVisualizer({
 
       {/* Grid Container */}
       <div className={cn(
-        "border border-slate-700 rounded-xl bg-[#1e293b] overflow-hidden shadow-2xl",
+        "border border-[#334155] rounded-lg bg-[#1e293b] overflow-hidden shadow-2xl",
         isFullScreen ? "h-[calc(100vh-100px)]" : ""
       )}>
         <div className="min-w-[1200px] h-full overflow-auto">
           {/* Header Row */}
-          <div className="grid grid-cols-[120px_repeat(12,1fr)] bg-[#1e293b] border-b border-slate-700 sticky top-0 z-20">
-            <div className="p-4 font-bold text-center border-r border-slate-700 flex items-center justify-center text-sm text-slate-400 tracking-wider">
-              YEAR / L
+          <div className="grid grid-cols-[120px_repeat(12,1fr)] bg-[#1e293b] border-b border-[#334155] sticky top-0 z-20">
+            <div className="p-4 font-bold text-center border-r border-[#334155] flex items-center justify-center text-xs text-slate-400 tracking-wider uppercase">
+              Year / L
             </div>
             {MONTHS.map(month => (
-              <div key={month} className="p-4 font-bold text-center text-sm border-r border-slate-700 last:border-r-0 text-cyan-400 tracking-widest">
+              <div key={month} className="p-4 font-bold text-center text-xs border-r border-[#334155] last:border-r-0 text-cyan-400 tracking-widest uppercase">
                 {month}
               </div>
             ))}
@@ -212,15 +212,15 @@ export function FiveYearVisualizer({
 
           {/* Year Rows */}
           {years.map(year => (
-            <div key={year} className="grid grid-cols-[120px_repeat(12,1fr)] border-b border-slate-700 last:border-b-0">
+            <div key={year} className="grid grid-cols-[120px_repeat(12,1fr)] border-b border-[#334155] last:border-b-0">
               {/* Year Label Column */}
-              <div className="flex border-r border-slate-700 bg-[#1e293b]">
-                <div className="w-2/3 flex items-center justify-center text-slate-500 text-3xl font-bold border-r border-slate-700 bg-slate-800/50">
+              <div className="flex border-r border-[#334155] bg-[#1e293b]">
+                <div className="w-2/3 flex items-center justify-center text-slate-500 text-2xl font-bold border-r border-[#334155] bg-[#0f172a]">
                     {year}
                 </div>
-                <div className="w-1/3 flex flex-col bg-slate-800/30">
-                    <div className="flex-1 flex items-center justify-center text-slate-500 text-xs font-medium border-b border-slate-700/50">1</div>
-                    <div className="flex-1 flex items-center justify-center text-slate-500 text-xs font-medium border-b border-slate-700/50">2</div>
+                <div className="w-1/3 flex flex-col bg-[#0f172a]">
+                    <div className="flex-1 flex items-center justify-center text-slate-500 text-xs font-medium border-b border-[#334155]">1</div>
+                    <div className="flex-1 flex items-center justify-center text-slate-500 text-xs font-medium border-b border-[#334155]">2</div>
                     <div className="flex-1 flex items-center justify-center text-slate-500 text-xs font-medium">3</div>
                 </div>
               </div>
@@ -230,11 +230,11 @@ export function FiveYearVisualizer({
                 {/* Background Grid Lines & Interactive Cells */}
                 <div className="absolute inset-0 grid grid-rows-3">
                   {[0, 1, 2].map((lane) => (
-                    <div key={lane} className="grid grid-cols-12 h-full border-b border-slate-700 last:border-b-0">
+                    <div key={lane} className="grid grid-cols-12 h-full border-b border-[#334155] last:border-b-0">
                       {Array.from({ length: 12 }).map((_, monthIndex) => (
                         <div 
                           key={monthIndex} 
-                          className="border-r border-slate-700 h-full last:border-r-0 hover:bg-slate-700/30 cursor-pointer transition-colors"
+                          className="border-r border-[#334155] h-full last:border-r-0 hover:bg-[#334155]/30 cursor-pointer transition-colors bg-[#1e293b]"
                           onClick={() => handleAddClick(new Date(year, monthIndex, 1))}
                         />
                       ))}
@@ -259,19 +259,19 @@ export function FiveYearVisualizer({
                           return (
                             <div
                               key={`${seg.period.id}-${year}-${idx}-${i}`}
-                              className="m-[4px] rounded-xl p-2 text-sm font-bold text-white shadow-lg cursor-pointer hover:brightness-110 transition-all overflow-hidden flex items-center justify-center text-center pointer-events-auto leading-tight"
+                              className="m-1 rounded-md p-3 text-xs font-semibold text-white shadow-lg cursor-pointer hover:brightness-110 transition-all overflow-hidden flex items-center justify-center text-center pointer-events-auto leading-snug"
                               style={{
                                 gridColumnStart: column,
                                 gridColumnEnd: 'span 1',
                                 gridRowStart: seg.lane + 1,
-                                backgroundColor: '#38BDF8', // Sky-400 - Vivid Blue/Cyan
+                                backgroundColor: seg.period.color,
                               }}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleEditClick(seg.period);
                               }}
                             >
-                               <span className="line-clamp-4 break-words w-full px-1">{seg.period.title}</span>
+                               <span className="line-clamp-3 break-words w-full">{seg.period.title}</span>
                             </div>
                           );
                         });
