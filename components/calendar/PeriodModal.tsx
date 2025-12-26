@@ -18,6 +18,7 @@ interface PeriodModalProps {
   onDelete?: (periodId: string) => void;
   period?: CalendarPeriod | null;
   initialDate?: Date;
+  initialEndDate?: Date;
 }
 
 const PERIOD_COLORS = [
@@ -67,13 +68,15 @@ export function PeriodModal({
       setTitle('');
       setNotes('');
       const start = initialDate || new Date();
-      const end = new Date(start);
-      end.setDate(start.getDate() + 6); // Default to 1 week period
+      const end = initialEndDate || new Date(start);
+      if (!initialEndDate) {
+          end.setDate(start.getDate() + 6); // Default to 1 week period if no end date provided
+      }
       setStartDate(start);
       setEndDate(end);
       setColor(PERIOD_COLORS[2]); // Default to amber
     }
-  }, [period, initialDate, isOpen]);
+  }, [period, initialDate, initialEndDate, isOpen]);
 
   const handleSave = () => {
     if (!title.trim()) return;

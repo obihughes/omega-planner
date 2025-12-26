@@ -1,3 +1,11 @@
+## 2025-12-25
+
+- **5-Year Visualizer Improvements** (2025-12-25)
+  - **Drag-to-Create**: Implemented drag interaction on the grid to create periods spanning multiple months instantly.
+  - **Continuous Period Rendering**: Refactored period visualization to render as single continuous bars instead of fragmented monthly blocks, improving readability of long-term items.
+  - **Enhanced Period Modal**: Updated `PeriodModal` to accept pre-filled end dates, supporting the new drag selection flow.
+  - **Files affected**: `components/visualizer/FiveYearVisualizer.tsx`, `components/calendar/PeriodModal.tsx`, `docs/components.md`, `docs/changelog.md`
+
 ## 2025-12-21
 
 - **Weekly View UI Refinements** (2025-12-21)

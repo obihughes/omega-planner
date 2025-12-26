@@ -11,9 +11,10 @@ A 5-year high-level visualizer for long-term planning.
 - **Lanes**: 3 fixed-height lanes per year (216px total height, ~72px/lane) to stack overlapping periods.
 - **Interaction**: 
   - Add/Edit/Delete periods via `PeriodModal`.
+  - **Drag-to-Create**: Click and drag across months to define a date range for a new period.
   - Click any empty grid cell to add a new interval starting from that month.
 - **Visuals**:
-  - Items are rendered as **discrete blocks per month** (not continuous bars), separated by gaps.
+  - Items are rendered as **continuous bars** spanning the duration.
   - Multi-line text support (up to 3 lines) with `line-clamp-3`.
   - **No word splitting**: Words are kept whole (`break-normal`).
   - **Horizontal year labels** for better readability.
@@ -22,7 +23,7 @@ A 5-year high-level visualizer for long-term planning.
 - **Navigation**: Navigate previous/next 5-year blocks.
 
 ### PeriodModal (`components/calendar/PeriodModal.tsx`)
-Modal for creating and editing calendar periods.
+Modal for creating and editing calendar periods. Supports pre-filling both start and end dates.
 
 ### EventModal (`components/calendar/EventModal.tsx`)
 Modal for creating and editing calendar events.

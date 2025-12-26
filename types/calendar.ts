@@ -24,6 +24,7 @@ export interface CalendarPeriod {
   endDateKey?: string;
   color: string;
   type: 'period';
+  preferredLane?: number; // Preferred lane for visualizer placement (0-2)
 }
 
 export interface CalendarData {

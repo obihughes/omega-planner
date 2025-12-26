@@ -29,21 +29,84 @@ export function FiveYearVisualizer({
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPeriod, setEditingPeriod] = useState<CalendarPeriod | null>(null);
   const [initialDate, setInitialDate] = useState<Date | undefined>(undefined);
+  const [initialEndDate, setInitialEndDate] = useState<Date | undefined>(undefined);
+  const [preferredLane, setPreferredLane] = useState<number | undefined>(undefined);
   const [isFullScreen, setIsFullScreen] = useState(false);
   
+  // Drag selection state
+  const [dragStart, setDragStart] = useState<{ year: number; month: number; lane: number } | null>(null);
+  const [dragEnd, setDragEnd] = useState<{ year: number; month: number; lane: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
   // Create 5 years array
   const years = useMemo(() => Array.from({ length: 5 }, (_, i) => startYear + i), [startYear]);
 
-  // Handle ESC key for full screen
+  // Handle Drag Start
+  const handleDragStart = (year: number, month: number, lane: number) => {
+    setDragStart({ year, month, lane });
+    setDragEnd({ year, month, lane });
+    setIsDragging(true);
+  };
+
+  // Handle Drag Enter (while dragging)
+  const handleDragEnter = (year: number, month: number, lane: number) => {
+    if (isDragging && dragStart) {
+        // We only update if it's different to avoid excessive renders, though React handles this well
+        setDragEnd({ year, month, lane });
+    }
+  };
+
+  // Handle Drag End (commit)
+  const handleDragEnd = () => {
+    if (!dragStart || !dragEnd) return;
+
+    let startYear = dragStart.year;
+    let startMonth = dragStart.month;
+    let endYear = dragEnd.year;
+    let endMonth = dragEnd.month;
+
+    // Ensure start is before end
+    if (startYear > endYear || (startYear === endYear && startMonth > endMonth)) {
+        [startYear, endYear] = [endYear, startYear];
+        [startMonth, endMonth] = [endMonth, startMonth];
+    }
+
+    const startDate = new Date(startYear, startMonth, 1);
+    const endDate = new Date(endYear, endMonth + 1, 0); // Last day of end month
+
+    setInitialDate(startDate);
+    setInitialEndDate(endDate);
+    setEditingPeriod(null);
+    setPreferredLane(dragStart.lane);
+    setModalOpen(true);
+    
+    // Reset drag state
+    setIsDragging(false);
+    setDragStart(null);
+    setDragEnd(null);
+  };
+
+  // Handle Global Mouse Up and ESC
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && isFullScreen) {
         setIsFullScreen(false);
       }
     };
+
+    const handleGlobalMouseUp = () => {
+      if (isDragging) {
+        handleDragEnd();
+      }
+    };
+
     window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, [isFullScreen]);
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => {
+        window.removeEventListener('keydown', handleEsc);
+        window.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+  }, [isFullScreen, isDragging, dragStart, dragEnd]); // Include dependencies for closure
 
   // Process periods into segments for display
   const periodSegments = useMemo(() => {
@@ -55,16 +118,13 @@ export function FiveYearVisualizer({
       lane: number;       // 0-2 (assigned lane)
     }[] = [];
 
-    // Filter relevant periods
     const relevantPeriods = periods.filter(p => {
       const pStartYear = new Date(p.startDate).getFullYear();
       const pEndYear = new Date(p.endDate).getFullYear();
       return pEndYear >= startYear && pStartYear < startYear + 5;
     });
 
-    // Assign lanes for each year
     years.forEach(year => {
-      // Find periods intersecting this year
       const yearPeriods = relevantPeriods.filter(p => {
         const pStartYear = new Date(p.startDate).getFullYear();
         const pEndYear = new Date(p.endDate).getFullYear();
@@ -79,14 +139,12 @@ export function FiveYearVisualizer({
         return (new Date(b.endDate).getTime() - dateB) - (new Date(a.endDate).getTime() - dateA);
       });
 
-      // Lane allocation (0, 1, 2)
       const laneOccupancy = [-1, -1, -1];
 
       yearPeriods.forEach(p => {
         const pStart = new Date(p.startDate);
         const pEnd = new Date(p.endDate);
 
-        // Determine month range within this year
         let startMonth = 0;
         if (pStart.getFullYear() === year) {
           startMonth = pStart.getMonth();
@@ -97,13 +155,17 @@ export function FiveYearVisualizer({
           endMonth = pEnd.getMonth();
         }
 
-        // Find first available lane
         let assignedLane = -1;
-        for (let l = 0; l < 3; l++) {
-          if (laneOccupancy[l] < startMonth) {
-            assignedLane = l;
-            laneOccupancy[l] = endMonth;
-            break;
+        if (p.preferredLane !== undefined && laneOccupancy[p.preferredLane] < startMonth) {
+          assignedLane = p.preferredLane;
+          laneOccupancy[assignedLane] = endMonth;
+        } else {
+          for (let l = 0; l < 3; l++) {
+            if (laneOccupancy[l] < startMonth) {
+              assignedLane = l;
+              laneOccupancy[l] = endMonth;
+              break;
+            }
           }
         }
 
@@ -122,25 +184,55 @@ export function FiveYearVisualizer({
     return segments;
   }, [periods, years, startYear]);
 
-  const handleAddClick = (date?: Date) => {
+  // Only used for single click if not dragging
+  const handleAddClick = (date?: Date, lane?: number) => {
     setEditingPeriod(null);
     setInitialDate(date);
+    setInitialEndDate(undefined);
+    setPreferredLane(lane);
     setModalOpen(true);
   };
 
   const handleEditClick = (period: CalendarPeriod) => {
     setEditingPeriod(period);
     setInitialDate(undefined);
+    setInitialEndDate(undefined);
     setModalOpen(true);
   };
 
   const handleSavePeriod = (periodData: Omit<CalendarPeriod, 'id'>) => {
-    if (editingPeriod) {
+    if (editingPeriod && editingPeriod.id) {
       onPeriodEdit(editingPeriod.id, periodData);
     } else {
-      onPeriodAdd(periodData);
+      const periodWithLane = { ...periodData, preferredLane };
+      onPeriodAdd(periodWithLane as any);
     }
     setModalOpen(false);
+    setPreferredLane(undefined);
+    setEditingPeriod(null);
+  };
+
+  // Helper to check if a cell is selected during drag
+  const isCellSelected = (year: number, month: number, lane: number) => {
+      if (!isDragging || !dragStart || !dragEnd) return false;
+      if (lane !== dragStart.lane) return false; // Only highlight same lane
+      
+      let startY = dragStart.year;
+      let startM = dragStart.month;
+      let endY = dragEnd.year;
+      let endM = dragEnd.month;
+      
+      if (startY > endY || (startY === endY && startM > endM)) {
+        [startY, endY] = [endY, startY];
+        [startM, endM] = [endM, startM];
+      }
+      
+      // Check if current cell is within range
+      if (year < startY || year > endY) return false;
+      if (year === startY && month < startM) return false;
+      if (year === endY && month > endM) return false;
+      
+      return true;
   };
 
   return (
@@ -237,13 +329,23 @@ export function FiveYearVisualizer({
                 <div className="absolute inset-0 grid grid-rows-3">
                   {[0, 1, 2].map((lane) => (
                     <div key={lane} className="grid grid-cols-12 h-full border-b border-[#334155] last:border-b-0">
-                      {Array.from({ length: 12 }).map((_, monthIndex) => (
-                        <div 
-                          key={monthIndex} 
-                          className="border-r border-[#334155] h-full last:border-r-0 hover:bg-[#334155]/30 cursor-pointer transition-colors bg-[#0f172a]"
-                          onClick={() => handleAddClick(new Date(year, monthIndex, 1))}
-                        />
-                      ))}
+                      {Array.from({ length: 12 }).map((_, monthIndex) => {
+                        const isSelected = isCellSelected(year, monthIndex, lane);
+                        return (
+                          <div
+                            key={monthIndex}
+                            className={cn(
+                                "border-r border-[#334155] h-full last:border-r-0 transition-colors cursor-pointer",
+                                isSelected ? "bg-[#2563EB]/50" : "hover:bg-[#334155]/30 bg-[#0f172a]"
+                            )}
+                            onMouseDown={(e) => {
+                                e.preventDefault(); // Prevent text selection
+                                handleDragStart(year, monthIndex, lane);
+                            }}
+                            onMouseEnter={() => handleDragEnter(year, monthIndex, lane)}
+                          />
+                        );
+                      })}
                     </div>
                   ))}
                 </div>
@@ -253,22 +355,14 @@ export function FiveYearVisualizer({
                   <div className="grid grid-cols-12 grid-rows-3 h-full w-full">
                     {periodSegments
                       .filter(seg => seg.year === year)
-                      .flatMap((seg, idx) => {
-                        const startMonthIndex = seg.startMonth; // 0-based
-                        const duration = seg.endMonth - seg.startMonth + 1;
-                        
-                        // Create an array of blocks, one per month in the duration
-                        return Array.from({ length: duration }).map((_, i) => {
-                          const monthIndex = startMonthIndex + i;
-                          const column = monthIndex + 1; // 1-based grid column
-                          
-                          return (
+                      .map((seg, idx) => {
+                        return (
                             <div
-                              key={`${seg.period.id}-${year}-${idx}-${i}`}
+                              key={`${seg.period.id}-${year}-${idx}`}
                               className="m-1 rounded-xl p-2 text-xs font-bold text-white shadow-lg cursor-pointer hover:brightness-110 transition-all overflow-hidden flex items-center justify-center text-center pointer-events-auto leading-snug"
                               style={{
-                                gridColumnStart: column,
-                                gridColumnEnd: 'span 1',
+                                gridColumnStart: seg.startMonth + 1,
+                                gridColumnEnd: seg.endMonth + 2,
                                 gridRowStart: seg.lane + 1,
                                 backgroundColor: seg.period.color,
                               }}
@@ -280,7 +374,6 @@ export function FiveYearVisualizer({
                                <span className="line-clamp-3 break-normal hyphens-none w-full">{seg.period.title}</span>
                             </div>
                           );
-                        });
                       })}
                   </div>
                 </div>
@@ -297,6 +390,7 @@ export function FiveYearVisualizer({
         onDelete={onPeriodDelete}
         period={editingPeriod}
         initialDate={initialDate}
+        initialEndDate={initialEndDate}
       />
     </div>
   );
