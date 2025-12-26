@@ -47,7 +47,8 @@ export function PeriodModal({
   onSave, 
   onDelete,
   period,
-  initialDate 
+  initialDate,
+  initialEndDate
 }: PeriodModalProps) {
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');

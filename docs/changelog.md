@@ -1,3 +1,9 @@
+## 2025-12-26
+
+- **Bug Fix: PeriodModal ReferenceError** (2025-12-26)
+  - Fixed a `ReferenceError: initialEndDate is not defined` in `PeriodModal.tsx` by correctly destructuring the prop from the component signature.
+  - **Files affected**: `components/calendar/PeriodModal.tsx`, `docs/changelog.md`
+
 ## 2025-12-25
 
 - **5-Year Visualizer Improvements** (2025-12-25)
