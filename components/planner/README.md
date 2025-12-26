@@ -28,6 +28,8 @@ This directory contains all components related to the daily planning functionali
 2. **Weekly View**:
    - Weekly overview showing scheduled and inbox tasks
    - Separate sections for scheduled tasks and inbox tasks per day
+   - Dual timeline headers (top and bottom) for easy time tracking
+   - Space-efficient row layout
    
 3. **Scheduling View** (Monthly):
    - Full TaskAssignmentCalendar component

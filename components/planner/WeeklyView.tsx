@@ -20,7 +20,7 @@ import { EditTaskModal } from './EditTaskModal';
 
 // Weekly view specific constants for row-based layout
 const WEEKLY_PIXELS_PER_HOUR = 80;
-const WEEKLY_ROW_HEIGHT = 60; // Reduced height for split rows (AM/PM)
+const WEEKLY_ROW_HEIGHT = 40; // Reduced height for split rows (AM/PM)
 const WEEKLY_TASK_HEIGHT = 40; 
 const WEEKLY_DAY_COLUMN_WIDTH = 100;
 const WEEKLY_EVENTS_COLUMN_WIDTH = 100; // Slightly wider for events
@@ -70,6 +70,8 @@ export default function WeeklyView({}: WeeklyViewProps) {
 
   // Handle mouse wheel for horizontal scrolling with velocity
   useEffect(() => {
+    // Disabled horizontal scroll interception to allow normal vertical scrolling
+    /*
     const scrollContainer = timelineScrollRef.current;
     if (!scrollContainer) return;
 
@@ -89,6 +91,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
 
     scrollContainer.addEventListener('wheel', handleWheel, { passive: false });
     return () => scrollContainer.removeEventListener('wheel', handleWheel);
+    */
   }, []);
 
   // Calculate week dates (Monday to Sunday for the current week)
@@ -168,7 +171,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
     ? getSameDayDates(selectedDayOfWeek, weekOffset)
     : getWeekDates(weekOffset);
   
-  // Auto-scroll vertically to today's row on initial load for current week
+    // Auto-scroll vertically to today's row on initial load for current week
   useEffect(() => {
     const scrollContainer = timelineScrollRef.current;
     if (!scrollContainer) return;
@@ -185,16 +188,19 @@ export default function WeeklyView({}: WeeklyViewProps) {
 
     if (todayIndex === -1) return;
 
-    // Calculate row top with 2 rows per day
-    const rowHeightTotal = WEEKLY_ROW_HEIGHT * ROWS_PER_DAY;
-    const rowTop = todayIndex * (rowHeightTotal + 1) + WEEKLY_TIMELINE_HEADER_HEIGHT; // +1 for border
-    
-    // If the container is vertically scrollable:
-    if (scrollContainer.scrollHeight > scrollContainer.clientHeight) {
-        // Center the day
-        const targetTop = Math.max(0, rowTop - (scrollContainer.clientHeight / 2) + (rowHeightTotal / 2));
-        scrollContainer.scrollTop = targetTop;
-    }
+    // Use setTimeout to ensure layout is fully rendered
+    setTimeout(() => {
+        // Calculate row top with 2 rows per day
+        const rowHeightTotal = WEEKLY_ROW_HEIGHT * ROWS_PER_DAY;
+        const rowTop = todayIndex * (rowHeightTotal + 1) + WEEKLY_TIMELINE_HEADER_HEIGHT; // +1 for border
+        
+        // If the container is vertically scrollable:
+        if (scrollContainer.scrollHeight > scrollContainer.clientHeight) {
+            // Center the day
+            const targetTop = Math.max(0, rowTop - (scrollContainer.clientHeight / 2) + (rowHeightTotal / 2));
+            scrollContainer.scrollTo({ top: targetTop, behavior: 'smooth' });
+        }
+    }, 100);
     
     didAutoScrollToTodayRef.current = true;
   }, [weekOffset, weekDates]);
@@ -251,13 +257,22 @@ export default function WeeklyView({}: WeeklyViewProps) {
   };
 
   // Render global timeline header
-  const renderTimelineHeader = useCallback(() => {
+  const renderTimelineHeader = useCallback((isBottom = false) => {
     const hours = Array.from({ length: HOURS_PER_ROW }, (_, i) => i);
     
     return (
-      <div className="flex border-b border-border bg-card shadow-sm sticky top-0 z-[60]" style={{ height: `${WEEKLY_TIMELINE_HEADER_HEIGHT}px`, minWidth: 'fit-content' }}>
+      <div 
+        className={cn(
+          "flex bg-card shadow-sm z-[60]",
+          isBottom ? "border-t border-border sticky bottom-0" : "border-b border-border sticky top-0"
+        )} 
+        style={{ height: `${WEEKLY_TIMELINE_HEADER_HEIGHT}px`, minWidth: 'fit-content' }}
+      >
         {/* Sticky Spacers */}
-        <div className="sticky left-0 z-[70] flex bg-card border-r border-border">
+        <div className={cn(
+            "sticky left-0 z-[70] flex bg-card border-r border-border",
+            isBottom ? "border-t border-border" : "border-b border-border"
+        )}>
             <div className="flex-shrink-0 bg-card" style={{ width: `${WEEKLY_DAY_COLUMN_WIDTH}px` }} />
             <div className="flex-shrink-0 bg-card" style={{ width: `${WEEKLY_EVENTS_COLUMN_WIDTH}px` }} />
         </div>
@@ -359,7 +374,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
         const taskStyle: React.CSSProperties = {
           left: `${renderLeft + 2}px`, // +2 for gap
           width: `${Math.max(renderWidth - 4, 30)}px`,
-          top: `6px`, // Centered vertically roughly
+          top: `0px`, // Aligned with row top since heights match
           height: `${WEEKLY_TASK_HEIGHT}px`,
           zIndex: 40,
         };
@@ -654,6 +669,9 @@ export default function WeeklyView({}: WeeklyViewProps) {
             <div className="flex flex-col">
                 {weekDates.map((date, index) => renderDayRow(date, index))}
             </div>
+
+            {/* Bottom Timeline Header */}
+            {renderTimelineHeader(true)}
         </div>
       </div>
 

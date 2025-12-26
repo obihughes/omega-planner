@@ -1,3 +1,14 @@
+## 2025-12-21
+
+- **Weekly View UI Refinements** (2025-12-21)
+  - **Optimized Layout**: Reduced row height (60px -> 40px) for better space efficiency while maintaining task visibility.
+  - **Improved Timeline**: Added a sticky timeline header to the bottom of the view for easier time reference.
+  - **Enhanced Task Cards**: Modified task card layout to allow text to utilize full width; edit buttons now overlay on hover without shifting content.
+  - **Refined Scrolling**:
+    - Removed custom horizontal scroll interception on mouse wheel, restoring standard vertical scrolling behavior.
+    - Improved "Auto-scroll to Today" reliability with layout-aware timing.
+  - **Files affected**: `components/planner/WeeklyView.tsx`, `components/planner/WeeklyTaskCard.tsx`, `docs/planner.md`, `docs/changelog.md`
+
 ## 2025-12-18
 
 - **Weekly Goals Overview - Goal Movement** (2025-12-18)

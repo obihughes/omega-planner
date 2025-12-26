@@ -61,14 +61,16 @@ Displays a 7-day view of scheduled tasks in a horizontal timeline format. Weeks 
 
 - **Enhanced Visual Design**: Modern gradient backgrounds, improved spacing, and better color hierarchy
 - **Smart Time Management**: Focused timeline from 6 AM to 10 PM for optimal productivity planning
+- **Space-Efficient Layout**: Optimized row heights (40px) with task cards that maximize available space
 - **Day Highlighting**: Weekend days with orange accents, today with primary color accent bar
 - **Progress Visualization**: Completion dots in day headers and progress bars in stats
+- **Dual Timeline Headers**: Time markers available at both top and bottom of the view for easy reference
 - **Current Time Indicator**: Live red line with floating time badge for real-time context
 - **Task Collision Handling**: Automatic lane assignment for overlapping tasks
 - **Inbox Integration**: Separate section for unscheduled tasks with clear visual distinction
 - **Interactive Elements**: Hover effects, smooth animations, and click-to-add functionality
 - **Enhanced Scrollbar**: Larger, more accessible scrollbar for easier timeline navigation
-- **Improved Mouse Wheel Navigation**: Faster horizontal scrolling with enhanced sensitivity for better timeline control
+- **Standard Scrolling**: Uses native vertical scrolling with Shift+Wheel for horizontal navigation
 
 ### TaskCard
 Individual task representation with drag/resize handles.

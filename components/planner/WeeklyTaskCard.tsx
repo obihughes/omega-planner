@@ -90,26 +90,24 @@ export const WeeklyTaskCard: React.FC<WeeklyTaskCardProps> = ({
 
         {/* Action Buttons - Position based on format */}
         <div className={cn(
-          "opacity-0 group-hover:opacity-100 transition-opacity gap-1",
-          isSquareFormat 
-            ? "absolute top-1 right-1 flex" 
-            : "flex items-center ml-1"
+          "opacity-0 group-hover:opacity-100 transition-opacity gap-1 z-10",
+          "absolute right-1 top-1/2 -translate-y-1/2 flex items-center bg-white/50 dark:bg-black/50 rounded backdrop-blur-[2px] px-0.5 py-0.5"
         )}>
           {task.notes && (
             <button
               onClick={handleViewClick}
-              className="p-0.5 hover:bg-black/10 dark:hover:bg-white/10 rounded transition-colors"
+              className="p-0.5 hover:bg-black/20 dark:hover:bg-white/20 rounded transition-colors"
               title="View notes"
             >
-              <Eye className={isSquareFormat ? "w-3 h-3" : "w-3 h-3"} />
+              <Eye className="w-3 h-3" />
             </button>
           )}
           <button
             onClick={handleEditClick}
-            className="p-0.5 hover:bg-black/10 dark:hover:bg-white/10 rounded transition-colors"
+            className="p-0.5 hover:bg-black/20 dark:hover:bg-white/20 rounded transition-colors"
             title="Edit task"
           >
-            <Edit3 className={isSquareFormat ? "w-3 h-3" : "w-3 h-3"} />
+            <Edit3 className="w-3 h-3" />
           </button>
         </div>
       </div>
