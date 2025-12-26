@@ -211,8 +211,14 @@ export function FiveYearVisualizer({
           </div>
 
           {/* Year Rows */}
-          {years.map(year => (
-            <div key={year} className="grid grid-cols-[120px_repeat(12,1fr)] border-b border-[#334155] last:border-b-0">
+          {years.map((year, yearIndex) => (
+            <div 
+              key={year} 
+              className={cn(
+                "grid grid-cols-[120px_repeat(12,1fr)]",
+                yearIndex < years.length - 1 && "border-b-4 border-[#475569] mb-2"
+              )}
+            >
               {/* Year Label Column */}
               <div className="flex border-r border-[#334155] bg-[#1e293b]">
                 <div className="w-2/3 flex items-center justify-center text-slate-500 text-2xl font-bold border-r border-[#334155] bg-[#1e293b]">
