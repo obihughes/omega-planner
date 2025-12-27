@@ -14,7 +14,7 @@ A 5-year high-level visualizer for long-term planning.
   - **Drag-to-Create**: Click and drag across months to define a date range for a new period.
   - Click any empty grid cell to add a new interval starting from that month.
 - **Visuals**:
-  - Items are rendered as **continuous bars** spanning the duration.
+  - Items are rendered as **individual blocks** inside each month box (one block per month).
   - Multi-line text support (up to 3 lines) with `line-clamp-3`.
   - **No word splitting**: Words are kept whole (`break-normal`).
   - **Horizontal year labels** for better readability.

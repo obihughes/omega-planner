@@ -115,14 +115,13 @@ export function FiveYearVisualizer({
     };
   }, [isFullScreen, isDragging, dragStart, dragEnd]); // Include dependencies for closure
 
-  // Process periods into segments for display
+  // Process periods into segments for display - one segment per month
   const periodSegments = useMemo(() => {
     const segments: { 
       period: CalendarPeriod; 
       year: number; 
-      startMonth: number; // 0-11
-      endMonth: number;   // 0-11
-      lane: number;       // 0-2 (assigned lane)
+      month: number; // 0-11 (single month)
+      lane: number;  // 0-2 (assigned lane)
     }[] = [];
 
     const relevantPeriods = periods.filter(p => {
@@ -132,6 +131,14 @@ export function FiveYearVisualizer({
     });
 
     years.forEach(year => {
+      // Track lane occupancy per month for each lane
+      const laneOccupancyByMonth: { [month: number]: Set<number> } = {};
+      
+      // Initialize occupancy tracking
+      for (let m = 0; m < 12; m++) {
+        laneOccupancyByMonth[m] = new Set();
+      }
+
       const yearPeriods = relevantPeriods.filter(p => {
         const pStartYear = new Date(p.startDate).getFullYear();
         const pEndYear = new Date(p.endDate).getFullYear();
@@ -146,12 +153,11 @@ export function FiveYearVisualizer({
         return (new Date(b.endDate).getTime() - dateB) - (new Date(a.endDate).getTime() - dateA);
       });
 
-      const laneOccupancy = [-1, -1, -1];
-
       yearPeriods.forEach(p => {
         const pStart = new Date(p.startDate);
         const pEnd = new Date(p.endDate);
 
+        // Determine which months this period covers in this year
         let startMonth = 0;
         if (pStart.getFullYear() === year) {
           startMonth = pStart.getMonth();
@@ -162,28 +168,51 @@ export function FiveYearVisualizer({
           endMonth = pEnd.getMonth();
         }
 
+        // Assign lane for this period (try to use same lane across all months)
         let assignedLane = -1;
-        if (p.preferredLane !== undefined && laneOccupancy[p.preferredLane] < startMonth) {
-          assignedLane = p.preferredLane;
-          laneOccupancy[assignedLane] = endMonth;
-        } else {
+        
+        // Try preferred lane first
+        if (p.preferredLane !== undefined) {
+          let canUsePreferredLane = true;
+          for (let m = startMonth; m <= endMonth; m++) {
+            if (laneOccupancyByMonth[m].has(p.preferredLane)) {
+              canUsePreferredLane = false;
+              break;
+            }
+          }
+          if (canUsePreferredLane) {
+            assignedLane = p.preferredLane;
+          }
+        }
+
+        // If preferred lane not available, find first available lane
+        if (assignedLane === -1) {
           for (let l = 0; l < 3; l++) {
-            if (laneOccupancy[l] < startMonth) {
+            let canUseLane = true;
+            for (let m = startMonth; m <= endMonth; m++) {
+              if (laneOccupancyByMonth[m].has(l)) {
+                canUseLane = false;
+                break;
+              }
+            }
+            if (canUseLane) {
               assignedLane = l;
-              laneOccupancy[l] = endMonth;
               break;
             }
           }
         }
 
+        // If we found a lane, create segments for each month
         if (assignedLane !== -1) {
-          segments.push({
-            period: p,
-            year,
-            startMonth,
-            endMonth,
-            lane: assignedLane
-          });
+          for (let m = startMonth; m <= endMonth; m++) {
+            laneOccupancyByMonth[m].add(assignedLane);
+            segments.push({
+              period: p,
+              year,
+              month: m,
+              lane: assignedLane
+            });
+          }
         }
       });
     });
@@ -393,11 +422,11 @@ export function FiveYearVisualizer({
                       .map((seg, idx) => {
                         return (
                             <div
-                              key={`${seg.period.id}-${year}-${idx}`}
+                              key={`${seg.period.id}-${year}-${seg.month}-${seg.lane}-${idx}`}
                               className="m-1 rounded-xl p-2 text-xs font-bold text-white shadow-lg cursor-pointer hover:brightness-110 transition-all overflow-hidden flex items-center justify-center text-center pointer-events-auto leading-snug"
                               style={{
-                                gridColumnStart: seg.startMonth + 1,
-                                gridColumnEnd: seg.endMonth + 2,
+                                gridColumnStart: seg.month + 1,
+                                gridColumnEnd: seg.month + 2,
                                 gridRowStart: seg.lane + 1,
                                 backgroundColor: seg.period.color,
                               }}
