@@ -304,9 +304,8 @@ export default React.memo(function ClassSchedule() {
   };
 
   // Weekly view constants (matching daily planner design)
-  const WEEKLY_PIXELS_PER_HOUR = 90;
   const WEEKLY_ROW_HEIGHT = 60;
-  const WEEKLY_TASK_HEIGHT = 39;
+  const WEEKLY_TASK_HEIGHT = 56; // Increased to fill the row
   const WEEKLY_DAY_COLUMN_WIDTH = 95;
   const WEEKLY_TIMELINE_HEADER_HEIGHT = 26;
   const HOURS_PER_ROW = 12; // AM (0-12) and PM (12-24)
@@ -330,15 +329,14 @@ export default React.memo(function ClassSchedule() {
           />
           
           {/* Timeline header */}
-          <div className="flex" style={{ width: `${WEEKLY_PIXELS_PER_HOUR * HOURS_PER_ROW}px` }}>
+          <div className="flex flex-1">
             {hours.map((hour) => (
               <div 
                 key={`header-${hour}`} 
-                className="flex-shrink-0 text-center text-xs text-muted-foreground py-1 border-l border-border/10"
-                style={{ width: `${WEEKLY_PIXELS_PER_HOUR}px` }}
+                className="flex-1 text-center text-xs text-muted-foreground py-1 border-l border-border/10 min-w-0 overflow-hidden"
               >
                 <div className={cn(
-                  "font-medium",
+                  "font-medium truncate px-1",
                   hour % 6 === 0 ? 'text-foreground' : 'text-muted-foreground'
                 )}>
                   {formatTime(hour)}
@@ -376,11 +374,11 @@ export default React.memo(function ClassSchedule() {
         const currentHourFloat = currentTimeForMarker.getHours() + currentTimeForMarker.getMinutes() / 60;
         if (currentHourFloat < startHour || currentHourFloat >= endHour) return null;
 
-        const markerLeft = (currentHourFloat - startHour) * WEEKLY_PIXELS_PER_HOUR;
+        const percentage = ((currentHourFloat - startHour) / HOURS_PER_ROW) * 100;
         return (
           <div 
             className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-50 pointer-events-none" 
-            style={{ left: `${markerLeft}px` }}
+            style={{ left: `${percentage}%` }}
           >
             <div style={{ 
               position: 'absolute',
@@ -399,7 +397,8 @@ export default React.memo(function ClassSchedule() {
       const handleTimelineDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
         const rect = e.currentTarget.getBoundingClientRect();
         const clickXrelative = e.clientX - rect.left;
-        const hourFloat = startHour + (clickXrelative / WEEKLY_PIXELS_PER_HOUR);
+        const percentage = clickXrelative / rect.width;
+        const hourFloat = startHour + (percentage * HOURS_PER_ROW);
         const snappedNewStartHour = Math.round(hourFloat * 4) / 4;
         
         const newTask: Task = {
@@ -420,16 +419,17 @@ export default React.memo(function ClassSchedule() {
           const taskStartHour = task.startHour ?? startHour;
           const taskStartRelative = Math.max(0, taskStartHour - startHour);
           const taskEndRelative = Math.min(HOURS_PER_ROW, (taskStartHour + task.duration) - startHour);
-          const renderLeft = taskStartRelative * WEEKLY_PIXELS_PER_HOUR;
-          const renderWidth = (taskEndRelative - taskStartRelative) * WEEKLY_PIXELS_PER_HOUR;
           
-          if (renderWidth <= 0) return null;
+          const startPercent = (taskStartRelative / HOURS_PER_ROW) * 100;
+          const widthPercent = ((taskEndRelative - taskStartRelative) / HOURS_PER_ROW) * 100;
+          
+          if (widthPercent <= 0) return null;
           
           const taskStyle: React.CSSProperties = {
             position: 'absolute',
-            left: `${renderLeft}px`,
-            width: `${renderWidth}px`,
-            top: '4px',
+            left: `${startPercent}%`,
+            width: `${widthPercent}%`,
+            top: '2px', // Centered vertically in 60px row with 56px height
             height: `${WEEKLY_TASK_HEIGHT}px`,
             zIndex: 40,
           };
@@ -505,11 +505,10 @@ export default React.memo(function ClassSchedule() {
           {/* 12-hour Timeline */}
           <div 
             className={cn(
-              "relative transition-colors duration-200 cursor-pointer",
+              "relative flex-1 transition-colors duration-200 cursor-pointer",
               isCurrentDay ? "bg-primary/5 hover:bg-primary/10" : isWeekendDay ? "bg-muted/30 hover:bg-muted/40" : "bg-background hover:bg-muted/10"
             )}
             style={{ 
-              width: `${WEEKLY_PIXELS_PER_HOUR * HOURS_PER_ROW}px`,
               height: `${WEEKLY_ROW_HEIGHT}px`
             }}
             onDoubleClick={handleTimelineDoubleClick}
@@ -519,7 +518,7 @@ export default React.memo(function ClassSchedule() {
               <div 
                 key={`grid-${i}`} 
                 className={`absolute h-full ${i % 6 === 0 ? 'border-l border-border/40' : 'border-l border-border/10'} pointer-events-none`}
-                style={{ left: `${i * WEEKLY_PIXELS_PER_HOUR}px` }} 
+                style={{ left: `${(i / HOURS_PER_ROW) * 100}%` }} 
               />
             ))}
 
