@@ -38,8 +38,9 @@ export const saveVisualizerData = (data: VisualizerData) => {
     const storagePayload = {
       periods: data.periods.map(p => ({
         ...p,
-        startDateKey: p.startDateKey || getDateKey(p.startDate),
-        endDateKey: p.endDateKey || getDateKey(p.endDate)
+        // Always recalculate dateKeys from Date objects to ensure they're in sync
+        startDateKey: getDateKey(p.startDate),
+        endDateKey: getDateKey(p.endDate)
       }))
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(storagePayload));
