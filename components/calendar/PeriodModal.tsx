@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CalendarIcon, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -57,6 +58,7 @@ export function PeriodModal({
   const [color, setColor] = useState(PERIOD_COLORS[0]);
   const [isStartDatePickerOpen, setIsStartDatePickerOpen] = useState(false);
   const [isEndDatePickerOpen, setIsEndDatePickerOpen] = useState(false);
+  const [durationMonths, setDurationMonths] = useState<number | null>(null);
 
   useEffect(() => {
     if (period) {
@@ -65,6 +67,7 @@ export function PeriodModal({
       setStartDate(new Date(period.startDate));
       setEndDate(new Date(period.endDate));
       setColor(period.color);
+      setDurationMonths(null); // Reset duration selection when editing
     } else {
       setTitle('');
       setNotes('');
@@ -76,6 +79,7 @@ export function PeriodModal({
       setStartDate(start);
       setEndDate(end);
       setColor(PERIOD_COLORS[2]); // Default to amber
+      setDurationMonths(null);
     }
   }, [period, initialDate, initialEndDate, isOpen]);
 
@@ -100,6 +104,40 @@ export function PeriodModal({
       onDelete(period.id);
       onClose();
     }
+  };
+
+  // Helper function to calculate end date from start date + months
+  const calculateEndDate = (start: Date, months: number) => {
+    const endDate = new Date(start);
+    endDate.setMonth(endDate.getMonth() + months);
+    return endDate;
+  };
+
+  // Handle duration selection change
+  const handleDurationChange = (months: string) => {
+    const monthValue = months === 'none' ? null : parseInt(months);
+    setDurationMonths(monthValue);
+
+    if (monthValue) {
+      const newEndDate = calculateEndDate(startDate, monthValue);
+      setEndDate(newEndDate);
+    }
+  };
+
+  // Handle start date change - update end date if duration is selected
+  const handleStartDateChange = (selectedDate: Date) => {
+    setStartDate(selectedDate);
+    if (durationMonths && selectedDate) {
+      const newEndDate = calculateEndDate(selectedDate, durationMonths);
+      setEndDate(newEndDate);
+    }
+    // Adjust end date if it's before start date
+    if (endDate < selectedDate) {
+      const newEndDate = new Date(selectedDate);
+      newEndDate.setDate(selectedDate.getDate() + 1);
+      setEndDate(newEndDate);
+    }
+    setIsStartDatePickerOpen(false);
   };
 
   return (
@@ -155,14 +193,7 @@ export function PeriodModal({
                     selected={startDate}
                     onSelect={(selectedDate) => {
                       if (selectedDate) {
-                        setStartDate(selectedDate);
-                        // Adjust end date if it's before start date - set to same day or next day
-                        if (endDate < selectedDate) {
-                          const newEndDate = new Date(selectedDate);
-                          newEndDate.setDate(selectedDate.getDate() + 1);
-                          setEndDate(newEndDate);
-                        }
-                        setIsStartDatePickerOpen(false);
+                        handleStartDateChange(selectedDate);
                       }
                     }}
                     captionLayout="dropdown"
@@ -204,6 +235,7 @@ export function PeriodModal({
                     onSelect={(selectedDate) => {
                       if (selectedDate && selectedDate >= startDate) {
                         setEndDate(selectedDate);
+                        setDurationMonths(null); // Clear duration selection when manually setting end date
                         setIsEndDatePickerOpen(false);
                       }
                     }}
@@ -216,6 +248,29 @@ export function PeriodModal({
                 </PopoverContent>
               </Popover>
             </div>
+          </div>
+
+          {/* Duration in Months */}
+          <div>
+            <label className="text-xs font-medium text-foreground mb-2 block">
+              Duration (Months)
+            </label>
+            <Select
+              value={durationMonths?.toString() || 'none'}
+              onValueChange={handleDurationChange}
+            >
+              <SelectTrigger className="w-full h-9 text-xs">
+                <SelectValue placeholder="Select duration or use end date" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Custom (use end date)</SelectItem>
+                {Array.from({ length: 12 }, (_, i) => i + 1).map(months => (
+                  <SelectItem key={months} value={months.toString()}>
+                    {months} month{months > 1 ? 's' : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Color */}
