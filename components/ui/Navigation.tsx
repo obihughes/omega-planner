@@ -150,7 +150,6 @@ export function Navigation() {
     { key: 'beta-habits', label: 'Habits', icon: ClipboardList, href: '/beta/habits', active: pathname === '/beta/habits' },
     { key: 'beta-tasks', label: 'Tasks', icon: ClipboardList, href: '/beta/tasks', active: pathname === '/beta/tasks' },
     { key: 'beta-tasks-weekly', label: 'Weekly Tasks', icon: CalendarDays, href: '/beta/tasks/weekly', active: pathname === '/beta/tasks/weekly' },
-    { key: 'beta-visualizer', label: '5-Year Visualizer', icon: CalendarRange, href: '/visualizer', active: pathname === '/visualizer' },
     { key: 'beta-recipes', label: 'Recipes', icon: ChefHat, href: '/beta/recipes', active: pathname === '/beta/recipes' }
   ];
 
@@ -176,7 +175,8 @@ export function Navigation() {
       subViews: [
         { key: 'calendar-weekly-goals', type: 'calendar', mode: 'weekly-goals', label: 'Weekly Overview', icon: ClipboardList, active: pathname === '/calendar' && calendarViewMode === 'weekly-goals' },
         { key: 'calendar-monthly', type: 'calendar', mode: 'monthly', label: 'Monthly', icon: CalendarRange, active: pathname === '/calendar' && calendarViewMode === 'monthly' },
-        { key: 'calendar-yearly', type: 'calendar', mode: 'yearly', label: 'Yearly', icon: CalendarDays, active: pathname === '/calendar' && calendarViewMode === 'yearly' }
+        { key: 'calendar-yearly', type: 'calendar', mode: 'yearly', label: 'Yearly', icon: CalendarDays, active: pathname === '/calendar' && calendarViewMode === 'yearly' },
+        { key: 'calendar-visualizer', label: '5-Year Visualizer', icon: CalendarRange, href: '/visualizer', active: pathname === '/visualizer' }
       ]
     },
     {
@@ -344,10 +344,19 @@ export function Navigation() {
                                 }
                               } else if (item.key === 'calendar') {
                                 // calendar subview
-                                if (pathname !== '/calendar') {
-                                  router.push('/calendar');
+                                if ((subView as any).href) {
+                                  // Handle visualizer navigation (has href)
+                                  const target = (subView as any).href;
+                                  if (target && pathname !== target) {
+                                    router.push(target);
+                                  }
+                                } else {
+                                  // Regular calendar view mode
+                                  if (pathname !== '/calendar') {
+                                    router.push('/calendar');
+                                  }
+                                  setCalendarViewMode((subView as any).mode as any);
                                 }
-                                setCalendarViewMode((subView as any).mode as any);
                               } else if (item.key === 'beta-features') {
                                 const target = (subView as any).href;
                                 if (target && pathname !== target) {
