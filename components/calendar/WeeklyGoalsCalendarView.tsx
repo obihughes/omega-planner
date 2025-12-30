@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { GoalsStorage, dateFromDateKey } from '@/utils';
 import { WeekGoals, WeeklyGoal } from '@/types';
 import { Trash2, Plus, ExternalLink, MoreVertical, Edit2, Save, X, StickyNote, ChevronLeft, ChevronRight, Calendar, Clock } from 'lucide-react';
+import { ChecklistSidebar } from './ChecklistSidebar';
 
 const GOAL_COLORS = [
   // Warm gradient
@@ -266,43 +267,51 @@ export function WeeklyGoalsCalendarView({ calendarData, onNavigateToDaily }: Wee
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto px-6 py-6">
-        <div className="grid grid-cols-7 gap-3 auto-rows-fr">
-          {days.map((d) => {
-            const dateKey = toDateKey(d);
-            const weekKey = toWeekStartKey(d);
-            const weekData = goalsData[weekKey];
-            const items = (weekData?.goalsByDate?.[dateKey] || []).slice(0, 6);
-            const isToday = dateKey === todayKey;
-            const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+      <div className="flex-1 flex overflow-hidden">
+        {/* Main Calendar Content */}
+        <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="grid grid-cols-7 gap-3 auto-rows-fr">
+            {days.map((d) => {
+              const dateKey = toDateKey(d);
+              const weekKey = toWeekStartKey(d);
+              const weekData = goalsData[weekKey];
+              const items = (weekData?.goalsByDate?.[dateKey] || []).slice(0, 6);
+              const isToday = dateKey === todayKey;
+              const isWeekend = d.getDay() === 0 || d.getDay() === 6;
 
-            // Get calendar events for this date
-            const dayEvents = calendarData.events.filter(event => {
-              const eventDateKey = event.dateKey || toDateKey(event.date);
-              return eventDateKey === dateKey;
-            });
+              // Get calendar events for this date
+              const dayEvents = calendarData.events.filter(event => {
+                const eventDateKey = event.dateKey || toDateKey(event.date);
+                return eventDateKey === dateKey;
+              });
 
-            return (
-              <DayColumn
-                key={dateKey}
-                date={d}
-                dateKey={dateKey}
-                goals={items}
-                events={dayEvents}
-                isToday={isToday}
-                isWeekend={isWeekend}
-                onAddGoal={(title, color, goalType) => addGoal(dateKey, title, color, goalType)}
-                onToggleGoal={(id) => toggleGoal(dateKey, id)}
-                onRemoveGoal={(id) => removeGoal(dateKey, id)}
-                onUpdateColor={(id, color) => updateGoalColor(dateKey, id, color)}
-                onUpdateGoal={(id, updates) => updateGoal(dateKey, id, updates)}
-                onCreateTask={(goal) => createTaskFromGoal(goal, dateKey)}
-                onMoveGoal={moveGoal}
-                onNavigateToDaily={onNavigateToDaily}
-                canAddMore={items.length < 6}
-              />
-            );
-          })}
+              return (
+                <DayColumn
+                  key={dateKey}
+                  date={d}
+                  dateKey={dateKey}
+                  goals={items}
+                  events={dayEvents}
+                  isToday={isToday}
+                  isWeekend={isWeekend}
+                  onAddGoal={(title, color, goalType) => addGoal(dateKey, title, color, goalType)}
+                  onToggleGoal={(id) => toggleGoal(dateKey, id)}
+                  onRemoveGoal={(id) => removeGoal(dateKey, id)}
+                  onUpdateColor={(id, color) => updateGoalColor(dateKey, id, color)}
+                  onUpdateGoal={(id, updates) => updateGoal(dateKey, id, updates)}
+                  onCreateTask={(goal) => createTaskFromGoal(goal, dateKey)}
+                  onMoveGoal={moveGoal}
+                  onNavigateToDaily={onNavigateToDaily}
+                  canAddMore={items.length < 6}
+                />
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Right Sidebar - Weekly Checklist */}
+        <div className="w-80 border-l border-border bg-card">
+          <ChecklistSidebar />
         </div>
       </div>
     </div>

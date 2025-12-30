@@ -48,6 +48,20 @@ export function FiveYearVisualizer({
   // Create 5 years array
   const years = useMemo(() => Array.from({ length: 5 }, (_, i) => startYear + i), [startYear]);
 
+  // Calculate current date position
+  const currentDate = useMemo(() => {
+    const now = new Date();
+    return {
+      year: now.getFullYear(),
+      month: now.getMonth(), // 0-11
+    };
+  }, []);
+
+  // Check if current date is within visible range
+  const isCurrentDateVisible = useMemo(() => {
+    return currentDate.year >= startYear && currentDate.year < startYear + 5;
+  }, [currentDate.year, startYear]);
+
   // Handle Drag Start
   const handleDragStart = (year: number, month: number, lane: number) => {
     setDragStart({ year, month, lane });
@@ -349,17 +363,41 @@ export function FiveYearVisualizer({
         "border border-[#334155] rounded-lg bg-[#1e293b] overflow-hidden shadow-2xl",
         isFullScreen ? "h-[calc(100vh-100px)]" : ""
       )}>
-        <div className="min-w-[1200px] h-full overflow-auto">
+        <div className="min-w-[1200px] h-full overflow-auto relative">
+          {/* Current Time Indicator - Vertical Line (spans all years) */}
+          {isCurrentDateVisible && (
+            <div
+              className="absolute top-0 bottom-0 w-0.5 bg-[#10B981] z-30 pointer-events-none"
+              style={{
+                left: `calc(120px + ${((currentDate.month + 0.5) / 12) * 100}% - 1px)`,
+              }}
+            >
+              <div className="absolute -top-1 -left-1.5 w-3 h-3 bg-[#10B981] rounded-full border-2 border-[#0f172a] shadow-lg" />
+            </div>
+          )}
+
           {/* Header Row */}
           <div className="grid grid-cols-[120px_repeat(12,1fr)] bg-[#1e293b] border-b border-[#334155] sticky top-0 z-20">
             <div className="p-4 font-bold text-center border-r border-[#334155] flex items-center justify-center text-xs text-slate-400 tracking-wider uppercase">
               Year / L
             </div>
-            {MONTHS.map(month => (
-              <div key={month} className="p-4 font-bold text-center text-xs border-r border-[#334155] last:border-r-0 text-white tracking-widest uppercase">
-                {month}
-              </div>
-            ))}
+            {MONTHS.map((month, monthIndex) => {
+              const isCurrentMonth = isCurrentDateVisible && monthIndex === currentDate.month;
+              return (
+                <div 
+                  key={month} 
+                  className={cn(
+                    "p-4 font-bold text-center text-xs border-r border-[#334155] last:border-r-0 tracking-widest uppercase relative",
+                    isCurrentMonth ? "text-[#10B981] bg-[#10B981]/10" : "text-white"
+                  )}
+                >
+                  {month}
+                  {isCurrentMonth && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#10B981]" />
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           {/* Year Rows */}
@@ -395,12 +433,17 @@ export function FiveYearVisualizer({
                     <div key={lane} className="grid grid-cols-12 h-full border-b border-[#334155] last:border-b-0">
                       {Array.from({ length: 12 }).map((_, monthIndex) => {
                         const isSelected = isCellSelected(year, monthIndex, lane);
+                        const isCurrentMonth = isCurrentDateVisible && 
+                                               year === currentDate.year && 
+                                               monthIndex === currentDate.month;
                         return (
                           <div
                             key={monthIndex}
                             className={cn(
-                                "border-r border-[#334155] h-full last:border-r-0 transition-colors cursor-pointer",
-                                isSelected ? "bg-[#2563EB]/50" : "hover:bg-[#334155]/30 bg-[#0f172a]"
+                                "border-r border-[#334155] h-full last:border-r-0 transition-colors cursor-pointer relative",
+                                isSelected ? "bg-[#2563EB]/50" : 
+                                isCurrentMonth ? "bg-[#10B981]/20 ring-2 ring-[#10B981] ring-inset" :
+                                "hover:bg-[#334155]/30 bg-[#0f172a]"
                             )}
                             onMouseDown={(e) => {
                                 e.preventDefault(); // Prevent text selection
