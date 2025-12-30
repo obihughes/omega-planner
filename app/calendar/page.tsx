@@ -97,7 +97,7 @@ export default function CalendarPage() {
 
   return (
     <AppLayout>
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className={`mx-auto px-4 py-6 ${currentView === 'weekly-goals' ? 'w-full max-w-none' : 'max-w-7xl'}`}>
         {/* View toggle removed; navigation handled in main sidebar */}
 
         {/* Calendar Component */}

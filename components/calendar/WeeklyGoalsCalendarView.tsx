@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { GoalsStorage, dateFromDateKey } from '@/utils';
 import { WeekGoals, WeeklyGoal } from '@/types';
-import { Trash2, Plus, ExternalLink, MoreVertical, Edit2, Save, X, StickyNote, ChevronLeft, ChevronRight, Calendar, Clock } from 'lucide-react';
+import { Trash2, Plus, ExternalLink, MoreVertical, Edit2, Save, X, StickyNote, ChevronLeft, ChevronRight, Calendar, Clock, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { ChecklistSidebar } from './ChecklistSidebar';
 
 const GOAL_COLORS = [
@@ -70,6 +70,9 @@ interface WeeklyGoalsCalendarViewProps {
 export function WeeklyGoalsCalendarView({ calendarData, onNavigateToDaily }: WeeklyGoalsCalendarViewProps) {
   // State for week navigation (0 = current week, -1 = previous week, 1 = next week, etc.)
   const [weekOffset, setWeekOffset] = useState(0);
+
+  // State for sidebar expand/compress
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
 
   // Generate 28 days: current week Monday-Sunday, next 3 weeks (4 rows total)
   const days = useMemo(() => {
@@ -262,15 +265,29 @@ export function WeeklyGoalsCalendarView({ calendarData, onNavigateToDaily }: Wee
             </Button>
           </div>
         </div>
-        <div className="text-sm text-muted-foreground">
-          {currentWeekRange} · Up to 6 goals per day
+        <div className="flex items-center gap-3">
+          <div className="text-sm text-muted-foreground">
+            {currentWeekRange} · Up to 6 goals per day
+          </div>
+          <Button
+            variant="outline"
+            size="default"
+            onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
+            className="h-9 px-3 gap-2"
+            title={isSidebarExpanded ? "Compress sidebar" : "Expand sidebar"}
+          >
+            {isSidebarExpanded ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+            <span className="text-xs font-medium">
+              {isSidebarExpanded ? "Compress" : "Expand"}
+            </span>
+          </Button>
         </div>
       </header>
 
       <div className="flex-1 flex overflow-hidden">
         {/* Main Calendar Content */}
         <div className="flex-1 overflow-y-auto px-6 py-6">
-          <div className="grid grid-cols-7 gap-3 auto-rows-fr">
+          <div className="grid grid-cols-7 gap-4 auto-rows-fr">
             {days.map((d) => {
               const dateKey = toDateKey(d);
               const weekKey = toWeekStartKey(d);
@@ -310,8 +327,8 @@ export function WeeklyGoalsCalendarView({ calendarData, onNavigateToDaily }: Wee
         </div>
 
         {/* Right Sidebar - Weekly Checklist */}
-        <div className="w-80 border-l border-border bg-card">
-          <ChecklistSidebar />
+        <div className={`${isSidebarExpanded ? 'w-80' : 'w-12'} border-l border-border bg-card transition-all duration-200`}>
+          <ChecklistSidebar isExpanded={isSidebarExpanded} />
         </div>
       </div>
     </div>
@@ -428,7 +445,7 @@ function DayColumn({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <div className="p-3 border-b flex items-center justify-between gap-2">
+      <div className="p-4 border-b flex items-center justify-between gap-3">
         <div>
           <div className="text-sm font-medium">{date.toLocaleDateString(undefined, { weekday: 'short' })}</div>
           <div className="text-xs text-muted-foreground">
@@ -449,7 +466,7 @@ function DayColumn({
         </button>
       </div>
 
-      <div className="flex-1 p-3 space-y-2 overflow-visible">
+      <div className="flex-1 p-4 space-y-3 overflow-visible">
         {/* Calendar Events */}
         {events.length > 0 && (
           <div className="space-y-1 mb-2">

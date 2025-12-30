@@ -13,9 +13,13 @@ interface ChecklistItem {
   createdAt: string;
 }
 
+interface ChecklistSidebarProps {
+  isExpanded?: boolean;
+}
+
 const STORAGE_KEY = 'omega-planner-weekly-sidebar';
 
-export function ChecklistSidebar() {
+export function ChecklistSidebar({ isExpanded = true }: ChecklistSidebarProps) {
   const [items, setItems] = useState<ChecklistItem[]>([]);
   const [newItemText, setNewItemText] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -106,11 +110,24 @@ export function ChecklistSidebar() {
   const completedCount = items.filter(item => item.completed).length;
   const totalCount = items.length;
 
+  if (!isExpanded) {
+    return (
+      <div className="flex flex-col h-full bg-card border-l border-border items-center py-4">
+        <div className="text-xs text-muted-foreground font-medium transform -rotate-90 whitespace-nowrap">
+          Weekly Notes
+        </div>
+        <div className="text-xs text-muted-foreground mt-2">
+          {completedCount}/{totalCount}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full bg-card border-l border-border">
       {/* Header */}
-      <div className="p-4 border-b border-border">
-        <h3 className="font-medium text-sm mb-3 flex items-center justify-between">
+      <div className="p-6 border-b border-border">
+        <h3 className="font-medium text-base mb-4 flex items-center justify-between">
           <span>Weekly Notes</span>
           <span className="text-xs text-muted-foreground font-normal">
             {completedCount}/{totalCount}
@@ -123,16 +140,16 @@ export function ChecklistSidebar() {
             value={newItemText}
             onChange={(e) => setNewItemText(e.target.value)}
             onKeyDown={(e) => handleKeyPress(e, addItem)}
-            className="flex-1 h-8 text-sm"
+            className="flex-1 h-9 text-sm"
           />
-          <Button onClick={addItem} size="sm" className="h-8 w-8 p-0">
+          <Button onClick={addItem} size="sm" className="h-9 w-9 p-0">
             <Plus className="w-4 h-4" />
           </Button>
         </div>
       </div>
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+      <div className="flex-1 overflow-y-auto p-6 space-y-3">
         {items.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground text-xs">
             <p>Add notes or tasks for the week</p>
@@ -142,7 +159,7 @@ export function ChecklistSidebar() {
             <div
               key={item.id}
               className={cn(
-                "group flex items-start gap-2 p-2 rounded-md border transition-all hover:shadow-sm",
+                "group flex items-start gap-3 p-3 rounded-md border transition-all hover:shadow-sm",
                 item.completed
                   ? "bg-muted/30 border-border opacity-60"
                   : "bg-background border-border/50 hover:bg-accent/5"
@@ -181,14 +198,14 @@ export function ChecklistSidebar() {
                   <div className="flex items-start justify-between gap-2">
                     <span
                       className={cn(
-                        "text-sm break-words leading-tight py-0.5",
+                        "text-sm break-words leading-relaxed py-1",
                         item.completed && "line-through text-muted-foreground"
                       )}
                       onDoubleClick={() => startEditing(item.id, item.text)}
                     >
                       {item.text}
                     </span>
-                    
+
                     <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity -mr-1">
                       <Button
                         onClick={() => startEditing(item.id, item.text)}
@@ -217,4 +234,3 @@ export function ChecklistSidebar() {
     </div>
   );
 }
-
