@@ -51,7 +51,7 @@ export default React.memo(function ClassSchedule() {
     return new Date().getDay();
   });
 
-  const [viewMode, setViewMode] = useState<"daily" | "weekly">("daily");
+  const [viewMode, setViewMode] = useState<"daily" | "weekly" | "agenda">("daily");
 
   const [currentTimeForMarker, setCurrentTimeForMarker] = useState<Date>(
     () => new Date()
@@ -309,6 +309,99 @@ export default React.memo(function ClassSchedule() {
   const WEEKLY_DAY_COLUMN_WIDTH = 95;
   const WEEKLY_TIMELINE_HEADER_HEIGHT = 26;
   const HOURS_PER_ROW = 12; // AM (0-12) and PM (12-24)
+
+  const renderAgendaView = () => {
+    return (
+      <div className="p-6 overflow-y-auto h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 bg-background/50">
+        {orderedDayIndices.map((dow) => {
+          const meta = weekMeta.find((m) => m.dayOfWeek === dow);
+          if (!meta) return null;
+
+          const dateKey = meta.dateKey;
+          const tasksForDay = tasksByDate.get(dateKey) || [];
+          const sortedTasks = [...tasksForDay].sort((a, b) => (a.startHour ?? 0) - (b.startHour ?? 0));
+          
+          const isToday = new Date().getDay() === dow;
+
+          return (
+            <div 
+              key={dow} 
+              className={cn(
+                "flex flex-col rounded-xl border bg-card shadow-sm",
+                isToday ? "border-primary/50 shadow-md ring-1 ring-primary/20" : "border-border/40"
+              )}
+            >
+              {/* Day Header */}
+              <div className={cn(
+                "px-4 py-3 border-b border-border/20 flex items-center justify-between flex-shrink-0",
+                isToday ? "bg-primary/5" : "bg-muted/10"
+              )}>
+                <div>
+                  <div className={cn(
+                    "text-sm font-semibold",
+                    isToday ? "text-primary" : "text-foreground"
+                  )}>
+                    {meta.label}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {meta.date.toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}
+                  </div>
+                </div>
+                {sortedTasks.length > 0 && (
+                  <div className="px-2 py-0.5 rounded-full bg-background border border-border/20 text-[10px] font-medium text-muted-foreground">
+                    {sortedTasks.length} classes
+                  </div>
+                )}
+              </div>
+
+              {/* Tasks List */}
+              <div className="p-3 flex flex-col gap-3 min-h-[100px] max-h-[calc(100vh-300px)] overflow-y-auto">
+                {sortedTasks.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center text-muted-foreground/40 py-8 text-sm italic">
+                    No classes scheduled
+                  </div>
+                ) : (
+                  sortedTasks.map(task => (
+                    <div
+                      key={task.id}
+                      onClick={() => handleOpenEditModal(task, { isNew: false })}
+                      className={cn(
+                        "group relative rounded-lg border-2 border-border/20 p-3 transition-all hover:shadow-lg cursor-pointer flex-shrink-0",
+                        task.color,
+                        "hover:border-border/40"
+                      )}
+                      style={{ minHeight: 'fit-content' }}
+                    >
+                      <div className="flex justify-between items-start gap-2 mb-2">
+                        <div className="font-bold text-base leading-tight break-words flex-1 min-w-0">
+                          {task.name}
+                        </div>
+                        <div className="text-xs font-medium opacity-90 whitespace-nowrap bg-black/10 px-2 py-1 rounded flex-shrink-0 ml-2">
+                          {formatTime(task.startHour ?? 0)} - {formatTime((task.startHour ?? 0) + task.duration)}
+                        </div>
+                      </div>
+                      
+                      {task.notes && (
+                        <div className="text-sm opacity-95 whitespace-pre-wrap leading-relaxed border-t border-black/10 pt-2 mt-2 break-words">
+                          {task.notes}
+                        </div>
+                      )}
+                      
+                      {!task.notes && (
+                        <div className="text-xs opacity-50 italic mt-1">
+                          No notes
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   const renderWeeklyView = () => {
     const getDayName = (dayOfWeek: number) => {
@@ -592,6 +685,14 @@ export default React.memo(function ClassSchedule() {
                   >
                     Weekly
                   </Button>
+                  <Button
+                    size="sm"
+                    variant={viewMode === "agenda" ? "default" : "ghost"}
+                    className="px-3 text-xs h-6"
+                    onClick={() => setViewMode("agenda")}
+                  >
+                    Agenda
+                  </Button>
                 </div>
 
                 {/* Add Class button */}
@@ -630,14 +731,16 @@ export default React.memo(function ClassSchedule() {
                 )}
               </div>
             </div>
-            <div className="border border-border/20 rounded-b-lg overflow-hidden">
+            <div className="border border-border/20 rounded-b-lg overflow-hidden h-[calc(100vh-200px)]">
               {viewMode === "daily" ? (
-                <div className="flex flex-col">
+                <div className="flex flex-col h-full overflow-y-auto">
                   {renderDayColumn('night')}
                   {renderDayColumn('morning')}
                   {renderDayColumn('afternoon')}
                   {renderDayColumn('evening')}
                 </div>
+              ) : viewMode === "agenda" ? (
+                renderAgendaView()
               ) : (
                 renderWeeklyView()
               )}
