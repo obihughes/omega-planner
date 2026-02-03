@@ -98,3 +98,6 @@ export const TASK_POOL_ITEM_HEIGHT = 90;
 
 /** Feature flag: Show Meals in main navigation (default: false). The route remains accessible at `/meals`. */
 export const SHOW_MEALS_IN_NAV = false;
+
+/** Vertical pixels per hour in the Agenda view */
+export const AGENDA_PIXELS_PER_HOUR = 60;

@@ -25,6 +25,7 @@ import {
   TIMELINE_COLUMN_HEIGHT,
   TASK_BASE_TOP,
   TASK_BASE_BOTTOM_PADDING,
+  AGENDA_PIXELS_PER_HOUR,
 } from "@/lib/constants";
 import { MemoizedTaskCard } from "./TaskCard";
 
@@ -61,6 +62,8 @@ export default React.memo(function ClassSchedule() {
 
   const lastDoubleClickTimestampRef = useRef<number>(0);
   const timelineScrollRef = useRef<HTMLDivElement>(null);
+  const agendaScrollRef = useRef<HTMLDivElement>(null);
+  const agendaDayRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   // Track component mount/unmount
   useEffect(() => {
@@ -78,6 +81,47 @@ export default React.memo(function ClassSchedule() {
     );
     return () => clearInterval(id);
   }, []);
+
+  // Auto-scroll to current day and time in agenda view
+  useEffect(() => {
+    if (viewMode !== "agenda" || !agendaScrollRef.current) return;
+
+    // Small delay to ensure DOM is ready
+    const timeoutId = setTimeout(() => {
+      const today = new Date();
+      const currentDayOfWeek = today.getDay();
+      const currentDayElement = agendaDayRefs.current.get(currentDayOfWeek);
+
+      if (currentDayElement && agendaScrollRef.current) {
+        // Scroll to current day horizontally
+        const scrollContainer = agendaScrollRef.current;
+        const dayLeft = currentDayElement.offsetLeft;
+        const dayWidth = currentDayElement.offsetWidth;
+        const containerWidth = scrollContainer.clientWidth;
+        
+        // Center the day in view
+        const scrollLeft = dayLeft - (containerWidth / 2) + (dayWidth / 2);
+        scrollContainer.scrollTo({
+          left: Math.max(0, scrollLeft),
+          behavior: 'smooth'
+        });
+
+        // Scroll to current time vertically
+        const currentHourFloat = today.getHours() + today.getMinutes() / 60;
+        const timeTop = currentHourFloat * AGENDA_PIXELS_PER_HOUR;
+        const containerHeight = scrollContainer.clientHeight;
+        
+        // Center the current time in view
+        const scrollTop = timeTop - (containerHeight / 2);
+        scrollContainer.scrollTo({
+          top: Math.max(0, scrollTop),
+          behavior: 'smooth'
+        });
+      }
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
+  }, [viewMode, weekMeta]);
 
   const selectedMeta = useMemo(() => {
     return (
@@ -311,94 +355,156 @@ export default React.memo(function ClassSchedule() {
   const HOURS_PER_ROW = 12; // AM (0-12) and PM (12-24)
 
   const renderAgendaView = () => {
+    const totalHours = TIMELINE_END_HOUR - TIMELINE_START_HOUR;
+    const totalHeight = totalHours * AGENDA_PIXELS_PER_HOUR;
+    const today = new Date();
+    const currentDayOfWeek = today.getDay();
+    const currentHourFloat = currentTimeForMarker.getHours() + currentTimeForMarker.getMinutes() / 60;
+
     return (
-      <div className="p-6 overflow-y-auto h-full">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 bg-background/50">
-          {orderedDayIndices.map((dow) => {
-            const meta = weekMeta.find((m) => m.dayOfWeek === dow);
-            if (!meta) return null;
+      <div className="flex flex-col h-full overflow-hidden">
+        <div className="flex flex-1 overflow-auto" ref={agendaScrollRef}>
+          {/* Sticky Time Axis */}
+          <div className="sticky left-0 z-20 bg-background border-r border-border/30 flex-shrink-0">
+            <div className="w-16">
+              {/* Header space */}
+              <div className="h-16 border-b border-border/30"></div>
+              {/* Time labels */}
+              <div className="relative" style={{ height: `${totalHeight}px` }}>
+                {Array.from({ length: totalHours + 1 }, (_, hour) => (
+                  <div
+                    key={`time-${hour}`}
+                    className={cn(
+                      "absolute left-0 right-0 text-xs text-muted-foreground px-2 py-1 border-b border-border/10",
+                      hour % 6 === 0 ? "font-medium text-foreground" : ""
+                    )}
+                    style={{ top: `${hour * AGENDA_PIXELS_PER_HOUR}px` }}
+                  >
+                    {formatTime(hour)}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
 
-            const dateKey = meta.dateKey;
-            const tasksForDay = tasksByDate.get(dateKey) || [];
-            const sortedTasks = [...tasksForDay].sort((a, b) => (a.startHour ?? 0) - (b.startHour ?? 0));
-            
-            const isToday = new Date().getDay() === dow;
+          {/* Days Container */}
+          <div className="flex">
+            {orderedDayIndices.map((dow) => {
+              const meta = weekMeta.find((m) => m.dayOfWeek === dow);
+              if (!meta) return null;
 
-            return (
-              <div 
-                key={dow} 
-                className={cn(
-                  "flex flex-col rounded-xl border bg-card shadow-sm h-fit",
-                  isToday ? "border-primary/50 shadow-md ring-1 ring-primary/20" : "border-border/40"
-                )}
-              >
-                {/* Day Header */}
-                <div className={cn(
-                  "px-4 py-3 border-b border-border/20 flex items-center justify-between flex-shrink-0",
-                  isToday ? "bg-primary/5" : "bg-muted/10"
-                )}>
-                  <div>
+              const dateKey = meta.dateKey;
+              const tasksForDay = tasksByDate.get(dateKey) || [];
+              const isToday = dow === currentDayOfWeek;
+
+              return (
+                <div
+                  key={dow}
+                  ref={(el) => {
+                    if (el) {
+                      agendaDayRefs.current.set(dow, el);
+                    } else {
+                      agendaDayRefs.current.delete(dow);
+                    }
+                  }}
+                  className={cn(
+                    "flex-shrink-0 border-r relative",
+                    isToday 
+                      ? "bg-primary/5 border-primary/50 border-l-4 border-l-primary" 
+                      : "bg-background border-border/30"
+                  )}
+                  style={{ width: '250px' }}
+                >
+                  {/* Day Header */}
+                  <div className={cn(
+                    "h-16 px-4 py-2 border-b border-border/30 flex flex-col justify-center relative",
+                    isToday ? "bg-primary/10" : "bg-muted/10"
+                  )}>
+                    {isToday && (
+                      <div className="absolute top-1 right-1 px-1.5 py-0.5 rounded bg-primary text-primary-foreground text-[10px] font-bold uppercase">
+                        Today
+                      </div>
+                    )}
                     <div className={cn(
-                      "text-sm font-semibold",
+                      "text-sm font-semibold text-center",
                       isToday ? "text-primary" : "text-foreground"
                     )}>
                       {meta.label}
                     </div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-xs text-muted-foreground text-center">
                       {meta.date.toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}
                     </div>
-                  </div>
-                  {sortedTasks.length > 0 && (
-                    <div className="px-2 py-0.5 rounded-full bg-background border border-border/20 text-[10px] font-medium text-muted-foreground">
-                      {sortedTasks.length} classes
-                    </div>
-                  )}
-                </div>
-
-                {/* Tasks List */}
-                <div className="p-3 flex flex-col gap-3">
-                  {sortedTasks.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center text-muted-foreground/40 py-8 text-sm italic">
-                      No classes scheduled
-                    </div>
-                  ) : (
-                    sortedTasks.map(task => (
-                      <div
-                        key={task.id}
-                        onClick={() => handleOpenEditModal(task, { isNew: false })}
-                        className={cn(
-                          "group relative rounded-lg border-2 border-border/20 p-3 transition-all hover:shadow-lg cursor-pointer",
-                          task.color,
-                          "hover:border-border/40"
-                        )}
-                      >
-                        <div className="flex justify-between items-start gap-2 mb-2">
-                          <div className="font-bold text-base leading-tight break-words flex-1 min-w-0">
-                            {task.name}
-                          </div>
-                          <div className="text-xs font-medium opacity-90 whitespace-nowrap bg-black/10 px-2 py-1 rounded flex-shrink-0 ml-2">
-                            {formatTime(task.startHour ?? 0)} - {formatTime((task.startHour ?? 0) + task.duration)}
-                          </div>
-                        </div>
-                        
-                        {task.notes && (
-                          <div className="text-sm opacity-95 whitespace-pre-wrap leading-relaxed border-t border-black/10 pt-2 mt-2 break-words">
-                            {task.notes}
-                          </div>
-                        )}
-                        
-                        {!task.notes && (
-                          <div className="text-xs opacity-50 italic mt-1">
-                            No notes
-                          </div>
-                        )}
+                    {tasksForDay.length > 0 && (
+                      <div className="text-xs text-muted-foreground text-center mt-1">
+                        {tasksForDay.length} classes
                       </div>
-                    ))
-                  )}
+                    )}
+                  </div>
+
+                  {/* Timeline Grid */}
+                  <div
+                    className="relative"
+                    style={{ height: `${totalHeight}px` }}
+                  >
+                    {/* Hour lines */}
+                    {Array.from({ length: totalHours + 1 }, (_, hour) => (
+                      <div
+                        key={`grid-${hour}`}
+                        className={cn(
+                          "absolute left-0 right-0 border-b",
+                          hour % 6 === 0 ? "border-border/40" : "border-border/10"
+                        )}
+                        style={{ top: `${hour * AGENDA_PIXELS_PER_HOUR}px` }}
+                      />
+                    ))}
+
+                    {/* Current time marker (only for today) */}
+                    {isToday && (
+                      <div
+                        className="absolute left-0 right-0 w-full h-0.5 bg-red-500 z-50 pointer-events-none"
+                        style={{ top: `${currentHourFloat * AGENDA_PIXELS_PER_HOUR}px` }}
+                      >
+                        <div
+                          className="absolute -top-1.5 left-0 w-3 h-3 bg-red-500 rounded-full border-2 border-background"
+                          style={{ left: '-6px' }}
+                        />
+                      </div>
+                    )}
+
+                    {/* Tasks */}
+                    {tasksForDay.map(task => {
+                      const startHour = task.startHour ?? 0;
+                      const taskTop = startHour * AGENDA_PIXELS_PER_HOUR;
+                      const taskHeight = task.duration * AGENDA_PIXELS_PER_HOUR;
+
+                      return (
+                        <div
+                          key={task.id}
+                          className="absolute left-1 right-1 cursor-pointer"
+                          style={{
+                            top: `${taskTop}px`,
+                            height: `${taskHeight}px`,
+                          }}
+                          onClick={() => handleOpenEditModal(task, { isNew: false })}
+                        >
+                          <MemoizedTaskCard
+                            task={task}
+                            height={taskHeight}
+                            onStartEdit={(taskToEdit, options) => handleOpenEditModal(taskToEdit, options)}
+                            onCopy={() => {}}
+                            onViewNotes={() => {}}
+                            onResizeStart={() => {}}
+                            onDragStart={() => {}}
+                            currentTime={currentTimeForMarker}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
     );
