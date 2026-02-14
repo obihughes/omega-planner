@@ -1,3 +1,12 @@
+## 2025-02-14
+
+- **Remove Beta Section** (2025-02-14)
+  - Removed all beta-related code to simplify the codebase.
+  - Deleted `app/beta/` directory and all subroutes (workspace, habits, tasks, weekly tasks, recipes, boards, search).
+  - Removed Beta navigation item and subviews from sidebar (`components/ui/Navigation.tsx`).
+  - Recipes functionality remains available via the Meals page; Workspace Today, Habits, and Tasks remain at `/projects/workspace`, `/habits`, and `/projects/tasks` respectively.
+  - **Files affected**: `components/ui/Navigation.tsx`, `app/beta/**` (deleted), `docs/structure.md`, `docs/changelog.md`
+
 ## 2025-12-26
 
 - **Bug Fix: PeriodModal ReferenceError** (2025-12-26)

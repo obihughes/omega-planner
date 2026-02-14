@@ -48,13 +48,6 @@ Additional feature routes in `/app` include:
 - `app/projects/workspace` — Project-only workspace: Today vertical list (project tasks with dueDate=today), Projects/Tasks on right; drag or “+ Today” to set dueDate
 - `app/visualizer` — 5-Year Visualizer (Calendar high-level view)
 
-#### `/app/beta`
-Preview and experimental pages moved under Beta:
-- `app/beta/workspace` — Workspace Today (was `/projects/workspace`)
-- `app/beta/habits` — Habits tracker (was `/habits`)
-- `app/beta/tasks` — All Tasks view (mirror of `projects/tasks`)
-- `app/beta/tasks/weekly` — Weekly Tasks scheduler (mirror of `projects/tasks/weekly`)
-
 #### `/planner-backup`
 Backup files for the planner functionality.
 

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   Calendar, CalendarDays, FolderKanban, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
-  Clock, Archive, Trash2, CalendarCheck, CalendarRange, Folder, Files, ClipboardList, Settings, FlaskConical, ChefHat
+  Clock, Archive, Trash2, CalendarCheck, CalendarRange, Folder, Files, ClipboardList, Settings
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
@@ -39,7 +39,7 @@ export function Navigation() {
         }
       }
     }
-    return new Set(['daily-planner', 'calendar', 'workspace', 'beta-features']);
+    return new Set(['daily-planner', 'calendar', 'workspace']);
   });
 
   const isResizing = useRef(false);
@@ -144,15 +144,6 @@ export function Navigation() {
     return null; // Prevent hydration mismatch
   }
 
-  const betaSubViews: any[] = [
-    { key: 'beta-activities', label: 'Activities', icon: Files, href: '/activities', active: pathname === '/activities' },
-    { key: 'beta-workspace', label: 'Workspace Today', icon: CalendarCheck, href: '/beta/workspace', active: pathname === '/beta/workspace' },
-    { key: 'beta-habits', label: 'Habits', icon: ClipboardList, href: '/beta/habits', active: pathname === '/beta/habits' },
-    { key: 'beta-tasks', label: 'Tasks', icon: ClipboardList, href: '/beta/tasks', active: pathname === '/beta/tasks' },
-    { key: 'beta-tasks-weekly', label: 'Weekly Tasks', icon: CalendarDays, href: '/beta/tasks/weekly', active: pathname === '/beta/tasks/weekly' },
-    { key: 'beta-recipes', label: 'Recipes', icon: ChefHat, href: '/beta/recipes', active: pathname === '/beta/recipes' }
-  ];
-
   const navItems = [
     {
       key: 'daily-planner',
@@ -203,15 +194,6 @@ export function Navigation() {
       icon: ClipboardList,
       active: pathname === '/meals',
       subViews: []
-    },
-    // Habits moved under Beta
-    {
-      key: 'beta-features',
-      href: '/beta',
-      label: 'Beta',
-      icon: FlaskConical,
-      active: pathname === '/beta' || pathname.startsWith('/beta/'),
-      subViews: betaSubViews
     }
   ];
 
@@ -348,11 +330,6 @@ export function Navigation() {
                                     router.push('/calendar');
                                   }
                                   setCalendarViewMode((subView as any).mode as any);
-                                }
-                              } else if (item.key === 'beta-features') {
-                                const target = (subView as any).href;
-                                if (target && pathname !== target) {
-                                  router.push(target);
                                 }
                               }
                             }} 
