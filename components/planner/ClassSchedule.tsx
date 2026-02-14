@@ -47,11 +47,6 @@ export default React.memo(function ClassSchedule() {
     totalTasks: Array.from(tasksByDate.values()).reduce((sum, tasks) => sum + tasks.length, 0),
   });
 
-  const [selectedDayOfWeek, setSelectedDayOfWeek] = useState<number>(() => {
-    if (typeof window === "undefined") return new Date().getDay();
-    return new Date().getDay();
-  });
-
   const [viewMode, setViewMode] = useState<"daily" | "weekly" | "agenda">("daily");
 
   const [currentTimeForMarker, setCurrentTimeForMarker] = useState<Date>(
@@ -62,6 +57,8 @@ export default React.memo(function ClassSchedule() {
 
   const lastDoubleClickTimestampRef = useRef<number>(0);
   const timelineScrollRef = useRef<HTMLDivElement>(null);
+  const dailyScrollRef = useRef<HTMLDivElement>(null);
+  const dailyDayRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const agendaScrollRef = useRef<HTMLDivElement>(null);
   const agendaDayRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
@@ -123,16 +120,39 @@ export default React.memo(function ClassSchedule() {
     return () => clearTimeout(timeoutId);
   }, [viewMode, weekMeta]);
 
-  const selectedMeta = useMemo(() => {
-    return (
-      weekMeta.find((m) => m.dayOfWeek === selectedDayOfWeek) ?? weekMeta[0]
-    );
-  }, [weekMeta, selectedDayOfWeek]);
+  // Auto-scroll to today's card in 7-day daily view
+  useEffect(() => {
+    if (viewMode !== "daily" || !dailyScrollRef.current) return;
+
+    const timeoutId = setTimeout(() => {
+      const currentDayOfWeek = new Date().getDay();
+      const currentDayElement = dailyDayRefs.current.get(currentDayOfWeek);
+      const scrollContainer = dailyScrollRef.current;
+      if (!currentDayElement || !scrollContainer) return;
+
+      const cardTop = currentDayElement.offsetTop;
+      const cardHeight = currentDayElement.offsetHeight;
+      const containerHeight = scrollContainer.clientHeight;
+      const scrollTop = cardTop - containerHeight / 2 + cardHeight / 2;
+
+      scrollContainer.scrollTo({
+        top: Math.max(0, scrollTop),
+        behavior: "smooth",
+      });
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
+  }, [viewMode, weekMeta]);
 
   const orderedDayIndices: number[] = useMemo(
     () => [1, 2, 3, 4, 5, 6, 0], // Monday-first ordering
     []
   );
+
+  const currentDayMeta = useMemo(() => {
+    const currentDow = new Date().getDay();
+    return weekMeta.find((m) => m.dayOfWeek === currentDow) ?? weekMeta[0];
+  }, [weekMeta]);
 
   const handleOpenEditModal = useCallback(
     (task: Task, options?: { isNew?: boolean; isFromPool?: boolean }) => {
@@ -204,8 +224,9 @@ export default React.memo(function ClassSchedule() {
   }, []);
 
   const handleAddNewClass = useCallback(() => {
-    console.log('➕ [ClassSchedule] handleAddNewClass called for day:', selectedMeta.dayOfWeek);
-    const dateKey = selectedMeta.dateKey;
+    if (!currentDayMeta) return;
+    console.log('➕ [ClassSchedule] handleAddNewClass called for day:', currentDayMeta.dayOfWeek);
+    const dateKey = currentDayMeta.dateKey;
     const newTask: Task = {
       id: `temp-new-task-${Date.now()}`,
       name: "New Class",
@@ -218,9 +239,9 @@ export default React.memo(function ClassSchedule() {
     };
     console.log('📝 [ClassSchedule] Opening edit modal for new task:', newTask.id);
     handleOpenEditModal(newTask, { isNew: true, isFromPool: false });
-  }, [selectedMeta, handleOpenEditModal]);
+  }, [currentDayMeta, handleOpenEditModal]);
 
-  const renderDayColumn = (period: TimelinePeriod) => {
+  const renderDayPeriod = (dayMeta: ClassScheduleDayMeta, period: TimelinePeriod) => {
     let startHour, endHour;
     switch (period) {
       case 'night': 
@@ -241,7 +262,7 @@ export default React.memo(function ClassSchedule() {
         break;
     }
 
-    const dateKey = selectedMeta.dateKey;
+    const dateKey = dayMeta.dateKey;
     const tasksForThisColumnDate = tasksByDate.get(dateKey) || [];
     
     const tasksToRender = tasksForThisColumnDate.filter(t => {
@@ -254,7 +275,7 @@ export default React.memo(function ClassSchedule() {
     // Current time marker (only show for today's day of week)
     let currentTimeMarker = null;
     const today = new Date();
-    if (today.getDay() === selectedDayOfWeek) {
+    if (today.getDay() === dayMeta.dayOfWeek) {
       const currentHourFloat = currentTimeForMarker.getHours() + currentTimeForMarker.getMinutes() / 60;
       if (currentHourFloat >= startHour && currentHourFloat < endHour) {
         const markerLeft = (currentHourFloat - startHour) * PIXELS_PER_HOUR;
@@ -295,9 +316,15 @@ export default React.memo(function ClassSchedule() {
       handleOpenEditModal(newTask, { isNew: true, isFromPool: false });
     };
 
+    const periodWidth = PIXELS_PER_HOUR * (endHour - startHour);
+
     return (
-      <div className="relative w-full flex flex-col"
-        style={{ minWidth: `${PIXELS_PER_HOUR * (endHour - startHour)}px`, height: `${TIMELINE_COLUMN_HEIGHT}px` }}
+      <div
+        className="relative w-full flex flex-col"
+        style={{
+          minWidth: `${periodWidth}px`,
+          height: `${TIMELINE_COLUMN_HEIGHT}px`,
+        }}
       >
         {renderTimeline(period)}
         <div className="relative flex-grow bg-background pt-6 cursor-pointer"
@@ -767,7 +794,7 @@ export default React.memo(function ClassSchedule() {
             <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card/95 backdrop-blur-sm">
               <div className="flex items-center gap-2">
                 <span className="text-foreground font-medium">
-                  {viewMode === "daily" ? selectedMeta.label : "Weekly Schedule"}
+                  {viewMode === "daily" ? "Class Schedule" : viewMode === "agenda" ? "Agenda Schedule" : "Weekly Schedule"}
                 </span>
                 <span className="text-xs text-muted-foreground">
                   • Recurring weekly schedule
@@ -812,39 +839,84 @@ export default React.memo(function ClassSchedule() {
                   + Add Class
                 </Button>
 
-                {/* Day selector (only show in daily view) */}
-                {viewMode === "daily" && (
-                  <div className="flex items-center gap-1">
-                    {orderedDayIndices.map((dow) => {
-                      const meta = weekMeta.find((m) => m.dayOfWeek === dow);
-                      if (!meta) return null;
-                      const isActive = dow === selectedDayOfWeek;
-                      return (
-                        <Button
-                          key={dow}
-                          size="sm"
-                          variant={isActive ? "default" : "ghost"}
-                          className={cn(
-                            "px-2 text-xs h-7",
-                            !isActive && "hover:bg-secondary"
-                          )}
-                          onClick={() => setSelectedDayOfWeek(dow)}
-                        >
-                          {meta.shortLabel}
-                        </Button>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
             </div>
-            <div className="border border-border/20 rounded-b-lg overflow-hidden h-[calc(100vh-200px)]">
+            <div
+              className={cn(
+                "overflow-hidden h-[calc(100vh-200px)]",
+                viewMode !== "daily" && "border border-border/20 rounded-b-lg"
+              )}
+            >
               {viewMode === "daily" ? (
-                <div className="flex flex-col h-full overflow-y-auto">
-                  {renderDayColumn('night')}
-                  {renderDayColumn('morning')}
-                  {renderDayColumn('afternoon')}
-                  {renderDayColumn('evening')}
+                <div className="flex flex-col h-full overflow-y-auto" ref={dailyScrollRef}>
+                  <div className="flex justify-center p-4">
+                    <div
+                      className="border border-border/20 rounded-b-lg overflow-hidden space-y-6"
+                      style={{
+                        width: `${(TIMELINE_SPLIT_HOUR_2 - TIMELINE_SPLIT_HOUR_1) * PIXELS_PER_HOUR}px`,
+                        minWidth: `${(TIMELINE_SPLIT_HOUR_2 - TIMELINE_SPLIT_HOUR_1) * PIXELS_PER_HOUR}px`,
+                      }}
+                    >
+                      {orderedDayIndices.map((dow) => {
+                        const meta = weekMeta.find((m) => m.dayOfWeek === dow);
+                        if (!meta) return null;
+                        const isToday = meta.dayOfWeek === new Date().getDay();
+                        const dayTasks = tasksByDate.get(meta.dateKey) || [];
+
+                        return (
+                          <div
+                            key={dow}
+                            ref={(el) => {
+                              if (el) {
+                                dailyDayRefs.current.set(dow, el);
+                              } else {
+                                dailyDayRefs.current.delete(dow);
+                              }
+                            }}
+                            className={cn(
+                              "bg-card rounded-lg shadow-sm border overflow-hidden",
+                              isToday ? "border-primary/50" : "border-border"
+                            )}
+                            style={{
+                              width: `${(TIMELINE_SPLIT_HOUR_2 - TIMELINE_SPLIT_HOUR_1) * PIXELS_PER_HOUR}px`,
+                              minWidth: `${(TIMELINE_SPLIT_HOUR_2 - TIMELINE_SPLIT_HOUR_1) * PIXELS_PER_HOUR}px`,
+                            }}
+                          >
+                            <div className={cn(
+                              "flex items-center justify-between px-4 py-2 border-b bg-card/95 backdrop-blur-sm",
+                              isToday ? "border-primary/30" : "border-border"
+                            )}>
+                              <div className="flex items-center gap-2">
+                                <span className={cn(
+                                  "font-medium",
+                                  isToday ? "text-primary" : "text-foreground"
+                                )}>
+                                  {meta.label}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {meta.date.toLocaleDateString(undefined, { month: "long", day: "numeric" })}
+                                </span>
+                                {isToday && (
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary text-primary-foreground font-bold uppercase">
+                                    Today
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-xs text-muted-foreground">
+                                {dayTasks.length} {dayTasks.length === 1 ? "class" : "classes"}
+                              </span>
+                            </div>
+                            <div className="flex flex-col">
+                              {renderDayPeriod(meta, 'night')}
+                              {renderDayPeriod(meta, 'morning')}
+                              {renderDayPeriod(meta, 'afternoon')}
+                              {renderDayPeriod(meta, 'evening')}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               ) : viewMode === "agenda" ? (
                 renderAgendaView()

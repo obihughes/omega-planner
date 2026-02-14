@@ -99,7 +99,11 @@ Modal for viewing the notes of a task.
 The Class Schedule view (`/class-schedule`) provides a recurring weekly timetable where entries are stored by day-of-week instead of a specific date. Implementation is in `components/planner/ClassSchedule.tsx` with state handled by `hooks/useClassScheduleState.ts` and storage handled by `utils/classScheduleStorage.ts`.
 
 **Key Features:**
-- **Daily View**: Traditional timeline showing one day at a time with 4 time periods (night, morning, afternoon, evening)
+- **Daily View (7-Day Stack)**: Timeline showing all 7 days stacked vertically, each split into 4 time periods (night, morning, afternoon, evening)
+  - Uses the same timeline scale as the Daily Planner daily view
+  - Uses a centered fixed-size timeline container so zoom does not distort block proportions
+  - Vertically scrollable when all days do not fit on screen
+  - Auto-scrolls to center the current day when the view opens
 - **Weekly View**: AM/PM row-based layout matching the daily planner's WeeklyView design
   - Each day shows two rows: AM (12:00 AM - 11:59 AM) and PM (12:00 PM - 11:59 PM)
   - Sticky day labels showing day name, date, and month
@@ -110,9 +114,9 @@ The Class Schedule view (`/class-schedule`) provides a recurring weekly timetabl
 - **Add Classes**: Click "+ Add Class" button or double-click timeline to create new recurring classes
 - **Edit Classes**: Click any existing class card to edit name, time, duration, color, and notes
 - **Delete Classes**: Delete classes via the edit modal
-- **View Toggle**: Switch between Daily and Weekly views with a simple toggle button
+- **View Toggle**: Switch between Daily, Weekly, and Agenda views
 - **Persistence**: All class schedules are saved to localStorage and persist across sessions
-- **Day Navigation**: Quick day selector tabs in daily view for easy navigation between weekdays
+- **Day Context**: Daily view highlights today and shows per-day class counts in each stacked day card
 
 **Technical Notes:**
 - Classes are stored by day-of-week (0 = Sunday ... 6 = Saturday) rather than specific dates

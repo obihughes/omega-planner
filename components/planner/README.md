@@ -142,3 +142,18 @@ DailyPlanner
 4. **Inbox Management**: Use Monthly View to create and manage inbox tasks
 5. **Task Management**: Edit tasks through modals accessible from all views
 6. **Workflow**: Create tasks in Inbox (Monthly) → Assign to dates (Monthly) → Schedule times (Daily) 
+
+## Class Schedule (Recurring)
+
+**File**: `ClassSchedule.tsx`  
+**Route**: `/class-schedule`
+
+**Views:**
+- **Daily**: 7 vertically stacked day cards (Monday-first ordering), each rendering night/morning/afternoon/evening timeline segments at the same scale used by Daily Planner daily mode.
+- **Weekly**: AM/PM row-based recurring weekly layout.
+- **Agenda**: Vertical time grid with horizontally arranged days.
+
+**Daily View Behavior:**
+- Supports vertical scrolling through all seven day cards.
+- Auto-scrolls to today's day card when opening/switching into daily view.
+- Preserves class CRUD flows (double-click add, card click edit, modal delete) and keeps recurring storage keyed by day-of-week.
