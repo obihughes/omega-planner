@@ -1,5 +1,15 @@
 ## 2025-02-14
 
+- **Class Schedule: Remove Night Row** (2025-02-14)
+  - Removed the night (12am–6am) row from Class Schedule; each day now shows morning, afternoon, and evening only.
+  - **Files affected**: `components/planner/ClassSchedule.tsx`, `docs/planner.md`, `components/planner/README.md`
+
+- **Class Schedule Single View** (2025-02-14)
+  - Removed Weekly and Agenda views from Class Schedule; kept only the 7-day stacked Daily view.
+  - Removed view mode toggle UI.
+  - Removed `AGENDA_PIXELS_PER_HOUR` from `lib/constants.ts`.
+  - **Files affected**: `components/planner/ClassSchedule.tsx`, `lib/constants.ts`, `docs/planner.md`, `components/planner/README.md`
+
 - **Phase 7: Final Nav and Documentation** (2025-02-14)
   - Deleted `app/meals/page.tsx` (replaced by `/recipes`).
   - Updated default `expandedNavItems`: removed `'workspace'`.

@@ -95,6 +95,3 @@ export const DURATION_OPTIONS = [
 ]; 
 
 export const TASK_POOL_ITEM_HEIGHT = 90;
-
-/** Vertical pixels per hour in the Agenda view */
-export const AGENDA_PIXELS_PER_HOUR = 60;

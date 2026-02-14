@@ -148,12 +148,8 @@ DailyPlanner
 **File**: `ClassSchedule.tsx`  
 **Route**: `/class-schedule`
 
-**Views:**
-- **Daily**: 7 vertically stacked day cards (Monday-first ordering), each rendering night/morning/afternoon/evening timeline segments at the same scale used by Daily Planner daily mode.
-- **Weekly**: AM/PM row-based recurring weekly layout.
-- **Agenda**: Vertical time grid with horizontally arranged days.
-
-**Daily View Behavior:**
+**View:**
+- 7 vertically stacked day cards (Monday-first ordering), each rendering morning/afternoon/evening timeline segments at the same scale used by Daily Planner daily mode.
 - Supports vertical scrolling through all seven day cards.
-- Auto-scrolls to today's day card when opening/switching into daily view.
+- Auto-scrolls to today's day card when the view opens.
 - Preserves class CRUD flows (double-click add, card click edit, modal delete) and keeps recurring storage keyed by day-of-week.
