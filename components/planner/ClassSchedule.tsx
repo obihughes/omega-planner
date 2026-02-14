@@ -397,12 +397,12 @@ export default React.memo(function ClassSchedule() {
                             )}>
                               <div className="flex items-center gap-2">
                                 <span className={cn(
-                                  "font-medium",
+                                  "text-lg font-semibold",
                                   isToday ? "text-primary" : "text-foreground"
                                 )}>
                                   {meta.label}
                                 </span>
-                                <span className="text-xs text-muted-foreground">
+                                <span className="text-sm text-muted-foreground">
                                   {meta.date.toLocaleDateString(undefined, { month: "long", day: "numeric" })}
                                 </span>
                                 {isToday && (
