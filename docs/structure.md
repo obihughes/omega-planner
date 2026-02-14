@@ -24,11 +24,12 @@ App icon (favicon) is file-based: `app/icon.svg`. Replace this file to change th
 Reusable React components used throughout the application. These components are organized by feature or functionality.
 Current notable feature folders include:
 - `components/planner` – Daily/Weekly scheduling
-- `components/projects` – Workspace views
+- `components/projects` – Project and task management
 - `components/documents` – Text canvas editor
 - `components/calendar` – Calendars and modals
-- `components/meals` – Meal planning components (see `MealPlanner`)
- - `components/ui` – Shared UI primitives (layout, inputs, tabs, etc.)
+- `components/recipes` – Recipes view (pantry, shopping, recipes)
+- `components/meals` – Pantry and shopping sidebars (used by Recipes page)
+- `components/ui` – Shared UI primitives (layout, inputs, tabs, etc.)
 
 #### `/lib`
 Core library code and utilities that are fundamental to the application's functionality. This includes database configurations, authentication setup, and other core services.
@@ -36,16 +37,15 @@ Core library code and utilities that are fundamental to the application's functi
 #### `/utils`
 Helper functions, custom hooks, and utility functions that are used across different parts of the application.
 Includes storage helpers like:
-- `utils/mealsStorage.ts` – Meals local storage (consumed by `hooks/useMeals.ts` and exposed via `app/context/MealsContext.tsx`)
-- `utils/habitsStorage.ts` – Habits local storage
+- `utils/pantryStorage.ts` – Pantry local storage
+- `utils/recipesStorage.ts` – Recipes local storage
+- `utils/shoppingStorage.ts` – Shopping list local storage
 
 #### `/docs`
 Project documentation including setup guides, component documentation, and development guidelines.
 
 Additional feature routes in `/app` include:
-- `app/meals` — Meals planner page
-- `app/projects/tasks/weekly` — Weekly scheduler for project tasks (drag to set due dates)
-- `app/projects/workspace` — Project-only workspace: Today vertical list (project tasks with dueDate=today), Projects/Tasks on right; drag or “+ Today” to set dueDate
+- `app/recipes` — Recipes page (pantry, shopping list, recipe management)
 - `app/visualizer` — 5-Year Visualizer (Calendar high-level view)
 
 #### `/planner-backup`

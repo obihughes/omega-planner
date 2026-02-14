@@ -1,4 +1,3 @@
-export * from './MealsContext';
 export * from './PlannerContext';
 export * from './PlannerProvider';
 export * from './ViewModeContext';

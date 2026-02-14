@@ -1,9 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { RecipeItem, RecipeIngredient } from '@/types/recipes';
+import { RecipeItem } from '@/types/recipes';
 import { RecipesStorage } from '@/utils/recipesStorage';
-import { usePantry } from './usePantry';
+import { usePantryContext } from '@/app/context/PantryContext';
 import { buildNormalizedNameSet, normalizeIngredientName } from '@/utils/ingredientUtils';
 
 function rid() { return `recipe_${Date.now()}_${Math.random().toString(36).slice(2,8)}`; }
@@ -12,14 +12,11 @@ export function useRecipes() {
   const [recipes, setRecipes] = useState<RecipeItem[]>([]);
   const loaded = useRef(false);
   const lastSavedData = useRef<string>('');
-  const { items } = usePantry();
+  const { items } = usePantryContext();
 
   useEffect(() => { 
-    console.log('🧑‍🍳 useRecipes: Loading initial data from storage...');
     const loadedRecipes = RecipesStorage.load(); 
-    console.log('🧑‍🍳 useRecipes: Loaded initial data:', loadedRecipes);
     if (loadedRecipes.length === 0) {
-      console.log('🧑‍🍳 useRecipes: No recipes found, creating starter recipes...');
       // Add starter recipes
       const starters = [
         { name: 'Scrambled Eggs', ingredients: [{ name: 'eggs' }, { name: 'butter' }, { name: 'salt' }] },
@@ -30,7 +27,6 @@ export function useRecipes() {
       ];
       const now = new Date().toISOString();
       const starterRecipes = starters.map(s => ({ ...s, id: rid(), createdAt: now, updatedAt: now }));
-      console.log('🧑‍🍳 useRecipes: Created starter recipes:', starterRecipes);
       setRecipes(starterRecipes);
     } else {
       setRecipes(loadedRecipes);
@@ -38,7 +34,6 @@ export function useRecipes() {
     // Seed lastSavedData so first save effect doesn't overwrite
     lastSavedData.current = JSON.stringify(loadedRecipes.length === 0 ? [] : loadedRecipes);
     loaded.current = true; 
-    console.log('🧑‍🍳 useRecipes: Initial load completed');
   }, []);
 
   // Sync across tabs/windows when localStorage changes
@@ -52,23 +47,11 @@ export function useRecipes() {
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
   useEffect(() => { 
-    console.log('🧑‍🍳 useRecipes: Save effect triggered with recipes:', recipes);
-    if (!loaded.current) {
-      console.log('🧑‍🍳 useRecipes: Skipping save - not loaded yet');
-      return;
-    }
-    
-    // Prevent saving the same data multiple times
+    if (!loaded.current) return;
     const currentData = JSON.stringify(recipes);
-    if (lastSavedData.current === currentData) {
-      console.log('🧑‍🍳 useRecipes: Skipping save - data unchanged');
-      return;
-    }
-    
-    console.log('🧑‍🍳 useRecipes: Saving recipes to storage:', recipes);
+    if (lastSavedData.current === currentData) return;
     RecipesStorage.save(recipes);
     lastSavedData.current = currentData;
-    console.log('🧑‍🍳 useRecipes: Save completed');
   }, [recipes]);
 
   const pantrySet = useMemo(() => new Set(items.map(i => i.name.toLowerCase())), [items]);
@@ -88,35 +71,18 @@ export function useRecipes() {
   }, [normalizedPantry]);
 
   const addRecipe = useCallback((data: Omit<RecipeItem, 'id' | 'createdAt' | 'updatedAt'>) => {
-    console.log('🧑‍🍳 useRecipes.addRecipe called with:', data);
     const now = new Date().toISOString();
     const recipe: RecipeItem = { ...data, id: rid(), createdAt: now, updatedAt: now };
-    console.log('🧑‍🍳 useRecipes.addRecipe: Created recipe:', recipe);
-    setRecipes(prev => {
-      console.log('🧑‍🍳 useRecipes.addRecipe: Current recipes before add:', prev);
-      const next = [recipe, ...prev];
-      console.log('🧑‍🍳 useRecipes.addRecipe: New recipes array:', next);
-      return next;
-    });
+    setRecipes(prev => [recipe, ...prev]);
     return recipe;
   }, []);
 
   const removeRecipe = useCallback((id: string) => {
-    console.log('🧑‍🍳 useRecipes.removeRecipe called with id:', id);
-    setRecipes(prev => {
-      const filtered = prev.filter(r => r.id !== id);
-      console.log('🧑‍🍳 useRecipes.removeRecipe: Filtered recipes:', filtered);
-      return filtered;
-    });
+    setRecipes(prev => prev.filter(r => r.id !== id));
   }, []);
 
   const updateRecipe = useCallback((id: string, updates: Partial<Omit<RecipeItem, 'id'>>) => {
-    console.log('🧑‍🍳 useRecipes.updateRecipe called with:', { id, updates });
-    setRecipes(prev => {
-      const updated = prev.map(r => r.id === id ? { ...r, ...updates, updatedAt: new Date().toISOString() } : r);
-      console.log('🧑‍🍳 useRecipes.updateRecipe: Updated recipes:', updated);
-      return updated;
-    });
+    setRecipes(prev => prev.map(r => r.id === id ? { ...r, ...updates, updatedAt: new Date().toISOString() } : r));
   }, []);
 
   const cookable = useMemo(() => recipes.filter(canMake), [recipes, canMake]);
@@ -134,7 +100,7 @@ export function useRecipes() {
   // Legacy suggested for backwards compatibility
   const suggestedLegacy = useMemo(() => recipes.filter(r => !canMake(r) && matchPercent(r) >= 60).sort((a,b) => matchPercent(b) - matchPercent(a)), [recipes, canMake, matchPercent]);
 
-  return { recipes, addRecipe, removeRecipe, updateRecipe, canMake, matchPercent, cookable, suggested, suggestedTiered: suggested, suggestedLegacy };
+  return { recipes, addRecipe, removeRecipe, updateRecipe, canMake, matchPercent, cookable, suggestedTiered: suggested };
 }
 
 

@@ -1,5 +1,56 @@
 ## 2025-02-14
 
+- **Phase 7: Final Nav and Documentation** (2025-02-14)
+  - Deleted `app/meals/page.tsx` (replaced by `/recipes`).
+  - Updated default `expandedNavItems`: removed `'workspace'`.
+  - Removed `export * from './meals'` from `components/index.ts`.
+  - Updated `docs/structure.md`: removed habits, activities, workspace, tasks, focus, meals; added recipes.
+  - Updated `docs/utils.md`: removed HabitsStorage, Meals Storage, ActivitiesStorage sections.
+  - Updated `README.md`: replaced Workspace Today and Meals with Recipes.
+  - Updated `hooks/README.md`: removed useMeals; simplified usePantry.
+
+- **Phase 6: Link Updates** (2025-02-14)
+  - WeeklyGoalsCalendarView `createTaskFromGoal`: redirect to `/projects` instead of `/projects/tasks` (tasks page removed).
+
+- **Phase 5: Recipes Extraction** (2025-02-14)
+  - Created standalone `/recipes` page with PantryProvider, ShoppingProvider, PantrySidebar, ShoppingListSidebar, RecipesView.
+  - Created `components/recipes/RecipesView.tsx` (from RecipesSidebar, no meal logic).
+  - Created `components/recipes/index.ts`.
+  - Updated Navigation: replaced Meals with Recipes (href: /recipes, icon: ChefHat).
+  - Added recipes export to `components/index.ts`.
+
+- **Phase 4: Hidden Pages Removal** (2025-02-14)
+  - Deleted pages: `/habits`, `/projects/workspace`, `/projects/tasks`, `/projects/tasks/weekly`, `/activities`, `/focus/mini`.
+  - Deleted supporting code: `utils/habitsStorage.ts`, `types/habits.ts`, `utils/activitiesStorage.ts`.
+  - Updated `types/index.ts` (removed habits), `utils/index.ts` (removed habitsStorage, activitiesStorage).
+  - Removed obsolete comment from Navigation.tsx.
+
+- **Phase 3: Beta Verification** (2025-02-14)
+  - Verified: Beta already removed. No `app/beta/` directory; no beta references in Navigation or code. No changes needed.
+
+- **Phase 2: Nav Filtering** (2025-02-14)
+  - Removed `SHOW_MEALS_IN_NAV` constant from `lib/constants.ts`.
+  - Removed `filteredNavItems`; Navigation now uses `navItems` directly.
+  - **Files affected**: `lib/constants.ts`, `components/ui/Navigation.tsx`
+
+- **Phase 1: Dead Code Removal – Meals** (2025-02-14)
+  - Removed meal planning: MealPlanner, MealsContext, mealsStorage, types/meals, useMeals.
+  - PantrySidebar: Removed useMealsContext, "Cookable now (today)", "Almost there (missing items)" sections; kept pantry items list.
+  - RecipesSidebar: Removed useMealsContext, B/L/D "add to meal" buttons; kept recipe list, cookable, suggestions, add-to-shopping.
+  - ShoppingListSidebar: Removed useMealsContext, "Add missing ingredients" (meal-derived); kept manual shopping list.
+  - usePantry: Removed canCook, missingFor, MealItem dependency.
+  - app/meals/page: Removed MealsProvider, MealPlanner; now shows Pantry, Shopping, Recipes sidebars only.
+  - **Files deleted**: `components/meals/MealPlanner.tsx`, `app/context/MealsContext.tsx`, `utils/mealsStorage.ts`, `types/meals.ts`, `hooks/useMeals.ts`
+  - **Files affected**: `components/meals/PantrySidebar.tsx`, `components/meals/RecipesSidebar.tsx`, `components/meals/ShoppingListSidebar.tsx`, `app/meals/page.tsx`, `hooks/usePantry.ts`, `app/context/index.ts`, `components/meals/index.ts`, `hooks/index.ts`, `types/index.ts`
+
+- **Meals Code Cleanup** (2025-02-14)
+  - Removed all `console.log` debug statements from meals-related code (PantrySidebar, RecipesSidebar, usePantry, useRecipes).
+  - Consolidated pantry state: MealPlanner, ShoppingListSidebar, and useRecipes now use `usePantryContext` instead of separate `usePantry` instances, ensuring a single shared pantry across the meals page.
+  - MealPlanner now uses `MEAL_SLOTS` and `MEAL_SLOT_LABELS` from `types/meals` instead of local constants.
+  - Fixed meals page provider nesting and indentation; extracted `dateKey` to avoid repeated `getTodayDateKey()` calls.
+  - Removed unused `suggestedLegacy` from useRecipes return.
+  - **Files affected**: `components/meals/MealPlanner.tsx`, `components/meals/PantrySidebar.tsx`, `components/meals/RecipesSidebar.tsx`, `components/meals/ShoppingListSidebar.tsx`, `app/meals/page.tsx`, `hooks/usePantry.ts`, `hooks/useRecipes.ts`, `docs/changelog.md`
+
 - **Remove Beta Section** (2025-02-14)
   - Removed all beta-related code to simplify the codebase.
   - Deleted `app/beta/` directory and all subroutes (workspace, habits, tasks, weekly tasks, recipes, boards, search).

@@ -1,11 +1,3 @@
-## HabitsStorage
-
-- Key: `omega-planner-habits-v1`
-- Structure: `{ version, habits: Habit[], completionsByDate: Record<dateKey, Record<habitId, number>>, lastUpdated }`
-- API:
-  - `load()` → `{ habits, completionsByDate }`
-  - `save(habits, completionsByDate)`
-
 # Utility Functions Documentation
 
 This document provides documentation for the utility functions available in the project.
@@ -28,11 +20,6 @@ Functions:
 - Local storage operations
 - Data caching
 - State persistence helpers
-
-### Meals Storage (`/utils/mealsStorage.ts`)
-- Persists meal plans per date with three slots: breakfast, lunch, dinner.
-- Structure: `MealsStorageData` with `mealsByDate: Record<string, MealsBySlot>`.
-- Helpers: `ensureMealsForDate()` to initialize per-date structure safely.
 
 ## Usage Guidelines
 

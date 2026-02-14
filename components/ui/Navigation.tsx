@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   Calendar, CalendarDays, FolderKanban, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
-  Clock, Archive, Trash2, CalendarCheck, CalendarRange, Folder, Files, ClipboardList, Settings
+  Clock, Archive, Trash2, CalendarCheck, CalendarRange, Folder, Files, ClipboardList, ChefHat, Settings
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
@@ -15,8 +15,6 @@ import { useCalendarView } from '@/app/context/CalendarViewContext';
 import { useSidebar } from '@/app/context/SidebarContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { SHOW_MEALS_IN_NAV } from '@/lib/constants';
-
 export function Navigation() {
   const { isCollapsed, sidebarWidth, toggleSidebar, setSidebarWidth } = useSidebar();
   
@@ -39,7 +37,7 @@ export function Navigation() {
         }
       }
     }
-    return new Set(['daily-planner', 'calendar', 'workspace']);
+    return new Set(['daily-planner', 'calendar']);
   });
 
   const isResizing = useRef(false);
@@ -186,18 +184,15 @@ export function Navigation() {
       active: pathname === '/documents',
       subViews: []
     },
-    // Focus merged into Workspace Today (/projects/workspace)
     {
-      key: 'meals',
-      href: '/meals',
-      label: 'Meals',
-      icon: ClipboardList,
-      active: pathname === '/meals',
+      key: 'recipes',
+      href: '/recipes',
+      label: 'Recipes',
+      icon: ChefHat,
+      active: pathname === '/recipes',
       subViews: []
     }
   ];
-
-  const filteredNavItems = navItems.filter((item) => item.href !== '/meals' || SHOW_MEALS_IN_NAV);
 
   return (
     <>
@@ -237,7 +232,7 @@ export function Navigation() {
         {/* Navigation Links */}
         <div className="flex-1 py-1 overflow-y-auto">
           <div className="space-y-0.5">
-            {filteredNavItems.map((item) => {
+            {navItems.map((item) => {
               const Icon = item.icon;
               const showSubViews = true;
 

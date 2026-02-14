@@ -158,14 +158,14 @@ export function WeeklyGoalsCalendarView({ calendarData, onNavigateToDaily }: Wee
   }, []);
 
   const createTaskFromGoal = useCallback((goal: WeeklyGoal, dateKey: string) => {
-    // Navigate to tasks page with pre-filled data
+    // Navigate to projects page (tasks page removed); user can create project/task from projects list
     const params = new URLSearchParams({
       action: 'create',
       title: goal.title,
       dueDate: dateKey,
       notes: `From weekly goal: ${goal.title}`
     });
-    window.location.href = `/projects/tasks?${params.toString()}`;
+    window.location.href = `/projects?${params.toString()}`;
   }, []);
 
   const moveGoal = useCallback((goalId: string, fromDateKey: string, toDateKey: string) => {

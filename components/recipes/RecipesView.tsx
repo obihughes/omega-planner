@@ -5,13 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useRecipes } from '@/hooks/useRecipes';
 import { useShopping } from '@/hooks/useShopping';
-import { RecipeFormModal } from '../modals/RecipeFormModal';
+import { RecipeFormModal } from '@/components/modals/RecipeFormModal';
 import { RecipeItem } from '@/types/recipes';
 import { Plus, Trash2 } from 'lucide-react';
 import { usePantryContext } from '@/app/context/PantryContext';
 import { normalizeIngredientName } from '@/utils/ingredientUtils';
 
-export const RecipesSidebar: React.FC = () => {
+export const RecipesView: React.FC = () => {
   const { recipes, addRecipe, removeRecipe, updateRecipe, cookable, suggestedTiered, matchPercent } = useRecipes();
   const { items: pantryItems } = usePantryContext();
   const { add: addToShopping } = useShopping();
@@ -81,14 +81,14 @@ export const RecipesSidebar: React.FC = () => {
                     <li key={r.id} className="text-sm space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="truncate pr-2 font-medium">
-                          {r.name} 
+                          {r.name}
                           <span className="text-xs text-green-600 ml-1">
                             ({haveCount}/{r.ingredients.length})
                           </span>
                         </span>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => missingIngredients.forEach(i => addToShopping(i.name))}
                           disabled={missingIngredients.length === 0}
                         >
@@ -98,8 +98,7 @@ export const RecipesSidebar: React.FC = () => {
                       <div className="text-xs text-muted-foreground">
                         {missingIngredients.length > 0
                           ? `Missing: ${missingIngredients.map(i => i.name).join(', ')}`
-                          : 'You have all ingredients!'
-                        }
+                          : 'You have all ingredients!'}
                       </div>
                     </li>
                   );
@@ -128,9 +127,9 @@ export const RecipesSidebar: React.FC = () => {
                             ({haveCount}/{r.ingredients.length})
                           </span>
                         </span>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => missingIngredients.forEach(i => addToShopping(i.name))}
                         >
                           Add missing
@@ -166,9 +165,9 @@ export const RecipesSidebar: React.FC = () => {
                             ({haveCount}/{r.ingredients.length})
                           </span>
                         </span>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => missingIngredients.forEach(i => addToShopping(i.name))}
                         >
                           Add missing
@@ -196,16 +195,15 @@ export const RecipesSidebar: React.FC = () => {
 
           <div>
             <div className="text-xs text-muted-foreground mb-2">All recipes</div>
-            <ul className="space-y-1 max-h-32 overflow-y-auto">
+            <ul className="space-y-1 max-h-64 overflow-y-auto">
               {recipes.map(r => {
                 const canMake = cookable.includes(r);
                 const percent = matchPercent(r);
                 const missingCount = r.ingredients.filter(i => !pantrySet.has(normalizeIngredientName(i.name))).length;
-                
+
                 return (
                   <li key={r.id} className="group flex items-center justify-between text-sm hover:bg-accent rounded-md">
                     <div className="flex items-center gap-2 cursor-pointer flex-grow p-1" onClick={() => handleOpenEditRecipeModal(r)}>
-                      {/* Match indicator */}
                       <div className="flex items-center gap-1">
                         {canMake ? (
                           <span className="w-2 h-2 bg-green-500 rounded-full" title="Can make now"></span>
@@ -222,9 +220,7 @@ export const RecipesSidebar: React.FC = () => {
                       <span className="truncate">
                         {r.name}
                         {!canMake && missingCount > 0 && (
-                          <span className="text-xs text-muted-foreground ml-1">
-                            (-{missingCount})
-                          </span>
+                          <span className="text-xs text-muted-foreground ml-1">(-{missingCount})</span>
                         )}
                       </span>
                     </div>
@@ -249,6 +245,4 @@ export const RecipesSidebar: React.FC = () => {
   );
 };
 
-export default RecipesSidebar;
-
-
+export default RecipesView;

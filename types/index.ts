@@ -33,14 +33,6 @@ export type {
 } from './calendar';
 
 export type {
-  MealItem,
-  MealsBySlot,
-  MealsStorageData,
-  MealSlot,
-  IngredientDetail
-} from './meals';
-
-export type {
   PantryItem,
   PantryStorageData
 } from './pantry';
@@ -54,10 +46,4 @@ export type {
 export type {
   ShoppingItem,
   ShoppingStorageData
-} from './shopping'; 
-
-// Habits
-export type {
-  Habit,
-  HabitsStorageData
-} from './habits';
+} from './shopping';

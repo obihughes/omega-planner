@@ -41,14 +41,12 @@ npm run dev:clean
 - **Task inbox** for unscheduled tasks
 - **Pinned tasks** for quick access
 
-### Workspace Today
-- Unified workspace at `/projects/workspace` combining focus mode timer with project task management
-- **Session Timer**: Built-in timer with target durations (25/45/60 min) and sound notifications
-- **Simple Tasks**: Create non-structured tasks for quick planning without project association
-- **Project Integration**: Drag project tasks to today or use quick-add button
-- **Backlog Management**: Organize and prioritize tasks with drag-and-drop
-- **Celebration Feedback**: Confetti and sound effects on task completion
-- Local persistence via `omega-planner-workspace-today-v1`, `omega-planner-workspace-sessions-v1`, `omega-planner-workspace-target-v1`, and `omega-planner-workspace-sound-v1`
+### Recipes
+- Recipes page at `/recipes` with pantry, shopping list, and recipe management
+- **Pantry**: Track ingredients with quantity and category
+- **Shopping List**: Add missing ingredients from recipe suggestions
+- **Recipe Suggestions**: Tiered matching (75%+, 50-74%, 25-49%) based on pantry contents
+- Local persistence via pantry, recipes, and shopping storage
 
 ### Calendar Features
 - Year-view calendar with event and period management
@@ -74,7 +72,7 @@ npm run dev:clean
 - `/app` - Next.js application routes and pages
 - `/components` - React components organized by functionality
   - `/components/planner` - Main planner-specific components
-  - `/components/meals` - Meal planning components
+  - `/components/recipes` - Recipes view (pantry, shopping, recipes)
   - `/components/ui` - Reusable UI components
   - `/components/ErrorBoundary.tsx` - Global error boundary for stability
 - `/hooks` - Custom React hooks for state management and logic
@@ -167,10 +165,9 @@ npm test
 - **Documentation**: Added JSDoc comments and README files across the codebase
 - **Improved Type Safety**: Enhanced TypeScript type definitions and interfaces
 
-### Meals Page
-- Weekly Meal Planner at `/meals` with a 7-column grid and Breakfast/Lunch/Dinner slots.
-- Sidebar link is hidden by default; enable via the `SHOW_MEALS_IN_NAV` flag in `lib/constants.ts` (default: false). Route and features remain accessible directly at `/meals`.
-- Persistence: Meals are persisted in localStorage via `utils/mealsStorage.ts` and shared through a page-level `MealsProvider` (`app/context/MealsContext.tsx`). Components use `useMealsContext()` for a single source of truth.
+### Recipes Page
+- Recipes page at `/recipes` with pantry, shopping list, and recipe management.
+- Persistence: Pantry, recipes, and shopping list are persisted in localStorage via `utils/pantryStorage.ts`, `utils/recipesStorage.ts`, and `utils/shoppingStorage.ts`.
 
 ## Troubleshooting
 

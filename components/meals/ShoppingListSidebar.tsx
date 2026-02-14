@@ -1,31 +1,13 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useShoppingContext } from '@/app/context/ShoppingContext';
-import { useMealsContext } from '@/app/context/MealsContext';
-import { usePantry } from '@/hooks/usePantry';
-import { MealSlot } from '@/types/meals';
 
-export const ShoppingListSidebar: React.FC<{ dateKey: string }> = ({ dateKey }) => {
+export const ShoppingListSidebar: React.FC = () => {
   const { items, add, remove, toggle, clearChecked } = useShoppingContext();
-  const { getMeals } = useMealsContext();
-  const { missingFor } = usePantry();
   const [inputValue, setInputValue] = useState('');
-
-  const missingToday = useMemo(() => {
-    const slots: MealSlot[] = ['breakfast', 'lunch', 'dinner'];
-    const meals = slots.flatMap(slot => getMeals(dateKey, slot));
-    const all = meals.flatMap(m => missingFor(m));
-    const seen = new Set<string>();
-    const out: string[] = [];
-    for (const name of all) {
-      const key = name.toLowerCase();
-      if (!seen.has(key)) { seen.add(key); out.push(name); }
-    }
-    return out;
-  }, [dateKey, getMeals, missingFor]);
 
   return (
     <Card className="border bg-card">
@@ -34,23 +16,6 @@ export const ShoppingListSidebar: React.FC<{ dateKey: string }> = ({ dateKey }) 
       </div>
       <CardContent className="p-3 space-y-3">
         <div>
-          <div className="text-xs text-muted-foreground mb-2">Add missing ingredients</div>
-          <div className="flex flex-wrap gap-2">
-            {missingToday.length === 0 && (
-              <div className="text-sm text-muted-foreground">You're covered for today</div>
-            )}
-            {missingToday.map(n => (
-              <Button key={n} variant="outline" size="sm" onClick={() => add(n)}>
-                + {n}
-              </Button>
-            ))}
-            {missingToday.length > 0 && (
-              <Button variant="ghost" size="sm" onClick={() => missingToday.forEach(n => add(n))}>Add all</Button>
-            )}
-          </div>
-        </div>
-
-        <div className="border-t pt-3">
           <div className="flex items-center justify-between mb-2">
             <div className="text-xs text-muted-foreground">List</div>
             <Button variant="ghost" size="sm" onClick={clearChecked}>Clear checked</Button>
