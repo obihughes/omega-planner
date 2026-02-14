@@ -24,6 +24,7 @@ This directory contains all components related to the daily planning functionali
    - Pool/Pinned task sidebar with tabs
    - Timeline sections for detailed time-based planning
    - Task collision detection and resolution
+   - **Per-panel view toggle**: Each day panel (top and bottom) has a Tasks | Class toggle to switch between scheduled tasks for that date and the recurring class schedule for that weekday. Class schedule view is read-only (view notes only; edit via Class Schedule page).
    
 2. **Weekly View**:
    - Weekly overview showing scheduled and inbox tasks

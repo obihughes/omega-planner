@@ -42,9 +42,11 @@ import WeeklyView from './WeeklyView';
 
 import { useModalManager } from '../../hooks/useModalManager';
 import { useViewMode } from '@/app/context/ViewModeContext';
+import { useClassScheduleState } from '../../hooks/useClassScheduleState';
 import TaskStorage from '../../utils/storage';
 
 type TimelinePeriod = 'night' | 'morning' | 'afternoon' | 'evening';
+type DayViewMode = 'scheduled' | 'class';
 
 export default function DailyPlanner() {
   const { viewMode, setViewMode } = useViewMode();
@@ -135,12 +137,36 @@ export default function DailyPlanner() {
     data: calendarData,
   } = useCalendarData();
 
+  // Class schedule for view toggle (recurring tasks by day-of-week)
+  const { classTasks } = useClassScheduleState();
+
   const currentViewDateKey = useMemo(() => getDateKey(getCalendarDateForColumn(topDayOffset)), [topDayOffset]);
+
+  /** Get class schedule tasks for a given date, projected as Task[] for timeline rendering */
+  const getClassTasksForDate = useCallback((dateKey: string): Task[] => {
+    const date = dateFromDateKey(dateKey);
+    const dayOfWeek = date.getDay(); // 0 = Sunday ... 6 = Saturday
+    return classTasks
+      .filter((t) => t.dayOfWeek === dayOfWeek)
+      .map((t) => ({
+        id: t.id,
+        name: t.name,
+        startHour: t.startHour,
+        duration: t.duration,
+        color: t.color,
+        baseDate: dateKey,
+        notes: t.notes,
+        completed: t.completed,
+        createdAt: t.createdAt,
+      }));
+  }, [classTasks]);
 
 
 
   const [currentTimeForMarker, setCurrentTimeForMarker] = useState(new Date());
   const [savingName, setSavingName] = useState('');
+  const [topDayViewMode, setTopDayViewMode] = useState<DayViewMode>('scheduled');
+  const [bottomDayViewMode, setBottomDayViewMode] = useState<DayViewMode>('scheduled');
   
   // Get current date key for saved days functionality
   const currentDateKey = useMemo(() => getCalendarDateForColumn(topDayOffset), [topDayOffset]);
@@ -572,7 +598,7 @@ export default function DailyPlanner() {
     // ... existing code ...
   };
 
-  const renderDayColumn = useMemo(() => (dayOffset: number, period: TimelinePeriod) => {
+  const renderDayColumn = useMemo(() => (dayOffset: number, period: TimelinePeriod, viewMode: DayViewMode) => {
     let startHour, endHour;
     switch (period) {
         case 'night': 
@@ -594,15 +620,20 @@ export default function DailyPlanner() {
     }
 
     const dateKey = getCalendarDateForColumn(dayOffset);
-    const tasksForThisColumnDate = tasksByDate.get(dateKey) || [];
+    const isClassView = viewMode === 'class';
+    const tasksForThisColumnDate = isClassView
+      ? getClassTasksForDate(dateKey)
+      : (tasksByDate.get(dateKey) || []);
     
-    // Filter out the original task if it's being dragged
-    let tasksToDisplay = tasksForThisColumnDate.filter(task => {
-        return !(draggingTask && draggingTask.task.id === task.id);
-    });
+    // Filter out the original task if it's being dragged (only for scheduled view)
+    let tasksToDisplay = isClassView
+      ? tasksForThisColumnDate
+      : tasksForThisColumnDate.filter(task => {
+          return !(draggingTask && draggingTask.task.id === task.id);
+        });
 
-    // If a task is being dragged, check if it belongs in this column
-    if (draggingTask) {
+    // If a task is being dragged, check if it belongs in this column (scheduled view only)
+    if (!isClassView && draggingTask) {
         const draggedTaskDateKey = draggingTask.task.baseDate; // baseDate is already YYYY-MM-DD
         if (draggedTaskDateKey === dateKey) {
             tasksToDisplay.push(draggingTask.task);
@@ -616,7 +647,7 @@ export default function DailyPlanner() {
         return taskEnd > startHour && taskStart < endHour;
     });
 
-    const isTargetCopyDay = copyingTaskData && targetCopyDayOffset === dayOffset;
+    const isTargetCopyDay = !isClassView && copyingTaskData && targetCopyDayOffset === dayOffset;
 
     let currentTimeMarker = null;
     if (dayOffset === 0) {
@@ -650,16 +681,16 @@ export default function DailyPlanner() {
           data-testid={`timeline-area-${dayOffset}-${period}`}
           data-day-offset={dayOffset}
           data-section-period={period}
-          onClick={(e) => handleTimelineClick(e, dayOffset, period)}
-          onDoubleClick={(e) => handleTimelineDoubleClick(e, dayOffset, period)}
+          onClick={isClassView ? undefined : (e) => handleTimelineClick(e, dayOffset, period)}
+          onDoubleClick={isClassView ? undefined : (e) => handleTimelineDoubleClick(e, dayOffset, period)}
           onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => handleDrop(e, dayOffset, period)}
-          onMouseEnter={() => {
+          onDrop={isClassView ? undefined : (e) => handleDrop(e, dayOffset, period)}
+          onMouseEnter={isClassView ? undefined : () => {
             if (copyingTaskData) {
               setTargetCopyDayOffset(dayOffset);
             }
           }}
-          onMouseLeave={() => {
+          onMouseLeave={isClassView ? undefined : () => {
             if (copyingTaskData) {
               setTargetCopyDayOffset(null);
             }
@@ -673,9 +704,9 @@ export default function DailyPlanner() {
               // The task object from tasksToRender is now always the correct one to display
               const displayTask = resizingTask?.task.id === task.id ? resizingTask.task : task;
 
-              const isBeingDragged = draggingTask?.task.id === displayTask.id;
-              const isBeingResized = resizingTask?.task.id === displayTask.id;
-              const isBeingCopied = copyingTaskData?.id === displayTask.id;
+              const isBeingDragged = !isClassView && draggingTask?.task.id === displayTask.id;
+              const isBeingResized = !isClassView && resizingTask?.task.id === displayTask.id;
+              const isBeingCopied = !isClassView && copyingTaskData?.id === displayTask.id;
               
               const startHourVal = (displayTask.startHour ?? startHour);
               const taskStartRelativeToSection = Math.max(0, startHourVal - startHour);
@@ -691,9 +722,12 @@ export default function DailyPlanner() {
                 top: `${TASK_BASE_TOP}px`,
                 height: `${TIMELINE_COLUMN_HEIGHT - TASK_BASE_TOP - TASK_BASE_BOTTOM_PADDING}px`,
                 zIndex: isBeingDragged || isBeingResized ? 50 : 40,
-                cursor: isBeingDragged ? 'grabbing' : (isBeingResized ? 'col-resize' : 'grab'),
+                cursor: isClassView ? 'default' : (isBeingDragged ? 'grabbing' : (isBeingResized ? 'col-resize' : 'grab')),
                 pointerEvents: isBeingDragged ? 'none' : 'auto',
               };
+
+              const noop = () => {};
+              const noopResize = (_edge: 'start' | 'end', e: React.MouseEvent<HTMLDivElement>) => { e?.stopPropagation?.(); };
 
               return (
                 <div key={displayTask.id}
@@ -703,11 +737,11 @@ export default function DailyPlanner() {
                     <MemoizedTaskCard
                         task={displayTask}
                         height={TIMELINE_COLUMN_HEIGHT - TASK_BASE_TOP - TASK_BASE_BOTTOM_PADDING}
-                        onStartEdit={(taskToEdit, options) => openEditModal(taskToEdit, options)} 
-                        onCopy={startCopy} 
+                        onStartEdit={isClassView ? noop : (taskToEdit, options) => openEditModal(taskToEdit, options)} 
+                        onCopy={isClassView ? noop : startCopy} 
                         onViewNotes={openViewNotesModal}
-                        onResizeStart={(edge, e) => handleResizeStart(displayTask, edge, e)}
-                        onDragStart={handleDragStart}
+                        onResizeStart={isClassView ? noopResize : (edge, e) => handleResizeStart(displayTask, edge, e)}
+                        onDragStart={isClassView ? undefined : handleDragStart}
                         currentTime={currentTimeForMarker}
                     />
                 </div>
@@ -716,7 +750,7 @@ export default function DailyPlanner() {
         </div>
       </div>
     );
-  }, [tasksByDate, draggingTask, resizingTask, copyingTaskData, currentTimeForMarker, handleDropCopy, openEditModal, startCopy, openViewNotesModal, renderTimeline, targetCopyDayOffset, handleDragStart]);
+  }, [tasksByDate, getClassTasksForDate, draggingTask, resizingTask, copyingTaskData, currentTimeForMarker, handleDropCopy, openEditModal, startCopy, openViewNotesModal, renderTimeline, targetCopyDayOffset, handleDragStart]);
   
   const deleteTaskHandlerForModal = (taskId: string, isFromPool?: boolean) => {
     console.log('🗑️ MODAL DELETE DEBUG: deleteTaskHandlerForModal called with:', {
@@ -1026,6 +1060,30 @@ export default function DailyPlanner() {
                       </Popover>
                       <Button variant="ghost" size="sm" onClick={() => setTopDayOffset(topDayOffset + 1)} title="Next day">›</Button>
                       <Button variant="ghost" size="sm" onClick={() => setTopDayOffset(topDayOffset + 7)} title="Next week">»</Button>
+                      <div className="flex rounded-md border border-border/60 ml-2" role="group">
+                        <button
+                          type="button"
+                          onClick={() => setTopDayViewMode('scheduled')}
+                          className={cn(
+                            "px-2 py-1 text-xs font-medium rounded-l-md transition-colors",
+                            topDayViewMode === 'scheduled' ? "bg-primary text-primary-foreground" : "bg-transparent hover:bg-muted"
+                          )}
+                          title="Scheduled tasks for this day"
+                        >
+                          Tasks
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setTopDayViewMode('class')}
+                          className={cn(
+                            "px-2 py-1 text-xs font-medium rounded-r-md border-l border-border/60 transition-colors",
+                            topDayViewMode === 'class' ? "bg-primary text-primary-foreground" : "bg-transparent hover:bg-muted"
+                          )}
+                          title="Class schedule for this weekday"
+                        >
+                          Class
+                        </button>
+                      </div>
                       <Button
                         variant="outline"
                         size="sm"
@@ -1208,10 +1266,10 @@ export default function DailyPlanner() {
                   </div>
                   <div className="border border-border/20 rounded-b-lg overflow-hidden">
                     <div className="flex flex-col">
-                        {renderDayColumn(topDayOffset, 'night')}
-                        {renderDayColumn(topDayOffset, 'morning')}
-                        {renderDayColumn(topDayOffset, 'afternoon')}
-                        {renderDayColumn(topDayOffset, 'evening')}
+                        {renderDayColumn(topDayOffset, 'night', topDayViewMode)}
+                        {renderDayColumn(topDayOffset, 'morning', topDayViewMode)}
+                        {renderDayColumn(topDayOffset, 'afternoon', topDayViewMode)}
+                        {renderDayColumn(topDayOffset, 'evening', topDayViewMode)}
                     </div>
                   </div>
                 </div>
@@ -1250,6 +1308,30 @@ export default function DailyPlanner() {
                         </Popover>
                         <Button variant="ghost" size="sm" onClick={() => setBottomDayOffset(bottomDayOffset + 1)} title="Next day">›</Button>
                         <Button variant="ghost" size="sm" onClick={() => setBottomDayOffset(bottomDayOffset + 7)} title="Next week">»</Button>
+                        <div className="flex rounded-md border border-border/60 ml-2" role="group">
+                          <button
+                            type="button"
+                            onClick={() => setBottomDayViewMode('scheduled')}
+                            className={cn(
+                              "px-2 py-1 text-xs font-medium rounded-l-md transition-colors",
+                              bottomDayViewMode === 'scheduled' ? "bg-primary text-primary-foreground" : "bg-transparent hover:bg-muted"
+                            )}
+                            title="Scheduled tasks for this day"
+                          >
+                            Tasks
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setBottomDayViewMode('class')}
+                            className={cn(
+                              "px-2 py-1 text-xs font-medium rounded-r-md border-l border-border/60 transition-colors",
+                              bottomDayViewMode === 'class' ? "bg-primary text-primary-foreground" : "bg-transparent hover:bg-muted"
+                            )}
+                            title="Class schedule for this weekday"
+                          >
+                            Class
+                          </button>
+                        </div>
                         {isClient && getRelativeDayLabel(bottomDayOffset) && (
                             <span className="text-xs text-muted-foreground ml-2 px-1.5 py-0.5 bg-muted rounded-sm">
                             {getRelativeDayLabel(bottomDayOffset)}
@@ -1403,10 +1485,10 @@ export default function DailyPlanner() {
                   </div>
                   <div className="border border-border/20 rounded-b-lg overflow-hidden">
                     <div className="flex flex-col">
-                        {renderDayColumn(bottomDayOffset, 'night')}
-                        {renderDayColumn(bottomDayOffset, 'morning')}
-                        {renderDayColumn(bottomDayOffset, 'afternoon')}
-                        {renderDayColumn(bottomDayOffset, 'evening')}
+                        {renderDayColumn(bottomDayOffset, 'night', bottomDayViewMode)}
+                        {renderDayColumn(bottomDayOffset, 'morning', bottomDayViewMode)}
+                        {renderDayColumn(bottomDayOffset, 'afternoon', bottomDayViewMode)}
+                        {renderDayColumn(bottomDayOffset, 'evening', bottomDayViewMode)}
                     </div>
                   </div>
                 </div>

@@ -1,5 +1,11 @@
 ## 2025-02-14
 
+- **Daily Planner: Tasks vs Class Schedule View Toggle** (2025-02-14)
+  - Added per-panel toggle on both top and bottom day views to switch between scheduled tasks and class schedule for the displayed day.
+  - "Tasks" shows the scheduled tasks for that specific date; "Class" shows the recurring class schedule for that weekday.
+  - Class schedule view is read-only (view notes allowed; edit via Class Schedule page).
+  - **Files affected**: `components/planner/DailyPlanner.tsx`, `components/planner/README.md`, `docs/changelog.md`
+
 - **Class Schedule: Remove Night Row** (2025-02-14)
   - Removed the night (12am–6am) row from Class Schedule; each day now shows morning, afternoon, and evening only.
   - **Files affected**: `components/planner/ClassSchedule.tsx`, `docs/planner.md`, `components/planner/README.md`
