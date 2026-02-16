@@ -33,10 +33,10 @@ This directory contains all components related to the daily planning functionali
    - Space-efficient row layout
    
 3. **Scheduling View** (Monthly):
-   - Full TaskAssignmentCalendar component
-   - Visual month grid for task assignment
-   - Inbox tasks management with "Add Task" functionality
-   - Pool tasks integration for scheduling
+   - MonthlyTimelineView with mini calendar, inbox, and daily timeline
+   - Inbox: Add unscheduled tasks; drag to calendar date (assigns to pool) or to timeline (schedules with time)
+   - Task pool row: Draggable tasks for selected date; drag to timeline or click Schedule (9 AM)
+   - Mini Daily Timeline: Shows scheduled + unscheduled; accepts drops from inbox/pool
 
 ### TaskAssignmentCalendar
 **File**: `TaskAssignmentCalendar.tsx`
@@ -76,7 +76,7 @@ This directory contains all components related to the daily planning functionali
 
 **Features:**
 - Hour-by-hour grid layout
-- Drop zone for task placement
+- Drop zone for task placement (double-click to create, drop from pool when onDropFromPool provided)
 - Time markers and labels
 - Period-specific styling (night, morning, afternoon, evening)
 
@@ -131,8 +131,8 @@ DailyPlanner
 │   └── Timeline Sections (Top Day + Bottom Day)
 ├── Weekly View
 │   └── Weekly Overview with Scheduled & Inbox Tasks
-└── Monthly View
-    └── TaskAssignmentCalendar (Full Page + Inbox Management)
+└── Monthly View (Scheduling)
+    └── MonthlyTimelineView (Calendar + Inbox + Task Pool + Mini Daily Timeline)
 ```
 
 ## Usage Patterns
@@ -142,7 +142,7 @@ DailyPlanner
 3. **Task Assignment**: Use Monthly View to assign pool tasks to specific dates
 4. **Inbox Management**: Use Monthly View to create and manage inbox tasks
 5. **Task Management**: Edit tasks through modals accessible from all views
-6. **Workflow**: Create tasks in Inbox (Monthly) → Assign to dates (Monthly) → Schedule times (Daily) 
+6. **Workflow**: Create tasks in Inbox (Monthly) → Drag to calendar date (pool) or timeline (schedule) → Or use Schedule button for 9 AM 
 
 ## Class Schedule (Recurring)
 

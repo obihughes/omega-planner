@@ -31,6 +31,8 @@ interface MiniDailyTimelineProps {
   showUnscheduled?: boolean;
   fitContainer?: boolean;
   deleteMode?: boolean;
+  /** When provided, enables drop from pool/inbox onto timeline (scheduling view) */
+  onDropFromPool?: (task: Task, targetDate: Date, startHour: number) => void;
 }
 
 export function MiniDailyTimeline({
@@ -43,7 +45,8 @@ export function MiniDailyTimeline({
   showHeader = true,
   showUnscheduled = true,
   fitContainer = false,
-  deleteMode = false
+  deleteMode = false,
+  onDropFromPool
 }: MiniDailyTimelineProps) {
   const dateKey = getDateKey(selectedDate);
   const tasksForDate = tasksByDate.get(dateKey) || [];
@@ -152,11 +155,13 @@ export function MiniDailyTimeline({
             fillWidth={true}
             deleteMode={deleteMode}
             onDeleteTask={onDeleteTask}
+            onDropFromPool={onDropFromPool}
+            targetDate={onDropFromPool ? selectedDate : undefined}
           />
         </div>
       </div>
     );
-  }, [dayOffset, tasksByDate, currentTime, handleDropCopy, onTaskClick, handleDragStart, miniPixelsPerHour, miniColumnHeight, deleteMode, onDeleteTask]);
+  }, [dayOffset, tasksByDate, currentTime, handleDropCopy, onTaskClick, handleDragStart, miniPixelsPerHour, miniColumnHeight, deleteMode, onDeleteTask, onDropFromPool, selectedDate]);
 
   return (
     <div className="h-full flex flex-col bg-background">
@@ -201,7 +206,15 @@ export function MiniDailyTimeline({
               {unscheduledTasks.map(task => (
                 <div
                   key={task.id}
-                  className="p-1.5 bg-card border border-orange-200 dark:border-orange-800 rounded text-xs cursor-pointer hover:bg-orange-50 dark:hover:bg-orange-900/20"
+                  draggable={!!onDropFromPool}
+                  onDragStart={onDropFromPool ? (e) => {
+                    e.dataTransfer.setData('text/plain', JSON.stringify({ ...task, source: 'pool' }));
+                    e.dataTransfer.effectAllowed = 'move';
+                  } : undefined}
+                  className={cn(
+                    "p-1.5 bg-card border border-orange-200 dark:border-orange-800 rounded text-xs hover:bg-orange-50 dark:hover:bg-orange-900/20",
+                    onDropFromPool ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
+                  )}
                   onClick={() => onTaskClick(task, false)}
                 >
                   <div className="font-medium text-xs">{task.name}</div>

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Task, PinnedTask } from '@/types/planner';
-import { ChevronLeft, ChevronRight, Clock, Calendar as CalendarIcon, Edit3, Pin, Plus, CalendarDays, X, Filter, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Calendar as CalendarIcon, Edit3, Pin, Plus, CalendarDays, X, Filter, Search, CalendarPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -20,6 +20,7 @@ interface TaskCardProps {
   onTaskClick: (task: Task, isScheduled: boolean) => void;
   onUnassignTask: (task: Task) => void;
   onDeleteTask: (task: Task) => void;
+  onSchedule?: (task: Task) => void;
 }
 
 interface MonthlyTimelineViewProps {
@@ -35,6 +36,7 @@ interface MonthlyTimelineViewProps {
   openEditModal: (task?: Task, options?: { isFromPool?: boolean; initialDayOffset?: number; initialStartHour?: number; isNew?: boolean; targetDate?: Date }) => void;
   createPoolTask: () => void;
   onNavigateToDaily?: (date: Date) => void;
+  onDropFromPool?: (task: Task, targetDate: Date, startHour: number) => void;
 }
 
 const TaskCard: React.FC<TaskCardProps> = ({
@@ -45,6 +47,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
   onTaskClick,
   onUnassignTask,
   onDeleteTask,
+  onSchedule,
 }) => {
   const isScheduled = task.startHour !== undefined;
   const isPinned = 'dueDate' in task;
@@ -117,6 +120,21 @@ const TaskCard: React.FC<TaskCardProps> = ({
             </>
           )}
         </div>
+        <div className="flex items-center gap-1">
+          {!isScheduled && onSchedule && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 text-primary hover:text-primary"
+              onClick={(e) => {
+                e.stopPropagation();
+                onSchedule(task);
+              }}
+              title="Schedule at 9 AM"
+            >
+              <CalendarPlus className="w-2.5 h-2.5" />
+            </Button>
+          )}
         {isScheduled && !isFromTimeline && (
           <Button
             size="sm"
@@ -135,6 +153,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             <X className="w-2.5 h-2.5" />
           </Button>
         )}
+        </div>
       </div>
     </div>
   );
@@ -152,7 +171,8 @@ export function MonthlyTimelineView({
   getPoolTasksForDate,
   openEditModal,
   createPoolTask,
-  onNavigateToDaily
+  onNavigateToDaily,
+  onDropFromPool
 }: MonthlyTimelineViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -190,6 +210,17 @@ export function MonthlyTimelineView({
       return isUnassigned && !task.completed;
     });
   }, [poolTasks]);
+
+  // Merged tasks for selected date (scheduled + pool) for MiniDailyTimeline
+  const mergedTasksForSelectedDate = useMemo(() => {
+    const key = getDateKey(selectedDate);
+    const scheduled = scheduledTasks.get(key) || [];
+    const pool = getPoolTasksForDate(key) || [];
+    const merged = [...scheduled, ...pool].filter((t, i, arr) => arr.findIndex(x => x.id === t.id) === i);
+    const map = new Map<string, Task[]>();
+    map.set(key, merged);
+    return map;
+  }, [selectedDate, scheduledTasks, getPoolTasksForDate]);
 
   const navigateMonth = (direction: 'prev' | 'next') => {
     setCurrentDate(prev => {
@@ -460,20 +491,19 @@ export function MonthlyTimelineView({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => {
-                  console.log('🎯 INBOX DEBUG: Add button clicked in inbox section');
-                  console.log('🎯 INBOX DEBUG: Calling openEditModal with isNew: true, isFromPool: true');
-                  openEditModal(undefined, { isNew: true, isFromPool: true });
-                }}
+                onClick={() => openEditModal(undefined, { isNew: true, isFromPool: true })}
                 className="h-6 px-2 text-xs hover:bg-primary/10"
               >
                 <Plus className="w-2 h-2 mr-1" />
                 Add
               </Button>
             </div>
-            <div className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mb-1">
               {filteredPoolTasks.length} unscheduled task{filteredPoolTasks.length !== 1 ? 's' : ''}
-            </div>
+            </p>
+            <p className="text-[11px] text-muted-foreground/80">
+              Drag tasks to the calendar or timeline to schedule.
+            </p>
           </div>
           
           <div
@@ -491,7 +521,7 @@ export function MonthlyTimelineView({
               <div className="text-center text-muted-foreground text-sm py-8">
                 <Clock className="w-8 h-8 mx-auto mb-2 opacity-50" />
                 <p>No unscheduled tasks</p>
-                <p className="text-xs mt-1">Create a task to get started</p>
+                <p className="text-xs mt-1">Click Add to create a task, then drag it to the calendar or timeline.</p>
               </div>
             ) : (
               filteredPoolTasks.map(task => (
@@ -501,11 +531,9 @@ export function MonthlyTimelineView({
                   onDragStart={handleDragStart}
                   onDragEnd={handleDragEnd}
                   onTaskClick={handleTaskClick}
-                  onUnassignTask={(task) => {
-                    console.log('🎯 INBOX DEBUG: onUnassignTask prop called for inbox task:', task);
-                    onUnassignTask(task);
-                  }}
+                  onUnassignTask={onUnassignTask}
                   onDeleteTask={onDeleteTask}
+                  onSchedule={onDropFromPool ? (t) => onDropFromPool(t, selectedDate, 9) : undefined}
                 />
               ))
             )}
@@ -594,12 +622,37 @@ export function MonthlyTimelineView({
                 pooled.map(task => (
                   <div
                     key={`pool-mini-${task.id}`}
-                    className="relative px-2 py-1 bg-muted/30 border border-muted-foreground/30 hover:bg-muted/40 transition-colors rounded flex-shrink-0 h-7 min-w-[9rem] max-w-[12rem] cursor-pointer"
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData('text/plain', JSON.stringify({ ...task, source: 'pool' }));
+                      e.dataTransfer.effectAllowed = 'move';
+                      setDraggedTask(task);
+                    }}
+                    onDragEnd={handleDragEnd}
+                    className="relative px-2 py-1 bg-muted/30 border border-muted-foreground/30 hover:bg-muted/40 transition-colors rounded flex-shrink-0 h-7 min-w-[9rem] max-w-[12rem] cursor-grab active:cursor-grabbing group/pool"
                     title={task.name}
-                    onClick={() => openEditModal(task, { isFromPool: true })}
+                    onClick={(e) => {
+                      if ((e.target as HTMLElement).closest('[data-schedule-btn]')) return;
+                      openEditModal(task, { isFromPool: true });
+                    }}
                   >
-                    <span className="text-[11px] font-medium truncate block">{task.name || 'Untitled Task'}</span>
-                          </div>
+                    <span className="text-[11px] font-medium truncate block pr-6">{task.name || 'Untitled Task'}</span>
+                    {onDropFromPool && (
+                      <Button
+                        data-schedule-btn
+                        size="sm"
+                        variant="ghost"
+                        className="absolute right-0.5 top-1/2 -translate-y-1/2 h-5 w-5 p-0 opacity-0 group-hover/pool:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDropFromPool(task, selectedDate, 9);
+                        }}
+                        title="Schedule at 9 AM"
+                      >
+                        <CalendarPlus className="w-3 h-3" />
+                      </Button>
+                    )}
+                  </div>
                 ))
               );
             })()}
@@ -610,15 +663,16 @@ export function MonthlyTimelineView({
         <div className="flex-1 min-h-0">
           <MiniDailyTimeline
             selectedDate={selectedDate}
-            tasksByDate={scheduledTasks}
-                                    onTaskClick={handleTaskClick}
-                                    onDeleteTask={onDeleteTask}
+            tasksByDate={mergedTasksForSelectedDate}
+            onTaskClick={handleTaskClick}
+            onDeleteTask={onDeleteTask}
             onUpdateTask={onUpdateTask}
             openEditModal={openEditModal}
             showHeader={false}
             showUnscheduled={false}
             fitContainer={true}
             deleteMode={deleteMode}
+            onDropFromPool={onDropFromPool}
           />
         </div>
       </div>

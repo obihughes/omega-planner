@@ -42,6 +42,10 @@ interface TimelineColumnProps {
     deleteMode?: boolean;
     /** Delete callback for quick-delete mode */
     onDeleteTask?: (task: Task) => void;
+    /** Optional: when provided, enables drop from pool/inbox onto timeline (scheduling view) */
+    onDropFromPool?: (task: Task, targetDate: Date, startHour: number) => void;
+    /** Target date for pool drops (used when dayOffset maps to selectedDate in scheduling view) */
+    targetDate?: Date;
 }
 
 export const TimelineColumn: React.FC<TimelineColumnProps> = ({
@@ -62,7 +66,9 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
     columnHeightPx,
     fillWidth = true,
     deleteMode = false,
-    onDeleteTask
+    onDeleteTask,
+    onDropFromPool,
+    targetDate
 }) => {
     let startHour, endHour;
     switch (period) {
@@ -175,6 +181,32 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
         lastDoubleClickTimestampRef.current = now;
     };
 
+    const handleDropFromPool = (e: React.DragEvent<HTMLDivElement>) => {
+        if (!onDropFromPool || !targetDate) return;
+        e.preventDefault();
+        const taskDataString = e.dataTransfer.getData('text/plain');
+        if (!taskDataString) return;
+        try {
+            const data = JSON.parse(taskDataString);
+            let task: Task | null = null;
+            if (data.source === 'pool' && data.id) {
+                task = data as Task;
+            } else if (data.type === 'task-assignment' && data.task) {
+                task = data.task;
+            }
+            if (!task || !task.id) return;
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const hourInBlock = x / pixelsPerHourEffective;
+            const calculatedNewStartHour = startHour + hourInBlock;
+            let snappedNewStartHour = Math.round(calculatedNewStartHour * 4) / 4;
+            snappedNewStartHour = Math.max(TIMELINE_START_HOUR, Math.min(snappedNewStartHour, TIMELINE_END_HOUR - 1));
+            onDropFromPool(task, targetDate, snappedNewStartHour);
+        } catch (err) {
+            console.error('Drop from pool error:', err);
+        }
+    };
+
     const renderTimelineHeader = () => {
         const timelineHours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
         return (
@@ -204,6 +236,8 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
                 <div
                     className={`relative flex-grow bg-background ${isTargetCopyDay ? 'bg-blue-50/80 dark:bg-blue-900/30 cursor-copy' : 'cursor-pointer'}`}
                     data-testid={`timeline-area-${dayOffset}-${period}`}
+                    onDragOver={onDropFromPool ? (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; } : undefined}
+                    onDrop={onDropFromPool ? handleDropFromPool : undefined}
                 >
                     {isTargetCopyDay && <div className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center text-blue-500 dark:text-blue-300 font-bold text-lg">Click to paste task</div>}
                     {Array.from({ length: endHour - startHour + 1 }).map((_, i) => (

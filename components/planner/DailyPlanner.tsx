@@ -1515,6 +1515,7 @@ export default function DailyPlanner() {
                 onRescheduleTask={handleRescheduleTask}
                 onUpdateTask={handleUpdateTask}
                 onDeleteTask={handleDeleteAnyTask}
+                onDropFromPool={handleDropFromPool}
                 getPoolTasksForDate={(dateKey) => {
                   const tasks = getPoolTasksForDate(dateKey);
                   console.log(`🔍 getPoolTasksForDate(${dateKey}):`, tasks.map(t => ({ id: t.id, name: t.name, baseDate: t.baseDate })));
