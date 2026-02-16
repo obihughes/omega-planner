@@ -23,6 +23,22 @@ interface TaskCardProps {
   onSchedule?: (task: Task) => void;
 }
 
+/** Optional drag/resize context - when provided, enables timeline drag and resize in scheduling view */
+interface TimelineDragContext {
+  draggingTask: { task: Task; offsetX?: number; originalBaseDate?: string } | null;
+  resizingTask: { task: Task; edge: 'start' | 'end' } | null;
+  copyingTaskData: Task | null;
+  targetCopyDayOffset: number | null;
+  setTargetCopyDayOffset: (offset: number | null) => void;
+  handleDropCopy: (targetDate: Date, startHour: number) => void;
+  handleDragStart: (task: Task, e: React.MouseEvent) => void;
+  onResizeStart: (task: Task, edge: 'start' | 'end', e: React.MouseEvent<HTMLDivElement>) => void;
+  onCopy: (task: Task) => void;
+  onViewNotes: (task: Task) => void;
+  onDoubleClickAdd: (date: Date, startHour: number) => void;
+  lastDoubleClickTimestampRef: React.MutableRefObject<number>;
+}
+
 interface MonthlyTimelineViewProps {
   poolTasks: Task[];
   scheduledTasks: Map<string, Task[]>;
@@ -37,6 +53,8 @@ interface MonthlyTimelineViewProps {
   createPoolTask: () => void;
   onNavigateToDaily?: (date: Date) => void;
   onDropFromPool?: (task: Task, targetDate: Date, startHour: number) => void;
+  /** When provided, enables drag/resize/copy on the mini timeline */
+  timelineDragContext?: TimelineDragContext;
 }
 
 const TaskCard: React.FC<TaskCardProps> = ({
@@ -172,7 +190,8 @@ export function MonthlyTimelineView({
   openEditModal,
   createPoolTask,
   onNavigateToDaily,
-  onDropFromPool
+  onDropFromPool,
+  timelineDragContext
 }: MonthlyTimelineViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -545,11 +564,23 @@ export function MonthlyTimelineView({
       <div className="flex-1 bg-background p-3 pt-2 overflow-hidden flex flex-col">
         {/* Date header above events/pool per request */}
         <div className="p-2 border-b border-border/60 bg-card/40 rounded-lg mb-2">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <h3 className="text-sm font-semibold">
               {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}
             </h3>
-            <div className="text-xs text-muted-foreground">Now: {new Date().toLocaleTimeString('en-US', { hour: 'numeric' })}</div>
+            <div className="flex items-center gap-2">
+              {onNavigateToDaily && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onNavigateToDaily(selectedDate)}
+                  title="Switch to Daily view for this date"
+                >
+                  Back to Daily View
+                </Button>
+              )}
+              <div className="text-xs text-muted-foreground">Now: {new Date().toLocaleTimeString('en-US', { hour: 'numeric' })}</div>
+            </div>
           </div>
         </div>
 
@@ -673,6 +704,7 @@ export function MonthlyTimelineView({
             fitContainer={true}
             deleteMode={deleteMode}
             onDropFromPool={onDropFromPool}
+            timelineDragContext={timelineDragContext}
           />
         </div>
       </div>

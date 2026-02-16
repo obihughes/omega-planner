@@ -22,7 +22,7 @@ This directory contains all components related to the daily planning functionali
 **View Modes:**
 1. **Daily View** (default):
    - Pool/Pinned task sidebar with tabs
-   - Timeline sections for detailed time-based planning
+   - Timeline sections via shared `TimelineColumn` for detailed time-based planning
    - Task collision detection and resolution
    - **Per-panel view toggle**: Each day panel (top and bottom) has a Tasks | Class toggle to switch between scheduled tasks for that date and the recurring class schedule for that weekday. Class schedule view is read-only (view notes only; edit via Class Schedule page).
    
@@ -36,7 +36,7 @@ This directory contains all components related to the daily planning functionali
    - MonthlyTimelineView with mini calendar, inbox, and daily timeline
    - Inbox: Add unscheduled tasks; drag to calendar date (assigns to pool) or to timeline (schedules with time)
    - Task pool row: Draggable tasks for selected date; drag to timeline or click Schedule (9 AM)
-   - Mini Daily Timeline: Shows scheduled + unscheduled; accepts drops from inbox/pool
+   - Mini Daily Timeline: Shows scheduled + unscheduled; accepts drops from inbox/pool; **supports drag/resize/copy** (when used from Daily Planner page)
 
 ### TaskAssignmentCalendar
 **File**: `TaskAssignmentCalendar.tsx`
@@ -72,13 +72,14 @@ This directory contains all components related to the daily planning functionali
 
 #### TimelineColumn
 **File**: `TimelineColumn.tsx`
-**Purpose**: Single timeline period container
+**Purpose**: Single timeline period container. **Shared** by Daily view and Scheduling view (via MiniDailyTimeline).
 
 **Features:**
 - Hour-by-hour grid layout
 - Drop zone for task placement (double-click to create, drop from pool when onDropFromPool provided)
 - Time markers and labels
 - Period-specific styling (night, morning, afternoon, evening)
+- Optional: readOnly (class schedule), drag/resize/copy handlers, onDoubleClickAdd
 
 ### Sidebar Components
 

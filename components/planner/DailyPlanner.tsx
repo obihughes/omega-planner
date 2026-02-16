@@ -9,7 +9,7 @@ import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-import { formatTime, formatDuration } from '@/utils/formatters';
+import { formatDuration } from '@/utils/formatters';
 import { MiniSchedulerCalendar } from '../calendar/MiniSchedulerCalendar';
 import { Task, PinnedTask } from '../../types/planner';
 import { TaskInboxSidebar } from './TaskInboxSidebar';
@@ -26,14 +26,11 @@ import {
     MIN_TASK_DURATION as APP_MIN_TASK_DURATION,
     PIXELS_PER_HOUR as APP_PIXELS_PER_HOUR,
     TIMELINE_COLUMN_HEIGHT,
-    TASK_BASE_TOP,
-    TASK_BASE_BOTTOM_PADDING,
     TIMELINE_SPLIT_HOUR_1 as APP_TIMELINE_SPLIT_HOUR_1,
     TIMELINE_SPLIT_HOUR_2 as APP_TIMELINE_SPLIT_HOUR_2,
     TIMELINE_SPLIT_HOUR_3 as APP_TIMELINE_SPLIT_HOUR_3,
-    DEFAULT_TASK_COLOR_INDEX
 } from '../../lib/constants';
-import { MemoizedTaskCard } from './TaskCard';
+import { TimelineColumn } from './TimelineColumn';
 import { EditTaskModal } from './EditTaskModal';
 import { ViewTaskNotesModal } from './ViewTaskNotesModal';
 import { getCalendarDateForColumn, getDateKey, dateFromDateKey } from '../../utils/dateUtils';
@@ -96,6 +93,7 @@ export default function DailyPlanner() {
     handleAssignTask,
     handleUnassignTask,
     handleRescheduleTask,
+    moveTaskToInbox,
     addPoolTaskForDate,
     getPoolTasksForDate,
     removePoolTaskForDate,
@@ -167,6 +165,7 @@ export default function DailyPlanner() {
   const [savingName, setSavingName] = useState('');
   const [topDayViewMode, setTopDayViewMode] = useState<DayViewMode>('scheduled');
   const [bottomDayViewMode, setBottomDayViewMode] = useState<DayViewMode>('scheduled');
+  const lastDoubleClickTimestampRef = useRef<number>(0);
   
   // Get current date key for saved days functionality
   const currentDateKey = useMemo(() => getCalendarDateForColumn(topDayOffset), [topDayOffset]);
@@ -481,100 +480,6 @@ export default function DailyPlanner() {
     };
   }, [draggingTask, resizingTask, handleMouseMoveResize, handleMouseMoveDrag, handleMouseUp]);
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>, dayOffset: number, period: TimelinePeriod) => {
-    e.preventDefault();
-    const taskDataString = e.dataTransfer.getData('text/plain');
-    if (!taskDataString) return;
-
-    try {
-      const taskData = JSON.parse(taskDataString);
-      if (taskData.source !== 'pool') return;
-
-      const rect = e.currentTarget.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-
-      let baseHourForCalc: number;
-      switch (period) {
-        case 'night': baseHourForCalc = APP_TIMELINE_START_HOUR; break;
-        case 'morning': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_1; break;
-        case 'afternoon': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_2; break;
-        case 'evening': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_3; break;
-      }
-
-      const hourInBlock = x / APP_PIXELS_PER_HOUR;
-      const snappedNewStartHour = Math.round((baseHourForCalc + hourInBlock) * 4) / 4;
-
-      const targetDateKey = getCalendarDateForColumn(dayOffset);
-      const targetDate = dateFromDateKey(targetDateKey);
-
-      handleDropFromPool(taskData, targetDate, snappedNewStartHour);
-
-    } catch (err) {
-      console.error("Failed to handle drop", err);
-    }
-  };
-
-  const renderTimeline = useCallback((period: TimelinePeriod) => {
-    let startHour, endHour;
-    switch (period) {
-      case 'night': startHour = APP_TIMELINE_START_HOUR; endHour = APP_TIMELINE_SPLIT_HOUR_1; break;
-      case 'morning': startHour = APP_TIMELINE_SPLIT_HOUR_1; endHour = APP_TIMELINE_SPLIT_HOUR_2; break;
-      case 'afternoon': startHour = APP_TIMELINE_SPLIT_HOUR_2; endHour = APP_TIMELINE_SPLIT_HOUR_3; break;
-      case 'evening': startHour = APP_TIMELINE_SPLIT_HOUR_3; endHour = APP_TIMELINE_END_HOUR; break; 
-    }
-    const timelineHours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
-    return (
-      <div className="flex h-6 sticky top-0 bg-card/95 backdrop-blur-sm border-b border-border/30 z-20">
-        {timelineHours.map((hour) => (
-          <div key={`timeline-hour-${hour}-${period}`} className="flex-none text-xs text-muted-foreground py-1 px-1 border-l border-border/20" style={{ width: `${APP_PIXELS_PER_HOUR}px` }}>
-            <div className={`font-medium ${hour % 6 === 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
-              {formatTime(hour)}
-            </div>
-          </div>
-        ))}
-        <div key={`timeline-end-marker-${period}`} className="flex-none border-l border-border/20" style={{ width: `1px` }}></div>
-      </div>
-    );
-  }, []); 
-
-  const handleTimelineDoubleClick = (e: React.MouseEvent<HTMLDivElement>, dayOffset: number, period: TimelinePeriod) => {
-      if (copyingTaskData) return;
-      const rect = e.currentTarget.getBoundingClientRect();
-      const clickXrelative = e.clientX - rect.left;
-      let baseHourForCalc: number;
-      switch (period) {
-          case 'night': baseHourForCalc = APP_TIMELINE_START_HOUR; break;
-          case 'morning': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_1; break;
-          case 'afternoon': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_2; break;
-          case 'evening': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_3; break;
-      }
-      const hourInBlock = (clickXrelative / APP_PIXELS_PER_HOUR);
-      const snappedNewStartHour = Math.round((baseHourForCalc + hourInBlock) * 4) / 4;
-      const targetDateKey = getCalendarDateForColumn(dayOffset);
-
-      // Use context-aware creation to ensure correct save path
-      createTimelineTask(dateFromDateKey(targetDateKey), snappedNewStartHour);
-  };
-  
-  const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>, dayOffset: number, period: TimelinePeriod) => {
-      if (!copyingTaskData) return;
-      const rect = e.currentTarget.getBoundingClientRect();
-      const clickXrelative = e.clientX - rect.left;
-      let baseHourForCalc: number;
-      switch (period) {
-          case 'night': baseHourForCalc = APP_TIMELINE_START_HOUR; break;
-          case 'morning': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_1; break;
-          case 'afternoon': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_2; break;
-          case 'evening': baseHourForCalc = APP_TIMELINE_SPLIT_HOUR_3; break;
-      }
-      const hourInBlock = clickXrelative / APP_PIXELS_PER_HOUR;
-      const snappedNewStartHour = Math.round((baseHourForCalc + hourInBlock) * 4) / 4;
-      const targetDateKey = getCalendarDateForColumn(dayOffset);
-      // Convert string back to Date for handleDropCopy compatibility
-      const targetDate = new Date(targetDateKey + 'T00:00:00.000');
-      handleDropCopy(targetDate, snappedNewStartHour);
-  };
-
   const handleDragStart = (task: Task, e: React.MouseEvent) => {
     e.preventDefault();
     cancelCopy();
@@ -593,165 +498,15 @@ export default function DailyPlanner() {
     });
   };
 
-  const handleClearDay = (dayOffset: number) => {
-    const dateToClear = getCalendarDateForColumn(dayOffset);
-    // ... existing code ...
-  };
-
-  const renderDayColumn = useMemo(() => (dayOffset: number, period: TimelinePeriod, viewMode: DayViewMode) => {
-    let startHour, endHour;
-    switch (period) {
-        case 'night': 
-            startHour = APP_TIMELINE_START_HOUR; 
-            endHour = APP_TIMELINE_SPLIT_HOUR_1; 
-            break;
-        case 'morning': 
-            startHour = APP_TIMELINE_SPLIT_HOUR_1; 
-            endHour = APP_TIMELINE_SPLIT_HOUR_2; 
-            break;
-        case 'afternoon': 
-            startHour = APP_TIMELINE_SPLIT_HOUR_2; 
-            endHour = APP_TIMELINE_SPLIT_HOUR_3; 
-            break;
-        case 'evening': 
-            startHour = APP_TIMELINE_SPLIT_HOUR_3; 
-            endHour = APP_TIMELINE_END_HOUR; 
-            break;
-    }
-
+  /** Build tasksByDate map for a given day - scheduled tasks or class schedule based on viewMode */
+  const getTasksMapForDay = useCallback((dayOffset: number, mode: DayViewMode): Map<string, Task[]> => {
     const dateKey = getCalendarDateForColumn(dayOffset);
-    const isClassView = viewMode === 'class';
-    const tasksForThisColumnDate = isClassView
-      ? getClassTasksForDate(dateKey)
-      : (tasksByDate.get(dateKey) || []);
-    
-    // Filter out the original task if it's being dragged (only for scheduled view)
-    let tasksToDisplay = isClassView
-      ? tasksForThisColumnDate
-      : tasksForThisColumnDate.filter(task => {
-          return !(draggingTask && draggingTask.task.id === task.id);
-        });
+    const tasks = mode === 'class' ? getClassTasksForDate(dateKey) : (tasksByDate.get(dateKey) || []);
+    const map = new Map<string, Task[]>();
+    map.set(dateKey, tasks);
+    return map;
+  }, [tasksByDate, getClassTasksForDate]);
 
-    // If a task is being dragged, check if it belongs in this column (scheduled view only)
-    if (!isClassView && draggingTask) {
-        const draggedTaskDateKey = draggingTask.task.baseDate; // baseDate is already YYYY-MM-DD
-        if (draggedTaskDateKey === dateKey) {
-            tasksToDisplay.push(draggingTask.task);
-        }
-    }
-    
-    const tasksToRender = tasksToDisplay.filter(t => {
-        if (t.startHour === undefined) return false; // Only scheduled tasks render in timeline grid
-        const taskStart = t.startHour as number;
-        const taskEnd = taskStart + t.duration;
-        return taskEnd > startHour && taskStart < endHour;
-    });
-
-    const isTargetCopyDay = !isClassView && copyingTaskData && targetCopyDayOffset === dayOffset;
-
-    let currentTimeMarker = null;
-    if (dayOffset === 0) {
-        const now = currentTimeForMarker;
-        const currentHourFloat = now.getHours() + now.getMinutes() / 60;
-        if (currentHourFloat >= startHour && currentHourFloat < endHour) {
-            const markerLeft = (currentHourFloat - startHour) * APP_PIXELS_PER_HOUR;
-            currentTimeMarker = (
-                <div className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-50 pointer-events-none" style={{ left: `${markerLeft}px` }} title={`Current time: ${formatTime(currentHourFloat)}`}>
-                    <div style={{ 
-                        position: 'absolute',
-                        top: '0px',
-                        left: '-3.75px',
-                        width: '0', 
-                        height: '0', 
-                        borderLeft: '4px solid transparent', 
-                        borderRight: '4px solid transparent', 
-                        borderTop: '6px solid #ef4444' 
-                    }} />
-                </div>
-            );
-        }
-    }
-
-    return (
-      <div className={`relative w-full flex flex-col ${isTargetCopyDay ? 'ring-2 ring-inset ring-blue-500' : ''}`}
-        style={{ minWidth: `${APP_PIXELS_PER_HOUR * (endHour - startHour)}px`, height: `${TIMELINE_COLUMN_HEIGHT}px` }}
-      >
-        {renderTimeline(period)}
-        <div className={`relative flex-grow bg-background pt-6 ${isTargetCopyDay ? 'cursor-copy' : ''}`}
-          data-testid={`timeline-area-${dayOffset}-${period}`}
-          data-day-offset={dayOffset}
-          data-section-period={period}
-          onClick={isClassView ? undefined : (e) => handleTimelineClick(e, dayOffset, period)}
-          onDoubleClick={isClassView ? undefined : (e) => handleTimelineDoubleClick(e, dayOffset, period)}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={isClassView ? undefined : (e) => handleDrop(e, dayOffset, period)}
-          onMouseEnter={isClassView ? undefined : () => {
-            if (copyingTaskData) {
-              setTargetCopyDayOffset(dayOffset);
-            }
-          }}
-          onMouseLeave={isClassView ? undefined : () => {
-            if (copyingTaskData) {
-              setTargetCopyDayOffset(null);
-            }
-          }}
-        >
-          {currentTimeMarker}
-          {Array.from({ length: endHour - startHour }, (_, i) => (
-            <div key={`grid-${i}`} className={`absolute h-full ${i % 6 === 0 ? 'border-l border-border/30' : 'border-l border-border/10'}`} style={{ left: `${i * APP_PIXELS_PER_HOUR}px`, top: '0', bottom: '0' }} />
-          ))}
-          {tasksToRender.map((task) => {
-              // The task object from tasksToRender is now always the correct one to display
-              const displayTask = resizingTask?.task.id === task.id ? resizingTask.task : task;
-
-              const isBeingDragged = !isClassView && draggingTask?.task.id === displayTask.id;
-              const isBeingResized = !isClassView && resizingTask?.task.id === displayTask.id;
-              const isBeingCopied = !isClassView && copyingTaskData?.id === displayTask.id;
-              
-              const startHourVal = (displayTask.startHour ?? startHour);
-              const taskStartRelativeToSection = Math.max(0, startHourVal - startHour);
-              const taskEndRelativeToSection = Math.min(endHour - startHour, (startHourVal + displayTask.duration) - startHour);
-              const renderLeft = taskStartRelativeToSection * APP_PIXELS_PER_HOUR;
-              const renderWidth = (taskEndRelativeToSection - taskStartRelativeToSection) * APP_PIXELS_PER_HOUR;
-              
-              if (renderWidth <= 0 && !isBeingDragged) return null;
-              
-              const taskStyle: React.CSSProperties = {
-                left: `${renderLeft}px`,
-                width: `${renderWidth}px`,
-                top: `${TASK_BASE_TOP}px`,
-                height: `${TIMELINE_COLUMN_HEIGHT - TASK_BASE_TOP - TASK_BASE_BOTTOM_PADDING}px`,
-                zIndex: isBeingDragged || isBeingResized ? 50 : 40,
-                cursor: isClassView ? 'default' : (isBeingDragged ? 'grabbing' : (isBeingResized ? 'col-resize' : 'grab')),
-                pointerEvents: isBeingDragged ? 'none' : 'auto',
-              };
-
-              const noop = () => {};
-              const noopResize = (_edge: 'start' | 'end', e: React.MouseEvent<HTMLDivElement>) => { e?.stopPropagation?.(); };
-
-              return (
-                <div key={displayTask.id}
-                  className={`absolute ${isBeingDragged || isBeingResized ? 'opacity-90' : ''} ${isBeingCopied ? 'ring-2 ring-blue-500' : ''}`} 
-                  style={taskStyle}
-                >
-                    <MemoizedTaskCard
-                        task={displayTask}
-                        height={TIMELINE_COLUMN_HEIGHT - TASK_BASE_TOP - TASK_BASE_BOTTOM_PADDING}
-                        onStartEdit={isClassView ? noop : (taskToEdit, options) => openEditModal(taskToEdit, options)} 
-                        onCopy={isClassView ? noop : startCopy} 
-                        onViewNotes={openViewNotesModal}
-                        onResizeStart={isClassView ? noopResize : (edge, e) => handleResizeStart(displayTask, edge, e)}
-                        onDragStart={isClassView ? undefined : handleDragStart}
-                        currentTime={currentTimeForMarker}
-                    />
-                </div>
-              );
-          })}
-        </div>
-      </div>
-    );
-  }, [tasksByDate, getClassTasksForDate, draggingTask, resizingTask, copyingTaskData, currentTimeForMarker, handleDropCopy, openEditModal, startCopy, openViewNotesModal, renderTimeline, targetCopyDayOffset, handleDragStart]);
-  
   const deleteTaskHandlerForModal = (taskId: string, isFromPool?: boolean) => {
     console.log('🗑️ MODAL DELETE DEBUG: deleteTaskHandlerForModal called with:', {
       taskId,
@@ -815,7 +570,7 @@ export default function DailyPlanner() {
             onClose={closeEditModal}
             onColorChange={handleTaskColorChange}
             onPinTask={handlePinTask}
-                          onMoveToInbox={copyTaskToPool}
+                          onMoveToInbox={moveTaskToInbox}
             pinnedTasks={pinnedTasks}
             onDelete={deleteTaskHandlerForModal}
             onCopyAndEnterPasteMode={handleCopyAndEnterPasteMode}
@@ -1266,10 +1021,33 @@ export default function DailyPlanner() {
                   </div>
                   <div className="border border-border/20 rounded-b-lg overflow-hidden">
                     <div className="flex flex-col">
-                        {renderDayColumn(topDayOffset, 'night', topDayViewMode)}
-                        {renderDayColumn(topDayOffset, 'morning', topDayViewMode)}
-                        {renderDayColumn(topDayOffset, 'afternoon', topDayViewMode)}
-                        {renderDayColumn(topDayOffset, 'evening', topDayViewMode)}
+                        {(['night', 'morning', 'afternoon', 'evening'] as const).map((period) => (
+                          <TimelineColumn
+                            key={`top-${period}`}
+                            dayOffset={topDayOffset}
+                            period={period}
+                            tasksByDate={getTasksMapForDay(topDayOffset, topDayViewMode)}
+                            draggingTask={draggingTask}
+                            resizingTask={resizingTask}
+                            copyingTaskData={copyingTaskData}
+                            targetCopyDayOffset={targetCopyDayOffset}
+                            currentTimeForMarker={currentTimeForMarker}
+                            handleDropCopy={handleDropCopy}
+                            openEditModal={openEditModal}
+                            setTargetCopyDayOffset={setTargetCopyDayOffset}
+                            lastDoubleClickTimestampRef={lastDoubleClickTimestampRef}
+                            handleDragStart={handleDragStart}
+                            pixelsPerHour={APP_PIXELS_PER_HOUR}
+                            columnHeightPx={TIMELINE_COLUMN_HEIGHT}
+                            readOnly={topDayViewMode === 'class'}
+                            onDoubleClickAdd={(date, startHour) => createTimelineTask(date, startHour)}
+                            onCopy={startCopy}
+                            onViewNotes={openViewNotesModal}
+                            onResizeStart={(task, edge, e) => handleResizeStart(task, edge, e)}
+                            onDropFromPool={handleDropFromPool}
+                            targetDate={dateFromDateKey(getCalendarDateForColumn(topDayOffset))}
+                          />
+                        ))}
                     </div>
                   </div>
                 </div>
@@ -1485,10 +1263,33 @@ export default function DailyPlanner() {
                   </div>
                   <div className="border border-border/20 rounded-b-lg overflow-hidden">
                     <div className="flex flex-col">
-                        {renderDayColumn(bottomDayOffset, 'night', bottomDayViewMode)}
-                        {renderDayColumn(bottomDayOffset, 'morning', bottomDayViewMode)}
-                        {renderDayColumn(bottomDayOffset, 'afternoon', bottomDayViewMode)}
-                        {renderDayColumn(bottomDayOffset, 'evening', bottomDayViewMode)}
+                        {(['night', 'morning', 'afternoon', 'evening'] as const).map((period) => (
+                          <TimelineColumn
+                            key={`bottom-${period}`}
+                            dayOffset={bottomDayOffset}
+                            period={period}
+                            tasksByDate={getTasksMapForDay(bottomDayOffset, bottomDayViewMode)}
+                            draggingTask={draggingTask}
+                            resizingTask={resizingTask}
+                            copyingTaskData={copyingTaskData}
+                            targetCopyDayOffset={targetCopyDayOffset}
+                            currentTimeForMarker={currentTimeForMarker}
+                            handleDropCopy={handleDropCopy}
+                            openEditModal={openEditModal}
+                            setTargetCopyDayOffset={setTargetCopyDayOffset}
+                            lastDoubleClickTimestampRef={lastDoubleClickTimestampRef}
+                            handleDragStart={handleDragStart}
+                            pixelsPerHour={APP_PIXELS_PER_HOUR}
+                            columnHeightPx={TIMELINE_COLUMN_HEIGHT}
+                            readOnly={bottomDayViewMode === 'class'}
+                            onDoubleClickAdd={(date, startHour) => createTimelineTask(date, startHour)}
+                            onCopy={startCopy}
+                            onViewNotes={openViewNotesModal}
+                            onResizeStart={(task, edge, e) => handleResizeStart(task, edge, e)}
+                            onDropFromPool={handleDropFromPool}
+                            targetDate={dateFromDateKey(getCalendarDateForColumn(bottomDayOffset))}
+                          />
+                        ))}
                     </div>
                   </div>
                 </div>
@@ -1534,6 +1335,20 @@ export default function DailyPlanner() {
                   const dayOffset = Math.floor((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
                   setTopDayOffset(dayOffset);
                   setBottomDayOffset(dayOffset);
+                }}
+                timelineDragContext={{
+                  draggingTask,
+                  resizingTask,
+                  copyingTaskData,
+                  targetCopyDayOffset,
+                  setTargetCopyDayOffset,
+                  handleDropCopy,
+                  handleDragStart,
+                  onResizeStart: (task, edge, e) => handleResizeStart(task, edge, e),
+                  onCopy: startCopy,
+                  onViewNotes: openViewNotesModal,
+                  onDoubleClickAdd: (date, startHour) => createTimelineTask(date, startHour),
+                  lastDoubleClickTimestampRef,
                 }}
               />
             </div>

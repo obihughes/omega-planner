@@ -1152,6 +1152,14 @@ export function useDailyPlanner() {
     ));
   }, []);
 
+  /** Move a scheduled task to inbox (unschedule). Used by EditTaskModal "To Inbox" button. */
+  const moveTaskToInbox = useCallback((taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (task) {
+      handleUnassignTask(task);
+    }
+  }, [tasks, handleUnassignTask]);
+
   // --- Use Modal Manager ---
   const modalManager = useModalManager({
     onAddTask: handleAddTask,
@@ -1359,6 +1367,7 @@ export function useDailyPlanner() {
     handleAssignTask,
     handleUnassignTask,
     handleRescheduleTask,
+    moveTaskToInbox,
 
     // Pool Tasks By Date Functions
     poolTasksByDate,

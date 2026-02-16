@@ -20,6 +20,7 @@ The Daily Planner is the core component for task scheduling and timeline managem
 - **Delete Mode**: Toggle a mode that shows an X on each scheduled task in the mini daily timeline; click to delete quickly.
 - **Clear Day**: Remove all tasks for the selected date with one action.
 - **Clone Saved Day**: Entry point provided; navigates to Daily view where Saved Days can be applied.
+- **Drag/Resize/Copy**: The mini timeline supports the same drag, resize, and copy-paste as Daily view when accessed from the Daily Planner page.
 
 ### Task Resize
 - **Edge Resizing**: Resize tasks by dragging the start or end edges
@@ -54,7 +55,7 @@ The Daily Planner is the core component for task scheduling and timeline managem
 Main component that orchestrates all planner functionality.
 
 ### TimelineColumn
-Renders individual timeline sections with tasks and time markers.
+Renders individual timeline sections with tasks and time markers. **Shared** by both Daily view and Scheduling (Monthly) view via `MiniDailyTimeline`, eliminating duplicated timeline logic. Supports read-only mode (e.g. class schedule), drag/resize/copy, and pool drops.
 
 ### WeeklyView
 Displays a 7-day view of scheduled tasks in a horizontal timeline format. Weeks start on Monday and end on Sunday. When opening the weekly overview, the view now auto-scrolls to highlight today within the current week by default. Features include:
@@ -90,7 +91,7 @@ Displays a 7-day view of scheduled tasks.
 A small calendar for assigning dates to tasks.
 
 ### EditTaskModal
-Modal for editing the details of a task.
+Modal for editing the details of a task. Includes a "To Inbox" button for scheduled tasks that moves them to the inbox (unschedules) via `moveTaskToInbox` / `handleUnassignTask`.
 
 ### ViewTaskNotesModal
 Modal for viewing the notes of a task.

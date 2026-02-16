@@ -43,7 +43,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
     handleTaskColorChange,
     handlePinTask,
     pinnedTasks,
-    copyTaskToPool,
+    moveTaskToInbox,
     handleDeleteTask
   } = useDailyPlanner();
 
@@ -683,7 +683,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
           onClose={closeEditModal}
           onColorChange={handleTaskColorChange}
           onPinTask={handlePinTask}
-          onMoveToInbox={copyTaskToPool}
+          onMoveToInbox={moveTaskToInbox}
           pinnedTasks={pinnedTasks}
           onDelete={(taskId, isFromPool) => handleDeleteTask(taskId)}
         />

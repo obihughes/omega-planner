@@ -20,6 +20,22 @@ import { Clock, Calendar } from 'lucide-react';
 
 type TimelinePeriod = 'night' | 'morning' | 'afternoon' | 'evening';
 
+/** Optional - when provided, enables drag/resize/copy on timeline tasks */
+interface TimelineDragContext {
+  draggingTask: { task: Task; offsetX?: number; originalBaseDate?: string } | null;
+  resizingTask: { task: Task; edge: 'start' | 'end' } | null;
+  copyingTaskData: Task | null;
+  targetCopyDayOffset: number | null;
+  setTargetCopyDayOffset: (offset: number | null) => void;
+  handleDropCopy: (targetDate: Date, startHour: number) => void;
+  handleDragStart: (task: Task, e: React.MouseEvent) => void;
+  onResizeStart: (task: Task, edge: 'start' | 'end', e: React.MouseEvent<HTMLDivElement>) => void;
+  onCopy: (task: Task) => void;
+  onViewNotes: (task: Task) => void;
+  onDoubleClickAdd: (date: Date, startHour: number) => void;
+  lastDoubleClickTimestampRef: React.MutableRefObject<number>;
+}
+
 interface MiniDailyTimelineProps {
   selectedDate: Date;
   tasksByDate: Map<string, Task[]>;
@@ -33,6 +49,8 @@ interface MiniDailyTimelineProps {
   deleteMode?: boolean;
   /** When provided, enables drop from pool/inbox onto timeline (scheduling view) */
   onDropFromPool?: (task: Task, targetDate: Date, startHour: number) => void;
+  /** When provided, enables drag/resize/copy on timeline tasks */
+  timelineDragContext?: TimelineDragContext;
 }
 
 export function MiniDailyTimeline({
@@ -46,7 +64,8 @@ export function MiniDailyTimeline({
   showUnscheduled = true,
   fitContainer = false,
   deleteMode = false,
-  onDropFromPool
+  onDropFromPool,
+  timelineDragContext
 }: MiniDailyTimelineProps) {
   const dateKey = getDateKey(selectedDate);
   const tasksForDate = tasksByDate.get(dateKey) || [];
@@ -74,15 +93,10 @@ export function MiniDailyTimeline({
   // Timeline periods configuration - same as daily view
   const periods: TimelinePeriod[] = ['night', 'morning', 'afternoon', 'evening'];
   
-  const handleDropCopy = useCallback((targetDate: Date, startHour: number) => {
-    // Handle copy/paste functionality if needed
-    console.log('Drop copy at:', targetDate, startHour);
-  }, []);
-  
-  const handleDragStart = useCallback((task: Task, e: React.MouseEvent) => {
-    // Handle drag start if needed
-    console.log('Drag start:', task);
-  }, []);
+  const noopDropCopy = useCallback((_targetDate: Date, _startHour: number) => {}, []);
+  const noopDragStart = useCallback((_task: Task, _e: React.MouseEvent) => {}, []);
+  const handleDropCopy = timelineDragContext?.handleDropCopy ?? noopDropCopy;
+  const handleDragStart = timelineDragContext?.handleDragStart ?? noopDragStart;
   
   // Compute compact sizing based on container
   useEffect(() => {
@@ -138,17 +152,17 @@ export function MiniDailyTimeline({
             dayOffset={dayOffset}
             period={period}
             tasksByDate={tasksByDate}
-            draggingTask={null}
-            resizingTask={null}
-            copyingTaskData={null}
-            targetCopyDayOffset={null}
+            draggingTask={timelineDragContext?.draggingTask ?? null}
+            resizingTask={timelineDragContext?.resizingTask ?? null}
+            copyingTaskData={timelineDragContext?.copyingTaskData ?? null}
+            targetCopyDayOffset={timelineDragContext?.targetCopyDayOffset ?? null}
             currentTimeForMarker={currentTime}
             handleDropCopy={handleDropCopy}
             openEditModal={(task, options) => {
               onTaskClick(task, options.isFromPool !== true);
             }}
-            setTargetCopyDayOffset={() => {}}
-            lastDoubleClickTimestampRef={lastDoubleClickTimestampRef}
+            setTargetCopyDayOffset={timelineDragContext?.setTargetCopyDayOffset ?? (() => {})}
+            lastDoubleClickTimestampRef={timelineDragContext?.lastDoubleClickTimestampRef ?? lastDoubleClickTimestampRef}
             handleDragStart={handleDragStart}
             pixelsPerHour={miniPixelsPerHour}
             columnHeightPx={miniColumnHeight}
@@ -157,11 +171,15 @@ export function MiniDailyTimeline({
             onDeleteTask={onDeleteTask}
             onDropFromPool={onDropFromPool}
             targetDate={onDropFromPool ? selectedDate : undefined}
+            onDoubleClickAdd={timelineDragContext?.onDoubleClickAdd}
+            onCopy={timelineDragContext?.onCopy}
+            onViewNotes={timelineDragContext?.onViewNotes}
+            onResizeStart={timelineDragContext?.onResizeStart}
           />
         </div>
       </div>
     );
-  }, [dayOffset, tasksByDate, currentTime, handleDropCopy, onTaskClick, handleDragStart, miniPixelsPerHour, miniColumnHeight, deleteMode, onDeleteTask, onDropFromPool, selectedDate]);
+  }, [dayOffset, tasksByDate, currentTime, handleDropCopy, onTaskClick, handleDragStart, miniPixelsPerHour, miniColumnHeight, deleteMode, onDeleteTask, onDropFromPool, selectedDate, timelineDragContext]);
 
   return (
     <div className="h-full flex flex-col bg-background">

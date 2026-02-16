@@ -46,6 +46,16 @@ interface TimelineColumnProps {
     onDropFromPool?: (task: Task, targetDate: Date, startHour: number) => void;
     /** Target date for pool drops (used when dayOffset maps to selectedDate in scheduling view) */
     targetDate?: Date;
+    /** When true, disables all interactions (e.g. class schedule view) */
+    readOnly?: boolean;
+    /** Optional: when provided, used for double-click add instead of openEditModal */
+    onDoubleClickAdd?: (date: Date, startHour: number) => void;
+    /** Optional: copy handler for task card */
+    onCopy?: (task: Task) => void;
+    /** Optional: view notes handler for task card */
+    onViewNotes?: (task: Task) => void;
+    /** Optional: resize handler for task card */
+    onResizeStart?: (task: Task, edge: 'start' | 'end', e: React.MouseEvent<HTMLDivElement>) => void;
 }
 
 export const TimelineColumn: React.FC<TimelineColumnProps> = ({
@@ -68,7 +78,12 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
     deleteMode = false,
     onDeleteTask,
     onDropFromPool,
-    targetDate
+    targetDate,
+    readOnly = false,
+    onDoubleClickAdd,
+    onCopy,
+    onViewNotes,
+    onResizeStart
 }) => {
     let startHour, endHour;
     switch (period) {
@@ -141,7 +156,7 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
 
     const handleTimelineSingleClick = (e: React.MouseEvent<HTMLDivElement>) => {
         e.stopPropagation();
-        if (!copyingTaskData) return;
+        if (readOnly || !copyingTaskData) return;
 
         const rect = e.currentTarget.getBoundingClientRect();
         const clickXrelative = e.clientX - rect.left;
@@ -149,12 +164,12 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
         const calculatedNewStartHour = startHour + hourInBlock;
         const snappedNewStartHour = Math.round(calculatedNewStartHour * 4) / 4;
         const targetDateKey = getCalendarDateForColumn(dayOffset);
-        const targetDate = dateFromDateKey(targetDateKey);
-        handleDropCopy(targetDate, snappedNewStartHour);
+        const targetDateValue = dateFromDateKey(targetDateKey);
+        handleDropCopy(targetDateValue, snappedNewStartHour);
     };
 
     const handleTimelineDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (e.detail !== 2 || copyingTaskData) return;
+        if (readOnly || e.detail !== 2 || copyingTaskData) return;
         
         const now = Date.now();
         if (now - lastDoubleClickTimestampRef.current < 2000) return;
@@ -167,22 +182,28 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
         snappedNewStartHour = Math.max(TIMELINE_START_HOUR, Math.min(snappedNewStartHour, TIMELINE_END_HOUR - 1));
         
         const targetDateKey = getCalendarDateForColumn(dayOffset);
-        const newTaskDefaults: Task = {
-            id: `temp-new-task-${now}`,
-            name: "New Task",
-            startHour: snappedNewStartHour,
-            duration: 1,
-            baseDate: targetDateKey,
-            color: TASK_COLORS[DEFAULT_TASK_COLOR_INDEX],
-            notes: "",
-            completed: false,
-        };
-        openEditModal(newTaskDefaults, { isNew: true, isFromPool: false });
+        const targetDateValue = dateFromDateKey(targetDateKey);
+
+        if (onDoubleClickAdd) {
+            onDoubleClickAdd(targetDateValue, snappedNewStartHour);
+        } else {
+            const newTaskDefaults: Task = {
+                id: `temp-new-task-${now}`,
+                name: "New Task",
+                startHour: snappedNewStartHour,
+                duration: 1,
+                baseDate: targetDateKey,
+                color: TASK_COLORS[DEFAULT_TASK_COLOR_INDEX],
+                notes: "",
+                completed: false,
+            };
+            openEditModal(newTaskDefaults, { isNew: true, isFromPool: false });
+        }
         lastDoubleClickTimestampRef.current = now;
     };
 
-    const handleDropFromPool = (e: React.DragEvent<HTMLDivElement>) => {
-        if (!onDropFromPool || !targetDate) return;
+    const handleDropFromPoolInner = (e: React.DragEvent<HTMLDivElement>) => {
+        if (readOnly || !onDropFromPool || !targetDate) return;
         e.preventDefault();
         const taskDataString = e.dataTransfer.getData('text/plain');
         if (!taskDataString) return;
@@ -228,16 +249,18 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
                 style={{ width: `${pixelsPerHourEffective * (endHour - startHour)}px`, minWidth: fillWidth ? '100%' : undefined, height: `${columnHeight}px`, overflow: 'hidden' }}
                 data-section-period={period}
                 data-day-offset={dayOffset}
-                onClick={handleTimelineSingleClick}
-                onDoubleClick={handleTimelineDoubleClick}
-                onMouseEnter={() => setTargetCopyDayOffset(copyingTaskData ? dayOffset : null)}
+                onClick={readOnly ? undefined : handleTimelineSingleClick}
+                onDoubleClick={readOnly ? undefined : handleTimelineDoubleClick}
+                onMouseEnter={readOnly ? undefined : () => setTargetCopyDayOffset(copyingTaskData ? dayOffset : null)}
             >
                 {renderTimelineHeader()}
                 <div
                     className={`relative flex-grow bg-background ${isTargetCopyDay ? 'bg-blue-50/80 dark:bg-blue-900/30 cursor-copy' : 'cursor-pointer'}`}
                     data-testid={`timeline-area-${dayOffset}-${period}`}
-                    onDragOver={onDropFromPool ? (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; } : undefined}
-                    onDrop={onDropFromPool ? handleDropFromPool : undefined}
+                    data-day-offset={dayOffset}
+                    data-section-period={period}
+                    onDragOver={onDropFromPool && targetDate ? (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; } : undefined}
+                    onDrop={onDropFromPool && targetDate ? handleDropFromPoolInner : undefined}
                 >
                     {isTargetCopyDay && <div className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center text-blue-500 dark:text-blue-300 font-bold text-lg">Click to paste task</div>}
                     {Array.from({ length: endHour - startHour + 1 }).map((_, i) => (
@@ -261,7 +284,7 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
                         return (
                             <div
                                 key={displayTask.id}
-                                onMouseDown={(e) => {
+                                onMouseDown={readOnly ? undefined : (e) => {
                                     handleDragStart(task, e); 
                                 }}
                                 style={{
@@ -286,16 +309,16 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
                                     )}
                                     <MemoizedTaskCard
                                         task={displayTask}
-                                        onStartEdit={(task, options) => {
+                                        onStartEdit={readOnly ? () => {} : (taskToEdit, options) => {
                                             const modalOptions = {
                                                 isNew: options?.isNew ?? false,
                                                 isFromPool: options?.isFromPool ?? false,
                                             };
-                                            openEditModal(task, modalOptions);
+                                            openEditModal(taskToEdit, modalOptions);
                                         }}
-                                        onCopy={() => {}}
-                                        onViewNotes={() => {}}
-                                        onResizeStart={() => {}}
+                                        onCopy={readOnly ? () => {} : (onCopy ?? (() => {}))}
+                                        onViewNotes={readOnly ? () => {} : (onViewNotes ?? (() => {}))}
+                                        onResizeStart={readOnly ? () => {} : (onResizeStart ? (edge, e) => onResizeStart(displayTask, edge, e) : () => {})}
                                         height={columnHeight}
                                         currentTime={currentTimeForMarker}
                                     />
