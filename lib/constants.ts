@@ -78,7 +78,6 @@ export const TIMELINE_SPLIT_HOUR_2 = 12; // 6am-12pm
 export const TIMELINE_SPLIT_HOUR_3 = 18; // 12pm-6pm
 // The last segment is from 18 to 24 (6pm-12am)
 export const TIMELINE_HEADER_HEIGHT_PX = 28;
-export const GRID_LINE_STYLE = "border-l border-border/20 z-10"; // Subtle solid lines instead of dashed
 
 /** Duration options for task editing modals */
 export const DURATION_OPTIONS = [

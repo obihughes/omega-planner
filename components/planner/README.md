@@ -75,7 +75,7 @@ This directory contains all components related to the daily planning functionali
 **Purpose**: Single timeline period container. **Shared** by Daily view and Scheduling view (via MiniDailyTimeline).
 
 **Features:**
-- Hour-by-hour grid layout
+- Hour-by-hour grid layout (hierarchical lines: major hours `border-border/30`, minor `border-border/10`; matches Class Schedule styling)
 - Drop zone for task placement (double-click to create, drop from pool when onDropFromPool provided)
 - Time markers and labels
 - Period-specific styling (night, morning, afternoon, evening)

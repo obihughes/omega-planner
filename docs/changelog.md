@@ -1,3 +1,13 @@
+## 2025-02-21
+
+- **Daily View Timeline: Cleaner Grid Styling** (2025-02-21)
+  - Aligned Daily View timeline grid with Class Schedule for a cleaner look.
+  - Replaced hardcoded `border-gray-200 dark:border-gray-700` (which could appear blue-ish in dark themes) with theme-aware `border-border/20`, `border-border/30`, `border-border/10`.
+  - Hierarchical grid lines: major hour boundaries (every 6th) use `border-border/30`, minor hours use `border-border/10`.
+  - Header and column borders now use `border-border/*` for consistent theming.
+  - Removed unused `GRID_LINE_STYLE` from `lib/constants.ts`.
+  - **Files affected**: `components/planner/TimelineColumn.tsx`, `lib/constants.ts`, `docs/changelog.md`
+
 ## 2025-02-14
 
 - **Daily Planner: Tasks vs Class Schedule View Toggle** (2025-02-14)

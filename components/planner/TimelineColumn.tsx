@@ -11,7 +11,6 @@ import {
     TIMELINE_SPLIT_HOUR_3,
     PIXELS_PER_HOUR,
     TIMELINE_COLUMN_HEIGHT,
-    GRID_LINE_STYLE,
     DEFAULT_TASK_COLOR_INDEX,
     TASK_COLORS
 } from '../../lib/constants';
@@ -231,13 +230,13 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
     const renderTimelineHeader = () => {
         const timelineHours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
         return (
-            <div className="flex h-8 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-card z-20">
+            <div className="flex h-8 border-b border-border/30 sticky top-0 bg-card/95 backdrop-blur-sm z-20">
                 {timelineHours.map((hour) => (
-                    <div key={`timeline-hour-${hour}-${period}`} className="flex-none text-xs text-muted-foreground pt-1 pl-0.5 border-l border-gray-200 dark:border-gray-700" style={{ width: `${pixelsPerHourEffective}px` }}>
+                    <div key={`timeline-hour-${hour}-${period}`} className="flex-none text-xs text-muted-foreground pt-1 pl-0.5 border-l border-border/20" style={{ width: `${pixelsPerHourEffective}px` }}>
                         {formatTime(hour)}
                     </div>
                 ))}
-                <div key={`timeline-end-marker-${period}`} className="flex-none border-l-2 border-gray-200 dark:border-gray-700" style={{ width: `2px` }}></div>
+                <div key={`timeline-end-marker-${period}`} className="flex-none border-l border-border/20" style={{ width: `1px` }}></div>
             </div>
         );
     };
@@ -245,7 +244,7 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
     return (
         <div className={`w-full transition-colors duration-200 relative ${isTargetCopyDay ? 'bg-blue-50/80 dark:bg-blue-900/20 ring-2 ring-blue-400 dark:ring-blue-500' : ''}`}>
             <div
-                className={`relative border border-gray-200 dark:border-gray-700 rounded-md flex flex-col`}
+                className={`relative border border-border/20 rounded-md flex flex-col`}
                 style={{ width: `${pixelsPerHourEffective * (endHour - startHour)}px`, minWidth: fillWidth ? '100%' : undefined, height: `${columnHeight}px`, overflow: 'hidden' }}
                 data-section-period={period}
                 data-day-offset={dayOffset}
@@ -263,8 +262,8 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
                     onDrop={onDropFromPool && targetDate ? handleDropFromPoolInner : undefined}
                 >
                     {isTargetCopyDay && <div className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center text-blue-500 dark:text-blue-300 font-bold text-lg">Click to paste task</div>}
-                    {Array.from({ length: endHour - startHour + 1 }).map((_, i) => (
-                        <div key={`grid-${i}-${dayOffset}-${period}`} className={`border-l ${GRID_LINE_STYLE}`} style={{ left: `${i * pixelsPerHourEffective}px`, height: '100%', top: 0, position: 'absolute' }} />
+                    {Array.from({ length: endHour - startHour }).map((_, i) => (
+                        <div key={`grid-${i}-${dayOffset}-${period}`} className={`absolute h-full border-l ${i % 6 === 0 ? 'border-border/30' : 'border-border/10'}`} style={{ left: `${i * pixelsPerHourEffective}px`, top: 0 }} />
                     ))}
                     {currentTimeMarker}
                     {finalTasksToRender.map((task) => {
