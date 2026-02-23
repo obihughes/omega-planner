@@ -11,7 +11,7 @@ import { useCalendarView } from '@/app/context/CalendarViewContext';
 import { useSearchParams } from 'next/navigation';
 import { useDailyPlanner } from '@/hooks/useDailyPlannerState';
 
-type CalendarView = 'yearly' | 'monthly' | 'timeline';
+type CalendarView = 'yearly' | 'monthly' | 'timeline' | 'weekly-goals';
 
 export default function CalendarPage() {
   const {
@@ -48,11 +48,11 @@ export default function CalendarPage() {
   const { viewMode: currentView, setViewMode: setCurrentView } = useCalendarView();
   const params = useSearchParams();
   
-  // Respect ?view=monthly|yearly|timeline from query params
+  // Respect ?view=monthly|yearly|timeline|weekly-goals from query params
   useEffect(() => {
     const v = params?.get('view');
-    if (v === 'monthly' || v === 'yearly' || v === 'timeline') {
-      setCurrentView(v as CalendarView);
+    if (v === 'monthly' || v === 'yearly' || v === 'timeline' || v === 'weekly-goals') {
+      setCurrentView(v as CalendarViewMode);
     }
   }, [params, setCurrentView]);
   const initialDateFromQuery = useMemo(() => {

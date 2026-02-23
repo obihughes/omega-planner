@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AppLayout } from '@/components/ui/AppLayout';
 import { dateFromDateKey } from '@/utils/dateUtils';
+import { useViewMode } from '@/app/context/ViewModeContext';
 
 export default function Home() {
   const [DailyPlanner, setDailyPlanner] = useState<React.ComponentType | null>(null);
@@ -57,14 +58,27 @@ export default function Home() {
     <AppLayout>
       <div className="h-full p-4">
         <div className="max-w-7xl mx-auto h-full">
-          <DailyPlannerWrapper Component={DailyPlanner} paramsDate={params?.get('date') || undefined} />
+          <DailyPlannerWrapper 
+            Component={DailyPlanner} 
+            paramsDate={params?.get('date') || undefined}
+            paramsView={params?.get('view') || undefined}
+          />
         </div>
       </div>
     </AppLayout>
   );
 } 
 
-function DailyPlannerWrapper({ Component, paramsDate }: { Component: React.ComponentType; paramsDate?: string }) {
+function DailyPlannerWrapper({ Component, paramsDate, paramsView }: { Component: React.ComponentType; paramsDate?: string; paramsView?: string }) {
+  const { setViewMode } = useViewMode();
+  
+  // Handle view mode from URL query param
+  useEffect(() => {
+    if (paramsView === 'daily' || paramsView === 'weekly' || paramsView === 'monthly') {
+      setViewMode(paramsView);
+    }
+  }, [paramsView, setViewMode]);
+  
   // We pass the date via a global event to avoid tight coupling to the lazy component type
   useEffect(() => {
     if (!paramsDate) return;

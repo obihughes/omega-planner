@@ -293,41 +293,42 @@ export function Navigation() {
                     )}>
                       {item.subViews.map((subView) => {
                         const SubIcon = subView.icon;
+                        // Build href for sub-view
+                        let subViewHref: string;
+                        if ((subView as any).href) {
+                          // Sub-view has direct href (e.g., class schedule, visualizer)
+                          subViewHref = (subView as any).href;
+                        } else if (item.key === 'daily-planner') {
+                          // Planner sub-views: add view query param
+                          subViewHref = `/?view=${(subView as any).mode}`;
+                        } else if (item.key === 'calendar') {
+                          // Calendar sub-views: add view query param
+                          subViewHref = `/calendar?view=${(subView as any).mode}`;
+                        } else {
+                          subViewHref = item.href;
+                        }
+                        
                         return (
-                          <button 
+                          <Link
                             key={subView.key}
-                            onClick={() => {
-                              if (item.key === 'daily-planner') {
-                                // Handle class schedule navigation
-                                if (subView.key === 'planner-class-schedule') {
-                                  const target = (subView as any).href;
-                                  if (target && pathname !== target) {
-                                    router.push(target);
-                                  }
-                                } else {
-                                  // planner subview
-                                  if (pathname !== '/') {
-                                    router.push(item.href);
-                                  }
+                            href={subViewHref}
+                            onClick={(e) => {
+                              // Handle view mode setting for same-page navigation
+                              if (item.key === 'daily-planner' && pathname === '/') {
+                                // Same page, just update view mode
+                                if (!(subView as any).href) {
+                                  e.preventDefault();
                                   setPlannerViewMode((subView as any).mode as any);
                                 }
-                              } else if (item.key === 'calendar') {
-                                // calendar subview
-                                if ((subView as any).href) {
-                                  // Handle visualizer navigation (has href)
-                                  const target = (subView as any).href;
-                                  if (target && pathname !== target) {
-                                    router.push(target);
-                                  }
-                                } else {
-                                  // Regular calendar view mode
-                                  if (pathname !== '/calendar') {
-                                    router.push('/calendar');
-                                  }
+                              } else if (item.key === 'calendar' && pathname === '/calendar') {
+                                // Same page, just update view mode
+                                if (!(subView as any).href) {
+                                  e.preventDefault();
                                   setCalendarViewMode((subView as any).mode as any);
                                 }
                               }
-                            }} 
+                              // For different pages or direct hrefs, let Link handle navigation
+                            }}
                             className={cn(
                               "flex items-center font-normal transition-all duration-200 w-full text-left",
                               isCollapsed 
@@ -345,7 +346,7 @@ export function Navigation() {
                             {!isCollapsed && (
                               <span className="tracking-tight flex-1 truncate">{subView.label}</span>
                             )}
-                          </button>
+                          </Link>
                         );
                       })}
                     </div>
