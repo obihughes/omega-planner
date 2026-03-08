@@ -47,3 +47,5 @@ export type {
   ShoppingItem,
   ShoppingStorageData
 } from './shopping';
+
+export type { Subject, StudyEntry, StudyStorageData } from './study';

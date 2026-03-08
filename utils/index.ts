@@ -16,7 +16,10 @@ export { formatTime, formatDuration } from './formatters';
 export * from './dateUtils';
 
 // Task utilities
-export * from './taskUtils'; 
+export * from './taskUtils';
+
+// Study storage
+export { StudyStorage } from './studyStorage'; 
 
 // Ingredient utilities
 export * from './ingredientUtils';
