@@ -273,6 +273,12 @@ The Saved Days feature allows you to save daily task configurations as reusable 
 - **Event Planning:** Save template schedules for recurring events or meetings
 - **Quick Setup:** Rapidly populate new days with common task patterns
 
+### Weekly Overview Page (`/calendar?view=weekly-goals`)
+The Weekly Overview page provides an inline switch between two views for quick comparison:
+- **Weekly Overview**: 4-week grid of weekly goals with drag-and-drop, calendar events, and optional Weekly Notes panel.
+- **Study Tracker**: Same Study Planner component as `/study-tracker`, embedded in-place with full subject/task management.
+- **Weekly Notes**: Hidden by default. Click "Open Notes" to reveal the checklist panel; click the close icon to hide it again. When hidden, no sidebar column is shown.
+
 ### Calendar Views (under Daily Planner)
 The Monthly and Yearly calendar views are accessible from the main navigation under `Daily Planner`:
 - Scheduling View: the planner's own monthly mode

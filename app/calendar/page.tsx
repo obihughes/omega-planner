@@ -3,15 +3,18 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { AppLayout } from '@/components/ui/AppLayout';
 import { YearCalendar, MonthlyCalendar, MonthlyTimelineView, WeeklyGoalsCalendarView } from '@/components/calendar';
+import { StudyTracker } from '@/components/study-tracker';
+import { StudyTrackerProvider } from '@/app/context/StudyTrackerContext';
 import { useCalendarData } from '@/hooks/useCalendarData';
 import { CalendarEvent, CalendarPeriod } from '@/types/calendar';
-import { Settings, Download, RefreshCw, Trash2 } from 'lucide-react';
+import { Settings, Download, RefreshCw, Trash2, Target, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useCalendarView } from '@/app/context/CalendarViewContext';
+import { useCalendarView, type CalendarViewMode } from '@/app/context/CalendarViewContext';
 import { useSearchParams } from 'next/navigation';
 import { useDailyPlanner } from '@/hooks/useDailyPlannerState';
 
 type CalendarView = 'yearly' | 'monthly' | 'timeline' | 'weekly-goals';
+type WeeklyPageMode = 'weekly-overview' | 'study-tracker';
 
 export default function CalendarPage() {
   const {
@@ -45,6 +48,7 @@ export default function CalendarPage() {
   } = useDailyPlanner();
 
   const [showSettings, setShowSettings] = useState(false);
+  const [weeklyPageMode, setWeeklyPageMode] = useState<WeeklyPageMode>('weekly-overview');
   const { viewMode: currentView, setViewMode: setCurrentView } = useCalendarView();
   const params = useSearchParams();
   
@@ -146,23 +150,52 @@ export default function CalendarPage() {
             />
           )
         ) : currentView === 'weekly-goals' ? (
-          <WeeklyGoalsCalendarView
-            calendarData={data}
-            onNavigateToDaily={(date) => {
-              // Navigate to home page daily planner with a local-safe YYYY-MM-DD date key
-              try {
-                const d = new Date(date);
-                d.setHours(0, 0, 0, 0);
-                const year = d.getFullYear();
-                const month = String(d.getMonth() + 1).padStart(2, '0');
-                const day = String(d.getDate()).padStart(2, '0');
-                const dateKey = `${year}-${month}-${day}`;
-                window.location.href = `/?date=${dateKey}`;
-              } catch {
-                window.location.href = `/`;
-              }
-            }}
-          />
+          <div className="h-full flex flex-col">
+            <div className="flex items-center gap-1.5 px-4 py-3 border-b border-border/50 mb-0">
+              <Button
+                variant={weeklyPageMode === 'weekly-overview' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setWeeklyPageMode('weekly-overview')}
+                className="h-8 px-3 gap-1.5 text-xs"
+              >
+                <Target className="w-3.5 h-3.5" />
+                Weekly Overview
+              </Button>
+              <Button
+                variant={weeklyPageMode === 'study-tracker' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setWeeklyPageMode('study-tracker')}
+                className="h-8 px-3 gap-1.5 text-xs"
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                Study Tracker
+              </Button>
+            </div>
+            <div className="flex-1 min-h-0">
+              {weeklyPageMode === 'weekly-overview' ? (
+                <WeeklyGoalsCalendarView
+                  calendarData={data}
+                  onNavigateToDaily={(date) => {
+                    try {
+                      const d = new Date(date);
+                      d.setHours(0, 0, 0, 0);
+                      const year = d.getFullYear();
+                      const month = String(d.getMonth() + 1).padStart(2, '0');
+                      const day = String(d.getDate()).padStart(2, '0');
+                      const dateKey = `${year}-${month}-${day}`;
+                      window.location.href = `/?date=${dateKey}`;
+                    } catch {
+                      window.location.href = `/`;
+                    }
+                  }}
+                />
+              ) : (
+                <StudyTrackerProvider>
+                  <StudyTracker />
+                </StudyTrackerProvider>
+              )}
+            </div>
+          </div>
         ) : (
           <YearCalendar
             data={data}

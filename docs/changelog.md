@@ -1,3 +1,12 @@
+## 2025-03-12
+
+- **Weekly Overview + Study Tracker Convergence** (2025-03-12)
+  - **Inline view switch**: Added toggle on `/calendar?view=weekly-goals` to switch between Weekly Overview and Study Tracker without leaving the page, enabling quick comparison.
+  - **Study Tracker embedding**: Study Tracker is now rendered in-place when selected, wrapped with `StudyTrackerProvider`; data remains isolated (goals vs study storage).
+  - **Visual alignment**: Weekly Overview header and layout updated to match Study Tracker styling (border-border/50, gap-1.5, consistent spacing).
+  - **Weekly Notes rework**: Notes panel is fully hidden when compressed. "Open Notes" button in header reveals the panel on demand; close icon hides it. No persistent narrow strip when closed.
+  - **Files affected**: `app/calendar/page.tsx`, `components/calendar/WeeklyGoalsCalendarView.tsx`, `components/calendar/ChecklistSidebar.tsx`, `docs/components.md`, `docs/planner.md`, `docs/changelog.md`
+
 ## 2025-02-21
 
 - **Daily View Timeline: Cleaner Grid Styling** (2025-02-21)

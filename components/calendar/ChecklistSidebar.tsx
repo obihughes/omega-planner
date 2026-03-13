@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { CheckSquare2, Square, Plus, Trash2, Edit3, X } from 'lucide-react';
+import { CheckSquare2, Square, Plus, Trash2, Edit3, X, PanelLeftClose } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ChecklistItem {
@@ -14,12 +14,12 @@ interface ChecklistItem {
 }
 
 interface ChecklistSidebarProps {
-  isExpanded?: boolean;
+  onClose?: () => void;
 }
 
 const STORAGE_KEY = 'omega-planner-weekly-sidebar';
 
-export function ChecklistSidebar({ isExpanded = true }: ChecklistSidebarProps) {
+export function ChecklistSidebar({ onClose }: ChecklistSidebarProps) {
   const [items, setItems] = useState<ChecklistItem[]>([]);
   const [newItemText, setNewItemText] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -110,29 +110,30 @@ export function ChecklistSidebar({ isExpanded = true }: ChecklistSidebarProps) {
   const completedCount = items.filter(item => item.completed).length;
   const totalCount = items.length;
 
-  if (!isExpanded) {
-    return (
-      <div className="flex flex-col h-full bg-card border-l border-border items-center py-4">
-        <div className="text-xs text-muted-foreground font-medium transform -rotate-90 whitespace-nowrap">
-          Weekly Notes
-        </div>
-        <div className="text-xs text-muted-foreground mt-2">
-          {completedCount}/{totalCount}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex flex-col h-full bg-card border-l border-border">
+    <div className="flex flex-col h-full bg-card">
       {/* Header */}
       <div className="p-6 border-b border-border">
-        <h3 className="font-medium text-base mb-4 flex items-center justify-between">
-          <span>Weekly Notes</span>
-          <span className="text-xs text-muted-foreground font-normal">
-            {completedCount}/{totalCount}
-          </span>
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-medium text-base flex items-center gap-2">
+            <span>Weekly Notes</span>
+            <span className="text-xs text-muted-foreground font-normal">
+              {completedCount}/{totalCount}
+            </span>
+          </h3>
+          {onClose && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="h-8 w-8 p-0"
+              title="Close notes"
+              aria-label="Close notes"
+            >
+              <PanelLeftClose className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
         <div className="flex gap-2">
           <Input
             type="text"

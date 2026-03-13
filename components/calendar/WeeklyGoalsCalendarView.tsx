@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { GoalsStorage, dateFromDateKey } from '@/utils';
 import { WeekGoals, WeeklyGoal } from '@/types';
-import { Trash2, Plus, ExternalLink, MoreVertical, Edit2, Save, X, StickyNote, ChevronLeft, ChevronRight, Calendar, Clock, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Trash2, Plus, ExternalLink, MoreVertical, Edit2, Save, X, StickyNote, ChevronLeft, ChevronRight, Calendar, Clock, PanelLeftClose } from 'lucide-react';
 import { ChecklistSidebar } from './ChecklistSidebar';
 
 const GOAL_COLORS = [
@@ -71,8 +71,8 @@ export function WeeklyGoalsCalendarView({ calendarData, onNavigateToDaily }: Wee
   // State for week navigation (0 = current week, -1 = previous week, 1 = next week, etc.)
   const [weekOffset, setWeekOffset] = useState(0);
 
-  // State for sidebar expand/compress
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
+  // State for notes panel: hidden by default, shown only when "Open Notes" is pressed
+  const [isNotesOpen, setIsNotesOpen] = useState(false);
 
   // Generate 28 days: current week Monday-Sunday, next 3 weeks (4 rows total)
   const days = useMemo(() => {
@@ -232,10 +232,10 @@ export function WeeklyGoalsCalendarView({ calendarData, onNavigateToDaily }: Wee
 
   return (
     <div className="h-full flex flex-col">
-      <header className="flex items-center justify-between px-6 py-4 border-b">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-border/50">
         <div className="flex items-center gap-4">
           <h1 className="text-xl font-medium">Weekly Goals</h1>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <Button
               variant="outline"
               size="sm"
@@ -271,22 +271,22 @@ export function WeeklyGoalsCalendarView({ calendarData, onNavigateToDaily }: Wee
           </div>
           <Button
             variant="outline"
-            size="default"
-            onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
-            className="h-9 px-3 gap-2"
-            title={isSidebarExpanded ? "Compress sidebar" : "Expand sidebar"}
+            size="sm"
+            onClick={() => setIsNotesOpen(!isNotesOpen)}
+            className="h-8 px-3 gap-2"
+            title={isNotesOpen ? "Hide notes" : "Open notes"}
           >
-            {isSidebarExpanded ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+            {isNotesOpen ? <PanelLeftClose className="w-4 h-4" /> : <StickyNote className="w-4 h-4" />}
             <span className="text-xs font-medium">
-              {isSidebarExpanded ? "Compress" : "Expand"}
+              {isNotesOpen ? "Close" : "Open Notes"}
             </span>
           </Button>
         </div>
       </header>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex min-h-0 overflow-hidden">
         {/* Main Calendar Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-6">
+        <div className="flex-1 overflow-y-auto px-6 py-6 min-h-0">
           <div className="grid grid-cols-7 gap-4 auto-rows-fr">
             {days.map((d) => {
               const dateKey = toDateKey(d);
@@ -326,10 +326,12 @@ export function WeeklyGoalsCalendarView({ calendarData, onNavigateToDaily }: Wee
           </div>
         </div>
 
-        {/* Right Sidebar - Weekly Checklist */}
-        <div className={`${isSidebarExpanded ? 'w-80' : 'w-12'} border-l border-border bg-card transition-all duration-200`}>
-          <ChecklistSidebar isExpanded={isSidebarExpanded} />
-        </div>
+        {/* Right Sidebar - Weekly Notes (only when opened) */}
+        {isNotesOpen && (
+          <div className="w-80 border-l border-border bg-card flex-shrink-0">
+            <ChecklistSidebar onClose={() => setIsNotesOpen(false)} />
+          </div>
+        )}
       </div>
     </div>
   );

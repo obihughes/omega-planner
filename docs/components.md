@@ -35,12 +35,20 @@ Full year calendar view.
 Monthly calendar view.
 
 ### WeeklyGoalsCalendarView (`components/calendar/WeeklyGoalsCalendarView.tsx`)
-Weekly goals management interface.
+Weekly goals management interface. Accessible from `/calendar?view=weekly-goals` alongside an inline switch to Study Tracker for quick comparison.
+- **Inline view switch**: Toggle between Weekly Overview (goals) and Study Tracker within the same page.
+- **Weekly Notes**: Hidden by default; click "Open Notes" in the header to reveal the notes panel. Notes are fully absent when compressed.
+- **Styling**: Matches Study Tracker header spacing, border treatment, and grid layout for visual consistency.
+
+### ChecklistSidebar (`components/calendar/ChecklistSidebar.tsx`)
+Weekly notes checklist panel. Rendered only when opened via "Open Notes" in Weekly Overview.
+- **Props**: `onClose?: () => void` – optional callback to hide the panel.
+- **Storage**: LocalStorage key `omega-planner-weekly-sidebar`.
 
 ## Study Tracker Components
 
 ### StudyTracker (`components/study-tracker/StudyTracker.tsx`)
-**Page**: `app/study-tracker/page.tsx`
+**Pages**: `app/study-tracker/page.tsx`, embedded in `/calendar?view=weekly-goals` via inline switch.
 
 Study planner with two views: Weekly (day cards with tasks) and Monthly (calendar with subject filter).
 - **View toggle**: Switch between Weekly and Monthly views.
