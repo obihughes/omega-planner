@@ -322,8 +322,8 @@ export default React.memo(function ClassSchedule() {
   };
 
   return (
-    <div className="h-full bg-background text-foreground transition-colors">
-      <div className="w-full mx-auto h-full">
+    <div className="h-full flex flex-col bg-background text-foreground transition-colors">
+      <div className="w-full mx-auto flex flex-col flex-1 min-h-0">
         {activeEditModalTask && (
           <EditTaskModal
             taskToEdit={activeEditModalTask}
@@ -333,9 +333,9 @@ export default React.memo(function ClassSchedule() {
           />
         )}
 
-        <div className="space-y-6 px-6 pb-6">
-          <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card/95 backdrop-blur-sm">
+        <div className="flex flex-col flex-1 min-h-0 px-6 pb-6 gap-6">
+          <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden flex flex-col flex-1 min-h-0">
+            <div className="flex-none flex items-center justify-between px-4 py-2 border-b border-border bg-card/95 backdrop-blur-sm">
               <div className="flex items-center gap-2">
                 <span className="text-foreground font-medium">
                   Class Schedule
@@ -356,7 +356,7 @@ export default React.memo(function ClassSchedule() {
 
               </div>
             </div>
-            <div className="overflow-hidden h-[calc(100vh-200px)]">
+            <div className="flex-1 min-h-0 overflow-hidden">
               <div className="flex flex-col h-full overflow-y-auto" ref={dailyScrollRef}>
                   <div className="flex justify-center p-4">
                     <div

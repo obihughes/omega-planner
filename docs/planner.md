@@ -115,6 +115,7 @@ The Class Schedule view (`/class-schedule`) provides a recurring weekly timetabl
 - Classes are stored by day-of-week (0 = Sunday ... 6 = Saturday) rather than specific dates
 - Each class repeats weekly on its assigned day
 - Uses the same task card rendering as the daily planner for consistency
+- Layout uses flex column with `flex-1 min-h-0` so the schedule grid fills the main content area
 
 ## Usage
 
