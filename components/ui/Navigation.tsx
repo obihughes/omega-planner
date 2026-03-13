@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   Calendar, CalendarDays, FolderKanban, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
-  Clock, Archive, Trash2, CalendarCheck, CalendarRange, Folder, Files, ClipboardList, ChefHat, Settings, BookOpen
+  Clock, Archive, Trash2, CalendarCheck, CalendarRange, Folder, Files, ClipboardList, ChefHat, Settings
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
@@ -152,8 +152,7 @@ export function Navigation() {
       subViews: [
         { key: 'planner-daily', type: 'planner', mode: 'daily', label: 'Daily', icon: CalendarCheck, active: pathname === '/' && plannerViewMode === 'daily' },
         { key: 'planner-weekly', type: 'planner', mode: 'weekly', label: 'Week', icon: CalendarDays, active: pathname === '/' && plannerViewMode === 'weekly' },
-        { key: 'planner-class-schedule', label: 'Class Schedule', icon: Clock, href: '/class-schedule', active: pathname === '/class-schedule' },
-        { key: 'study-tracker', label: 'Study Tracker', icon: BookOpen, href: '/study-tracker', active: pathname === '/study-tracker' }
+        { key: 'planner-class-schedule', label: 'Class Schedule', icon: Clock, href: '/class-schedule', active: pathname === '/class-schedule' }
       ]
     },
     {

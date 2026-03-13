@@ -6,7 +6,7 @@ import { StudyWeeklyView } from './StudyWeeklyView';
 import { SubjectManagementModal } from './SubjectManagementModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Settings2 } from 'lucide-react';
+import { Plus, Settings2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export function StudyTracker() {
   const [showSubjectModal, setShowSubjectModal] = useState(false);
@@ -15,6 +15,11 @@ export function StudyTracker() {
     addSubject,
     updateSubject,
     removeSubject,
+    goToPreviousWeek,
+    goToNextWeek,
+    goToCurrentWeek,
+    weekOffset,
+    twoWeekRangeLabel,
   } = useStudyTrackerContext();
 
   const [isAddingSubject, setIsAddingSubject] = useState(false);
@@ -47,8 +52,41 @@ export function StudyTracker() {
   return (
     <div className="h-full flex flex-col">
       <header className="flex items-center justify-between px-6 py-4 border-b border-border/50">
-        <h1 className="text-xl font-medium">Study Planner</h1>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-4">
+          <h1 className="text-xl font-medium">Study Planner</h1>
+          <div className="flex items-center gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={goToPreviousWeek}
+              className="h-8 w-8 p-0"
+              title="Previous week"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <Button
+              variant={weekOffset === 0 ? 'default' : 'outline'}
+              size="sm"
+              onClick={goToCurrentWeek}
+              className="h-8 px-3 text-xs"
+              title="Go to current week"
+            >
+              Today
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={goToNextWeek}
+              className="h-8 w-8 p-0"
+              title="Next week"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="text-sm text-muted-foreground">{twoWeekRangeLabel}</div>
+          <div className="flex items-center gap-2 flex-shrink-0">
           {isAddingSubject ? (
             <div className="flex gap-2">
               <Input
@@ -90,6 +128,7 @@ export function StudyTracker() {
               </Button>
             </>
           )}
+          </div>
         </div>
       </header>
 

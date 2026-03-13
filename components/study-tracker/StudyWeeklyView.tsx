@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useStudyTrackerContext } from '@/app/context/StudyTrackerContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { StudyTaskItem } from './StudyTaskItem';
 import { StudyTask, Subject } from '@/types/study';
 import { cn } from '@/lib/utils';
@@ -16,17 +16,12 @@ export function StudyWeeklyView() {
     subjects,
     twoWeekDays,
     todayKey,
-    twoWeekRangeLabel,
     getTasksForDate,
     addTask,
     toggleTask,
     removeTask,
     updateTask,
     moveTask,
-    goToPreviousWeek,
-    goToNextWeek,
-    goToCurrentWeek,
-    weekOffset,
   } = useStudyTrackerContext();
 
   const subjectMap = React.useMemo(() => new Map(subjects.map((s) => [s.id, s])), [subjects]);
@@ -44,42 +39,7 @@ export function StudyWeeklyView() {
 
   return (
     <div className="h-full flex flex-col">
-      <header className="flex items-center justify-between px-6 py-4 border-b">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={goToPreviousWeek}
-              className="h-8 w-8 p-0"
-              title="Previous week"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <Button
-              variant={weekOffset === 0 ? 'default' : 'outline'}
-              size="sm"
-              onClick={goToCurrentWeek}
-              className="h-8 px-3 text-xs"
-              title="Go to current week"
-            >
-              Today
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={goToNextWeek}
-              className="h-8 w-8 p-0"
-              title="Next week"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-        <div className="text-sm text-muted-foreground">{twoWeekRangeLabel}</div>
-      </header>
-
-      <div className="flex-1 overflow-y-auto px-6 py-6">
+      <div className="flex-1 overflow-y-auto px-6 py-6 min-h-0">
         <div className="grid grid-cols-7 gap-4 auto-rows-fr">
           {twoWeekDays.map(({ date, dateKey }) => {
             const tasks = getTasksForDate(dateKey).slice(0, MAX_TASKS_PER_DAY);
