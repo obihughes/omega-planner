@@ -3,23 +3,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useStudyTrackerContext } from '@/app/context/StudyTrackerContext';
 import { StudyWeeklyView } from './StudyWeeklyView';
-import { StudyMonthlyView } from './StudyMonthlyView';
 import { SubjectManagementModal } from './SubjectManagementModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, CalendarRange, CalendarDays, Settings2 } from 'lucide-react';
-
-type StudyViewMode = 'weekly' | 'monthly';
+import { Plus, Settings2 } from 'lucide-react';
 
 export function StudyTracker() {
-  const [viewMode, setViewMode] = useState<StudyViewMode>('weekly');
   const [showSubjectModal, setShowSubjectModal] = useState(false);
   const {
     subjects,
     addSubject,
     updateSubject,
     removeSubject,
-    goToWeekContaining,
   } = useStudyTrackerContext();
 
   const [isAddingSubject, setIsAddingSubject] = useState(false);
@@ -49,38 +44,11 @@ export function StudyTracker() {
     }
   };
 
-  const handleNavigateToWeek = (date: Date) => {
-    setViewMode('weekly');
-    goToWeekContaining(date);
-  };
-
   return (
     <div className="h-full flex flex-col">
       <header className="flex items-center justify-between px-6 py-4 border-b border-border/50">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-medium">Study Planner</h1>
-          <div className="flex items-center gap-1.5">
-            <Button
-              variant={viewMode === 'weekly' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('weekly')}
-              className="h-8 px-3 gap-1.5 text-xs"
-            >
-              <CalendarRange className="w-3.5 h-3.5" />
-              Weekly
-            </Button>
-            <Button
-              variant={viewMode === 'monthly' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('monthly')}
-              className="h-8 px-3 gap-1.5 text-xs"
-            >
-              <CalendarDays className="w-3.5 h-3.5" />
-              Monthly
-            </Button>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
+        <h1 className="text-xl font-medium">Study Planner</h1>
+        <div className="flex items-center gap-2 flex-shrink-0">
           {isAddingSubject ? (
             <div className="flex gap-2">
               <Input
@@ -126,11 +94,7 @@ export function StudyTracker() {
       </header>
 
       <div className="flex-1 flex flex-col min-h-0">
-        {viewMode === 'weekly' ? (
-          <StudyWeeklyView />
-        ) : (
-          <StudyMonthlyView onNavigateToWeek={handleNavigateToWeek} />
-        )}
+        <StudyWeeklyView />
       </div>
 
       <SubjectManagementModal

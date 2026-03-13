@@ -50,16 +50,13 @@ Weekly notes checklist panel. Rendered only when opened via "Open Notes" in Week
 ### StudyTracker (`components/study-tracker/StudyTracker.tsx`)
 **Pages**: `app/study-tracker/page.tsx`, embedded in `/calendar?view=weekly-goals` via inline switch.
 
-Study planner with two views: Weekly (day cards with tasks) and Monthly (calendar with subject filter).
+Study planner with weekly view only: 2-week grid of day cards with tasks. Header matches Weekly Overview for consistent spacing when switching views.
 - **View toggle**: Switch between Weekly and Monthly views.
 - **Subject management**: Add subjects from header; edit/remove via task edit modal.
 - **Storage**: LocalStorage via `utils/studyStorage.ts` (`omega-planner-study-v1`).
 
 ### StudyWeeklyView (`components/study-tracker/StudyWeeklyView.tsx`)
 2-week grid of day cards (Mon–Sun × 2 rows). Each card: weekday, date, add button, study tasks with subject color, checkbox, edit. Supports drag-and-drop between days.
-
-### StudyMonthlyView (`components/study-tracker/StudyMonthlyView.tsx`)
-Single-month calendar grid. Subject filter to show which days have study activity for selected subjects. Colored dots per subject on each day. Click day to navigate to weekly view for that week.
 
 ### StudyTaskItem (`components/study-tracker/StudyTaskItem.tsx`)
 Reusable task card: subject-colored block, title, checkbox, edit modal, delete.
@@ -69,6 +66,3 @@ Legacy: one subject row with editable name and 7 day cells. Retired from main la
 
 ### StudyCell (`components/study-tracker/StudyCell.tsx`)
 Legacy: inline-editable cell for topics. Retired from main layout.
-
-### StudyFilters (`components/study-tracker/StudyFilters.tsx`)
-Week navigation and subject multi-select filter dropdown.

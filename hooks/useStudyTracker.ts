@@ -31,7 +31,6 @@ export function useStudyTracker() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [studyTasks, setStudyTasks] = useState<StudyTask[]>([]);
   const [weekOffset, setWeekOffset] = useState(0);
-  const [subjectFilter, setSubjectFilter] = useState<Set<string>>(new Set());
 
   const loadData = useCallback(() => {
     const data = StudyStorage.loadAll();
@@ -77,21 +76,9 @@ export function useStudyTracker() {
 
   const todayKey = getTodayDateKey();
 
-  const filteredSubjects = useMemo(() => {
-    if (subjectFilter.size === 0) return subjects;
-    return subjects.filter((s) => subjectFilter.has(s.id));
-  }, [subjects, subjectFilter]);
-
   const getTasksForDate = useCallback(
     (dateKey: string): StudyTask[] => {
       return studyTasks.filter((t) => t.dateKey === dateKey);
-    },
-    [studyTasks]
-  );
-
-  const getTasksForDateRange = useCallback(
-    (startKey: string, endKey: string): StudyTask[] => {
-      return studyTasks.filter((t) => t.dateKey >= startKey && t.dateKey <= endKey);
     },
     [studyTasks]
   );
@@ -156,28 +143,6 @@ export function useStudyTracker() {
   const goToNextWeek = useCallback(() => setWeekOffset((p) => p + 1), []);
   const goToCurrentWeek = useCallback(() => setWeekOffset(0), []);
 
-  const goToWeekContaining = useCallback((date: Date) => {
-    const today = new Date();
-    today.setHours(12, 0, 0, 0);
-    const targetMonday = getMondayStart(date);
-    const todayMonday = getMondayStart(today);
-    const diffMs = targetMonday.getTime() - todayMonday.getTime();
-    const diffWeeks = Math.round(diffMs / (7 * 24 * 60 * 60 * 1000));
-    setWeekOffset(diffWeeks);
-  }, []);
-
-  const toggleSubjectFilter = useCallback((id: string, allSubjectIds: string[]) => {
-    setSubjectFilter((prev) => {
-      const next = new Set(prev);
-      if (prev.size === 0) {
-        return new Set(allSubjectIds.filter((x) => x !== id));
-      }
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
-
   const weekRangeLabel = useMemo(() => {
     if (weekDays.length === 0) return '';
     const start = weekDays[0].date;
@@ -207,15 +172,12 @@ export function useStudyTracker() {
 
   return {
     subjects,
-    filteredSubjects,
     studyTasks,
     weekDays,
     twoWeekDays,
     todayKey,
     weekOffset,
-    subjectFilter,
     getTasksForDate,
-    getTasksForDateRange,
     addTask,
     updateTask,
     removeTask,
@@ -227,8 +189,6 @@ export function useStudyTracker() {
     goToPreviousWeek,
     goToNextWeek,
     goToCurrentWeek,
-    goToWeekContaining,
-    toggleSubjectFilter,
     weekRangeLabel,
     twoWeekRangeLabel,
     loadData,

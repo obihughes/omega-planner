@@ -1,5 +1,11 @@
 ## 2025-03-12
 
+- **Study Tracker: Remove Weekly/Monthly Toggle** (2025-03-12)
+  - Removed Weekly and Monthly view toggle from Study Tracker to align header layout with Weekly Overview and fix top spacing mismatch.
+  - Deleted `StudyMonthlyView` and `StudyFilters` components and related dead code (`getTasksForDateRange`, `goToWeekContaining`, `subjectFilter`, `toggleSubjectFilter`, `filteredSubjects` from `useStudyTracker`).
+  - Study Tracker now shows only the weekly 2-week grid view.
+  - **Files affected**: `components/study-tracker/StudyTracker.tsx`, `hooks/useStudyTracker.ts`, `components/study-tracker/index.ts`, `docs/components.md`, `docs/changelog.md`; deleted: `StudyMonthlyView.tsx`, `StudyFilters.tsx`
+
 - **Weekly Overview + Study Tracker Convergence** (2025-03-12)
   - **Inline view switch**: Added toggle on `/calendar?view=weekly-goals` to switch between Weekly Overview and Study Tracker without leaving the page, enabling quick comparison.
   - **Study Tracker embedding**: Study Tracker is now rendered in-place when selected, wrapped with `StudyTrackerProvider`; data remains isolated (goals vs study storage).
