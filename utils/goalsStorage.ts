@@ -2,6 +2,7 @@ import { ImportantDate, WeekGoals, WeeklyGoal, WeeklyGoalsStorageData } from '@/
 
 const STORAGE_KEY = 'omega-planner-weekly-goals-v1';
 const STORAGE_VERSION = '1.0';
+const MAX_GOALS_PER_DAY = 6;
 
 export const GoalsStorage = {
   loadAll(): WeeklyGoalsStorageData {
@@ -64,9 +65,9 @@ export const GoalsStorage = {
   addGoal(weekStartKey: string, dateKey: string, goal: WeeklyGoal): WeekGoals {
     const week = GoalsStorage.loadWeek(weekStartKey);
     const list = week.goalsByDate[dateKey] || [];
-    const trimmed = list.slice(0, 3);
+    const trimmed = list.slice(0, MAX_GOALS_PER_DAY);
     const next = [...trimmed, GoalsStorage.cleanGoal(goal)];
-    week.goalsByDate[dateKey] = next.slice(0, 3);
+    week.goalsByDate[dateKey] = next.slice(0, MAX_GOALS_PER_DAY);
     week.updatedAt = new Date().toISOString();
     GoalsStorage.upsertWeek(week);
     return week;
@@ -143,7 +144,7 @@ export const GoalsStorage = {
     if (input.goalsByDate && typeof input.goalsByDate === 'object') {
       for (const [k, arr] of Object.entries(input.goalsByDate as Record<string, any[]>)) {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) continue;
-        const cleanedArr = Array.isArray(arr) ? arr.map(GoalsStorage.cleanGoal).filter(Boolean).slice(0, 3) as WeeklyGoal[] : [];
+        const cleanedArr = Array.isArray(arr) ? arr.map(GoalsStorage.cleanGoal).filter(Boolean).slice(0, MAX_GOALS_PER_DAY) as WeeklyGoal[] : [];
         goalsByDate[k] = cleanedArr;
       }
     }

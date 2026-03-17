@@ -1,3 +1,10 @@
+## 2025-03-17
+
+- **Weekly Overview: Raise goals-per-day limit to 6** (2025-03-17)
+  - Fixed bug where only 3 goals per day could be saved in Weekly Overview; storage was truncating goals 4+.
+  - Raised limit from 3 to 6 in `GoalsStorage` (`addGoal`, `cleanWeekGoals`) to match Study Tracker and the UI.
+  - **Files affected**: `utils/goalsStorage.ts`, `docs/changelog.md`
+
 ## 2025-03-12
 
 - **Study Tracker: Remove Weekly/Monthly Toggle** (2025-03-12)
@@ -364,7 +371,7 @@
 - Daily Goals (formerly Weekly Goals)
   - Redesigned page at `/goals/weekly` with 7-column grid layout showing 2 weeks (14 days total: 7 past, today, 6 future).
   - Grid layout eliminates horizontal scroll in favor of multiple rows for efficient space utilization.
-  - Plan up to 3 goals per day with visual color-coding system (6 colors) for quick goal identification.
+  - Plan up to 6 goals per day with visual color-coding system (6 colors) for quick goal identification.
   - **New Goal Types**: Support for Primary goals (exams, important events) vs Supporting tasks with visual hierarchy:
     - Primary goals: Larger text (text-base), bold font, larger checkbox (20px), thicker border (border-2), more padding
     - Supporting tasks: Smaller text (text-sm), normal font, standard checkbox (16px), standard border, less padding
