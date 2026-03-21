@@ -1,3 +1,13 @@
+## 2025-03-21
+
+- **5-Year Visualizer: Current-month line scoped to current year row** (2025-03-21)
+  - The vertical “now” line no longer spans the full five-year grid; it appears only in the year row matching the current calendar year. Period labels render above the line to avoid a strike-through effect.
+  - **Files affected**: `components/visualizer/FiveYearVisualizer.tsx`, `docs/components.md`, `docs/changelog.md`
+
+- **5-Year Visualizer: Design-system consistency** (2025-03-21)
+  - Replaced hardcoded slate/blue/green hex palette with semantic tokens (`bg-background`, `bg-card`, `border-border`, `text-foreground`, `primary`, `muted`, etc.) so the visualizer aligns with the rest of Omega Planner in light and dark modes.
+  - **Files affected**: `components/visualizer/FiveYearVisualizer.tsx`, `docs/components.md`, `docs/changelog.md`
+
 ## 2025-03-17
 
 - **Weekly Overview: Raise goals-per-day limit to 6** (2025-03-17)

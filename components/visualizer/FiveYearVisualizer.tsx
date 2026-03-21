@@ -287,18 +287,18 @@ export function FiveYearVisualizer({
 
   return (
     <div className={cn(
-      "bg-[#0f172a] text-slate-200 font-sans transition-all duration-300",
+      "bg-background text-foreground font-sans transition-all duration-300",
       isFullScreen ? "fixed inset-0 z-50 overflow-auto p-8" : "min-h-screen p-6"
     )}>
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-white">5-Year Visualizer</h1>
+        <h1 className="text-3xl font-bold text-foreground">5-Year Visualizer</h1>
         <div className="flex items-center gap-4">
-          <div className="flex items-center space-x-2 bg-[#1e293b] border border-[#334155] rounded-md p-1">
+          <div className="flex items-center space-x-2 bg-card border border-border rounded-md p-1">
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-8 w-8 text-slate-400 hover:text-white hover:bg-[#334155]"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted"
               onClick={() => setStartYear(prev => prev - 1)}
             >
               <ChevronLeft className="h-4 w-4" />
@@ -308,12 +308,12 @@ export function FiveYearVisualizer({
               value={startYear.toString()} 
               onValueChange={(value) => setStartYear(parseInt(value))}
             >
-              <SelectTrigger className="w-[180px] h-8 bg-transparent border-none text-slate-200 font-semibold focus:ring-0">
+              <SelectTrigger className="w-[180px] h-8 bg-transparent border-none text-foreground font-semibold focus:ring-0">
                 <SelectValue placeholder="Select Year" />
               </SelectTrigger>
-              <SelectContent className="bg-[#1e293b] border-[#334155] text-slate-200">
+              <SelectContent className="bg-card border-border text-foreground">
                 {Array.from({ length: 30 }, (_, i) => new Date().getFullYear() - 5 + i).map(year => (
-                  <SelectItem key={year} value={year.toString()} className="hover:bg-[#334155] focus:bg-[#334155]">
+                  <SelectItem key={year} value={year.toString()} className="hover:bg-muted focus:bg-muted">
                     {year} - {year + 4}
                   </SelectItem>
                 ))}
@@ -323,7 +323,7 @@ export function FiveYearVisualizer({
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-8 w-8 text-slate-400 hover:text-white hover:bg-[#334155]"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted"
               onClick={() => setStartYear(prev => prev + 1)}
             >
               <ChevronRight className="h-4 w-4" />
@@ -334,7 +334,7 @@ export function FiveYearVisualizer({
             variant="outline"
             size="sm"
             onClick={() => setStartYear(new Date().getFullYear())}
-            className="border-[#334155] text-slate-300 hover:bg-[#1e293b] hover:text-white gap-2 bg-[#0f172a] h-10"
+            className="gap-2 h-10"
           >
             <CalendarIcon className="h-4 w-4" />
             Today
@@ -343,7 +343,7 @@ export function FiveYearVisualizer({
           <Button 
             onClick={() => setIsFullScreen(!isFullScreen)}
             variant="outline"
-            className="border-[#334155] text-slate-300 hover:bg-[#1e293b] hover:text-white gap-2 bg-[#0f172a] h-10"
+            className="gap-2 h-10"
           >
             {isFullScreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
             {isFullScreen ? 'Exit' : 'Full Screen'}
@@ -351,7 +351,8 @@ export function FiveYearVisualizer({
 
           <Button 
             onClick={() => handleAddClick()} 
-            className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-lg px-6 py-2 font-semibold shadow-lg h-10"
+            variant="default"
+            className="h-10"
           >
             Add Item
           </Button>
@@ -360,25 +361,13 @@ export function FiveYearVisualizer({
 
       {/* Grid Container */}
       <div className={cn(
-        "border border-[#334155] rounded-lg bg-[#1e293b] overflow-hidden shadow-2xl",
+        "border border-border rounded-lg bg-card overflow-hidden shadow-2xl",
         isFullScreen ? "h-[calc(100vh-100px)]" : ""
       )}>
         <div className="min-w-[1200px] h-full overflow-auto relative">
-          {/* Current Time Indicator - Vertical Line (spans all years) */}
-          {isCurrentDateVisible && (
-            <div
-              className="absolute top-0 bottom-0 w-0.5 bg-[#10B981] z-30 pointer-events-none"
-              style={{
-                left: `calc(120px + ${((currentDate.month + 0.5) / 12) * 100}% - 1px)`,
-              }}
-            >
-              <div className="absolute -top-1 -left-1.5 w-3 h-3 bg-[#10B981] rounded-full border-2 border-[#0f172a] shadow-lg" />
-            </div>
-          )}
-
           {/* Header Row */}
-          <div className="grid grid-cols-[120px_repeat(12,1fr)] bg-[#1e293b] border-b border-[#334155] sticky top-0 z-20">
-            <div className="p-4 font-bold text-center border-r border-[#334155] flex items-center justify-center text-xs text-slate-400 tracking-wider uppercase">
+          <div className="grid grid-cols-[120px_repeat(12,1fr)] bg-card border-b border-border sticky top-0 z-20">
+            <div className="p-4 font-bold text-center border-r border-border flex items-center justify-center text-xs text-muted-foreground tracking-wider uppercase">
               Year / L
             </div>
             {MONTHS.map((month, monthIndex) => {
@@ -387,13 +376,13 @@ export function FiveYearVisualizer({
                 <div 
                   key={month} 
                   className={cn(
-                    "p-4 font-bold text-center text-xs border-r border-[#334155] last:border-r-0 tracking-widest uppercase relative",
-                    isCurrentMonth ? "text-[#10B981] bg-[#10B981]/10" : "text-white"
+                    "p-4 font-bold text-center text-xs border-r border-border last:border-r-0 tracking-widest uppercase relative",
+                    isCurrentMonth ? "text-primary bg-primary/10" : "text-foreground"
                   )}
                 >
                   {month}
                   {isCurrentMonth && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#10B981]" />
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
                   )}
                 </div>
               );
@@ -406,31 +395,41 @@ export function FiveYearVisualizer({
               key={year} 
               className={cn(
                 "grid grid-cols-[120px_repeat(12,1fr)]",
-                yearIndex < years.length - 1 && "border-b-4 border-[#475569] mb-2"
+                yearIndex < years.length - 1 && "border-b-4 border-border mb-2"
               )}
             >
               {/* Year Label Column */}
-              <div className="flex border-r border-[#334155] bg-[#1e293b]">
+              <div className="flex border-r border-border bg-card">
                 <div 
-                  className="w-2/3 flex items-center justify-center text-slate-500 text-2xl font-bold border-r border-[#334155] bg-[#1e293b] cursor-pointer hover:text-white hover:bg-[#334155] transition-colors"
+                  className="w-2/3 flex items-center justify-center text-muted-foreground text-2xl font-bold border-r border-border bg-card cursor-pointer hover:text-foreground hover:bg-muted transition-colors"
                   onClick={() => setStartYear(year)}
                   title={`Set ${year} as start year`}
                 >
                     {year}
                 </div>
-                <div className="w-1/3 flex flex-col bg-[#1e293b]">
-                    <div className="flex-1 flex items-center justify-center text-slate-500 text-xs font-medium border-b border-[#334155]">1</div>
-                    <div className="flex-1 flex items-center justify-center text-slate-500 text-xs font-medium border-b border-[#334155]">2</div>
-                    <div className="flex-1 flex items-center justify-center text-slate-500 text-xs font-medium">3</div>
+                <div className="w-1/3 flex flex-col bg-card">
+                    <div className="flex-1 flex items-center justify-center text-muted-foreground text-xs font-medium border-b border-border">1</div>
+                    <div className="flex-1 flex items-center justify-center text-muted-foreground text-xs font-medium border-b border-border">2</div>
+                    <div className="flex-1 flex items-center justify-center text-muted-foreground text-xs font-medium">3</div>
                 </div>
               </div>
 
               {/* Grid Cells - 3 Rows per year */}
               <div className="col-span-12 relative h-[216px]">
+                {/* Current date: vertical line only in the row for the current calendar year */}
+                {isCurrentDateVisible && year === currentDate.year && (
+                  <div
+                    className="absolute inset-y-0 w-0.5 bg-primary z-10 pointer-events-none"
+                    style={{
+                      left: `calc(${((currentDate.month + 0.5) / 12) * 100}% - 1px)`,
+                    }}
+                    aria-hidden
+                  />
+                )}
                 {/* Background Grid Lines & Interactive Cells */}
                 <div className="absolute inset-0 grid grid-rows-3">
                   {[0, 1, 2].map((lane) => (
-                    <div key={lane} className="grid grid-cols-12 h-full border-b border-[#334155] last:border-b-0">
+                    <div key={lane} className="grid grid-cols-12 h-full border-b border-border last:border-b-0">
                       {Array.from({ length: 12 }).map((_, monthIndex) => {
                         const isSelected = isCellSelected(year, monthIndex, lane);
                         const isCurrentMonth = isCurrentDateVisible && 
@@ -440,10 +439,10 @@ export function FiveYearVisualizer({
                           <div
                             key={monthIndex}
                             className={cn(
-                                "border-r border-[#334155] h-full last:border-r-0 transition-colors cursor-pointer relative",
-                                isSelected ? "bg-[#2563EB]/50" : 
-                                isCurrentMonth ? "bg-[#10B981]/20 ring-2 ring-[#10B981] ring-inset" :
-                                "hover:bg-[#334155]/30 bg-[#0f172a]"
+                                "border-r border-border h-full last:border-r-0 transition-colors cursor-pointer relative",
+                                isSelected ? "bg-primary/50" : 
+                                isCurrentMonth ? "bg-primary/20 ring-2 ring-primary ring-inset" :
+                                "hover:bg-muted/50 bg-background"
                             )}
                             onMouseDown={(e) => {
                                 e.preventDefault(); // Prevent text selection
@@ -457,8 +456,8 @@ export function FiveYearVisualizer({
                   ))}
                 </div>
 
-                {/* Items */}
-                <div className="absolute inset-0 pointer-events-none">
+                {/* Items (above the now-line so labels are not obscured) */}
+                <div className="absolute inset-0 pointer-events-none z-20">
                   <div className="grid grid-cols-12 grid-rows-3 h-full w-full">
                     {periodSegments
                       .filter(seg => seg.year === year)

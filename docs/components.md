@@ -19,7 +19,9 @@ A 5-year high-level visualizer for long-term planning.
   - **No word splitting**: Words are kept whole (`break-normal`).
   - **Horizontal year labels** for better readability.
   - **Rounded edges**: `rounded-xl` for softer look.
-  - **Styles**: White month headers, bold text for items.
+  - **Theming**: Uses app design-system tokens (`bg-background`, `bg-card`, `border-border`, `text-foreground`, `text-muted-foreground`, `primary`, `muted`) so the visualizer matches Calendar and Navigation in both light and dark modes.
+  - **Styles**: Foreground text for headers; current month highlighted with `primary`; period blocks use user-selected colors with white text.
+  - **Current month line**: A vertical `primary` line marks the current month only within the **row for the current calendar year** (not across all five year rows). Period blocks render above the line so titles stay readable.
 - **Navigation**: Navigate previous/next 5-year blocks.
 
 ### PeriodModal (`components/calendar/PeriodModal.tsx`)
