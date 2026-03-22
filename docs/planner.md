@@ -123,10 +123,11 @@ The Class Schedule view (`/class-schedule`) provides a recurring weekly timetabl
 
 Multi-month outline for plans at **different precision**: a **week focus** column for coarse intent and **seven day rows** (weekday + calendar date) for finer notes. This is **not** the Daily Planner Week view (`/?view=weekly`) and **not** Calendar Weekly Overview / weekly goals—data is stored separately.
 
-- **Backlog:** Wider column on large screens (`lg:w-[min(100%,480px)]`, `lg:max-w-xl`). Add text notes; dragging a note by the grip into a week or day **copies** it (backlog unchanged).
-- **Placed notes:** Dragging between week column, day rows, or back to the backlog **moves** the note. Empty week and day slots include a **textarea** so you can type directly without using the backlog first; the first line becomes a normal note (same drag/edit behavior as other notes).
+- **Backlog:** Wider column on large screens (`lg:w-[min(100%,480px)]`, `lg:max-w-xl`). Add text notes; dragging a note by the grip into a week or day **moves** it out of the backlog (same as other moves).
+- **Placed notes:** Dragging between week column, day rows, or back to the backlog **moves** the note. Empty week and day slots are plain textareas (no placeholder copy); the first line becomes a normal note (same drag/edit behavior as other notes).
 - **Horizon:** Twelve consecutive weeks anchored to a persisted **Monday** (`horizonStartKey`, default = Monday of the current week on first load). Week headers show a compact date range (e.g. Mar 17–23, 2025); each day row shows a short weekday and the day-of-month with muted, tabular numerals.
 - **Persistence:** `utils/monthBoardStorage.ts`, localStorage key `omega-planner-month-board-v1`.
+- **Scrolling:** The area below the page title is one vertical scroll (backlog and week grid scroll together); the backlog column does not use a separate inner scrollbar.
 - **Implementation:** `components/month-board/MonthBoard.tsx` (`@dnd-kit/core`, grip-only drag activation).
 
 ## Usage

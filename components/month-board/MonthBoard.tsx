@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   DndContext,
   CollisionDetection,
@@ -24,6 +24,33 @@ import { MonthBoardStorage } from '@/utils/monthBoardStorage';
 import { addDaysToDateKey, dateFromDateKey, getTodayDateKey } from '@/utils/dateUtils';
 
 const DROP_BACKLOG = 'mbd-backlog';
+
+/** Backlog-only: grows vertically with content so inner scrollbars are not needed */
+function AutosizeTextarea({
+  className,
+  value,
+  ...props
+}: React.ComponentProps<typeof Textarea>) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const v = typeof value === 'string' ? value : '';
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [v]);
+
+  return (
+    <Textarea
+      ref={ref}
+      value={value}
+      rows={1}
+      className={cn('resize-none overflow-hidden', className)}
+      {...props}
+    />
+  );
+}
 
 function dropWeekId(weekIndex: number) {
   return `mbd-w${weekIndex}-week`;
@@ -185,9 +212,9 @@ export function MonthBoard() {
       const next = cloneState(prev);
 
       if (fromBacklog) {
-        const note = prev.backlog.find((n) => n.id === noteId);
-        if (!note) return prev;
-        appendNote(next, target, { id: nanoid(), text: note.text });
+        const moved = removeNote(next, { kind: 'backlog' }, noteId);
+        if (!moved) return prev;
+        appendNote(next, target, moved);
         return next;
       }
 
@@ -280,12 +307,12 @@ export function MonthBoard() {
           <h1 className="text-2xl font-semibold tracking-tight">Month board</h1>
           <p className="text-sm text-muted-foreground max-w-3xl">
             Plan several months with different precision: use the week column for broad plans, or day rows for
-            detail. Drag the grip to copy from the backlog into a week or day, or move notes between slots. Drag
-            back to the backlog to unschedule.
+            detail. Drag the grip to move a note from the backlog into a week or day, or between slots. Drag back to
+            the backlog to unschedule.
           </p>
         </header>
 
-        <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-x-hidden overflow-y-auto lg:flex-row lg:items-start">
           <BacklogPanel
             backlog={state.backlog}
             draftInput={draftInput}
@@ -295,7 +322,7 @@ export function MonthBoard() {
             onTextChange={(id, text) => updateNoteText({ kind: 'backlog' }, id, text)}
           />
 
-          <div className="min-h-0 flex-1 overflow-y-auto rounded-xl border border-border/60 bg-card/40 pr-1">
+          <div className="min-w-0 flex-1 overflow-x-hidden rounded-xl border border-border/60 bg-card/40 pr-1">
             <div className="flex flex-col gap-6 p-3 md:p-4">
               {weekMondayKeys.map((mondayKey, weekIndex) => (
                 <WeekBlock
@@ -340,21 +367,21 @@ function BacklogPanel({
   return (
     <aside
       className={cn(
-        'flex w-full shrink-0 flex-col gap-3 rounded-xl border border-border/60 bg-card/50 p-4 lg:w-[min(100%,480px)] lg:max-w-xl',
+        'flex w-full shrink-0 flex-col gap-3 self-start rounded-xl border border-border/60 bg-card/50 p-4 lg:w-[min(100%,480px)] lg:max-w-xl',
         isOver && 'ring-2 ring-primary/40'
       )}
     >
       <div>
         <h2 className="text-lg font-medium">Backlog</h2>
         <p className="text-xs text-muted-foreground mt-1">
-          Drag a grip to a week or day to copy. Drag from a week or day here, or to another slot, to move the text.
+          Drag a grip to a week or day to move from the backlog. Drag from a week or day here, or to another slot,
+          to move the text.
         </p>
       </div>
-      <Textarea
-        placeholder="Add an idea or task…"
+      <AutosizeTextarea
         value={draftInput}
         onChange={(e) => onDraftChange(e.target.value)}
-        className="min-h-[88px] resize-y bg-background/80 text-sm"
+        className="min-h-[88px] bg-background/80 text-sm"
         onKeyDown={(e) => {
           if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
             e.preventDefault();
@@ -365,12 +392,13 @@ function BacklogPanel({
       <Button type="button" onClick={onAdd} className="rounded-full self-start">
         Add
       </Button>
-      <div ref={setNodeRef} className="flex min-h-[120px] flex-1 flex-col gap-2 overflow-y-auto">
+      <div ref={setNodeRef} className="flex min-h-[120px] flex-col gap-2">
         {backlog.map((note) => (
           <NoteCard
             key={note.id}
             note={note}
             source={{ kind: 'backlog' }}
+            autosizeText
             onDelete={() => onDelete(note.id)}
             onTextChange={(text) => onTextChange(note.id, text)}
           />
@@ -400,7 +428,7 @@ function WeekBlock({
   const rangeLabel = formatWeekRangeLabel(mondayKey);
 
   return (
-    <section className="rounded-xl border border-border/50 bg-background/50 p-3 shadow-sm">
+    <section className="overflow-x-hidden rounded-xl border border-border/50 bg-background/50 p-3 shadow-sm">
       <div className="mb-3 flex flex-wrap items-baseline gap-2 border-b border-border/40 pb-2">
         <span className="text-xs font-semibold uppercase tracking-wide text-primary">Week {weekIndex + 1}</span>
         <span className="text-sm font-medium tabular-nums text-foreground">{rangeLabel}</span>
@@ -469,10 +497,7 @@ function WeekColumnDrop({
       )}
     >
       {notes.length === 0 ? (
-        <EmptySlotTextarea
-          placeholder="Week focus — type here…"
-          onCommitText={(text) => onUpsertInline(text)}
-        />
+        <EmptySlotTextarea onCommitText={(text) => onUpsertInline(text)} />
       ) : (
         notes.map((note) => (
           <NoteCard
@@ -540,7 +565,7 @@ function DayRow({
         )}
       >
         {notes.length === 0 ? (
-          <EmptySlotTextarea placeholder="Type notes for this day…" onCommitText={onUpsertInline} />
+          <EmptySlotTextarea onCommitText={onUpsertInline} />
         ) : (
           notes.map((note) => (
             <NoteCard
@@ -558,13 +583,7 @@ function DayRow({
 }
 
 /** Inline typing when a week or day slot has no notes yet; syncs into a single note via upsert callbacks */
-function EmptySlotTextarea({
-  placeholder,
-  onCommitText,
-}: {
-  placeholder: string;
-  onCommitText: (text: string) => void;
-}) {
+function EmptySlotTextarea({ onCommitText }: { onCommitText: (text: string) => void }) {
   const [draft, setDraft] = useState('');
   return (
     <Textarea
@@ -575,7 +594,6 @@ function EmptySlotTextarea({
         onCommitText(v);
       }}
       onPointerDownCapture={(e) => e.stopPropagation()}
-      placeholder={placeholder}
       className="min-h-[52px] w-full resize-y border-0 bg-transparent px-1 py-1.5 text-sm shadow-none focus-visible:ring-0"
       rows={2}
     />
@@ -585,11 +603,14 @@ function EmptySlotTextarea({
 function NoteCard({
   note,
   source,
+  autosizeText,
   onDelete,
   onTextChange,
 }: {
   note: MonthBoardNote;
   source: MonthNoteSource;
+  /** Backlog notes: textarea height follows line count (no inner scrollbar) */
+  autosizeText?: boolean;
   onDelete: () => void;
   onTextChange: (text: string) => void;
 }) {
@@ -609,7 +630,7 @@ function NoteCard({
       ref={setNodeRef}
       style={style}
       className={cn(
-        'flex gap-1 rounded-lg border border-border/60 bg-card/90 p-1 shadow-sm',
+        'flex min-w-0 max-w-full gap-1 rounded-lg border border-border/60 bg-card/90 p-1 shadow-sm',
         isDragging && 'shadow-md'
       )}
     >
@@ -622,13 +643,22 @@ function NoteCard({
       >
         <GripVertical className="h-4 w-4" />
       </button>
-      <Textarea
-        value={note.text}
-        onChange={(e) => onTextChange(e.target.value)}
-        onPointerDownCapture={(e) => e.stopPropagation()}
-        className="min-h-[44px] flex-1 resize-y border-0 bg-transparent px-1 py-1.5 text-sm shadow-none focus-visible:ring-0"
-        rows={2}
-      />
+      {autosizeText ? (
+        <AutosizeTextarea
+          value={note.text}
+          onChange={(e) => onTextChange(e.target.value)}
+          onPointerDownCapture={(e) => e.stopPropagation()}
+          className="min-h-[44px] flex-1 border-0 bg-transparent px-1 py-1.5 text-sm shadow-none focus-visible:ring-0"
+        />
+      ) : (
+        <Textarea
+          value={note.text}
+          onChange={(e) => onTextChange(e.target.value)}
+          onPointerDownCapture={(e) => e.stopPropagation()}
+          className="min-h-[44px] flex-1 resize-y border-0 bg-transparent px-1 py-1.5 text-sm shadow-none focus-visible:ring-0"
+          rows={2}
+        />
+      )}
       <button
         type="button"
         onClick={onDelete}

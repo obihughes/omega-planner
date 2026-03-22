@@ -1,9 +1,23 @@
 ## 2025-03-22
 
+- **Month board: backlog panel scroll** (2025-03-22)
+  - Removed the backlog-only `overflow-y-auto` / `flex-1` notes region so the backlog column no longer shows its own scrollbar; the shared main row scrolls (`overflow-y-auto`, `items-start`) with backlog height following content. Week column no longer uses a separate vertical scroll—one scrollbar for the planner body below the title.
+  - **Files affected**: `components/month-board/MonthBoard.tsx`, `docs/planner.md`, `docs/changelog.md`
+
+- **Month board: placeholders, backlog move, drag overflow** (2025-03-22)
+  - Removed placeholder text from backlog add field, empty week/day textareas, and related copy.
+  - Dragging from the backlog to a week or day **moves** the note (removes it from the backlog) instead of copying.
+  - Reduced horizontal scrollbar during drag: `overflow-x-hidden` on the main row and week scroll column, `min-w-0` / `max-w-full` on note cards, `overflow-x-hidden` on week sections.
+  - **Files affected**: `components/month-board/MonthBoard.tsx`, `docs/planner.md`, `docs/changelog.md`
+
 - **Month board: backlog width + inline typing** (2025-03-22)
   - Backlog column width on large screens increased by ~50% (`320px` → `480px` max width, `max-w-sm` → `max-w-xl`).
   - Empty week-focus and day rows show a real textarea so text can be entered directly; first content is stored as a normal note (with `upsertWeekInlineNote` / `upsertDayInlineNote` handling the empty → single-note transition). Note textareas use pointer capture stopPropagation for reliable focus with `@dnd-kit`.
   - **Files affected**: `components/month-board/MonthBoard.tsx`, `docs/planner.md`, `docs/components.md`, `docs/changelog.md`
+
+- **Month board: backlog textareas auto-height** (2025-03-22)
+  - Backlog “add” field and backlog note cards use `AutosizeTextarea` (`scrollHeight` + `useLayoutEffect`) so height grows with line count; `resize-none` / `overflow-hidden` avoids inner scrollbars inside those fields.
+  - **Files affected**: `components/month-board/MonthBoard.tsx`, `docs/changelog.md`, `docs/components.md`
 
 - **Month board** (2025-03-22)
   - New page `/month-board`: backlog plus twelve calendar-anchored weeks with a week-focus column and Mon–Sun rows (weekday + date). Drag grip to copy from backlog or move notes between slots; persists to `omega-planner-month-board-v1`.
