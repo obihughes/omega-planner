@@ -2,6 +2,10 @@
 
 This directory contains TypeScript type definitions used throughout the application.
 
+## Month board (`monthBoard.ts`)
+
+Defines `MonthBoardNote`, `MonthBoardWeekSlot`, `MonthBoardState`, and source/target location types for drag-and-drop. Exported from `types/index.ts`.
+
 ## Core Types
 
 ### Task

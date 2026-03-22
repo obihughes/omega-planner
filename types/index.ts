@@ -12,7 +12,14 @@ export type {
 export type { WeeklyGoal, ImportantDate, WeekGoals, WeeklyGoalsStorageData } from './goals';
 
 // Export all project-related types including the new SubTask
-export type { Project, ProjectTask, SubTask, ProjectFolder, ProjectsStorageData } from './projects';
+export type {
+  Project,
+  ProjectTask,
+  SubTask,
+  ProjectFolder,
+  ProjectsStorageData,
+  ProjectSeries,
+} from './projects';
 
 export type {
   Document,
@@ -49,3 +56,12 @@ export type {
 } from './shopping';
 
 export type { Subject, StudyEntry, StudyStorageData } from './study';
+
+export type {
+  MonthBoardNote,
+  MonthBoardWeekSlot,
+  MonthBoardState,
+  MonthNoteSource,
+  MonthNoteTarget,
+} from './monthBoard';
+export { MONTH_BOARD_WEEK_COUNT, DAYS_PER_WEEK } from './monthBoard';

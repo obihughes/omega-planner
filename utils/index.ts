@@ -19,7 +19,10 @@ export * from './dateUtils';
 export * from './taskUtils';
 
 // Study storage
-export { StudyStorage } from './studyStorage'; 
+export { StudyStorage } from './studyStorage';
+
+// Month board
+export { MonthBoardStorage, getDefaultHorizonMondayKey, createInitialMonthBoardState } from './monthBoardStorage'; 
 
 // Ingredient utilities
 export * from './ingredientUtils';

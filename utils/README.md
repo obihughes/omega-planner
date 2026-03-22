@@ -49,4 +49,8 @@ import { formatTime, formatDuration } from '@/utils';
 
 const timeString = formatTime(8.5); // "8:30"
 const durationString = formatDuration(1.5); // "1h 30m"
-``` 
+```
+
+### Month board (`monthBoardStorage.ts`)
+
+`MonthBoardStorage.load()` / `save(state)` persist the Month board UI (backlog, 12 weeks of notes, `horizonStartKey`). Key: `omega-planner-month-board-v1`. Helpers: `getDefaultHorizonMondayKey()`, `createInitialMonthBoardState()`.

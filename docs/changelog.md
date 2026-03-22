@@ -1,3 +1,14 @@
+## 2025-03-22
+
+- **Month board: backlog width + inline typing** (2025-03-22)
+  - Backlog column width on large screens increased by ~50% (`320px` → `480px` max width, `max-w-sm` → `max-w-xl`).
+  - Empty week-focus and day rows show a real textarea so text can be entered directly; first content is stored as a normal note (with `upsertWeekInlineNote` / `upsertDayInlineNote` handling the empty → single-note transition). Note textareas use pointer capture stopPropagation for reliable focus with `@dnd-kit`.
+  - **Files affected**: `components/month-board/MonthBoard.tsx`, `docs/planner.md`, `docs/components.md`, `docs/changelog.md`
+
+- **Month board** (2025-03-22)
+  - New page `/month-board`: backlog plus twelve calendar-anchored weeks with a week-focus column and Mon–Sun rows (weekday + date). Drag grip to copy from backlog or move notes between slots; persists to `omega-planner-month-board-v1`.
+  - **Files affected**: `app/month-board/page.tsx`, `components/month-board/`, `types/monthBoard.ts`, `utils/monthBoardStorage.ts`, `components/ui/Navigation.tsx`, `types/index.ts`, `utils/index.ts`, `docs/README.md`, `docs/planner.md`, `docs/components.md`, `docs/changelog.md`, `types/README.md`, `utils/README.md`
+
 ## 2025-03-21
 
 - **5-Year Visualizer: Current-month line scoped to current year row** (2025-03-21)

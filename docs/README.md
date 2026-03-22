@@ -13,6 +13,7 @@ This directory contains documentation for the project. Below is an overview of t
 
 ## Feature Documentation
 - [Daily Planner](planner.md) - Comprehensive guide to the daily planner feature
+- **Month board** - `/month-board` multi-month outline with backlog and 12 calendar weeks (week column + day rows); see [planner.md](planner.md#month-board)
 - Weekly Overview - `/calendar?view=weekly-goals` with inline switch to Study Tracker; see [planner.md](planner.md#weekly-overview-page)
 
 ## Quick Links

@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   Calendar, CalendarDays, FolderKanban, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
-  Clock, Archive, Trash2, CalendarCheck, CalendarRange, Folder, Files, ClipboardList, ChefHat, Settings
+  Clock, Archive, Trash2, CalendarCheck, CalendarRange, Folder, Files, ClipboardList, ChefHat, Settings,
+  LayoutGrid
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
@@ -148,11 +149,12 @@ export function Navigation() {
       href: '/',
       label: 'Daily Planner',
       icon: CalendarCheck,
-      active: pathname === '/' && !pathname.includes('/calendar'),
+      active: (pathname === '/' || pathname === '/month-board') && !pathname.includes('/calendar'),
       subViews: [
         { key: 'planner-daily', type: 'planner', mode: 'daily', label: 'Daily', icon: CalendarCheck, active: pathname === '/' && plannerViewMode === 'daily' },
         { key: 'planner-weekly', type: 'planner', mode: 'weekly', label: 'Week', icon: CalendarDays, active: pathname === '/' && plannerViewMode === 'weekly' },
-        { key: 'planner-class-schedule', label: 'Class Schedule', icon: Clock, href: '/class-schedule', active: pathname === '/class-schedule' }
+        { key: 'planner-class-schedule', label: 'Class Schedule', icon: Clock, href: '/class-schedule', active: pathname === '/class-schedule' },
+        { key: 'planner-month-board', label: 'Month board', icon: LayoutGrid, href: '/month-board', active: pathname === '/month-board' }
       ]
     },
     {

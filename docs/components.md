@@ -1,5 +1,12 @@
 # Component Documentation
 
+## Month board
+
+### MonthBoard (`components/month-board/MonthBoard.tsx`)
+**Page:** `app/month-board/page.tsx`
+
+Multi-scale month planning: backlog column (wide on `lg+` breakpoints) plus twelve week blocks. Each block has a **week focus** drop zone and **Mon–Sun** rows with real dates; empty slots use an inline `Textarea` so users can type before any drag. Uses `@dnd-kit` with custom collision handling so drop targets take precedence over nested note draggables; note bodies use `onPointerDownCapture` stopPropagation so typing is not captured as drag. State persists via `MonthBoardStorage`.
+
 ## Visualizer Components
 
 ### FiveYearVisualizer (`components/visualizer/FiveYearVisualizer.tsx`)
