@@ -72,6 +72,10 @@ Never use these Tailwind classes:
 <div className="bg-background border shadow-lg">
 ```
 
+## Theme (light / dark / system)
+
+Appearance is controlled by `next-themes` in [`app/providers.tsx`](../app/providers.tsx) (`attribute="class"`, `storageKey="omega-planner-theme"`). The user’s last choice (light, dark, or system) is saved to `localStorage` and restored on the next visit. Use [`hooks/useTheme.ts`](../hooks/useTheme.ts) in components: `theme` is the stored preference; `resolvedTheme` is the applied light/dark class (including when preference is system).
+
 ## Global Configuration
 
 ### CSS Variables

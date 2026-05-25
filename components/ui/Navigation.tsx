@@ -21,7 +21,7 @@ export function Navigation() {
   
   const pathname = usePathname();
   const router = useRouter();
-  const { theme, toggleTheme, mounted } = useTheme();
+  const { theme, setTheme, mounted } = useTheme();
   const { viewMode: plannerViewMode, setViewMode: setPlannerViewMode } = useViewMode();
   const { viewMode: projectsViewMode, setViewMode: setProjectsViewMode } = useProjectsView();
   const { viewMode: calendarViewMode, setViewMode: setCalendarViewMode } = useCalendarView();
@@ -391,10 +391,7 @@ export function Navigation() {
                   <p className="font-medium mb-3">Theme</p>
                   <div className="grid grid-cols-3 gap-3">
                     <button
-                      onClick={() => {
-                        // Set light theme
-                        if (theme !== 'light') toggleTheme();
-                      }}
+                      onClick={() => setTheme('light')}
                       className={cn(
                         "p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-2",
                         theme === 'light' 
@@ -409,10 +406,7 @@ export function Navigation() {
                     </button>
                     
                     <button
-                      onClick={() => {
-                        // Set dark theme
-                        if (theme !== 'dark') toggleTheme();
-                      }}
+                      onClick={() => setTheme('dark')}
                       className={cn(
                         "p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-2",
                         theme === 'dark' 
@@ -427,10 +421,7 @@ export function Navigation() {
                     </button>
                     
                     <button
-                      onClick={() => {
-                        // Set system theme
-                        if (theme !== 'system') toggleTheme();
-                      }}
+                      onClick={() => setTheme('system')}
                       className={cn(
                         "p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-2",
                         theme === 'system' 

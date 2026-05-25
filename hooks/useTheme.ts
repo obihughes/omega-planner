@@ -10,18 +10,19 @@ export function useTheme() {
   }, []);
 
   const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
+    setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
   };
 
   const isDark = resolvedTheme === 'dark';
   const isLight = resolvedTheme === 'light';
 
   return {
-    theme: mounted ? resolvedTheme : 'dark', // Default to dark during SSR
+    theme: mounted ? theme : undefined,
+    resolvedTheme: mounted ? resolvedTheme : undefined,
     setTheme,
     toggleTheme,
     isDark,
     isLight,
     mounted
   };
-} 
+}

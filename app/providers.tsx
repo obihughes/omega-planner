@@ -12,6 +12,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       attribute="class"
       defaultTheme="system"
       enableSystem
+      storageKey="omega-planner-theme"
       disableTransitionOnChange
     >
       <ViewModeProvider>

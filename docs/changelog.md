@@ -1,3 +1,9 @@
+## 2025-05-25
+
+- **Theme preference persistence** (2025-05-25)
+  - Light, dark, and system theme choices now persist across sessions via `next-themes` and localStorage key `omega-planner-theme`. Settings buttons call `setTheme` explicitly instead of toggling.
+  - **Files affected**: `app/providers.tsx`, `hooks/useTheme.ts`, `components/ui/Navigation.tsx`, `docs/changelog.md`, `docs/styling-guide.md`
+
 ## 2025-03-22
 
 - **Month board: backlog panel scroll** (2025-03-22)
