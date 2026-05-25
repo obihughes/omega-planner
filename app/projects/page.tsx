@@ -5,12 +5,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useProjects } from '@/hooks/useProjects';
 import { Project, ProjectFolder, ProjectTask } from '@/types';
 import { ProjectCard } from '@/components/projects/ProjectCard';
-import { ProjectsCalendar } from '@/components/projects/ProjectsCalendar';
 import { FolderCard } from '@/components/projects/FolderCard';
 import { FolderBreadcrumb } from '@/components/projects/FolderBreadcrumb';
 import { UpcomingTasksTimeline } from '@/components/planner/UpcomingTasksTimeline';
 
-import { AppLayout } from '@/components/ui/AppLayout';
 import { useProjectsView } from '@/app/context/ProjectsViewContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -55,6 +53,11 @@ import {
 const ProjectFormModal = lazy(() => import('@/components/modals/ProjectFormModal').then(module => ({ default: module.ProjectFormModal })));
 const ProjectFolderFormModal = lazy(() => import('@/components/modals/ProjectFolderFormModal').then(module => ({ default: module.ProjectFolderFormModal })));
 const ProjectTaskFormModal = lazy(() => import('@/components/modals/ProjectTaskFormModal').then(module => ({ default: module.ProjectTaskFormModal })));
+const ProjectsCalendar = lazy(() =>
+  import('@/components/projects/ProjectsCalendar').then((module) => ({
+    default: module.ProjectsCalendar,
+  }))
+);
 
 // Sortable Project Card wrapper
 function SortableProjectCard({ 
@@ -518,7 +521,7 @@ function ProjectsPageContent() {
   };
 
   return (
-    <AppLayout>
+    <>
       <div className="container mx-auto px-6 py-6">
           {/* Main Content Area */}
           <div className="flex-1">
@@ -806,7 +809,15 @@ function ProjectsPageContent() {
 
             {/* Projects Calendar View */}
             {activeView === 'calendar' && (
-              <ProjectsCalendar projects={projects} />
+              <Suspense
+                fallback={
+                  <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
+                    Loading calendar…
+                  </div>
+                }
+              >
+                <ProjectsCalendar projects={projects} />
+              </Suspense>
             )}
           </div>
       </div>
@@ -849,19 +860,19 @@ function ProjectsPageContent() {
           />
         )}
       </Suspense>
-    </AppLayout>
+    </>
   );
 }
 
 export default function ProjectsPage() {
   return (
-    <Suspense fallback={
-      <AppLayout>
+    <Suspense
+      fallback={
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
-      </AppLayout>
-    }>
+      }
+    >
       <ProjectsPageContent />
     </Suspense>
   );

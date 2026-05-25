@@ -63,6 +63,21 @@ function YourComponent() {
 }
 ``` 
 
+### useProjects
+
+Reads from global `ProjectsProvider` (not per-page state). Provides projects, folders, tasks CRUD, series helpers, and `loading` (true only until the first localStorage hydrate).
+
+**Usage:**
+```jsx
+import { useProjects } from '@/hooks';
+
+function YourComponent() {
+  const { projects, folders, createProject, addTaskToProject } = useProjects();
+}
+```
+
+Must be used under `ProjectsProvider` in [`app/providers.tsx`](../app/providers.tsx).
+
 ### usePantry
 
 LocalStorage-backed pantry list for the Recipes page.

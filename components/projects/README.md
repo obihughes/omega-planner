@@ -61,10 +61,16 @@ function ProjectsPage() {
 - Smart filtering with visual active filter indicators
 - Intuitive sorting controls with clear current state
 
-## Hook Integration
+## Data and navigation
+
+### ProjectsProvider
+Projects, folders, and tasks live in a global `ProjectsProvider` ([`app/context/ProjectsProvider.tsx`](../../app/context/ProjectsProvider.tsx)), wired in [`app/providers.tsx`](../../app/providers.tsx). Data hydrates from `localStorage` once per app session so list ↔ detail navigation does not reload or flash.
+
+### Shared layout
+[`app/projects/layout.tsx`](../../app/projects/layout.tsx) wraps all `/projects` routes in `AppLayout`, keeping the sidebar mounted when switching between the project list and project detail pages.
 
 ### useProjects
-Extended with new functions:
+[`hooks/useProjects.ts`](../../hooks/useProjects.ts) is a thin wrapper around `useProjectsContext()`. Extended with new functions:
 - `getAllProjectTasks()`: Returns all tasks with project metadata
 - `getTaskStats()`: Provides task statistics (total, completed, overdue, etc.)
  - `addTaskSeriesToProject(projectId, baseTitle, count, options?)`: Quickly create multiple tasks in the same project with names like `baseTitle_1..N`. Updates project progress automatically. Options may include `status`, `priority`, `startDate`, `dueDate`.

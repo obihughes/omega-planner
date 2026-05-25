@@ -1,5 +1,11 @@
 ## 2025-05-25
 
+- **Projects: faster list ↔ detail navigation** (2025-05-25)
+  - Added global `ProjectsProvider` so project data loads once per session instead of on every route change.
+  - Added `app/projects/layout.tsx` with shared `AppLayout` so the sidebar stays mounted between list and detail.
+  - Removed blocking "Loading project…" screen on detail after hydrate; lazy-loaded `ProjectsCalendar` on the Calendar tab only.
+  - **Files affected**: `app/context/ProjectsContext.tsx`, `app/context/ProjectsProvider.tsx`, `app/providers.tsx`, `app/projects/layout.tsx`, `app/projects/page.tsx`, `app/projects/[id]/page.tsx`, `hooks/useProjects.ts`, `lib/appHierarchy.ts`, `components/projects/README.md`, `hooks/README.md`, `PERFORMANCE.md`, `docs/changelog.md`
+
 - **Navigation: balanced icon refresh** (2025-05-25)
   - Daily Planner → `NotebookPen`; Daily → `Sun`; Class Schedule → `GraduationCap`; 5-Year Visualizer → `GanttChart`; Text Documents → `FileText`.
   - Fixes duplicate icons (`CalendarCheck` on parent and child; `CalendarRange` on calendar view and visualizer).

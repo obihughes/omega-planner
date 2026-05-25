@@ -57,7 +57,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'Providers',
         kind: 'context',
         path: 'app/providers.tsx',
-        editHint: 'Theme + ViewMode + ProjectsView + CalendarView + PlannerProvider.',
+        editHint: 'Theme + ViewMode + ProjectsView + CalendarView + PlannerProvider + ProjectsProvider.',
       },
       {
         id: 'shell-root-layout',
@@ -87,6 +87,13 @@ export const appHierarchy: AppMapNode[] = [
             path: 'app/context/plannerReducer.ts',
           },
         ],
+      },
+      {
+        id: 'ctx-projects',
+        label: 'ProjectsProvider',
+        kind: 'context',
+        path: 'app/context/ProjectsProvider.tsx',
+        editHint: 'Global projects, folders, and tasks; hydrates from localStorage once per session.',
       },
       {
         id: 'ctx-projects-view',
@@ -381,6 +388,13 @@ export const appHierarchy: AppMapNode[] = [
         kind: 'route',
       },
       {
+        id: 'proj-layout',
+        label: 'Projects layout',
+        kind: 'shell',
+        path: 'app/projects/layout.tsx',
+        editHint: 'Shared AppLayout for list and detail; sidebar persists across navigation.',
+      },
+      {
         id: 'proj-page',
         label: 'Projects page',
         kind: 'page',
@@ -421,7 +435,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'useProjects',
         kind: 'hook',
         path: 'hooks/useProjects.ts',
-        editHint: 'Projects, folders, tasks CRUD.',
+        editHint: 'Consumer hook; reads from ProjectsProvider via useProjectsContext.',
       },
     ],
   },

@@ -21,6 +21,12 @@
 - ✅ **Code splitting** with React.lazy() and Suspense
 - ✅ **Tree shaking** enabled in webpack configuration
 
+### **Projects navigation**
+- ✅ **ProjectsProvider** — projects/folders/tasks hydrate from localStorage once per session (no reload on `/projects` ↔ `/projects/[id]`)
+- ✅ **`app/projects/layout.tsx`** — shared `AppLayout` so sidebar and navigation do not remount between list and detail
+- ✅ **No blocking loading screen** on project detail after first hydrate
+- ✅ **Lazy `ProjectsCalendar`** — calendar tab code loads only when the Calendar view is selected
+
 ### **Webpack Optimizations**
 - ✅ **SWC minification** enabled for faster builds
 - ✅ **Chunk splitting** for better caching
