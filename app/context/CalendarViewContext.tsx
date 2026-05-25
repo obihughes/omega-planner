@@ -12,7 +12,7 @@ interface CalendarViewContextType {
 const CalendarViewContext = createContext<CalendarViewContextType | undefined>(undefined);
 
 export function CalendarViewProvider({ children }: { children: ReactNode }) {
-  const [viewMode, setViewMode] = useState<CalendarViewMode>('yearly');
+  const [viewMode, setViewMode] = useState<CalendarViewMode>('monthly');
 
   return (
     <CalendarViewContext.Provider value={{ viewMode, setViewMode }}>

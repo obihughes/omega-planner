@@ -47,7 +47,7 @@ Includes storage helpers like:
 Project documentation including setup guides, component documentation, and development guidelines.
 
 Additional feature routes in `/app` include:
-- `app/recipes` — Recipes page (pantry, shopping list, recipe management)
+- `app/recipes` — Recipes page (pantry, shopping list, recipe management); hidden from main sidebar nav
 - `app/study-tracker` — Study Planner (weekly view with day cards + tasks, monthly view with subject filter)
 - `app/visualizer` — 5-Year Visualizer (Calendar high-level view)
 

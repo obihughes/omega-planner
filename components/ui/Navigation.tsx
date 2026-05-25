@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   Calendar, CalendarDays, FolderKanban, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
-  Clock, Archive, Trash2, CalendarCheck, CalendarRange, Folder, Files, ClipboardList, ChefHat, Settings,
+  Clock, Archive, Trash2, CalendarCheck, CalendarRange, Folder, Files, ClipboardList, Settings,
   LayoutGrid
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
@@ -165,8 +165,7 @@ export function Navigation() {
       active: pathname === '/calendar',
       subViews: [
         { key: 'calendar-weekly-goals', type: 'calendar', mode: 'weekly-goals', label: 'Weekly Overview', icon: ClipboardList, active: pathname === '/calendar' && calendarViewMode === 'weekly-goals' },
-        { key: 'calendar-monthly', type: 'calendar', mode: 'monthly', label: 'Monthly', icon: CalendarRange, active: pathname === '/calendar' && calendarViewMode === 'monthly' },
-        { key: 'calendar-yearly', type: 'calendar', mode: 'yearly', label: 'Yearly', icon: CalendarDays, active: pathname === '/calendar' && calendarViewMode === 'yearly' },
+        { key: 'calendar-events', type: 'calendar', mode: 'monthly', label: 'Calendar', icon: CalendarRange, active: pathname === '/calendar' && (calendarViewMode === 'monthly' || calendarViewMode === 'yearly') },
         { key: 'calendar-visualizer', label: '5-Year Visualizer', icon: CalendarRange, href: '/visualizer', active: pathname === '/visualizer' }
       ]
     },
@@ -184,14 +183,6 @@ export function Navigation() {
       label: 'Text Documents',
       icon: Files,
       active: pathname === '/documents',
-      subViews: []
-    },
-    {
-      key: 'recipes',
-      href: '/recipes',
-      label: 'Recipes',
-      icon: ChefHat,
-      active: pathname === '/recipes',
       subViews: []
     }
   ];

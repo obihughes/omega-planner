@@ -1,5 +1,14 @@
 ## 2025-05-25
 
+- **Navigation: hide Recipes** (2025-05-25)
+  - Removed Recipes from the main sidebar; `/recipes` remains available via direct URL.
+  - **Files affected**: `components/ui/Navigation.tsx`, `docs/changelog.md`, `README.md`, `docs/structure.md`
+
+- **Calendar: combined monthly and yearly views** (2025-05-25)
+  - Monthly is the default events calendar (`/calendar?view=monthly`); bare `/calendar` syncs to that URL.
+  - In-page Month / Year toggle on the calendar page; sidebar uses a single **Calendar** link instead of separate Monthly and Yearly entries.
+  - **Files affected**: `app/context/CalendarViewContext.tsx`, `app/calendar/page.tsx`, `components/ui/Navigation.tsx`, `docs/planner.md`, `docs/changelog.md`
+
 - **Sidebar nav: flat planner and calendar links** (2025-05-25)
   - Removed visible **Daily Planner** and **Calendar** group headings; their sub-items (Daily, Week, Class Schedule, etc.) render as top-level links with the same styling as Projects.
   - **Files affected**: `components/ui/Navigation.tsx`, `docs/changelog.md`

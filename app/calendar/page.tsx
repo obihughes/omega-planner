@@ -7,10 +7,10 @@ import { StudyTracker } from '@/components/study-tracker';
 import { StudyTrackerProvider } from '@/app/context/StudyTrackerContext';
 import { useCalendarData } from '@/hooks/useCalendarData';
 import { CalendarEvent, CalendarPeriod } from '@/types/calendar';
-import { Settings, Download, RefreshCw, Trash2, Target, BookOpen } from 'lucide-react';
+import { Settings, Download, RefreshCw, Trash2, Target, BookOpen, CalendarRange, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCalendarView, type CalendarViewMode } from '@/app/context/CalendarViewContext';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useDailyPlanner } from '@/hooks/useDailyPlannerState';
 
 type CalendarView = 'yearly' | 'monthly' | 'timeline' | 'weekly-goals';
@@ -51,14 +51,29 @@ export default function CalendarPage() {
   const [weeklyPageMode, setWeeklyPageMode] = useState<WeeklyPageMode>('weekly-overview');
   const { viewMode: currentView, setViewMode: setCurrentView } = useCalendarView();
   const params = useSearchParams();
-  
-  // Respect ?view=monthly|yearly|timeline|weekly-goals from query params
+  const router = useRouter();
+
+  const switchCalendarView = (mode: 'monthly' | 'yearly') => {
+    setCurrentView(mode);
+    const dateParam = params?.get('date');
+    const query = new URLSearchParams({ view: mode });
+    if (dateParam) query.set('date', dateParam);
+    router.replace(`/calendar?${query.toString()}`);
+  };
+
+  // Respect ?view=monthly|yearly|timeline|weekly-goals from query params; default to monthly
   useEffect(() => {
     const v = params?.get('view');
     if (v === 'monthly' || v === 'yearly' || v === 'timeline' || v === 'weekly-goals') {
       setCurrentView(v as CalendarViewMode);
+      return;
     }
-  }, [params, setCurrentView]);
+    setCurrentView('monthly');
+    const dateParam = params?.get('date');
+    const query = new URLSearchParams({ view: 'monthly' });
+    if (dateParam) query.set('date', dateParam);
+    router.replace(`/calendar?${query.toString()}`);
+  }, [params, setCurrentView, router]);
   const initialDateFromQuery = useMemo(() => {
     const d = params?.get('date');
     if (d) {
@@ -102,7 +117,28 @@ export default function CalendarPage() {
   return (
     <AppLayout>
       <div className={`mx-auto px-4 py-6 ${currentView === 'weekly-goals' ? 'w-full max-w-none' : 'max-w-7xl'}`}>
-        {/* View toggle removed; navigation handled in main sidebar */}
+        {(currentView === 'monthly' || currentView === 'yearly') && (
+          <div className="flex items-center gap-1.5 mb-4 max-w-5xl mx-auto">
+            <Button
+              variant={currentView === 'monthly' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => switchCalendarView('monthly')}
+              className="h-8 px-3 gap-1.5 text-xs"
+            >
+              <CalendarRange className="w-3.5 h-3.5" />
+              Month
+            </Button>
+            <Button
+              variant={currentView === 'yearly' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => switchCalendarView('yearly')}
+              className="h-8 px-3 gap-1.5 text-xs"
+            >
+              <CalendarDays className="w-3.5 h-3.5" />
+              Year
+            </Button>
+          </div>
+        )}
 
         {/* Calendar Component */}
         {currentView === 'monthly' ? (

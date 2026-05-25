@@ -299,4 +299,4 @@ The Monthly and Yearly calendar views are accessible from the main navigation un
 - Monthly Calendar View: the full calendar page's monthly mode; includes a compact grid and an Events/Periods list under the calendar for the selected month. In the grid, hover an event to reveal a delete icon for quick removal. Deletions prompt for confirmation.
 - Yearly Calendar: the full calendar page's yearly mode
 
-Note: The in-page monthly/yearly/timeline toggle in `app/calendar/page.tsx` has been removed. Use the main sidebar navigation to switch views.
+Note: Monthly and yearly event calendars share `/calendar`. The sidebar **Calendar** link opens monthly view; use the in-page **Month** / **Year** toggle to switch. Weekly Overview and the 5-Year Visualizer remain separate sidebar entries. Task timeline (`?view=timeline`) is URL-only.

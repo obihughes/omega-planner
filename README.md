@@ -42,7 +42,7 @@ npm run dev:clean
 - **Pinned tasks** for quick access
 
 ### Recipes
-- Recipes page at `/recipes` with pantry, shopping list, and recipe management
+- Recipes page at `/recipes` (not in main sidebar; open via direct URL) with pantry, shopping list, and recipe management
 - **Pantry**: Track ingredients with quantity and category
 - **Shopping List**: Add missing ingredients from recipe suggestions
 - **Recipe Suggestions**: Tiered matching (75%+, 50-74%, 25-49%) based on pantry contents
@@ -166,7 +166,7 @@ npm test
 - **Improved Type Safety**: Enhanced TypeScript type definitions and interfaces
 
 ### Recipes Page
-- Recipes page at `/recipes` with pantry, shopping list, and recipe management.
+- Recipes page at `/recipes` (hidden from main sidebar) with pantry, shopping list, and recipe management.
 - Persistence: Pantry, recipes, and shopping list are persisted in localStorage via `utils/pantryStorage.ts`, `utils/recipesStorage.ts`, and `utils/shoppingStorage.ts`.
 
 ## Troubleshooting
