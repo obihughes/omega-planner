@@ -367,7 +367,7 @@ function BacklogPanel({
   return (
     <aside
       className={cn(
-        'flex w-full shrink-0 flex-col gap-3 self-start rounded-xl border border-border/60 bg-card/50 p-4 lg:w-[min(100%,480px)] lg:max-w-xl',
+        'flex w-full shrink-0 flex-col gap-3 self-start rounded-xl border border-border/60 bg-card/50 p-4 lg:w-[min(100%,320px)] lg:max-w-sm',
         isOver && 'ring-2 ring-primary/40'
       )}
     >
@@ -434,7 +434,7 @@ function WeekBlock({
         <span className="text-sm font-medium tabular-nums text-foreground">{rangeLabel}</span>
       </div>
       <div className="flex flex-col gap-3 md:flex-row md:items-stretch">
-        <div className="md:w-[min(100%,220px)] shrink-0">
+        <div className="md:w-[min(100%,330px)] shrink-0">
           <p className="mb-1 text-xs font-medium text-muted-foreground">Week focus</p>
           <WeekColumnDrop
             weekIndex={weekIndex}
@@ -492,18 +492,19 @@ function WeekColumnDrop({
     <div
       ref={setNodeRef}
       className={cn(
-        'flex min-h-[100px] flex-col gap-2 rounded-lg border border-dashed border-border/60 bg-muted/20 p-2',
+        'flex min-h-[180px] flex-col gap-2 rounded-lg border border-dashed border-border/60 bg-muted/20 p-2',
         isOver && 'border-primary/60 bg-primary/5'
       )}
     >
       {notes.length === 0 ? (
-        <EmptySlotTextarea onCommitText={(text) => onUpsertInline(text)} />
+        <EmptySlotTextarea variant="week" onCommitText={(text) => onUpsertInline(text)} />
       ) : (
         notes.map((note) => (
           <NoteCard
             key={note.id}
             note={note}
             source={{ kind: 'week', weekIndex }}
+            autosizeText
             onDelete={() => onDelete(note.id)}
             onTextChange={(text) => onTextChange(note.id, text)}
           />
@@ -583,8 +584,15 @@ function DayRow({
 }
 
 /** Inline typing when a week or day slot has no notes yet; syncs into a single note via upsert callbacks */
-function EmptySlotTextarea({ onCommitText }: { onCommitText: (text: string) => void }) {
+function EmptySlotTextarea({
+  variant = 'day',
+  onCommitText,
+}: {
+  variant?: 'day' | 'week';
+  onCommitText: (text: string) => void;
+}) {
   const [draft, setDraft] = useState('');
+  const isWeek = variant === 'week';
   return (
     <Textarea
       value={draft}
@@ -594,8 +602,11 @@ function EmptySlotTextarea({ onCommitText }: { onCommitText: (text: string) => v
         onCommitText(v);
       }}
       onPointerDownCapture={(e) => e.stopPropagation()}
-      className="min-h-[52px] w-full resize-y border-0 bg-transparent px-1 py-1.5 text-sm shadow-none focus-visible:ring-0"
-      rows={2}
+      className={cn(
+        'w-full resize-y border-0 bg-transparent px-1 py-1.5 text-sm shadow-none focus-visible:ring-0',
+        isWeek ? 'min-h-[140px]' : 'min-h-[52px]'
+      )}
+      rows={isWeek ? 5 : 2}
     />
   );
 }

@@ -1,5 +1,10 @@
 ## 2025-05-25
 
+- **Month board: week focus layout** (2025-05-25)
+  - Week focus column width increased ~50% (`220px` → `330px` on `md+`); backlog column narrowed (`480px` → `320px`, `max-w-xl` → `max-w-sm`) to balance horizontal space.
+  - Week focus drop zone and empty/note textareas are taller (`min-h` 180px zone, 140px empty field, `autosizeText` on week notes).
+  - **Files affected**: `components/month-board/MonthBoard.tsx`, `docs/planner.md`, `docs/components.md`, `docs/changelog.md`
+
 - **Theme preference persistence** (2025-05-25)
   - Light, dark, and system theme choices now persist across sessions via `next-themes` and localStorage key `omega-planner-theme`. Settings buttons call `setTheme` explicitly instead of toggling.
   - **Files affected**: `app/providers.tsx`, `hooks/useTheme.ts`, `components/ui/Navigation.tsx`, `docs/changelog.md`, `docs/styling-guide.md`
