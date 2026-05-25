@@ -1,5 +1,10 @@
 ## 2025-05-25
 
+- **Navigation: balanced icon refresh** (2025-05-25)
+  - Daily Planner → `NotebookPen`; Daily → `Sun`; Class Schedule → `GraduationCap`; 5-Year Visualizer → `GanttChart`; Text Documents → `FileText`.
+  - Fixes duplicate icons (`CalendarCheck` on parent and child; `CalendarRange` on calendar view and visualizer).
+  - **Files affected**: `components/ui/Navigation.tsx`, `docs/changelog.md`
+
 - **Minimal Todo page** (2025-05-25)
   - New `/todo` route with add, complete, remove, and clear completed; localStorage via `omega-planner-todo-v1`.
   - Sidebar nav entry (ListTodo icon) between Projects and Text Documents.

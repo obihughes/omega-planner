@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   Calendar, CalendarDays, FolderKanban, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
-  Clock, Archive, Trash2, CalendarCheck, CalendarRange, Folder, Files, ClipboardList, Settings,
-  LayoutGrid, Map, ListTodo
+  CalendarRange, ClipboardList, Settings, LayoutGrid, Map, ListTodo,
+  NotebookPen, Sun, GraduationCap, GanttChart
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
@@ -148,12 +148,12 @@ export function Navigation() {
       key: 'daily-planner',
       href: '/',
       label: 'Daily Planner',
-      icon: CalendarCheck,
+      icon: NotebookPen,
       active: (pathname === '/' || pathname === '/month-board') && !pathname.includes('/calendar'),
       subViews: [
-        { key: 'planner-daily', type: 'planner', mode: 'daily', label: 'Daily', icon: CalendarCheck, active: pathname === '/' && plannerViewMode === 'daily' },
+        { key: 'planner-daily', type: 'planner', mode: 'daily', label: 'Daily', icon: Sun, active: pathname === '/' && plannerViewMode === 'daily' },
         { key: 'planner-weekly', type: 'planner', mode: 'weekly', label: 'Week', icon: CalendarDays, active: pathname === '/' && plannerViewMode === 'weekly' },
-        { key: 'planner-class-schedule', label: 'Class Schedule', icon: Clock, href: '/class-schedule', active: pathname === '/class-schedule' },
+        { key: 'planner-class-schedule', label: 'Class Schedule', icon: GraduationCap, href: '/class-schedule', active: pathname === '/class-schedule' },
         { key: 'planner-month-board', label: 'Month board', icon: LayoutGrid, href: '/month-board', active: pathname === '/month-board' }
       ]
     },
@@ -166,7 +166,7 @@ export function Navigation() {
       subViews: [
         { key: 'calendar-weekly-goals', type: 'calendar', mode: 'weekly-goals', label: 'Weekly Overview', icon: ClipboardList, active: pathname === '/calendar' && calendarViewMode === 'weekly-goals' },
         { key: 'calendar-events', type: 'calendar', mode: 'monthly', label: 'Calendar', icon: CalendarRange, active: pathname === '/calendar' && (calendarViewMode === 'monthly' || calendarViewMode === 'yearly') },
-        { key: 'calendar-visualizer', label: '5-Year Visualizer', icon: CalendarRange, href: '/visualizer', active: pathname === '/visualizer' }
+        { key: 'calendar-visualizer', label: '5-Year Visualizer', icon: GanttChart, href: '/visualizer', active: pathname === '/visualizer' }
       ]
     },
     {
@@ -189,7 +189,7 @@ export function Navigation() {
       key: 'text-documents',
       href: '/documents',
       label: 'Text Documents',
-      icon: Files,
+      icon: FileText,
       active: pathname === '/documents',
       subViews: []
     }
