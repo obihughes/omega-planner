@@ -57,6 +57,8 @@ export type {
 
 export type { Subject, StudyEntry, StudyStorageData } from './study';
 
+export type { TodoItem, TodoStorageData } from './todo';
+
 export type {
   MonthBoardNote,
   MonthBoardWeekSlot,

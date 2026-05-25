@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   Calendar, CalendarDays, FolderKanban, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
   Clock, Archive, Trash2, CalendarCheck, CalendarRange, Folder, Files, ClipboardList, Settings,
-  LayoutGrid, Map
+  LayoutGrid, Map, ListTodo
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
@@ -175,6 +175,14 @@ export function Navigation() {
       label: 'Projects',
       icon: FolderKanban,
       active: pathname === '/projects' || pathname.startsWith('/projects/'),
+      subViews: []
+    },
+    {
+      key: 'todo',
+      href: '/todo',
+      label: 'Todo',
+      icon: ListTodo,
+      active: pathname === '/todo',
       subViews: []
     },
     {

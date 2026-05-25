@@ -1,5 +1,10 @@
 ## 2025-05-25
 
+- **Minimal Todo page** (2025-05-25)
+  - New `/todo` route with add, complete, remove, and clear completed; localStorage via `omega-planner-todo-v1`.
+  - Sidebar nav entry (ListTodo icon) between Projects and Text Documents.
+  - **Files affected**: `types/todo.ts`, `utils/todoStorage.ts`, `hooks/useTodo.ts`, `components/todo/`, `app/todo/page.tsx`, `components/ui/Navigation.tsx`, `types/index.ts`, `docs/structure.md`, `docs/components.md`, `docs/changelog.md`
+
 - **App Map — code hierarchy reference** (2025-05-25)
   - New `/app-map` page with searchable, collapsible tree of routes, pages, components, hooks, and storage.
   - Curated data in `lib/appHierarchy.ts`; reachable from Settings → Developer → App Map (not in main sidebar).

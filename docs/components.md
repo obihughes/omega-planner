@@ -1,5 +1,12 @@
 # Component Documentation
 
+## Todo
+
+### TodoView (`components/todo/TodoView.tsx`)
+**Page:** `app/todo/page.tsx`
+
+Minimal standalone checklist: add tasks, toggle done, remove items, clear completed. Active items appear before completed. State persists via `utils/todoStorage.ts` (`omega-planner-todo-v1`). Uses `hooks/useTodo.ts`.
+
 ## Month board
 
 ### MonthBoard (`components/month-board/MonthBoard.tsx`)

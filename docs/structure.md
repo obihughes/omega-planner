@@ -30,6 +30,7 @@ Current notable feature folders include:
 - `components/recipes` – Recipes view (pantry, shopping, recipes)
 - `components/meals` – Pantry and shopping sidebars (used by Recipes page)
 - `components/study-tracker` – Study Planner (weekly day cards with tasks, monthly calendar with subject filter)
+- `components/todo` – Minimal standalone todo checklist
 - `components/ui` – Shared UI primitives (layout, inputs, tabs, etc.)
 
 #### `/lib`
@@ -44,6 +45,7 @@ Includes storage helpers like:
 - `utils/recipesStorage.ts` – Recipes local storage
 - `utils/shoppingStorage.ts` – Shopping list local storage
 - `utils/studyStorage.ts` – Study Planner (subjects, study tasks) local storage
+- `utils/todoStorage.ts` – Minimal todo list local storage
 
 #### `/docs`
 Project documentation including setup guides, component documentation, and development guidelines.
@@ -53,6 +55,7 @@ Additional feature routes in `/app` include:
 - `app/study-tracker` — Study Planner (weekly view with day cards + tasks, monthly view with subject filter)
 - `app/visualizer` — 5-Year Visualizer (Calendar high-level view)
 - `app/app-map` — In-app code hierarchy reference (Settings → Developer → App Map); data in `lib/appHierarchy.ts`
+- `app/todo` — Minimal todo checklist (main sidebar nav)
 
 #### `/planner-backup`
 Backup files for the planner functionality.
