@@ -236,62 +236,67 @@ export function Navigation() {
           <div className="space-y-0.5">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const showSubViews = true;
+              const isFlattenedGroup = item.key === 'daily-planner' || item.key === 'calendar';
+              const showSubViews = isFlattenedGroup || expandedNavItems.has(item.key);
 
               return (
                 <div key={item.key}>
-                  <div className="relative">
-                    <Link
-                      href={item.href}
-                      className={cn(
-                        "w-full flex items-center font-normal transition-all duration-200 group relative",
-                        isCollapsed ? "justify-center" : "space-x-2",
-                        dynamicSizes.mainPadding,
-                        dynamicSizes.mainTextSize,
-                        item.active
-                          ? "bg-muted text-foreground"
-                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/80",
-                        !isCollapsed && item.subViews && item.subViews.length > 0 && "pr-8"
-                      )}
-                      title={isCollapsed ? item.label : undefined}
-                    >
-                      <Icon className={cn(
-                        "transition-all duration-200 flex-shrink-0",
-                        dynamicSizes.iconSize,
-                        item.active 
-                          ? "text-foreground" 
-                          : "text-muted-foreground group-hover:text-foreground"
-                      )} />
-                      {!isCollapsed && (
-                        <span className="font-medium tracking-tight flex-1 truncate">{item.label}</span>
-                      )}
-                    </Link>
-                    {!isCollapsed && item.subViews && item.subViews.length > 0 && item.key && (
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          toggleNavItem(item.key);
-                        }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-secondary/50 transition-colors"
-                        title={expandedNavItems.has(item.key) ? "Collapse" : "Expand"}
-                      >
-                        {expandedNavItems.has(item.key) ? (
-                          <ChevronUp className="w-3 h-3 text-muted-foreground" />
-                        ) : (
-                          <ChevronDown className="w-3 h-3 text-muted-foreground" />
+                  {!isFlattenedGroup && (
+                    <div className="relative">
+                      <Link
+                        href={item.href}
+                        className={cn(
+                          "w-full flex items-center font-normal transition-all duration-200 group relative",
+                          isCollapsed ? "justify-center" : "space-x-2",
+                          dynamicSizes.mainPadding,
+                          dynamicSizes.mainTextSize,
+                          item.active
+                            ? "bg-muted text-foreground"
+                            : "text-muted-foreground hover:text-foreground hover:bg-secondary/80",
+                          !isCollapsed && item.subViews && item.subViews.length > 0 && "pr-8"
                         )}
-                      </button>
-                    )}
-                  </div>
+                        title={isCollapsed ? item.label : undefined}
+                      >
+                        <Icon className={cn(
+                          "transition-all duration-200 flex-shrink-0",
+                          dynamicSizes.iconSize,
+                          item.active 
+                            ? "text-foreground" 
+                            : "text-muted-foreground group-hover:text-foreground"
+                        )} />
+                        {!isCollapsed && (
+                          <span className="font-medium tracking-tight flex-1 truncate">{item.label}</span>
+                        )}
+                      </Link>
+                      {!isCollapsed && item.subViews && item.subViews.length > 0 && item.key && (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleNavItem(item.key);
+                          }}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-secondary/50 transition-colors"
+                          title={expandedNavItems.has(item.key) ? "Collapse" : "Expand"}
+                        >
+                          {expandedNavItems.has(item.key) ? (
+                            <ChevronUp className="w-3 h-3 text-muted-foreground" />
+                          ) : (
+                            <ChevronDown className="w-3 h-3 text-muted-foreground" />
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  )}
                   
                   {/* Sub-Views */}
-                  {showSubViews && item.subViews && item.subViews.length > 0 && (!item.key || expandedNavItems.has(item.key)) && (
+                  {item.subViews && item.subViews.length > 0 && showSubViews && (
                     <div className={cn(
                       "space-y-0.5",
-                      isCollapsed 
-                        ? "border-l border-border/70 ml-6 pl-2" // Increased margin/padding for larger icons
-                        : "relative pl-4 before:absolute before:left-4 before:top-0 before:h-full before:w-px before:bg-border/70"
+                      !isFlattenedGroup && (
+                        isCollapsed 
+                          ? "border-l border-border/70 ml-6 pl-2"
+                          : "relative pl-4 before:absolute before:left-4 before:top-0 before:h-full before:w-px before:bg-border/70"
+                      )
                     )}>
                       {item.subViews.map((subView) => {
                         const SubIcon = subView.icon;
@@ -332,21 +337,34 @@ export function Navigation() {
                               // For different pages or direct hrefs, let Link handle navigation
                             }}
                             className={cn(
-                              "flex items-center font-normal transition-all duration-200 w-full text-left",
+                              "w-full flex items-center font-normal transition-all duration-200 group relative",
                               isCollapsed 
                                 ? "justify-center" 
                                 : "space-x-2",
-                              dynamicSizes.subPadding,
-                              dynamicSizes.subTextSize,
-                              subView.active 
-                                ? 'text-foreground font-medium' 
-                                : 'text-muted-foreground hover:text-foreground'
+                              isFlattenedGroup ? dynamicSizes.mainPadding : dynamicSizes.subPadding,
+                              isFlattenedGroup ? dynamicSizes.mainTextSize : dynamicSizes.subTextSize,
+                              subView.active
+                                ? isFlattenedGroup
+                                  ? "bg-muted text-foreground"
+                                  : "text-foreground font-medium"
+                                : isFlattenedGroup
+                                  ? "text-muted-foreground hover:text-foreground hover:bg-secondary/80"
+                                  : "text-muted-foreground hover:text-foreground"
                             )}
                             title={isCollapsed ? subView.label : undefined}
                           >
-                            <SubIcon className={cn("flex-shrink-0", dynamicSizes.subIconSize)} />
+                            <SubIcon className={cn(
+                              "flex-shrink-0 transition-all duration-200",
+                              isFlattenedGroup ? dynamicSizes.iconSize : dynamicSizes.subIconSize,
+                              subView.active
+                                ? "text-foreground"
+                                : "text-muted-foreground group-hover:text-foreground"
+                            )} />
                             {!isCollapsed && (
-                              <span className="tracking-tight flex-1 truncate">{subView.label}</span>
+                              <span className={cn(
+                                "tracking-tight flex-1 truncate",
+                                isFlattenedGroup && "font-medium"
+                              )}>{subView.label}</span>
                             )}
                           </Link>
                         );

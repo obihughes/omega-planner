@@ -1,5 +1,9 @@
 ## 2025-05-25
 
+- **Sidebar nav: flat planner and calendar links** (2025-05-25)
+  - Removed visible **Daily Planner** and **Calendar** group headings; their sub-items (Daily, Week, Class Schedule, etc.) render as top-level links with the same styling as Projects.
+  - **Files affected**: `components/ui/Navigation.tsx`, `docs/changelog.md`
+
 - **Month board: week focus layout** (2025-05-25)
   - Week focus column width increased ~50% (`220px` → `330px` on `md+`); backlog column narrowed (`480px` → `320px`, `max-w-xl` → `max-w-sm`) to balance horizontal space.
   - Week focus drop zone and empty/note textareas are taller (`min-h` 180px zone, 140px empty field, `autosizeText` on week notes).
