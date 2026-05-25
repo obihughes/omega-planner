@@ -1,5 +1,10 @@
 ## 2025-05-25
 
+- **App Map — code hierarchy reference** (2025-05-25)
+  - New `/app-map` page with searchable, collapsible tree of routes, pages, components, hooks, and storage.
+  - Curated data in `lib/appHierarchy.ts`; reachable from Settings → Developer → App Map (not in main sidebar).
+  - **Files affected**: `lib/appHierarchy.ts`, `components/app-map/AppMapView.tsx`, `app/app-map/page.tsx`, `components/ui/Navigation.tsx`, `docs/structure.md`, `docs/README.md`, `docs/changelog.md`
+
 - **Navigation: hide Recipes** (2025-05-25)
   - Removed Recipes from the main sidebar; `/recipes` remains available via direct URL.
   - **Files affected**: `components/ui/Navigation.tsx`, `docs/changelog.md`, `README.md`, `docs/structure.md`

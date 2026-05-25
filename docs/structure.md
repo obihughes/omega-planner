@@ -35,6 +35,8 @@ Current notable feature folders include:
 #### `/lib`
 Core library code and utilities that are fundamental to the application's functionality. This includes database configurations, authentication setup, and other core services.
 
+- `lib/appHierarchy.ts` — Curated product-to-code tree for the **App Map** page (`/app-map`). Update when adding routes or major features.
+
 #### `/utils`
 Helper functions, custom hooks, and utility functions that are used across different parts of the application.
 Includes storage helpers like:
@@ -50,6 +52,7 @@ Additional feature routes in `/app` include:
 - `app/recipes` — Recipes page (pantry, shopping list, recipe management); hidden from main sidebar nav
 - `app/study-tracker` — Study Planner (weekly view with day cards + tasks, monthly view with subject filter)
 - `app/visualizer` — 5-Year Visualizer (Calendar high-level view)
+- `app/app-map` — In-app code hierarchy reference (Settings → Developer → App Map); data in `lib/appHierarchy.ts`
 
 #### `/planner-backup`
 Backup files for the planner functionality.

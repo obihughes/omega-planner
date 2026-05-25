@@ -21,6 +21,9 @@ This directory contains documentation for the project. Below is an overview of t
 - [Development Guidelines](guidelines.md) - Development best practices and guidelines
 - [Troubleshooting](troubleshooting.md) - Common issues and their solutions
 
+## Developer
+- **App Map** (`/app-map`) — In-app code hierarchy (routes → pages → components → hooks → storage). Open from Settings → Developer. Source: `lib/appHierarchy.ts`.
+
 ## Maintenance
 - [Changelog](changelog.md) - Record of significant changes to the project
 - [Future Plans](roadmap.md) - Planned features and improvements 

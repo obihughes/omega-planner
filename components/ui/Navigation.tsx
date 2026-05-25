@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   Calendar, CalendarDays, FolderKanban, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
   Clock, Archive, Trash2, CalendarCheck, CalendarRange, Folder, Files, ClipboardList, Settings,
-  LayoutGrid
+  LayoutGrid, Map
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
@@ -472,6 +472,33 @@ export function Navigation() {
                     Reset
                   </Button>
                 </div>
+              </div>
+            </div>
+
+            {/* Developer */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-medium">Developer</h3>
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="font-medium flex items-center gap-2">
+                    <Map className="w-4 h-4 text-muted-foreground shrink-0" />
+                    App Map
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Where features live in the codebase
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => {
+                    setShowSettingsModal(false);
+                    router.push('/app-map');
+                  }}
+                >
+                  Open
+                </Button>
               </div>
             </div>
 
