@@ -7,7 +7,7 @@ import { useTodo } from '@/hooks/useTodo';
 import { cn } from '@/lib/utils';
 
 export function TodoView() {
-  const { items, add, remove, toggle, clearCompleted, hasCompleted } = useTodo();
+  const { items, hydrated, add, remove, toggle, clearCompleted, hasCompleted } = useTodo();
   const [inputValue, setInputValue] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -51,7 +51,9 @@ export function TodoView() {
               </Button>
             </form>
 
-            {items.length === 0 ? (
+            {!hydrated ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">Loading...</p>
+            ) : items.length === 0 ? (
               <p className="text-sm text-muted-foreground py-4 text-center">
                 Your list is empty. Add something above.
               </p>

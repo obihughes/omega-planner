@@ -17,15 +17,20 @@ function sortItems(items: TodoItem[]): TodoItem[] {
 
 export function useTodo() {
   const [items, setItems] = useState<TodoItem[]>([]);
-  const loaded = useRef(false);
+  const [hydrated, setHydrated] = useState(false);
+  const skipInitialSave = useRef(true);
 
   useEffect(() => {
     setItems(TodoStorage.load());
-    loaded.current = true;
+    setHydrated(true);
   }, []);
 
   useEffect(() => {
-    if (loaded.current) TodoStorage.save(items);
+    if (skipInitialSave.current) {
+      skipInitialSave.current = false;
+      return;
+    }
+    TodoStorage.save(items);
   }, [items]);
 
   useEffect(() => {
@@ -76,6 +81,7 @@ export function useTodo() {
 
   return {
     items: sortedItems,
+    hydrated,
     add,
     remove,
     toggle,
