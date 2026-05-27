@@ -27,8 +27,7 @@ Current notable feature folders include:
 - `components/projects` – Project and task management
 - `components/documents` – Text canvas editor
 - `components/calendar` – Calendars and modals
-- `components/recipes` – Recipes view (pantry, shopping, recipes)
-- `components/meals` – Pantry and shopping sidebars (used by Recipes page)
+- `components/meals` – Meals list and ingredient management
 - `components/study-tracker` – Study Planner (weekly day cards with tasks, monthly calendar with subject filter)
 - `components/todo` – Minimal standalone todo checklist
 - `components/ui` – Shared UI primitives (layout, inputs, tabs, etc.)
@@ -41,9 +40,7 @@ Core library code and utilities that are fundamental to the application's functi
 #### `/utils`
 Helper functions, custom hooks, and utility functions that are used across different parts of the application.
 Includes storage helpers like:
-- `utils/pantryStorage.ts` – Pantry local storage
-- `utils/recipesStorage.ts` – Recipes local storage
-- `utils/shoppingStorage.ts` – Shopping list local storage
+- `utils/mealsStorage.ts` – Meals local storage (migrates legacy recipes on first load)
 - `utils/studyStorage.ts` – Study Planner (subjects, study tasks) local storage
 - `utils/todoStorage.ts` – Minimal todo list local storage
 
@@ -51,7 +48,7 @@ Includes storage helpers like:
 Project documentation including setup guides, component documentation, and development guidelines.
 
 Additional feature routes in `/app` include:
-- `app/recipes` — Recipes page (pantry, shopping list, recipe management); hidden from main sidebar nav — open via Settings → Beta features or direct URL `/recipes`
+- `app/meals` — Meals page (meal names and ingredients); hidden from main sidebar nav — open via Settings → Beta features or `/meals`. Legacy `/recipes` redirects to `/meals`.
 - `app/study-tracker` — Study Planner (weekly view with day cards + tasks); hidden from main sidebar — open via Settings → Beta features or `/study-tracker` (also embeddable in Calendar weekly view)
 - `app/visualizer` — 5-Year Visualizer (Calendar high-level view)
 - `app/app-map` — In-app code hierarchy reference (Settings → Developer → App Map); data in `lib/appHierarchy.ts`

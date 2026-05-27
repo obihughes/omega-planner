@@ -14,4 +14,4 @@ export * from './planner';
 // No changes to export surface; timeline behavior improved via internal handlers.
 export * from './primitives';
 export * from './documents';
-export * from './recipes';
+export * from './meals';

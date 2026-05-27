@@ -14,7 +14,5 @@ export {
   type ModalManagerState 
 } from './useModalManager';
 
-export { usePantry } from './usePantry';
-export { useShopping } from './useShopping'; 
-export { useRecipes } from './useRecipes';
+export { useMeals } from './useMeals';
 export { useProjects } from './useProjects';

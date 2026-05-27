@@ -1,43 +1,45 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { RecipeItem, RecipeIngredient } from '@/types/recipes';
-import { X, ChefHat, Plus, Trash2 } from 'lucide-react';
+import { MealItem, MealIngredient } from '@/types/meals';
+import { Plus, Trash2, UtensilsCrossed } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { usePantry } from '@/hooks/usePantry';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
 
-interface RecipeFormModalProps {
+interface MealFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  recipe?: RecipeItem | null;
-  onSave: (recipeData: Partial<RecipeItem>, isNew: boolean) => void;
-  onDelete?: (recipeId: string) => void;
+  meal?: MealItem | null;
+  onSave: (data: { name: string; ingredients: MealIngredient[] }, isNew: boolean) => void;
+  onDelete?: (mealId: string) => void;
 }
 
-export function RecipeFormModal({ isOpen, onClose, recipe, onSave, onDelete }: RecipeFormModalProps) {
-  const isNewRecipe = !recipe;
+export function MealFormModal({ isOpen, onClose, meal, onSave, onDelete }: MealFormModalProps) {
+  const isNew = !meal;
   const [name, setName] = useState('');
-  const [ingredients, setIngredients] = useState<RecipeIngredient[]>([{ name: '' }]);
+  const [ingredients, setIngredients] = useState<MealIngredient[]>([{ name: '' }]);
   const nameInputRef = useRef<HTMLInputElement>(null);
-  const { items: pantryItems } = usePantry();
 
   useEffect(() => {
-    if (recipe) {
-      setName(recipe.name);
-      setIngredients(recipe.ingredients.length > 0 ? recipe.ingredients : [{ name: '' }]);
+    if (meal) {
+      setName(meal.name);
+      setIngredients(meal.ingredients.length > 0 ? meal.ingredients : [{ name: '' }]);
     } else {
       setName('');
       setIngredients([{ name: '' }]);
     }
-
     if (isOpen) {
-      setTimeout(() => {
-        nameInputRef.current?.focus();
-      }, 100);
+      setTimeout(() => nameInputRef.current?.focus(), 100);
     }
-  }, [recipe, isOpen]);
+  }, [meal, isOpen]);
 
   const addIngredient = () => {
     setIngredients([...ingredients, { name: '' }]);
@@ -49,81 +51,70 @@ export function RecipeFormModal({ isOpen, onClose, recipe, onSave, onDelete }: R
     }
   };
 
-  const updateIngredient = (index: number, field: keyof RecipeIngredient, value: string) => {
-    const updated = ingredients.map((ingredient, i) => 
-      i === index ? { ...ingredient, [field]: value } : ingredient
+  const updateIngredient = (index: number, field: keyof MealIngredient, value: string) => {
+    setIngredients(
+      ingredients.map((ing, i) => (i === index ? { ...ing, [field]: value } : ing))
     );
-    setIngredients(updated);
   };
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedName = name.trim();
-    console.log('🧑‍🍳 RecipeFormModal: Save triggered with name:', trimmedName, 'ingredients:', ingredients);
-    if (trimmedName === '') {
-      console.log('🧑‍🍳 RecipeFormModal: Skipping save - no name');
-      return;
-    }
+    if (!trimmedName) return;
 
-    const validIngredients = ingredients.filter(i => i.name.trim() !== '');
-    console.log('🧑‍🍳 RecipeFormModal: Valid ingredients:', validIngredients);
+    const validIngredients = ingredients
+      .map((i) => ({
+        name: i.name.trim(),
+        quantity: i.quantity?.trim() || undefined,
+      }))
+      .filter((i) => i.name.length > 0);
 
-    const recipeData: Partial<RecipeItem> = {
-      name: trimmedName,
-      ingredients: validIngredients,
-    };
-
-    console.log('🧑‍🍳 RecipeFormModal: Calling onSave with:', recipeData, 'isNew:', isNewRecipe);
-    onSave(recipeData, isNewRecipe);
+    onSave({ name: trimmedName, ingredients: validIngredients }, isNew);
     onClose();
   };
 
   const handleDelete = () => {
-    if (recipe && onDelete) {
-        onDelete(recipe.id);
-        onClose();
+    if (meal && onDelete) {
+      onDelete(meal.id);
+      onClose();
     }
   };
 
+  const canSave =
+    name.trim() !== '' && ingredients.some((i) => i.name.trim() !== '');
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <ChefHat className="w-5 h-5" />
-            {isNewRecipe ? 'Create New Recipe' : 'Edit Recipe'}
+            <UtensilsCrossed className="w-5 h-5" />
+            {isNew ? 'Add meal' : 'Edit meal'}
           </DialogTitle>
         </DialogHeader>
-        
+
         <form onSubmit={handleSave} className="space-y-4">
           <div>
-            <label htmlFor="recipe-name" className="block text-sm font-medium text-foreground mb-2">
-              Recipe Name *
+            <label htmlFor="meal-name" className="block text-sm font-medium text-foreground mb-2">
+              Meal name *
             </label>
             <Input
-              id="recipe-name"
+              id="meal-name"
               ref={nameInputRef}
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Enter recipe name..."
+              placeholder="e.g. Chicken stir fry"
               required
             />
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-foreground">
-                Ingredients
-              </label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addIngredient}
-              >
+              <label className="block text-sm font-medium text-foreground">Ingredients</label>
+              <Button type="button" variant="outline" size="sm" onClick={addIngredient}>
                 <Plus className="w-4 h-4 mr-1" />
-                Add Ingredient
+                Add ingredient
               </Button>
             </div>
             <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -131,21 +122,15 @@ export function RecipeFormModal({ isOpen, onClose, recipe, onSave, onDelete }: R
                 <div key={index} className="flex gap-2 items-center">
                   <div className="flex-1 grid grid-cols-2 gap-2">
                     <Input
-                      placeholder="Ingredient name"
+                      placeholder="Ingredient"
                       value={ingredient.name}
                       onChange={(e) => updateIngredient(index, 'name', e.target.value)}
-                      list={`pantry-suggestions-${index}`}
                     />
                     <Input
-                      placeholder="Quantity (optional)"
+                      placeholder="Amount (optional)"
                       value={ingredient.quantity || ''}
                       onChange={(e) => updateIngredient(index, 'quantity', e.target.value)}
                     />
-                    <datalist id={`pantry-suggestions-${index}`}>
-                      {pantryItems.map(item => (
-                        <option key={item.id} value={item.name} />
-                      ))}
-                    </datalist>
                   </div>
                   {ingredients.length > 1 && (
                     <Button
@@ -165,14 +150,14 @@ export function RecipeFormModal({ isOpen, onClose, recipe, onSave, onDelete }: R
 
           <DialogFooter className="flex justify-between items-center pt-4 border-t border-border">
             <div>
-              {!isNewRecipe && onDelete && (
+              {!isNew && onDelete && (
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handleDelete}
                   className="text-red-600 border-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                 >
-                  Delete Recipe
+                  Delete meal
                 </Button>
               )}
             </div>
@@ -182,11 +167,8 @@ export function RecipeFormModal({ isOpen, onClose, recipe, onSave, onDelete }: R
                   Cancel
                 </Button>
               </DialogClose>
-              <Button
-                type="submit"
-                disabled={name.trim() === '' || ingredients.every(i => i.name.trim() === '')}
-              >
-                {isNewRecipe ? 'Create Recipe' : 'Save Changes'}
+              <Button type="submit" disabled={!canSave}>
+                {isNew ? 'Add meal' : 'Save changes'}
               </Button>
             </div>
           </DialogFooter>

@@ -20,7 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 
 const HIDDEN_NAV_ICONS: Record<string, LucideIcon> = {
-  recipes: ChefHat,
+  meals: ChefHat,
   'study-tracker': BookOpen,
 };
 

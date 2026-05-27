@@ -1,7 +1,14 @@
 ## 2026-05-27
 
+- **Meals page remake** (2026-05-27)
+  - Replaced the 3-column recipes page (pantry, shopping, match tiers) with a simple `/meals` page: add meals, list ingredients, edit/delete.
+  - New `types/meals.ts`, `utils/mealsStorage.ts`, `hooks/useMeals.ts`, `components/meals/MealsView.tsx`, `components/modals/MealFormModal.tsx`.
+  - Migrates saved data from legacy `omega-planner-recipes` localStorage on first load.
+  - `/recipes` redirects to `/meals`. Removed pantry, shopping, recipes hooks/storage/contexts and duplicate UI.
+  - **Files affected**: `app/meals/page.tsx`, `app/recipes/page.tsx`, `components/meals/`, `components/modals/MealFormModal.tsx`, `hooks/useMeals.ts`, `types/meals.ts`, `utils/mealsStorage.ts`, `lib/hiddenNavItems.ts`, `lib/appHierarchy.ts`, `hooks/index.ts`, `types/index.ts`, `components/index.ts`, `components/modals/index.ts`, `utils/index.ts`, `components/ui/Navigation.tsx`, `docs/structure.md`, `docs/changelog.md`, `README.md`
+
 - **Settings: Beta features dialog** (2026-05-27)
-  - Added Settings → Beta features → Open to reach sidebar-hidden pages (Recipes, Study Tracker) via a nested dialog. Config in `lib/hiddenNavItems.ts`.
+  - Added Settings → Beta features → Open to reach sidebar-hidden pages (Meals, Study Tracker) via a nested dialog. Config in `lib/hiddenNavItems.ts`.
   - **Files affected**: `lib/hiddenNavItems.ts`, `components/ui/Navigation.tsx`, `docs/changelog.md`, `lib/appHierarchy.ts`, `docs/structure.md`, `README.md`
 
 - **Settings modal: slimmer layout** (2026-05-27)

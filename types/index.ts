@@ -40,20 +40,10 @@ export type {
 } from './calendar';
 
 export type {
-  PantryItem,
-  PantryStorageData
-} from './pantry';
-
-export type {
-  RecipeItem,
-  RecipeIngredient,
-  RecipesStorageData
-} from './recipes';
-
-export type {
-  ShoppingItem,
-  ShoppingStorageData
-} from './shopping';
+  MealItem,
+  MealIngredient,
+  MealsStorageData
+} from './meals';
 
 export type { Subject, StudyEntry, StudyStorageData } from './study';
 

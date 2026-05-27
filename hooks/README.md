@@ -78,23 +78,10 @@ function YourComponent() {
 
 Must be used under `ProjectsProvider` in [`app/providers.tsx`](../app/providers.tsx).
 
-### usePantry
+### useMeals
 
-LocalStorage-backed pantry list for the Recipes page.
+LocalStorage-backed meals list for the Meals page (`/meals`).
 
-**API:**
-- `items`: current pantry items
-- `addItem(name, quantity?, category?)`
-- `removeItem(id)` / `updateItem(id, updates)`
+**API:** `meals`, `hydrated`, `add({ name, ingredients })`, `update(id, partial)`, `remove(id)`
 
-### useRecipes
-
-LocalStorage-backed recipe management for the Recipes page.
-
-**API:** `recipes`, `addRecipe`, `removeRecipe`, `updateRecipe`, `cookable`, `suggestedTiered`, `matchPercent`
-
-### useShopping
-
-LocalStorage-backed shopping list state.
-
-**API:** `items`, `add(name, quantity?)`, `remove(id)`, `toggle(id)`, `update(id, updates)`, `clearChecked()`
+Migrates legacy `omega-planner-recipes` data on first load when meals storage is empty.

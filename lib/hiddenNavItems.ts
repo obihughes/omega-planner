@@ -7,10 +7,10 @@ export type HiddenNavItem = {
 
 export const HIDDEN_NAV_ITEMS: HiddenNavItem[] = [
   {
-    key: 'recipes',
-    label: 'Recipes',
-    href: '/recipes',
-    description: 'Pantry, shopping list, and recipes',
+    key: 'meals',
+    label: 'Meals',
+    href: '/meals',
+    description: 'Meals and ingredients',
   },
   {
     key: 'study-tracker',

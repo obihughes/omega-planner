@@ -41,12 +41,11 @@ npm run dev:clean
 - **Task inbox** for unscheduled tasks
 - **Pinned tasks** for quick access
 
-### Recipes
-- Recipes page at `/recipes` (hidden from main sidebar; open via Settings → Beta features or direct URL) with pantry, shopping list, and recipe management
-- **Pantry**: Track ingredients with quantity and category
-- **Shopping List**: Add missing ingredients from recipe suggestions
-- **Recipe Suggestions**: Tiered matching (75%+, 50-74%, 25-49%) based on pantry contents
-- Local persistence via pantry, recipes, and shopping storage
+### Meals
+- Meals page at `/meals` (hidden from main sidebar; open via Settings → Beta features or direct URL)
+- Add meals with a name and ingredient list (optional amounts)
+- Local persistence via `utils/mealsStorage.ts` (migrates legacy recipes data on first load)
+- Legacy `/recipes` URL redirects to `/meals`
 
 ### Calendar Features
 - Year-view calendar with event and period management
@@ -72,7 +71,7 @@ npm run dev:clean
 - `/app` - Next.js application routes and pages
 - `/components` - React components organized by functionality
   - `/components/planner` - Main planner-specific components
-  - `/components/recipes` - Recipes view (pantry, shopping, recipes)
+  - `/components/meals` - Meals list and ingredients
   - `/components/ui` - Reusable UI components
   - `/components/ErrorBoundary.tsx` - Global error boundary for stability
 - `/hooks` - Custom React hooks for state management and logic
@@ -165,9 +164,9 @@ npm test
 - **Documentation**: Added JSDoc comments and README files across the codebase
 - **Improved Type Safety**: Enhanced TypeScript type definitions and interfaces
 
-### Recipes Page
-- Recipes page at `/recipes` (hidden from main sidebar; Settings → Beta features) with pantry, shopping list, and recipe management.
-- Persistence: Pantry, recipes, and shopping list are persisted in localStorage via `utils/pantryStorage.ts`, `utils/recipesStorage.ts`, and `utils/shoppingStorage.ts`.
+### Meals Page
+- Meals page at `/meals` (hidden from main sidebar; Settings → Beta features) for meal names and ingredients.
+- Persistence: `utils/mealsStorage.ts` (`omega-planner-meals-v1`). Legacy recipes import from `omega-planner-recipes` on first load.
 
 ## Troubleshooting
 
