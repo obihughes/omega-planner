@@ -48,14 +48,36 @@ export function FiveYearVisualizer({
   // Create 5 years array
   const years = useMemo(() => Array.from({ length: 5 }, (_, i) => startYear + i), [startYear]);
 
-  // Calculate current date position
-  const currentDate = useMemo(() => {
-    const now = new Date();
-    return {
-      year: now.getFullYear(),
-      month: now.getMonth(), // 0-11
-    };
+  // Current date for "now" line (recomputed each render; optional hourly refresh for midnight)
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60 * 60 * 1000);
+    return () => clearInterval(id);
   }, []);
+
+  const currentDate = useMemo(() => {
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const day = now.getDate();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const fractionWithinYear = (month + (day - 0.5) / daysInMonth) / 12;
+    return {
+      year,
+      month,
+      day,
+      daysInMonth,
+      fractionWithinYear,
+      label: now.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+      }),
+    };
+  }, [now]);
+
+  const nowLineLeft = `calc(${currentDate.fractionWithinYear * 100}% - 1px)`;
+  const dayFractionInMonth =
+    (currentDate.day - 0.5) / currentDate.daysInMonth;
 
   // Check if current date is within visible range
   const isCurrentDateVisible = useMemo(() => {
@@ -377,12 +399,18 @@ export function FiveYearVisualizer({
                   key={month} 
                   className={cn(
                     "p-4 font-bold text-center text-xs border-r border-border last:border-r-0 tracking-widest uppercase relative",
-                    isCurrentMonth ? "text-primary bg-primary/10" : "text-foreground"
+                    isCurrentMonth
+                      ? "text-primary bg-primary/10 ring-2 ring-inset ring-primary"
+                      : "text-foreground"
                   )}
                 >
                   {month}
                   {isCurrentMonth && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+                    <div
+                      className="absolute bottom-1 w-1 h-1 rounded-full bg-primary -translate-x-1/2"
+                      style={{ left: `${dayFractionInMonth * 100}%` }}
+                      aria-hidden
+                    />
                   )}
                 </div>
               );
@@ -419,12 +447,17 @@ export function FiveYearVisualizer({
                 {/* Current date: vertical line only in the row for the current calendar year */}
                 {isCurrentDateVisible && year === currentDate.year && (
                   <div
-                    className="absolute inset-y-0 w-0.5 bg-primary z-10 pointer-events-none"
-                    style={{
-                      left: `calc(${((currentDate.month + 0.5) / 12) * 100}% - 1px)`,
-                    }}
-                    aria-hidden
-                  />
+                    className="absolute inset-y-0 z-10 pointer-events-none -translate-x-1/2"
+                    style={{ left: nowLineLeft }}
+                    title={currentDate.label}
+                    aria-label={`Today: ${currentDate.label}`}
+                  >
+                    <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 bg-primary shadow-[0_0_0_2px_hsl(var(--primary)/0.35)]" />
+                    <div
+                      className="absolute top-0 left-1/2 w-2 h-2 rounded-full bg-primary ring-2 ring-primary/30 -translate-x-1/2"
+                      aria-hidden
+                    />
+                  </div>
                 )}
                 {/* Background Grid Lines & Interactive Cells */}
                 <div className="absolute inset-0 grid grid-rows-3">
@@ -441,7 +474,9 @@ export function FiveYearVisualizer({
                             className={cn(
                                 "border-r border-border h-full last:border-r-0 transition-colors cursor-pointer relative",
                                 isSelected ? "bg-primary/50" : 
-                                isCurrentMonth ? "bg-primary/20 ring-2 ring-primary ring-inset" :
+                                isCurrentMonth
+                                  ? "bg-primary/10 ring-2 ring-inset ring-primary"
+                                  :
                                 "hover:bg-muted/50 bg-background"
                             )}
                             onMouseDown={(e) => {

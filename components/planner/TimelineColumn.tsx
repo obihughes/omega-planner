@@ -284,7 +284,9 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
                             <div
                                 key={displayTask.id}
                                 onMouseDown={readOnly ? undefined : (e) => {
-                                    handleDragStart(task, e); 
+                                    const target = e.target as HTMLElement;
+                                    if (target.closest('button, .resize-handle')) return;
+                                    handleDragStart(task, e);
                                 }}
                                 style={{
                                     position: 'absolute',

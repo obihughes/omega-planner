@@ -61,6 +61,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     return endTime <= currentHour;
   })() : false;
 
+  const stopActionButtonPropagation = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
   const handleEditClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -168,6 +172,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             <button
               type="button"
               className="h-6 w-6 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+              onMouseDown={stopActionButtonPropagation}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -182,6 +187,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           <button
             type="button"
             className="h-6 w-6 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+            onMouseDown={stopActionButtonPropagation}
             onClick={handleEditClick}
             title="Edit Task"
           >
@@ -191,6 +197,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           <button
             type="button"
             className="h-6 w-6 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+            onMouseDown={stopActionButtonPropagation}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();

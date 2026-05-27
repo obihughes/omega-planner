@@ -35,7 +35,7 @@ A 5-year high-level visualizer for long-term planning.
   - **Rounded edges**: `rounded-xl` for softer look.
   - **Theming**: Uses app design-system tokens (`bg-background`, `bg-card`, `border-border`, `text-foreground`, `text-muted-foreground`, `primary`, `muted`) so the visualizer matches Calendar and Navigation in both light and dark modes.
   - **Styles**: Foreground text for headers; current month highlighted with `primary`; period blocks use user-selected colors with white text.
-  - **Current month line**: A vertical `primary` line marks the current month only within the **row for the current calendar year** (not across all five year rows). Period blocks render above the line so titles stay readable.
+  - **Current date line**: A vertical `primary` line marks today’s position within the year row for the current calendar year (day-accurate across month columns, not fixed at month center). A top dot, soft glow, and date tooltip identify the line. The current month header and cells use `ring-2 ring-inset ring-primary` plus a light `bg-primary/10` tint; the header includes a day-aligned tick. Period blocks render above the line so titles stay readable.
 - **Navigation**: Navigate previous/next 5-year blocks.
 
 ### PeriodModal (`components/calendar/PeriodModal.tsx`)

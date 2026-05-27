@@ -1,5 +1,9 @@
 ## 2026-05-27
 
+- **5-Year Visualizer: Day-accurate current-date line** (2026-05-27)
+  - The vertical “now” line is positioned by day within the month column (not always at month center). Added a top dot marker, soft glow, and date tooltip; current month uses `ring-2 ring-inset ring-primary` on header and cells plus a day-aligned tick.
+  - **Files affected**: `components/visualizer/FiveYearVisualizer.tsx`, `docs/components.md`, `docs/changelog.md`
+
 - **Meals page remake** (2026-05-27)
   - Replaced the 3-column recipes page (pantry, shopping, match tiers) with a simple `/meals` page: add meals, list ingredients, edit/delete.
   - New `types/meals.ts`, `utils/mealsStorage.ts`, `hooks/useMeals.ts`, `components/meals/MealsView.tsx`, `components/modals/MealFormModal.tsx`.

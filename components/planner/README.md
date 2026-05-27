@@ -65,9 +65,10 @@ This directory contains all components related to the daily planning functionali
 
 **Features:**
 - Visual task display with color coding
-- Drag handles for repositioning
+- Past tasks on today are visually muted (`opacity-50`) but remain fully copyable, editable, and draggable
+- Drag handles for repositioning (action buttons and resize handles do not initiate drag)
 - Resize handles for duration adjustment
-- Click actions for editing and notes
+- Click actions for editing, copy, and notes
 - Time conflict indicators
 
 #### TimelineColumn
@@ -80,6 +81,7 @@ This directory contains all components related to the daily planning functionali
 - Time markers and labels
 - Period-specific styling (night, morning, afternoon, evening)
 - Optional: readOnly (class schedule), drag/resize/copy handlers, onDoubleClickAdd
+- Task wrapper skips drag when mousedown targets action buttons or resize handles (so copy works on past/greyed tasks)
 
 ### Sidebar Components
 
