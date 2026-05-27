@@ -85,3 +85,11 @@ LocalStorage-backed meals list for the Meals page (`/meals`).
 **API:** `meals`, `hydrated`, `add({ name, ingredients })`, `update(id, partial)`, `remove(id)`
 
 Migrates legacy `omega-planner-recipes` data on first load when meals storage is empty.
+
+### useMealsNotes
+
+Debounced localStorage scratchpad for the Meals page left notes panel.
+
+**API:** `text`, `setNotes(value)`, `hydrated`
+
+**Storage key:** `omega-planner-meals-notes-v1` (`utils/mealsNotesStorage.ts`)

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useMeals } from '@/hooks/useMeals';
 import { MealFormModal } from '@/components/modals/MealFormModal';
+import { MealsNotesPanel } from '@/components/meals/MealsNotesPanel';
 import { MealItem } from '@/types/meals';
 import { Plus, Trash2, UtensilsCrossed } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -110,51 +111,57 @@ export function MealsView() {
   };
 
   return (
-    <div className="h-full w-full flex flex-col min-h-0 px-4 sm:px-6 py-6">
-      <header className="shrink-0 flex flex-wrap items-center justify-between gap-4 mb-6 max-w-[1600px] w-full mx-auto">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">Meals</h1>
-          {hydrated && (
-            <p className="text-sm text-muted-foreground mt-1">
-              {meals.length === 0
-                ? 'Track what you cook and what you need'
-                : `${meals.length} meal${meals.length === 1 ? '' : 's'}`}
-            </p>
-          )}
-        </div>
-        <Button variant="secondary" onClick={handleOpenNew}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add meal
-        </Button>
-      </header>
+    <div className="h-full w-full flex flex-col min-h-0">
+      <div className="flex flex-1 min-h-0 flex-col lg:flex-row">
+        <MealsNotesPanel />
 
-      <div className="flex-1 min-h-0 overflow-y-auto max-w-[1600px] w-full mx-auto">
-        {!hydrated ? (
-          <p className="text-sm text-muted-foreground py-12 text-center">Loading...</p>
-        ) : meals.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 px-4 rounded-lg border border-dashed border-border bg-muted/20">
-            <UtensilsCrossed className="w-12 h-12 text-muted-foreground mb-4" />
-            <h2 className="text-lg font-medium text-foreground mb-2">No meals yet</h2>
-            <p className="text-sm text-muted-foreground text-center max-w-md mb-6">
-              Add meals with their ingredients so you know what to buy and what to cook.
-            </p>
+        <div className="flex flex-col flex-1 min-h-0 min-w-0 px-4 sm:px-6 py-6">
+          <header className="shrink-0 flex flex-wrap items-center justify-between gap-4 mb-6 max-w-[1600px] w-full mx-auto">
+            <div>
+              <h1 className="text-2xl font-semibold text-foreground">Meals</h1>
+              {hydrated && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  {meals.length === 0
+                    ? 'Track what you cook and what you need'
+                    : `${meals.length} meal${meals.length === 1 ? '' : 's'}`}
+                </p>
+              )}
+            </div>
             <Button variant="secondary" onClick={handleOpenNew}>
               <Plus className="w-4 h-4 mr-2" />
-              Add your first meal
+              Add meal
             </Button>
+          </header>
+
+          <div className="flex-1 min-h-0 overflow-y-auto max-w-[1600px] w-full mx-auto">
+            {!hydrated ? (
+              <p className="text-sm text-muted-foreground py-12 text-center">Loading...</p>
+            ) : meals.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 px-4 rounded-lg border border-dashed border-border bg-muted/20">
+                <UtensilsCrossed className="w-12 h-12 text-muted-foreground mb-4" />
+                <h2 className="text-lg font-medium text-foreground mb-2">No meals yet</h2>
+                <p className="text-sm text-muted-foreground text-center max-w-md mb-6">
+                  Add meals with their ingredients so you know what to buy and what to cook.
+                </p>
+                <Button variant="secondary" onClick={handleOpenNew}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add your first meal
+                </Button>
+              </div>
+            ) : (
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 pb-4">
+                {meals.map((meal) => (
+                  <MealCard
+                    key={meal.id}
+                    meal={meal}
+                    onEdit={handleOpenEdit}
+                    onDelete={remove}
+                  />
+                ))}
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 pb-4">
-            {meals.map((meal) => (
-              <MealCard
-                key={meal.id}
-                meal={meal}
-                onEdit={handleOpenEdit}
-                onDelete={remove}
-              />
-            ))}
-          </div>
-        )}
+        </div>
       </div>
 
       <MealFormModal

@@ -509,10 +509,24 @@ export const appHierarchy: AppMapNode[] = [
         path: 'components/meals/MealsView.tsx',
       },
       {
+        id: 'meals-notes-panel',
+        label: 'MealsNotesPanel',
+        kind: 'component',
+        path: 'components/meals/MealsNotesPanel.tsx',
+        editHint: 'Left free-text notes rail; stacks above grid on small screens.',
+      },
+      {
         id: 'meals-hook',
         label: 'useMeals',
         kind: 'hook',
         path: 'hooks/useMeals.ts',
+      },
+      {
+        id: 'meals-notes-hook',
+        label: 'useMealsNotes',
+        kind: 'hook',
+        path: 'hooks/useMealsNotes.ts',
+        editHint: 'Debounced scratchpad notes for the meals page.',
       },
       {
         id: 'meals-storage',
@@ -520,6 +534,13 @@ export const appHierarchy: AppMapNode[] = [
         kind: 'storage',
         path: 'utils/mealsStorage.ts',
         editHint: 'Migrates legacy omega-planner-recipes on first load.',
+      },
+      {
+        id: 'meals-notes-storage',
+        label: 'mealsNotesStorage',
+        kind: 'storage',
+        path: 'utils/mealsNotesStorage.ts',
+        editHint: 'Key omega-planner-meals-notes-v1 for page scratchpad text.',
       },
     ],
   },

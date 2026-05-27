@@ -44,7 +44,9 @@ npm run dev:clean
 ### Meals
 - Meals page at `/meals` (hidden from main sidebar; open via Settings → Beta features or direct URL)
 - Add meals with a name and ingredient list (optional amounts)
+- Left-side free-text **Notes** panel (scratchpad; stacks above the grid on small screens)
 - Local persistence via `utils/mealsStorage.ts` (migrates legacy recipes data on first load)
+- Notes persistence: `utils/mealsNotesStorage.ts` (`omega-planner-meals-notes-v1`)
 - Legacy `/recipes` URL redirects to `/meals`
 
 ### Calendar Features
@@ -166,7 +168,9 @@ npm test
 
 ### Meals Page
 - Meals page at `/meals` (hidden from main sidebar; Settings → Beta features) for meal names and ingredients.
+- Left **Notes** panel: `components/meals/MealsNotesPanel.tsx` with `hooks/useMealsNotes.ts`.
 - Persistence: `utils/mealsStorage.ts` (`omega-planner-meals-v1`). Legacy recipes import from `omega-planner-recipes` on first load.
+- Notes: `utils/mealsNotesStorage.ts` (`omega-planner-meals-notes-v1`).
 
 ## Troubleshooting
 
