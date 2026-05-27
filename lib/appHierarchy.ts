@@ -50,7 +50,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'Navigation',
         kind: 'shell',
         path: 'components/ui/Navigation.tsx',
-        editHint: 'Sidebar nav items, settings modal, theme controls.',
+        editHint: 'Sidebar nav items; settings modal (theme, Beta features dialog for hidden routes, App Map). Hidden routes: lib/hiddenNavItems.ts.',
       },
       {
         id: 'shell-providers',
@@ -482,7 +482,7 @@ export const appHierarchy: AppMapNode[] = [
     id: 'recipes',
     label: 'Recipes (hidden nav)',
     kind: 'area',
-    description: 'Not in sidebar — open via /recipes directly.',
+    description: 'Not in sidebar — Settings → Beta features or /recipes.',
     children: [
       {
         id: 'rec-route',
@@ -568,7 +568,7 @@ export const appHierarchy: AppMapNode[] = [
     id: 'study-tracker',
     label: 'Study Tracker (hidden nav)',
     kind: 'area',
-    description: 'Standalone /study-tracker or embedded in /calendar weekly-goals.',
+    description: 'Not in sidebar — Settings → Beta features, /study-tracker, or embedded in /calendar weekly-goals.',
     children: [
       {
         id: 'st-route',

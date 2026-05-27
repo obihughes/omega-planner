@@ -51,8 +51,8 @@ Includes storage helpers like:
 Project documentation including setup guides, component documentation, and development guidelines.
 
 Additional feature routes in `/app` include:
-- `app/recipes` — Recipes page (pantry, shopping list, recipe management); hidden from main sidebar nav
-- `app/study-tracker` — Study Planner (weekly view with day cards + tasks, monthly view with subject filter)
+- `app/recipes` — Recipes page (pantry, shopping list, recipe management); hidden from main sidebar nav — open via Settings → Beta features or direct URL `/recipes`
+- `app/study-tracker` — Study Planner (weekly view with day cards + tasks); hidden from main sidebar — open via Settings → Beta features or `/study-tracker` (also embeddable in Calendar weekly view)
 - `app/visualizer` — 5-Year Visualizer (Calendar high-level view)
 - `app/app-map` — In-app code hierarchy reference (Settings → Developer → App Map); data in `lib/appHierarchy.ts`
 - `app/todo` — Minimal todo checklist (main sidebar nav)

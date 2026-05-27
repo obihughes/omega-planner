@@ -6,16 +6,24 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   Calendar, CalendarDays, FolderKanban, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
   CalendarRange, ClipboardList, Settings, LayoutGrid, Map, ListTodo,
-  NotebookPen, Sun, GraduationCap, GanttChart
+  NotebookPen, Sun, Moon, Monitor, GraduationCap, GanttChart,
+  FlaskConical, ChefHat, BookOpen, type LucideIcon,
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
+import { HIDDEN_NAV_ITEMS } from '@/lib/hiddenNavItems';
 import { useViewMode } from '@/app/context/ViewModeContext';
 import { useProjectsView } from '@/app/context/ProjectsViewContext';
 import { useCalendarView } from '@/app/context/CalendarViewContext';
 import { useSidebar } from '@/app/context/SidebarContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+
+const HIDDEN_NAV_ICONS: Record<string, LucideIcon> = {
+  recipes: ChefHat,
+  'study-tracker': BookOpen,
+};
+
 export function Navigation() {
   const { isCollapsed, sidebarWidth, toggleSidebar, setSidebarWidth } = useSidebar();
   
@@ -27,6 +35,7 @@ export function Navigation() {
   const { viewMode: calendarViewMode, setViewMode: setCalendarViewMode } = useCalendarView();
   
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showBetaModal, setShowBetaModal] = useState(false);
   const [expandedNavItems, setExpandedNavItems] = useState<Set<string>>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('omega-planner-nav-expanded');
@@ -388,141 +397,137 @@ export function Navigation() {
 
       {/* Settings Modal */}
       <Dialog open={showSettingsModal} onOpenChange={setShowSettingsModal}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Settings className="w-5 h-5" />
               Settings
             </DialogTitle>
             <DialogDescription>
-              Configure your preferences and app settings.
+              Preferences
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-6 py-4">
-            {/* Theme Settings */}
-            <div className="space-y-3">
-              <h3 className="text-lg font-medium">Appearance</h3>
-              <div className="space-y-4">
-                <div>
-                  <p className="font-medium mb-3">Theme</p>
-                  <div className="grid grid-cols-3 gap-3">
-                    <button
-                      onClick={() => setTheme('light')}
-                      className={cn(
-                        "p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-2",
-                        theme === 'light' 
-                          ? "border-primary bg-primary/5" 
-                          : "border-border hover:border-muted-foreground"
-                      )}
-                    >
-                      <div className="w-8 h-8 rounded bg-white border border-gray-200 flex items-center justify-center">
-                        <div className="w-4 h-4 rounded bg-gray-900"></div>
-                      </div>
-                      <span className="text-sm font-medium">Light</span>
-                    </button>
-                    
-                    <button
-                      onClick={() => setTheme('dark')}
-                      className={cn(
-                        "p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-2",
-                        theme === 'dark' 
-                          ? "border-primary bg-primary/5" 
-                          : "border-border hover:border-muted-foreground"
-                      )}
-                    >
-                      <div className="w-8 h-8 rounded bg-gray-900 border border-gray-700 flex items-center justify-center">
-                        <div className="w-4 h-4 rounded bg-gray-100"></div>
-                      </div>
-                      <span className="text-sm font-medium">Dark</span>
-                    </button>
-                    
-                    <button
-                      onClick={() => setTheme('system')}
-                      className={cn(
-                        "p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-2",
-                        theme === 'system' 
-                          ? "border-primary bg-primary/5" 
-                          : "border-border hover:border-muted-foreground"
-                      )}
-                    >
-                      <div className="w-8 h-8 rounded border border-gray-300 flex items-center justify-center bg-gradient-to-r from-white via-gray-200 to-gray-900">
-                      </div>
-                      <span className="text-sm font-medium">System</span>
-                    </button>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Current: <span className="capitalize font-medium">{theme}</span> theme
-                  </p>
-                </div>
+          <div className="space-y-4 py-2">
+            <div className="flex items-center justify-between gap-4">
+              <p className="font-medium shrink-0">Theme</p>
+              <div
+                className="flex rounded-md border bg-muted/30 p-0.5 shrink-0"
+                role="group"
+                aria-label="Theme"
+              >
+                {([
+                  { value: 'light' as const, label: 'Light', Icon: Sun },
+                  { value: 'dark' as const, label: 'Dark', Icon: Moon },
+                  { value: 'system' as const, label: 'System', Icon: Monitor },
+                ]).map(({ value, label, Icon }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setTheme(value)}
+                    className={cn(
+                      'flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium transition-colors',
+                      theme === value
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                    aria-pressed={theme === value}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    {label}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* App Settings */}
-            <div className="space-y-3">
-              <h3 className="text-lg font-medium">Application</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Auto-save documents</p>
-                    <p className="text-sm text-muted-foreground">Automatically save changes to documents</p>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Enabled
-                  </Button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Sidebar width</p>
-                    <p className="text-sm text-muted-foreground">Current width: {sidebarWidth}px</p>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={() => setSidebarWidth(200)}>
-                    Reset
-                  </Button>
-                </div>
+            <button
+              type="button"
+              onClick={() => setShowBetaModal(true)}
+              className="w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-left transition-colors hover:bg-secondary/80"
+            >
+              <FlaskConical className="w-4 h-4 shrink-0 text-muted-foreground" />
+              <div className="min-w-0 flex-1">
+                <p className="font-medium text-sm">Beta features</p>
+                <p className="text-sm text-muted-foreground">
+                  Pages hidden from the sidebar
+                </p>
               </div>
-            </div>
+              <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground" />
+            </button>
 
-            {/* Developer */}
-            <div className="space-y-3">
-              <h3 className="text-lg font-medium">Developer</h3>
-              <div className="flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="font-medium flex items-center gap-2">
-                    <Map className="w-4 h-4 text-muted-foreground shrink-0" />
-                    App Map
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Where features live in the codebase
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="shrink-0"
-                  onClick={() => {
-                    setShowSettingsModal(false);
-                    router.push('/app-map');
-                  }}
-                >
-                  Open
-                </Button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowSettingsModal(false);
+                router.push('/app-map');
+              }}
+              className="w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-left transition-colors hover:bg-secondary/80"
+            >
+              <Map className="w-4 h-4 shrink-0 text-muted-foreground" />
+              <div className="min-w-0 flex-1">
+                <p className="font-medium text-sm">App Map</p>
+                <p className="text-sm text-muted-foreground">
+                  Where features live in the codebase
+                </p>
               </div>
-            </div>
-
-            {/* About */}
-            <div className="space-y-3">
-              <h3 className="text-lg font-medium">About</h3>
-              <div className="text-sm text-muted-foreground">
-                <p>Omega Planner - Advanced task planning and management</p>
-                <p className="mt-1">Built with Next.js, React, and Tailwind CSS</p>
-              </div>
-            </div>
+              <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground" />
+            </button>
           </div>
 
           <div className="flex justify-end">
             <Button onClick={() => setShowSettingsModal(false)}>
               Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showBetaModal} onOpenChange={setShowBetaModal}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FlaskConical className="w-5 h-5" />
+              Beta features
+            </DialogTitle>
+            <DialogDescription>
+              Hidden pages — not shown in the sidebar
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-1 py-2">
+            {HIDDEN_NAV_ITEMS.map((item) => {
+              const Icon = HIDDEN_NAV_ICONS[item.key] ?? FlaskConical;
+              const isActive = pathname === item.href;
+
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => {
+                    router.push(item.href);
+                    setShowBetaModal(false);
+                    setShowSettingsModal(false);
+                  }}
+                  className={cn(
+                    'w-full flex items-start gap-3 rounded-md px-3 py-2.5 text-left transition-colors',
+                    isActive
+                      ? 'bg-muted text-foreground'
+                      : 'hover:bg-secondary/80 text-foreground'
+                  )}
+                >
+                  <Icon className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm">{item.label}</p>
+                    <p className="text-sm text-muted-foreground">{item.description}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowBetaModal(false)}>
+              Back
             </Button>
           </div>
         </DialogContent>

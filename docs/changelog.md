@@ -1,3 +1,14 @@
+## 2026-05-27
+
+- **Settings: Beta features dialog** (2026-05-27)
+  - Added Settings → Beta features → Open to reach sidebar-hidden pages (Recipes, Study Tracker) via a nested dialog. Config in `lib/hiddenNavItems.ts`.
+  - **Files affected**: `lib/hiddenNavItems.ts`, `components/ui/Navigation.tsx`, `docs/changelog.md`, `lib/appHierarchy.ts`, `docs/structure.md`, `README.md`
+
+- **Settings modal: slimmer layout** (2026-05-27)
+  - Replaced large theme preview cards with a compact segmented control (Light / Dark / System).
+  - Removed cosmetic auto-save, sidebar width reset, and About sections; App Map link unchanged. Sidebar drag-resize and document auto-save behavior unchanged.
+  - **Files affected**: `components/ui/Navigation.tsx`, `docs/changelog.md`, `lib/appHierarchy.ts`, `docs/styling-guide.md`
+
 ## 2025-05-25
 
 - **Projects: faster list ↔ detail navigation** (2025-05-25)
