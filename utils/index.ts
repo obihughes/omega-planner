@@ -22,4 +22,9 @@ export * from './taskUtils';
 export { StudyStorage } from './studyStorage';
 
 // Month board
-export { MonthBoardStorage, getDefaultHorizonMondayKey, createInitialMonthBoardState } from './monthBoardStorage';
+export {
+  MonthBoardStorage,
+  getDefaultHorizonMondayKey,
+  createInitialMonthBoardState,
+  rollHorizonToCurrentWeek,
+} from './monthBoardStorage';

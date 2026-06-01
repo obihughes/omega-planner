@@ -12,7 +12,7 @@ Minimal standalone checklist: add tasks, toggle done, remove items, clear comple
 ### MonthBoard (`components/month-board/MonthBoard.tsx`)
 **Page:** `app/month-board/page.tsx`
 
-Multi-scale month planning: backlog column (`lg` ~320px max) plus twelve week blocks. Each block has a **week focus** drop zone (~330px wide on `md+`, taller min-height) and **Mon–Sun** rows with real dates; empty week slots use a taller inline `Textarea` (`variant="week"`), day slots use a compact one. Backlog and week-focus note cards use `AutosizeTextarea` (`scrollHeight` sync) so fields grow with content instead of scrolling internally. Uses `@dnd-kit` with custom collision handling so drop targets take precedence over nested note draggables; note bodies use `onPointerDownCapture` stopPropagation so typing is not captured as drag. State persists via `MonthBoardStorage`.
+Multi-scale month planning: twelve week blocks (`flex-1`) plus a **backlog** column on the right (`lg` ~320px max). Each block has **Mon–Sun** day rows on the left and a **week focus** drop zone on the right (~330px wide on `md+`, taller min-height); empty week slots use a taller inline `Textarea` (`variant="week"`), day slots use a compact one. Backlog and week-focus note cards use `AutosizeTextarea` (`scrollHeight` sync) so fields grow with content instead of scrolling internally. Uses `@dnd-kit` with custom collision handling so drop targets take precedence over nested note draggables; note bodies use `onPointerDownCapture` stopPropagation so typing is not captured as drag. On load, `rollHorizonToCurrentWeek` keeps the current week at index 0 and the page auto-scrolls to center that week once. State persists via `MonthBoardStorage`.
 
 ## Visualizer Components
 

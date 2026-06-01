@@ -1,6 +1,6 @@
 import type { MonthBoardNote, MonthBoardState, MonthBoardWeekSlot } from '@/types/monthBoard';
 import { DAYS_PER_WEEK, MONTH_BOARD_WEEK_COUNT } from '@/types/monthBoard';
-import { getDateKey } from '@/utils/dateUtils';
+import { dateFromDateKey, getDateKey } from '@/utils/dateUtils';
 import { startOfWeek } from 'date-fns';
 
 const STORAGE_KEY = 'omega-planner-month-board-v1';
@@ -62,6 +62,60 @@ function cleanWeek(raw: unknown): MonthBoardWeekSlot | null {
     days = emptyWeek().days;
   }
   return { weekNotes, days };
+}
+
+function cloneWeekSlot(slot: MonthBoardWeekSlot): MonthBoardWeekSlot {
+  return {
+    weekNotes: slot.weekNotes.map((n) => ({ ...n })),
+    days: slot.days.map((col) => col.map((n) => ({ ...n }))),
+  };
+}
+
+/** Whole weeks between two Monday date keys (newer − older). */
+function weeksBetweenMondayKeys(olderMonday: string, newerMonday: string): number {
+  const older = dateFromDateKey(olderMonday);
+  const newer = dateFromDateKey(newerMonday);
+  const diffMs = newer.getTime() - older.getTime();
+  return Math.round(diffMs / (7 * 24 * 60 * 60 * 1000));
+}
+
+/**
+ * Advance the 12-week horizon so the current calendar week is week index 0.
+ * Backlog is preserved; notes in dropped past weeks are discarded.
+ */
+export function rollHorizonToCurrentWeek(state: MonthBoardState): MonthBoardState {
+  const currentMonday = getDefaultHorizonMondayKey();
+  if (state.horizonStartKey === currentMonday) {
+    return state;
+  }
+
+  const diffWeeks = weeksBetweenMondayKeys(state.horizonStartKey, currentMonday);
+
+  if (diffWeeks <= 0 || diffWeeks >= MONTH_BOARD_WEEK_COUNT) {
+    return {
+      ...state,
+      horizonStartKey: currentMonday,
+      weeks: createInitialMonthBoardState(currentMonday).weeks,
+      lastUpdated: new Date().toISOString(),
+    };
+  }
+
+  const weeks: MonthBoardWeekSlot[] = [];
+  for (let i = 0; i < MONTH_BOARD_WEEK_COUNT; i++) {
+    const sourceIndex = i + diffWeeks;
+    weeks.push(
+      sourceIndex < MONTH_BOARD_WEEK_COUNT
+        ? cloneWeekSlot(state.weeks[sourceIndex])
+        : emptyWeek()
+    );
+  }
+
+  return {
+    ...state,
+    horizonStartKey: currentMonday,
+    weeks,
+    lastUpdated: new Date().toISOString(),
+  };
 }
 
 export const MonthBoardStorage = {

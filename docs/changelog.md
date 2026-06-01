@@ -1,3 +1,18 @@
+## 2026-06-01
+
+- **Month board: fix focus loss when typing first character** (2026-06-01)
+  - Empty day/week slots no longer swap `EmptySlotTextarea` for `NoteCard` on the first keystroke; `SlotNoteEditor` keeps one textarea and assigns a stable note id before persisting.
+  - **Files affected**: `components/month-board/MonthBoard.tsx`, `docs/changelog.md`
+
+- **Month board: column layout** (2026-06-01)
+  - Backlog panel moved to the right on large screens; each week row shows day rows on the left and week focus on the right. Removed backlog drag-help paragraph.
+  - **Files affected**: `components/month-board/MonthBoard.tsx`, `docs/planner.md`, `docs/components.md`, `docs/changelog.md`
+
+- **Month board: current week in focus on open** (2026-06-01)
+  - On load, `rollHorizonToCurrentWeek` advances the 12-week horizon so the current calendar week is week index 0 (backlog preserved; notes in dropped past weeks are discarded; 12+ weeks stale or future horizon re-anchors with empty weeks).
+  - Auto-scrolls the shared planner body to center the current week once per visit (`behavior: 'auto'`).
+  - **Files affected**: `utils/monthBoardStorage.ts`, `utils/index.ts`, `components/month-board/MonthBoard.tsx`, `docs/planner.md`, `docs/components.md`, `docs/changelog.md`
+
 ## 2026-05-27
 
 - **5-Year Visualizer: Day-accurate current-date line** (2026-05-27)

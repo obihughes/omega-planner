@@ -20,7 +20,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import type { MonthBoardNote, MonthBoardState, MonthNoteSource, MonthNoteTarget } from '@/types/monthBoard';
 import { DAYS_PER_WEEK, MONTH_BOARD_WEEK_COUNT } from '@/types/monthBoard';
-import { MonthBoardStorage } from '@/utils/monthBoardStorage';
+import {
+  getDefaultHorizonMondayKey,
+  MonthBoardStorage,
+  rollHorizonToCurrentWeek,
+} from '@/utils/monthBoardStorage';
 import { addDaysToDateKey, dateFromDateKey, getTodayDateKey } from '@/utils/dateUtils';
 
 const DROP_BACKLOG = 'mbd-backlog';
@@ -167,9 +171,12 @@ function appendNote(draft: MonthBoardState, target: MonthNoteTarget, note: Month
 export function MonthBoard() {
   const [state, setState] = useState<MonthBoardState | null>(null);
   const [draftInput, setDraftInput] = useState('');
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const weekBlockRefs = useRef<Map<number, HTMLElement>>(new Map());
+  const didAutoScrollRef = useRef(false);
 
   useEffect(() => {
-    setState(MonthBoardStorage.load());
+    setState(rollHorizonToCurrentWeek(MonthBoardStorage.load()));
   }, []);
 
   useEffect(() => {
@@ -192,6 +199,40 @@ export function MonthBoard() {
     }
     return keys;
   }, [state?.horizonStartKey]);
+
+  const currentWeekIndex = useMemo(() => {
+    const currentMonday = getDefaultHorizonMondayKey();
+    return weekMondayKeys.findIndex((key) => key === currentMonday);
+  }, [weekMondayKeys]);
+
+  useEffect(() => {
+    if (!state || currentWeekIndex < 0) return;
+    if (didAutoScrollRef.current) return;
+
+    const timeoutId = window.setTimeout(() => {
+      const scrollContainer = scrollContainerRef.current;
+      const weekEl = weekBlockRefs.current.get(currentWeekIndex);
+      if (!scrollContainer || !weekEl) return;
+
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const weekRect = weekEl.getBoundingClientRect();
+      const weekHeight = weekRect.height;
+      const containerHeight = scrollContainer.clientHeight;
+      const scrollTop =
+        scrollContainer.scrollTop +
+        (weekRect.top - containerRect.top) -
+        containerHeight / 2 +
+        weekHeight / 2;
+
+      scrollContainer.scrollTo({
+        top: Math.max(0, scrollTop),
+        behavior: 'auto',
+      });
+      didAutoScrollRef.current = true;
+    }, 100);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [state, currentWeekIndex]);
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
@@ -264,35 +305,38 @@ export function MonthBoard() {
     });
   }, []);
 
-  const upsertWeekInlineNote = useCallback((weekIndex: number, text: string) => {
+  const upsertWeekInlineNote = useCallback((weekIndex: number, noteId: string, text: string) => {
     setState((prev) => {
       if (!prev) return prev;
       const next = cloneState(prev);
       const list = next.weeks[weekIndex]?.weekNotes;
       if (!list) return prev;
       if (list.length === 0) {
-        list.push({ id: nanoid(), text });
-      } else if (list.length === 1) {
+        list.push({ id: noteId, text });
+      } else if (list.length === 1 && list[0].id === noteId) {
         list[0].text = text;
       }
       return next;
     });
   }, []);
 
-  const upsertDayInlineNote = useCallback((weekIndex: number, dayIndex: number, text: string) => {
-    setState((prev) => {
-      if (!prev) return prev;
-      const next = cloneState(prev);
-      const list = next.weeks[weekIndex]?.days[dayIndex];
-      if (!list) return prev;
-      if (list.length === 0) {
-        list.push({ id: nanoid(), text });
-      } else if (list.length === 1) {
-        list[0].text = text;
-      }
-      return next;
-    });
-  }, []);
+  const upsertDayInlineNote = useCallback(
+    (weekIndex: number, dayIndex: number, noteId: string, text: string) => {
+      setState((prev) => {
+        if (!prev) return prev;
+        const next = cloneState(prev);
+        const list = next.weeks[weekIndex]?.days[dayIndex];
+        if (!list) return prev;
+        if (list.length === 0) {
+          list.push({ id: noteId, text });
+        } else if (list.length === 1 && list[0].id === noteId) {
+          list[0].text = text;
+        }
+        return next;
+      });
+    },
+    []
+  );
 
   if (!state) {
     return (
@@ -312,16 +356,10 @@ export function MonthBoard() {
           </p>
         </header>
 
-        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-x-hidden overflow-y-auto lg:flex-row lg:items-start">
-          <BacklogPanel
-            backlog={state.backlog}
-            draftInput={draftInput}
-            onDraftChange={setDraftInput}
-            onAdd={addBacklogNote}
-            onDelete={(id) => deleteNote({ kind: 'backlog' }, id)}
-            onTextChange={(id, text) => updateNoteText({ kind: 'backlog' }, id, text)}
-          />
-
+        <div
+          ref={scrollContainerRef}
+          className="flex min-h-0 flex-1 flex-col gap-4 overflow-x-hidden overflow-y-auto lg:flex-row lg:items-start"
+        >
           <div className="min-w-0 flex-1 overflow-x-hidden rounded-xl border border-border/60 bg-card/40 pr-1">
             <div className="flex flex-col gap-6 p-3 md:p-4">
               {weekMondayKeys.map((mondayKey, weekIndex) => (
@@ -330,14 +368,29 @@ export function MonthBoard() {
                   weekIndex={weekIndex}
                   mondayKey={mondayKey}
                   week={state.weeks[weekIndex]}
+                  sectionRef={(el) => {
+                    if (el) weekBlockRefs.current.set(weekIndex, el);
+                    else weekBlockRefs.current.delete(weekIndex);
+                  }}
                   onDelete={(source, id) => deleteNote(source, id)}
                   onTextChange={(source, id, text) => updateNoteText(source, id, text)}
-                  onUpsertWeekInline={(text) => upsertWeekInlineNote(weekIndex, text)}
-                  onUpsertDayInline={(dayIndex, text) => upsertDayInlineNote(weekIndex, dayIndex, text)}
+                  onUpsertWeekInline={(noteId, text) => upsertWeekInlineNote(weekIndex, noteId, text)}
+                  onUpsertDayInline={(dayIndex, noteId, text) =>
+                    upsertDayInlineNote(weekIndex, dayIndex, noteId, text)
+                  }
                 />
               ))}
             </div>
           </div>
+
+          <BacklogPanel
+            backlog={state.backlog}
+            draftInput={draftInput}
+            onDraftChange={setDraftInput}
+            onAdd={addBacklogNote}
+            onDelete={(id) => deleteNote({ kind: 'backlog' }, id)}
+            onTextChange={(id, text) => updateNoteText({ kind: 'backlog' }, id, text)}
+          />
         </div>
       </div>
     </DndContext>
@@ -371,13 +424,7 @@ function BacklogPanel({
         isOver && 'ring-2 ring-primary/40'
       )}
     >
-      <div>
-        <h2 className="text-lg font-medium">Backlog</h2>
-        <p className="text-xs text-muted-foreground mt-1">
-          Drag a grip to a week or day to move from the backlog. Drag from a week or day here, or to another slot,
-          to move the text.
-        </p>
-      </div>
+      <h2 className="text-lg font-medium">Backlog</h2>
       <AutosizeTextarea
         value={draftInput}
         onChange={(e) => onDraftChange(e.target.value)}
@@ -412,6 +459,7 @@ function WeekBlock({
   weekIndex,
   mondayKey,
   week,
+  sectionRef,
   onDelete,
   onTextChange,
   onUpsertWeekInline,
@@ -420,30 +468,25 @@ function WeekBlock({
   weekIndex: number;
   mondayKey: string;
   week: MonthBoardState['weeks'][number];
+  sectionRef?: (el: HTMLElement | null) => void;
   onDelete: (source: MonthNoteSource, id: string) => void;
   onTextChange: (source: MonthNoteSource, id: string, text: string) => void;
-  onUpsertWeekInline: (text: string) => void;
-  onUpsertDayInline: (dayIndex: number, text: string) => void;
+  onUpsertWeekInline: (noteId: string, text: string) => void;
+  onUpsertDayInline: (dayIndex: number, noteId: string, text: string) => void;
 }) {
   const rangeLabel = formatWeekRangeLabel(mondayKey);
 
   return (
-    <section className="overflow-x-hidden rounded-xl border border-border/50 bg-background/50 p-3 shadow-sm">
+    <section
+      ref={sectionRef}
+      id={`month-board-week-${weekIndex}`}
+      className="overflow-x-hidden rounded-xl border border-border/50 bg-background/50 p-3 shadow-sm"
+    >
       <div className="mb-3 flex flex-wrap items-baseline gap-2 border-b border-border/40 pb-2">
         <span className="text-xs font-semibold uppercase tracking-wide text-primary">Week {weekIndex + 1}</span>
         <span className="text-sm font-medium tabular-nums text-foreground">{rangeLabel}</span>
       </div>
       <div className="flex flex-col gap-3 md:flex-row md:items-stretch">
-        <div className="md:w-[min(100%,330px)] shrink-0">
-          <p className="mb-1 text-xs font-medium text-muted-foreground">Week focus</p>
-          <WeekColumnDrop
-            weekIndex={weekIndex}
-            notes={week.weekNotes}
-            onDelete={(id) => onDelete({ kind: 'week', weekIndex }, id)}
-            onTextChange={(id, text) => onTextChange({ kind: 'week', weekIndex }, id, text)}
-            onUpsertInline={onUpsertWeekInline}
-          />
-        </div>
         <div className="min-w-0 flex-1 space-y-2">
           {Array.from({ length: DAYS_PER_WEEK }, (_, dayIndex) => {
             const dateKey = addDaysToDateKey(mondayKey, dayIndex);
@@ -460,10 +503,20 @@ function WeekBlock({
                 notes={week.days[dayIndex] ?? []}
                 onDelete={(id) => onDelete({ kind: 'day', weekIndex, dayIndex }, id)}
                 onTextChange={(id, text) => onTextChange({ kind: 'day', weekIndex, dayIndex }, id, text)}
-                onUpsertInline={(text) => onUpsertDayInline(dayIndex, text)}
+                onUpsertInline={(noteId, text) => onUpsertDayInline(dayIndex, noteId, text)}
               />
             );
           })}
+        </div>
+        <div className="md:w-[min(100%,330px)] shrink-0">
+          <p className="mb-1 text-xs font-medium text-muted-foreground">Week focus</p>
+          <WeekColumnDrop
+            weekIndex={weekIndex}
+            notes={week.weekNotes}
+            onDelete={(id) => onDelete({ kind: 'week', weekIndex }, id)}
+            onTextChange={(id, text) => onTextChange({ kind: 'week', weekIndex }, id, text)}
+            onUpsertInline={onUpsertWeekInline}
+          />
         </div>
       </div>
     </section>
@@ -481,7 +534,7 @@ function WeekColumnDrop({
   notes: MonthBoardNote[];
   onDelete: (id: string) => void;
   onTextChange: (id: string, text: string) => void;
-  onUpsertInline: (text: string) => void;
+  onUpsertInline: (noteId: string, text: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: dropWeekId(weekIndex),
@@ -496,8 +549,16 @@ function WeekColumnDrop({
         isOver && 'border-primary/60 bg-primary/5'
       )}
     >
-      {notes.length === 0 ? (
-        <EmptySlotTextarea variant="week" onCommitText={(text) => onUpsertInline(text)} />
+      {notes.length <= 1 ? (
+        <SlotNoteEditor
+          note={notes[0]}
+          source={{ kind: 'week', weekIndex }}
+          variant="week"
+          autosizeText
+          onEnsureNote={onUpsertInline}
+          onTextChange={(id, text) => onTextChange(id, text)}
+          onDelete={(id) => onDelete(id)}
+        />
       ) : (
         notes.map((note) => (
           <NoteCard
@@ -533,7 +594,7 @@ function DayRow({
   notes: MonthBoardNote[];
   onDelete: (id: string) => void;
   onTextChange: (id: string, text: string) => void;
-  onUpsertInline: (text: string) => void;
+  onUpsertInline: (noteId: string, text: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: dropDayId(weekIndex, dayIndex),
@@ -565,8 +626,14 @@ function DayRow({
           isOver && 'ring-2 ring-primary/35'
         )}
       >
-        {notes.length === 0 ? (
-          <EmptySlotTextarea onCommitText={onUpsertInline} />
+        {notes.length <= 1 ? (
+          <SlotNoteEditor
+            note={notes[0]}
+            source={{ kind: 'day', weekIndex, dayIndex }}
+            onEnsureNote={onUpsertInline}
+            onTextChange={(id, text) => onTextChange(id, text)}
+            onDelete={(id) => onDelete(id)}
+          />
         ) : (
           notes.map((note) => (
             <NoteCard
@@ -583,31 +650,123 @@ function DayRow({
   );
 }
 
-/** Inline typing when a week or day slot has no notes yet; syncs into a single note via upsert callbacks */
-function EmptySlotTextarea({
+/**
+ * Single editor for empty or one-note slots. Uses a stable note id on first keystroke so the
+ * textarea is not swapped for NoteCard (which previously stole focus after one character).
+ */
+function SlotNoteEditor({
+  note,
+  source,
   variant = 'day',
-  onCommitText,
+  autosizeText,
+  onEnsureNote,
+  onTextChange,
+  onDelete,
 }: {
+  note?: MonthBoardNote;
+  source: MonthNoteSource;
   variant?: 'day' | 'week';
-  onCommitText: (text: string) => void;
+  autosizeText?: boolean;
+  onEnsureNote: (noteId: string, text: string) => void;
+  onTextChange: (id: string, text: string) => void;
+  onDelete: (id: string) => void;
 }) {
-  const [draft, setDraft] = useState('');
+  const pendingIdRef = useRef<string | null>(note?.id ?? null);
+  if (note) pendingIdRef.current = note.id;
+
+  const noteId = note?.id ?? pendingIdRef.current;
+  const hasNote = Boolean(note);
+
+  const pendingDragId =
+    source.kind === 'week'
+      ? `mbn-pending-w${source.weekIndex}`
+      : source.kind === 'day'
+        ? `mbn-pending-w${source.weekIndex}-d${source.dayIndex}`
+        : 'mbn-pending-backlog';
+
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: noteId ? draggableNoteId(noteId) : pendingDragId,
+    data: { source },
+    disabled: !hasNote,
+  });
+
   const isWeek = variant === 'week';
+  const text = note?.text ?? '';
+
+  const handleTextChange = (value: string) => {
+    if (note) {
+      onTextChange(note.id, value);
+      return;
+    }
+    const id = pendingIdRef.current ?? nanoid();
+    pendingIdRef.current = id;
+    onEnsureNote(id, value);
+  };
+
+  const style: React.CSSProperties = {
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+    opacity: isDragging ? 0.55 : 1,
+    zIndex: isDragging ? 20 : undefined,
+  };
+
+  const textareaClassName = cn(
+    'flex-1 border-0 bg-transparent px-1 py-1.5 text-sm shadow-none focus-visible:ring-0',
+    isWeek ? 'min-h-[140px]' : 'min-h-[44px]',
+    !autosizeText && 'resize-y'
+  );
+
   return (
-    <Textarea
-      value={draft}
-      onChange={(e) => {
-        const v = e.target.value;
-        setDraft(v);
-        onCommitText(v);
-      }}
-      onPointerDownCapture={(e) => e.stopPropagation()}
+    <div
+      ref={setNodeRef}
+      style={style}
       className={cn(
-        'w-full resize-y border-0 bg-transparent px-1 py-1.5 text-sm shadow-none focus-visible:ring-0',
-        isWeek ? 'min-h-[140px]' : 'min-h-[52px]'
+        'flex min-w-0 max-w-full gap-1 rounded-lg border border-border/60 bg-card/90 p-1 shadow-sm',
+        isDragging && 'shadow-md',
+        !hasNote && 'border-dashed border-border/40 bg-transparent shadow-none'
       )}
-      rows={isWeek ? 5 : 2}
-    />
+    >
+      {hasNote ? (
+        <button
+          type="button"
+          className="mt-0.5 flex h-8 w-7 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-muted-foreground hover:bg-muted active:cursor-grabbing"
+          aria-label="Drag note"
+          {...listeners}
+          {...attributes}
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+      ) : (
+        <div className="mt-0.5 h-8 w-7 shrink-0" aria-hidden />
+      )}
+      {autosizeText ? (
+        <AutosizeTextarea
+          value={text}
+          onChange={(e) => handleTextChange(e.target.value)}
+          onPointerDownCapture={(e) => e.stopPropagation()}
+          className={textareaClassName}
+        />
+      ) : (
+        <Textarea
+          value={text}
+          onChange={(e) => handleTextChange(e.target.value)}
+          onPointerDownCapture={(e) => e.stopPropagation()}
+          className={textareaClassName}
+          rows={isWeek ? 5 : 2}
+        />
+      )}
+      {hasNote ? (
+        <button
+          type="button"
+          onClick={() => onDelete(note!.id)}
+          className="mt-0.5 flex h-8 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/15 hover:text-destructive"
+          aria-label="Remove note"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      ) : (
+        <div className="mt-0.5 h-8 w-7 shrink-0" aria-hidden />
+      )}
+    </div>
   );
 }
 
