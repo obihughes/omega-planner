@@ -1,8 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import './theme-tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 @layer base {
   :root {
@@ -50,6 +51,76 @@
     --border: 0 0% 20%;
     --input: 0 0% 15%;
     --ring: 265 90% 65%;
+  }
+
+  .forest {
+    /* Forest theme — natural greens, sage, and cream tones */
+    --background: 40 20% 97%;
+    --foreground: 140 15% 12%;
+    --card: 45 25% 99%;
+    --card-foreground: 140 15% 12%;
+    --popover: 45 25% 99%;
+    --popover-foreground: 140 15% 12%;
+    --primary: 140 65% 30%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 120 30% 88%;
+    --secondary-foreground: 140 20% 18%;
+    --muted: 140 15% 90%;
+    --muted-foreground: 140 10% 38%;
+    --accent: 140 65% 30%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 48%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 140 20% 82%;
+    --input: 140 10% 94%;
+    --ring: 140 65% 30%;
+    --radius: 0;
+  }
+
+  .dark-forest {
+    /* Dark theme variant — same contrast as .dark with a subtle green cast */
+    --background: 140 10% 5%;
+    --foreground: 140 8% 95%;
+    --card: 140 10% 8%;
+    --card-foreground: 140 8% 95%;
+    --popover: 140 10% 8%;
+    --popover-foreground: 140 8% 95%;
+    --primary: 140 65% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 140 10% 12%;
+    --secondary-foreground: 140 8% 85%;
+    --muted: 140 10% 12%;
+    --muted-foreground: 140 8% 60%;
+    --accent: 140 10% 15%;
+    --accent-foreground: 140 8% 95%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 140 10% 20%;
+    --input: 140 10% 15%;
+    --ring: 140 65% 55%;
+  }
+
+  .midnight {
+    /* Dark theme variant — same contrast as .dark with a subtle blue cast */
+    --background: 220 15% 5%;
+    --foreground: 220 10% 95%;
+    --card: 220 12% 8%;
+    --card-foreground: 220 10% 95%;
+    --popover: 220 12% 8%;
+    --popover-foreground: 220 10% 95%;
+    --primary: 210 90% 65%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 12% 12%;
+    --secondary-foreground: 220 10% 85%;
+    --muted: 220 12% 12%;
+    --muted-foreground: 220 10% 60%;
+    --accent: 220 12% 15%;
+    --accent-foreground: 220 10% 95%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 12% 20%;
+    --input: 220 12% 15%;
+    --ring: 210 90% 65%;
   }
 }
 
@@ -105,58 +176,154 @@ html.resize-active .resize-handle {
 }
 
 /* Enhanced project status colors with better contrast */
+.status-planning,
+.status-active,
+.status-on-hold,
+.status-completed,
+.status-cancelled,
+.priority-low,
+.priority-medium,
+.priority-high,
+.priority-urgent,
+.task-status-todo,
+.task-status-in-progress,
+.task-status-completed,
+.task-status-blocked,
+.calendar-event-blue,
+.calendar-event-green,
+.calendar-event-purple,
+.calendar-event-orange,
+.calendar-event-red,
+.calendar-event-pink,
+.calendar-event-yellow,
+.calendar-event-indigo {
+  @apply border;
+}
+
 .status-planning {
-  @apply bg-blue-500/20 text-blue-600 border border-blue-500/30 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/30;
+  background-color: hsl(var(--status-planning-bg));
+  color: hsl(var(--status-planning-text));
+  border-color: hsl(var(--status-planning-border));
 }
 
 .status-active {
-  @apply bg-green-500/20 text-green-600 border border-green-500/30 dark:bg-green-500/20 dark:text-green-300 dark:border-green-500/30;
+  background-color: hsl(var(--status-active-bg));
+  color: hsl(var(--status-active-text));
+  border-color: hsl(var(--status-active-border));
 }
 
 .status-on-hold {
-  @apply bg-yellow-500/20 text-yellow-600 border border-yellow-500/30 dark:bg-yellow-500/20 dark:text-yellow-300 dark:border-yellow-500/30;
+  background-color: hsl(var(--status-on-hold-bg));
+  color: hsl(var(--status-on-hold-text));
+  border-color: hsl(var(--status-on-hold-border));
 }
 
 .status-completed {
-  @apply bg-gray-500/20 text-gray-600 border border-gray-500/30 dark:bg-gray-500/20 dark:text-gray-300 dark:border-gray-500/30;
+  background-color: hsl(var(--status-completed-bg));
+  color: hsl(var(--status-completed-text));
+  border-color: hsl(var(--status-completed-border));
 }
 
 .status-cancelled {
-  @apply bg-red-500/20 text-red-600 border border-red-500/30 dark:bg-red-500/20 dark:text-red-300 dark:border-red-500/30;
+  background-color: hsl(var(--status-cancelled-bg));
+  color: hsl(var(--status-cancelled-text));
+  border-color: hsl(var(--status-cancelled-border));
 }
 
-/* Enhanced task priority colors */
 .priority-low {
-  @apply bg-gray-500/15 text-gray-600 border border-gray-500/25 dark:bg-gray-500/15 dark:text-gray-400 dark:border-gray-500/25;
+  background-color: hsl(var(--priority-low-bg));
+  color: hsl(var(--priority-low-text));
+  border-color: hsl(var(--priority-low-border));
 }
 
 .priority-medium {
-  @apply bg-blue-500/15 text-blue-600 border border-blue-500/25 dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/25;
+  background-color: hsl(var(--priority-medium-bg));
+  color: hsl(var(--priority-medium-text));
+  border-color: hsl(var(--priority-medium-border));
 }
 
 .priority-high {
-  @apply bg-orange-500/15 text-orange-600 border border-orange-500/25 dark:bg-orange-500/15 dark:text-orange-400 dark:border-orange-500/25;
+  background-color: hsl(var(--priority-high-bg));
+  color: hsl(var(--priority-high-text));
+  border-color: hsl(var(--priority-high-border));
 }
 
 .priority-urgent {
-  @apply bg-red-500/15 text-red-600 border border-red-500/25 dark:bg-red-500/15 dark:text-red-400 dark:border-red-500/25;
+  background-color: hsl(var(--priority-urgent-bg));
+  color: hsl(var(--priority-urgent-text));
+  border-color: hsl(var(--priority-urgent-border));
 }
 
-/* Enhanced task status colors */
 .task-status-todo {
-  @apply bg-gray-500/15 text-gray-600 border border-gray-500/25 dark:bg-gray-500/15 dark:text-gray-400 dark:border-gray-500/25;
+  background-color: hsl(var(--task-status-todo-bg));
+  color: hsl(var(--task-status-todo-text));
+  border-color: hsl(var(--task-status-todo-border));
 }
 
 .task-status-in-progress {
-  @apply bg-purple-500/15 text-purple-600 border border-purple-500/25 dark:bg-purple-500/15 dark:text-purple-400 dark:border-purple-500/25;
+  background-color: hsl(var(--task-status-in-progress-bg));
+  color: hsl(var(--task-status-in-progress-text));
+  border-color: hsl(var(--task-status-in-progress-border));
 }
 
 .task-status-completed {
-  @apply bg-green-500/15 text-green-600 border border-green-500/25 dark:bg-green-500/15 dark:text-green-400 dark:border-green-500/25;
+  background-color: hsl(var(--task-status-completed-bg));
+  color: hsl(var(--task-status-completed-text));
+  border-color: hsl(var(--task-status-completed-border));
 }
 
 .task-status-blocked {
-  @apply bg-red-500/15 text-red-600 border border-red-500/25 dark:bg-red-500/15 dark:text-red-400 dark:border-red-500/25;
+  background-color: hsl(var(--task-status-blocked-bg));
+  color: hsl(var(--task-status-blocked-text));
+  border-color: hsl(var(--task-status-blocked-border));
+}
+
+.calendar-event-blue {
+  background-color: hsl(var(--calendar-blue-bg));
+  color: hsl(var(--calendar-blue-text));
+  border-color: hsl(var(--calendar-blue-border));
+}
+
+.calendar-event-green {
+  background-color: hsl(var(--calendar-green-bg));
+  color: hsl(var(--calendar-green-text));
+  border-color: hsl(var(--calendar-green-border));
+}
+
+.calendar-event-purple {
+  background-color: hsl(var(--calendar-purple-bg));
+  color: hsl(var(--calendar-purple-text));
+  border-color: hsl(var(--calendar-purple-border));
+}
+
+.calendar-event-orange {
+  background-color: hsl(var(--calendar-orange-bg));
+  color: hsl(var(--calendar-orange-text));
+  border-color: hsl(var(--calendar-orange-border));
+}
+
+.calendar-event-red {
+  background-color: hsl(var(--calendar-red-bg));
+  color: hsl(var(--calendar-red-text));
+  border-color: hsl(var(--calendar-red-border));
+}
+
+.calendar-event-pink {
+  background-color: hsl(var(--calendar-pink-bg));
+  color: hsl(var(--calendar-pink-text));
+  border-color: hsl(var(--calendar-pink-border));
+}
+
+.calendar-event-yellow {
+  background-color: hsl(var(--calendar-yellow-bg));
+  color: hsl(var(--calendar-yellow-text));
+  border-color: hsl(var(--calendar-yellow-border));
+}
+
+.calendar-event-indigo {
+  background-color: hsl(var(--calendar-indigo-bg));
+  color: hsl(var(--calendar-indigo-text));
+  border-color: hsl(var(--calendar-indigo-border));
 }
 
 /* Enhanced button and interactive elements */
@@ -172,47 +339,17 @@ html.resize-active .resize-handle {
   transform: translateY(-1px);
 }
 
-.dark .btn-primary {
-  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.85));
+.dark .btn-primary,
+.dark-forest .btn-primary,
+.midnight .btn-primary,
+.forest .btn-primary {
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--btn-primary-gradient-end) / 0.85));
 }
 
 .btn-secondary {
   @apply bg-card text-foreground hover:bg-secondary/80 border border-border/50;
   @apply rounded-xl px-6 py-2.5 font-medium transition-all duration-200;
   box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-}
-
-/* Calendar event colors for both light and dark modes */
-.calendar-event-blue {
-  @apply bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/30;
-}
-
-.calendar-event-green {
-  @apply bg-green-100 text-green-700 border border-green-200 dark:bg-green-500/20 dark:text-green-300 dark:border-green-500/30;
-}
-
-.calendar-event-purple {
-  @apply bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/30;
-}
-
-.calendar-event-orange {
-  @apply bg-orange-100 text-orange-700 border border-orange-200 dark:bg-orange-500/20 dark:text-orange-300 dark:border-orange-500/30;
-}
-
-.calendar-event-red {
-  @apply bg-red-100 text-red-700 border border-red-200 dark:bg-red-500/20 dark:text-red-300 dark:border-red-500/30;
-}
-
-.calendar-event-pink {
-  @apply bg-pink-100 text-pink-700 border border-pink-200 dark:bg-pink-500/20 dark:text-pink-300 dark:border-pink-500/30;
-}
-
-.calendar-event-yellow {
-  @apply bg-yellow-100 text-yellow-700 border border-yellow-200 dark:bg-yellow-500/20 dark:text-yellow-300 dark:border-yellow-500/30;
-}
-
-.calendar-event-indigo {
-  @apply bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500/30;
 }
 
 /* Enhanced input styling */
@@ -335,7 +472,7 @@ h1, h2, h3, h4, h5, h6 {
   color: white;
 }
 
-.dark .task-color-kelly-green {
+:is(.dark, .dark-forest, .midnight) .task-color-kelly-green {
   background-color: #29BF12;
   color: black;
 }
@@ -345,7 +482,7 @@ h1, h2, h3, h4, h5, h6 {
   color: black;
 }
 
-.dark .task-color-green-yellow {
+:is(.dark, .dark-forest, .midnight) .task-color-green-yellow {
   background-color: #ABFF4F;
   color: black;
 }
@@ -355,7 +492,7 @@ h1, h2, h3, h4, h5, h6 {
   color: white;
 }
 
-.dark .task-color-verdigris {
+:is(.dark, .dark-forest, .midnight) .task-color-verdigris {
   background-color: #08BDBD;
   color: black;
 }
@@ -365,7 +502,7 @@ h1, h2, h3, h4, h5, h6 {
   color: white;
 }
 
-.dark .task-color-red-munsell {
+:is(.dark, .dark-forest, .midnight) .task-color-red-munsell {
   background-color: #F21B3F;
   color: black;
 }
@@ -375,7 +512,7 @@ h1, h2, h3, h4, h5, h6 {
   color: black;
 }
 
-.dark .task-color-princeton-orange {
+:is(.dark, .dark-forest, .midnight) .task-color-princeton-orange {
   background-color: #FF9914;
   color: black;
 }

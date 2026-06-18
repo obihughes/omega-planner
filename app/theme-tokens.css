@@ -1,0 +1,358 @@
+:root {
+    --btn-primary-gradient-end: var(--primary);
+
+    /* Status */
+    --status-planning-bg: 214 95% 93%;
+    --status-planning-text: 217 91% 40%;
+    --status-planning-border: 214 95% 85%;
+    --status-active-bg: 142 69% 92%;
+    --status-active-text: 142 72% 29%;
+    --status-active-border: 142 69% 82%;
+    --status-on-hold-bg: 48 96% 89%;
+    --status-on-hold-text: 32 95% 44%;
+    --status-on-hold-border: 48 96% 80%;
+    --status-completed-bg: 220 9% 90%;
+    --status-completed-text: 220 9% 35%;
+    --status-completed-border: 220 9% 82%;
+    --status-cancelled-bg: 0 93% 94%;
+    --status-cancelled-text: 0 72% 51%;
+    --status-cancelled-border: 0 93% 85%;
+
+    /* Priority */
+    --priority-low-bg: 220 9% 91%;
+    --priority-low-text: 220 9% 35%;
+    --priority-low-border: 220 9% 83%;
+    --priority-medium-bg: 214 95% 93%;
+    --priority-medium-text: 217 91% 40%;
+    --priority-medium-border: 214 95% 84%;
+    --priority-high-bg: 27 96% 90%;
+    --priority-high-text: 21 90% 48%;
+    --priority-high-border: 27 96% 82%;
+    --priority-urgent-bg: 0 93% 94%;
+    --priority-urgent-text: 0 72% 51%;
+    --priority-urgent-border: 0 93% 84%;
+
+    /* Task status */
+    --task-status-todo-bg: 220 9% 91%;
+    --task-status-todo-text: 220 9% 35%;
+    --task-status-todo-border: 220 9% 83%;
+    --task-status-in-progress-bg: 270 95% 94%;
+    --task-status-in-progress-text: 271 81% 46%;
+    --task-status-in-progress-border: 270 95% 85%;
+    --task-status-completed-bg: 142 69% 92%;
+    --task-status-completed-text: 142 72% 29%;
+    --task-status-completed-border: 142 69% 82%;
+    --task-status-blocked-bg: 0 93% 94%;
+    --task-status-blocked-text: 0 72% 51%;
+    --task-status-blocked-border: 0 93% 84%;
+
+    /* Calendar events */
+    --calendar-blue-bg: 214 95% 93%;
+    --calendar-blue-text: 224 76% 38%;
+    --calendar-blue-border: 214 95% 85%;
+    --calendar-green-bg: 141 84% 93%;
+    --calendar-green-text: 142 72% 29%;
+    --calendar-green-border: 141 84% 85%;
+    --calendar-purple-bg: 270 100% 96%;
+    --calendar-purple-text: 271 81% 46%;
+    --calendar-purple-border: 270 100% 88%;
+    --calendar-orange-bg: 34 100% 92%;
+    --calendar-orange-text: 21 90% 48%;
+    --calendar-orange-border: 34 100% 84%;
+    --calendar-red-bg: 0 93% 94%;
+    --calendar-red-text: 0 72% 51%;
+    --calendar-red-border: 0 93% 86%;
+    --calendar-pink-bg: 330 100% 96%;
+    --calendar-pink-text: 335 78% 42%;
+    --calendar-pink-border: 330 100% 88%;
+    --calendar-yellow-bg: 55 97% 88%;
+    --calendar-yellow-text: 32 95% 44%;
+    --calendar-yellow-border: 55 97% 80%;
+    --calendar-indigo-bg: 239 84% 95%;
+    --calendar-indigo-text: 243 75% 42%;
+    --calendar-indigo-border: 239 84% 87%;
+  }
+
+  .dark {
+    --btn-primary-gradient-end: var(--primary);
+
+    --status-planning-bg: 217 50% 18%;
+    --status-planning-text: 213 97% 77%;
+    --status-planning-border: 217 60% 35%;
+    --status-active-bg: 142 45% 16%;
+    --status-active-text: 142 69% 75%;
+    --status-active-border: 142 55% 32%;
+    --status-on-hold-bg: 48 55% 16%;
+    --status-on-hold-text: 48 96% 75%;
+    --status-on-hold-border: 48 65% 32%;
+    --status-completed-bg: 220 10% 18%;
+    --status-completed-text: 220 9% 72%;
+    --status-completed-border: 220 12% 32%;
+    --status-cancelled-bg: 0 55% 18%;
+    --status-cancelled-text: 0 93% 75%;
+    --status-cancelled-border: 0 65% 32%;
+
+    --priority-low-bg: 220 10% 17%;
+    --priority-low-text: 220 9% 68%;
+    --priority-low-border: 220 12% 30%;
+    --priority-medium-bg: 217 50% 17%;
+    --priority-medium-text: 213 97% 72%;
+    --priority-medium-border: 217 60% 32%;
+    --priority-high-bg: 27 55% 16%;
+    --priority-high-text: 27 96% 72%;
+    --priority-high-border: 27 65% 30%;
+    --priority-urgent-bg: 0 55% 17%;
+    --priority-urgent-text: 0 93% 72%;
+    --priority-urgent-border: 0 65% 30%;
+
+    --task-status-todo-bg: 220 10% 17%;
+    --task-status-todo-text: 220 9% 68%;
+    --task-status-todo-border: 220 12% 30%;
+    --task-status-in-progress-bg: 270 45% 18%;
+    --task-status-in-progress-text: 270 95% 78%;
+    --task-status-in-progress-border: 270 55% 32%;
+    --task-status-completed-bg: 142 45% 16%;
+    --task-status-completed-text: 142 69% 75%;
+    --task-status-completed-border: 142 55% 32%;
+    --task-status-blocked-bg: 0 55% 17%;
+    --task-status-blocked-text: 0 93% 72%;
+    --task-status-blocked-border: 0 65% 30%;
+
+    --calendar-blue-bg: 217 50% 18%;
+    --calendar-blue-text: 213 97% 77%;
+    --calendar-blue-border: 217 60% 35%;
+    --calendar-green-bg: 142 45% 16%;
+    --calendar-green-text: 142 69% 75%;
+    --calendar-green-border: 142 55% 32%;
+    --calendar-purple-bg: 270 45% 18%;
+    --calendar-purple-text: 270 95% 78%;
+    --calendar-purple-border: 270 55% 32%;
+    --calendar-orange-bg: 27 55% 16%;
+    --calendar-orange-text: 27 96% 72%;
+    --calendar-orange-border: 27 65% 30%;
+    --calendar-red-bg: 0 55% 18%;
+    --calendar-red-text: 0 93% 75%;
+    --calendar-red-border: 0 65% 32%;
+    --calendar-pink-bg: 330 45% 18%;
+    --calendar-pink-text: 330 95% 78%;
+    --calendar-pink-border: 330 55% 32%;
+    --calendar-yellow-bg: 48 55% 16%;
+    --calendar-yellow-text: 48 96% 75%;
+    --calendar-yellow-border: 48 65% 32%;
+    --calendar-indigo-bg: 239 45% 18%;
+    --calendar-indigo-text: 239 84% 78%;
+    --calendar-indigo-border: 239 55% 32%;
+  }
+
+  .forest {
+    --btn-primary-gradient-end: 140 55% 38%;
+
+    --status-planning-bg: 174 40% 90%;
+    --status-planning-text: 174 80% 26%;
+    --status-planning-border: 174 50% 82%;
+    --status-active-bg: 142 40% 90%;
+    --status-active-text: 142 72% 24%;
+    --status-active-border: 142 50% 82%;
+    --status-on-hold-bg: 38 70% 90%;
+    --status-on-hold-text: 32 95% 35%;
+    --status-on-hold-border: 38 60% 80%;
+    --status-completed-bg: 160 30% 88%;
+    --status-completed-text: 164 86% 16%;
+    --status-completed-border: 160 40% 78%;
+    --status-cancelled-bg: 0 70% 92%;
+    --status-cancelled-text: 0 72% 45%;
+    --status-cancelled-border: 0 60% 82%;
+
+    --priority-low-bg: 25 8% 90%;
+    --priority-low-text: 25 10% 32%;
+    --priority-low-border: 25 8% 80%;
+    --priority-medium-bg: 174 35% 90%;
+    --priority-medium-text: 174 80% 26%;
+    --priority-medium-border: 174 45% 80%;
+    --priority-high-bg: 38 65% 90%;
+    --priority-high-text: 32 95% 35%;
+    --priority-high-border: 38 55% 80%;
+    --priority-urgent-bg: 0 70% 92%;
+    --priority-urgent-text: 0 72% 45%;
+    --priority-urgent-border: 0 60% 82%;
+
+    --task-status-todo-bg: 25 8% 90%;
+    --task-status-todo-text: 25 10% 32%;
+    --task-status-todo-border: 25 8% 80%;
+    --task-status-in-progress-bg: 160 35% 90%;
+    --task-status-in-progress-text: 164 70% 24%;
+    --task-status-in-progress-border: 160 45% 80%;
+    --task-status-completed-bg: 142 40% 90%;
+    --task-status-completed-text: 142 72% 24%;
+    --task-status-completed-border: 142 50% 82%;
+    --task-status-blocked-bg: 0 70% 92%;
+    --task-status-blocked-text: 0 72% 45%;
+    --task-status-blocked-border: 0 60% 82%;
+
+    --calendar-blue-bg: 174 45% 92%;
+    --calendar-blue-text: 174 80% 26%;
+    --calendar-blue-border: 174 55% 84%;
+    --calendar-green-bg: 141 45% 92%;
+    --calendar-green-text: 142 72% 24%;
+    --calendar-green-border: 141 55% 84%;
+    --calendar-purple-bg: 160 35% 92%;
+    --calendar-purple-text: 164 70% 24%;
+    --calendar-purple-border: 160 45% 84%;
+    --calendar-orange-bg: 38 70% 92%;
+    --calendar-orange-text: 32 95% 35%;
+    --calendar-orange-border: 38 60% 84%;
+    --calendar-red-bg: 0 70% 94%;
+    --calendar-red-text: 0 72% 45%;
+    --calendar-red-border: 0 60% 86%;
+    --calendar-pink-bg: 350 55% 94%;
+    --calendar-pink-text: 350 70% 35%;
+    --calendar-pink-border: 350 50% 86%;
+    --calendar-yellow-bg: 84 45% 92%;
+    --calendar-yellow-text: 84 70% 28%;
+    --calendar-yellow-border: 84 50% 84%;
+    --calendar-indigo-bg: 190 45% 92%;
+    --calendar-indigo-text: 190 80% 28%;
+    --calendar-indigo-border: 190 55% 84%;
+  }
+
+  .dark-forest {
+    --btn-primary-gradient-end: 140 55% 45%;
+
+    --status-planning-bg: 217 50% 18%;
+    --status-planning-text: 213 97% 77%;
+    --status-planning-border: 217 60% 35%;
+    --status-active-bg: 142 45% 16%;
+    --status-active-text: 142 69% 75%;
+    --status-active-border: 142 55% 32%;
+    --status-on-hold-bg: 48 55% 16%;
+    --status-on-hold-text: 48 96% 75%;
+    --status-on-hold-border: 48 65% 32%;
+    --status-completed-bg: 220 10% 18%;
+    --status-completed-text: 220 9% 72%;
+    --status-completed-border: 220 12% 32%;
+    --status-cancelled-bg: 0 55% 18%;
+    --status-cancelled-text: 0 93% 75%;
+    --status-cancelled-border: 0 65% 32%;
+
+    --priority-low-bg: 220 10% 17%;
+    --priority-low-text: 220 9% 68%;
+    --priority-low-border: 220 12% 30%;
+    --priority-medium-bg: 217 50% 17%;
+    --priority-medium-text: 213 97% 72%;
+    --priority-medium-border: 217 60% 32%;
+    --priority-high-bg: 27 55% 16%;
+    --priority-high-text: 27 96% 72%;
+    --priority-high-border: 27 65% 30%;
+    --priority-urgent-bg: 0 55% 17%;
+    --priority-urgent-text: 0 93% 72%;
+    --priority-urgent-border: 0 65% 30%;
+
+    --task-status-todo-bg: 220 10% 17%;
+    --task-status-todo-text: 220 9% 68%;
+    --task-status-todo-border: 220 12% 30%;
+    --task-status-in-progress-bg: 270 45% 18%;
+    --task-status-in-progress-text: 270 95% 78%;
+    --task-status-in-progress-border: 270 55% 32%;
+    --task-status-completed-bg: 142 45% 16%;
+    --task-status-completed-text: 142 69% 75%;
+    --task-status-completed-border: 142 55% 32%;
+    --task-status-blocked-bg: 0 55% 17%;
+    --task-status-blocked-text: 0 93% 72%;
+    --task-status-blocked-border: 0 65% 30%;
+
+    --calendar-blue-bg: 217 50% 18%;
+    --calendar-blue-text: 213 97% 77%;
+    --calendar-blue-border: 217 60% 35%;
+    --calendar-green-bg: 142 45% 16%;
+    --calendar-green-text: 142 69% 75%;
+    --calendar-green-border: 142 55% 32%;
+    --calendar-purple-bg: 270 45% 18%;
+    --calendar-purple-text: 270 95% 78%;
+    --calendar-purple-border: 270 55% 32%;
+    --calendar-orange-bg: 27 55% 16%;
+    --calendar-orange-text: 27 96% 72%;
+    --calendar-orange-border: 27 65% 30%;
+    --calendar-red-bg: 0 55% 18%;
+    --calendar-red-text: 0 93% 75%;
+    --calendar-red-border: 0 65% 32%;
+    --calendar-pink-bg: 330 45% 18%;
+    --calendar-pink-text: 330 95% 78%;
+    --calendar-pink-border: 330 55% 32%;
+    --calendar-yellow-bg: 48 55% 16%;
+    --calendar-yellow-text: 48 96% 75%;
+    --calendar-yellow-border: 48 65% 32%;
+    --calendar-indigo-bg: 239 45% 18%;
+    --calendar-indigo-text: 239 84% 78%;
+    --calendar-indigo-border: 239 55% 32%;
+  }
+
+  .midnight {
+    --btn-primary-gradient-end: 210 80% 50%;
+
+    --status-planning-bg: 217 50% 18%;
+    --status-planning-text: 213 97% 77%;
+    --status-planning-border: 217 60% 35%;
+    --status-active-bg: 142 45% 16%;
+    --status-active-text: 142 69% 75%;
+    --status-active-border: 142 55% 32%;
+    --status-on-hold-bg: 48 55% 16%;
+    --status-on-hold-text: 48 96% 75%;
+    --status-on-hold-border: 48 65% 32%;
+    --status-completed-bg: 220 10% 18%;
+    --status-completed-text: 220 9% 72%;
+    --status-completed-border: 220 12% 32%;
+    --status-cancelled-bg: 0 55% 18%;
+    --status-cancelled-text: 0 93% 75%;
+    --status-cancelled-border: 0 65% 32%;
+
+    --priority-low-bg: 220 10% 17%;
+    --priority-low-text: 220 9% 68%;
+    --priority-low-border: 220 12% 30%;
+    --priority-medium-bg: 217 50% 17%;
+    --priority-medium-text: 213 97% 72%;
+    --priority-medium-border: 217 60% 32%;
+    --priority-high-bg: 27 55% 16%;
+    --priority-high-text: 27 96% 72%;
+    --priority-high-border: 27 65% 30%;
+    --priority-urgent-bg: 0 55% 17%;
+    --priority-urgent-text: 0 93% 72%;
+    --priority-urgent-border: 0 65% 30%;
+
+    --task-status-todo-bg: 220 10% 17%;
+    --task-status-todo-text: 220 9% 68%;
+    --task-status-todo-border: 220 12% 30%;
+    --task-status-in-progress-bg: 270 45% 18%;
+    --task-status-in-progress-text: 270 95% 78%;
+    --task-status-in-progress-border: 270 55% 32%;
+    --task-status-completed-bg: 142 45% 16%;
+    --task-status-completed-text: 142 69% 75%;
+    --task-status-completed-border: 142 55% 32%;
+    --task-status-blocked-bg: 0 55% 17%;
+    --task-status-blocked-text: 0 93% 72%;
+    --task-status-blocked-border: 0 65% 30%;
+
+    --calendar-blue-bg: 217 50% 18%;
+    --calendar-blue-text: 213 97% 77%;
+    --calendar-blue-border: 217 60% 35%;
+    --calendar-green-bg: 142 45% 16%;
+    --calendar-green-text: 142 69% 75%;
+    --calendar-green-border: 142 55% 32%;
+    --calendar-purple-bg: 270 45% 18%;
+    --calendar-purple-text: 270 95% 78%;
+    --calendar-purple-border: 270 55% 32%;
+    --calendar-orange-bg: 27 55% 16%;
+    --calendar-orange-text: 27 96% 72%;
+    --calendar-orange-border: 27 65% 30%;
+    --calendar-red-bg: 0 55% 18%;
+    --calendar-red-text: 0 93% 75%;
+    --calendar-red-border: 0 65% 32%;
+    --calendar-pink-bg: 330 45% 18%;
+    --calendar-pink-text: 330 95% 78%;
+    --calendar-pink-border: 330 55% 32%;
+    --calendar-yellow-bg: 48 55% 16%;
+    --calendar-yellow-text: 48 96% 75%;
+    --calendar-yellow-border: 48 65% 32%;
+    --calendar-indigo-bg: 239 45% 18%;
+    --calendar-indigo-text: 239 84% 78%;
+    --calendar-indigo-border: 239 55% 32%;
+  }

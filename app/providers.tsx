@@ -13,6 +13,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       attribute="class"
       defaultTheme="system"
       enableSystem
+      themes={['light', 'dark', 'forest', 'dark-forest', 'midnight', 'system']}
       storageKey="omega-planner-theme"
       disableTransitionOnChange
     >

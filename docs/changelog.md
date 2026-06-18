@@ -1,3 +1,18 @@
+## 2026-06-18
+
+- **Sunset and Ocean themes + semantic color refactor** (2026-06-18)
+  - Refactored status, priority, task-status, and calendar event colors to semantic CSS variables in [`app/theme-tokens.css`](../app/theme-tokens.css). Shared utility classes in `app/globals.css` now read from variables instead of per-theme duplicate rules.
+  - Added **Sunset** (warm cream, burnt orange) and **Ocean** (cool white, deep blue) accent themes alongside Forest.
+  - Registered `sunset` and `ocean` in `next-themes`; Settings → Theme picker shows Light / Dark / Forest / Sunset / Ocean / System.
+  - `useTheme` exports `isSunset`, `isOcean`; `toggleTheme` cycles light → dark → forest → sunset → ocean.
+  - **Files affected**: `app/globals.css`, `app/theme-tokens.css`, `app/providers.tsx`, `hooks/useTheme.ts`, `components/ui/Navigation.tsx`, `docs/styling-guide.md`, `hooks/README.md`, `lib/appHierarchy.ts`, `docs/changelog.md`, `README.md`
+
+- **Forest theme** (2026-06-18)
+  - Added a third distinct theme option alongside light and dark: **Forest** — cream backgrounds, forest-green primary accents, and sage secondary tones.
+  - Registered `forest` in `next-themes` (`themes` prop in `app/providers.tsx`); CSS variables and semantic color overrides live under `.forest` in `app/globals.css`.
+  - Settings → Theme segmented control now includes Light / Dark / Forest / System. `useTheme` exports `THEME_OPTIONS`, `THEME_LABELS`, and `isForest`; `toggleTheme` cycles light → dark → forest.
+  - **Files affected**: `app/globals.css`, `app/providers.tsx`, `hooks/useTheme.ts`, `hooks/index.ts`, `components/ui/Navigation.tsx`, `docs/styling-guide.md`, `hooks/README.md`, `lib/appHierarchy.ts`, `docs/changelog.md`
+
 ## 2026-06-01
 
 - **Month board: fix focus loss when typing first character** (2026-06-01)

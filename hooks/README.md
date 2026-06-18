@@ -93,3 +93,13 @@ Debounced localStorage scratchpad for the Meals page left notes panel.
 **API:** `text`, `setNotes(value)`, `hydrated`
 
 **Storage key:** `omega-planner-meals-notes-v1` (`utils/mealsNotesStorage.ts`)
+
+### useTheme
+
+Wraps `next-themes` for light, dark, forest, sunset, ocean, and system appearance.
+
+**API:** `theme`, `resolvedTheme`, `setTheme`, `toggleTheme` (cycles light → dark → forest → sunset → ocean), `isDark`, `isLight`, `isForest`, `isSunset`, `isOcean`, `mounted`
+
+**Exports:** `THEME_OPTIONS`, `THEME_LABELS`, `ThemeOption`
+
+**Storage key:** `omega-planner-theme` (via `ThemeProvider` in `app/providers.tsx`)

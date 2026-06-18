@@ -121,7 +121,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'useTheme',
         kind: 'hook',
         path: 'hooks/useTheme.ts',
-        editHint: 'Light / dark / system theme persistence.',
+        editHint: 'Light / dark / forest / dark-forest / midnight / system theme persistence.',
       },
     ],
   },

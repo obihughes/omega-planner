@@ -16,3 +16,9 @@ export {
 
 export { useMeals } from './useMeals';
 export { useProjects } from './useProjects';
+export {
+  useTheme,
+  THEME_OPTIONS,
+  THEME_LABELS,
+  type ThemeOption,
+} from './useTheme';

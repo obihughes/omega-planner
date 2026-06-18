@@ -628,7 +628,7 @@ export default function DailyPlanner() {
                       onDragStart={(e) => {
                         e.dataTransfer.setData('text/plain', JSON.stringify({ ...task, source: 'pool' }));
                       }}
-                      className="relative px-2 py-1 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 hover:shadow-md transition-all duration-150 group flex-shrink-0 h-8 min-w-[9rem] max-w-[12rem] cursor-grab active:cursor-grabbing rounded"
+                      className="relative px-2 py-1 bg-emerald-500/10 border border-emerald-500/25 hover:bg-emerald-500/15 hover:shadow-md transition-all duration-150 group flex-shrink-0 h-8 min-w-[9rem] max-w-[12rem] cursor-grab active:cursor-grabbing rounded"
                     >
                                               <div className="flex items-center justify-between gap-2 h-full">
                           <p className="font-medium text-xs text-foreground truncate">
@@ -690,14 +690,18 @@ export default function DailyPlanner() {
                       return (
                         <div
                           key={`pinned-${task.id}`}
-                          className="relative px-2 py-1 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 hover:shadow-md transition-all duration-150 group flex-shrink-0 h-8 min-w-[9rem] max-w-[12rem] rounded"
+                          className={`relative px-2 py-1 border hover:shadow-md transition-all duration-150 group flex-shrink-0 h-8 min-w-[9rem] max-w-[12rem] rounded ${
+                            timeRemaining.isOverdue
+                              ? 'bg-red-500/10 border-red-500/30'
+                              : 'bg-sky-500/10 border-sky-500/25 hover:bg-sky-500/15'
+                          }`}
                         >
                           <div className="flex items-center justify-between gap-2 h-full">
                             <div className="min-w-0">
                               <p className="font-medium text-xs text-foreground truncate leading-tight">
                                 {task.name || "Untitled Task"}
                               </p>
-                              <div className={`text-[10px] ${timeRemaining.isOverdue ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`}>
+                              <div className={`text-[10px] ${timeRemaining.isOverdue ? 'text-red-500' : 'text-muted-foreground'}`}>
                                 {timeRemaining.text}
                               </div>
                             </div>
@@ -742,7 +746,7 @@ export default function DailyPlanner() {
                       <button
                         type="button"
                         onClick={clearOverduePinnedTasks}
-                        className="h-6 w-6 rounded-full bg-transparent hover:bg-red-50 dark:hover:bg-red-950/30 border border-red-200/50 dark:border-red-800/50 text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors flex items-center justify-center opacity-60 hover:opacity-100"
+                        className="h-6 w-6 rounded-full bg-transparent hover:bg-red-500/10 border border-red-500/30 text-red-500 hover:text-red-600 transition-colors flex items-center justify-center opacity-60 hover:opacity-100"
                         title="Clear all overdue pinned tasks"
                       >
                         <X className="w-3 h-3" />

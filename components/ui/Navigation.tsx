@@ -6,10 +6,10 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   Calendar, CalendarDays, FolderKanban, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
   CalendarRange, ClipboardList, Settings, LayoutGrid, Map, ListTodo,
-  NotebookPen, Sun, Moon, Monitor, GraduationCap, GanttChart,
+  NotebookPen, Sun, Moon, Monitor, TreePine, TreeDeciduous, Sparkles, GraduationCap, GanttChart,
   FlaskConical, ChefHat, BookOpen, type LucideIcon,
 } from 'lucide-react';
-import { useTheme } from '@/hooks/useTheme';
+import { useTheme, THEME_OPTIONS, THEME_LABELS, type ThemeOption } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
 import { HIDDEN_NAV_ITEMS } from '@/lib/hiddenNavItems';
 import { useViewMode } from '@/app/context/ViewModeContext';
@@ -412,21 +412,26 @@ export function Navigation() {
             <div className="flex items-center justify-between gap-4">
               <p className="font-medium shrink-0">Theme</p>
               <div
-                className="flex rounded-md border bg-muted/30 p-0.5 shrink-0"
+                className="flex flex-wrap rounded-md border bg-muted/30 p-0.5 shrink-0 gap-0.5"
                 role="group"
                 aria-label="Theme"
               >
-                {([
-                  { value: 'light' as const, label: 'Light', Icon: Sun },
-                  { value: 'dark' as const, label: 'Dark', Icon: Moon },
-                  { value: 'system' as const, label: 'System', Icon: Monitor },
-                ]).map(({ value, label, Icon }) => (
+                {THEME_OPTIONS.map((value) => {
+                  const Icon =
+                    value === 'light' ? Sun
+                    : value === 'dark' ? Moon
+                    : value === 'forest' ? TreePine
+                    : value === 'dark-forest' ? TreeDeciduous
+                    : value === 'midnight' ? Sparkles
+                    : Monitor;
+
+                  return (
                   <button
                     key={value}
                     type="button"
                     onClick={() => setTheme(value)}
                     className={cn(
-                      'flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium transition-colors',
+                      'flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition-colors',
                       theme === value
                         ? 'bg-background text-foreground shadow-sm'
                         : 'text-muted-foreground hover:text-foreground'
@@ -434,9 +439,10 @@ export function Navigation() {
                     aria-pressed={theme === value}
                   >
                     <Icon className="w-3.5 h-3.5" />
-                    {label}
+                    {THEME_LABELS[value as ThemeOption]}
                   </button>
-                ))}
+                  );
+                })}
               </div>
             </div>
 

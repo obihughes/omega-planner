@@ -72,9 +72,32 @@ Never use these Tailwind classes:
 <div className="bg-background border shadow-lg">
 ```
 
-## Theme (light / dark / system)
+## Theme (light / dark / forest / sunset / ocean / system)
 
-Appearance is controlled by `next-themes` in [`app/providers.tsx`](../app/providers.tsx) (`attribute="class"`, `storageKey="omega-planner-theme"`). The user’s last choice (light, dark, or system) is saved to `localStorage` and restored on the next visit. Use [`hooks/useTheme.ts`](../hooks/useTheme.ts) in components: `theme` is the stored preference; `resolvedTheme` is the applied light/dark class (including when preference is system). In the sidebar gear menu, theme is chosen via a compact segmented control (Settings → Theme).
+Appearance is controlled by `next-themes` in [`app/providers.tsx`](../app/providers.tsx) (`attribute="class"`, `storageKey="omega-planner-theme"`, `themes={['light', 'dark', 'forest', 'sunset', 'ocean', 'system']}`). The user’s last choice is saved to `localStorage` and restored on the next visit. Use [`hooks/useTheme.ts`](../hooks/useTheme.ts) in components: `theme` is the stored preference; `resolvedTheme` is the applied class (`light`, `dark`, `forest`, `sunset`, or `ocean`; when preference is `system`, it resolves to light or dark from OS settings). In the sidebar gear menu, theme is chosen via a compact segmented control (Settings → Theme).
+
+### Semantic color tokens
+
+Status badges, priorities, task statuses, and calendar event colors use shared CSS classes (`.status-active`, `.priority-high`, `.calendar-event-blue`, etc.) backed by semantic variables (`--status-active-bg`, `--priority-high-text`, …). Per-theme values live in [`app/theme-tokens.css`](../app/theme-tokens.css); base UI tokens remain in [`app/globals.css`](../app/globals.css).
+
+### Accent themes
+
+| Theme | Vibe | Primary |
+|-------|------|---------|
+| **Forest** | Natural greens, sage, cream | `140 65% 30%` |
+| **Sunset** | Warm cream, burnt orange | `24 90% 40%` |
+| **Ocean** | Cool white, deep blue | `210 75% 38%` |
+
+```css
+/* Example: Sunset base tokens in app/theme-tokens.css */
+.sunset {
+  --background: 45 30% 97%;
+  --foreground: 20 25% 12%;
+  --primary: 24 90% 40%;
+  --secondary: 35 85% 82%;
+  --border: 25 45% 82%;
+}
+```
 
 ## Global Configuration
 

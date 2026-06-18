@@ -34,7 +34,7 @@ npm run dev:clean
 - **Project Organization**: Task grouping by projects with inline task creation
 - **Smart Sorting**: Sort by multiple fields simultaneously (e.g., completion + title)
 - **Custom Ordering**: Visual drag-and-drop reordering for tasks and projects
-- **Dark mode support** with full theme consistency
+- **Theme support** with full consistency across light, dark, forest, sunset, ocean, and system (Settings)
 - **Copy/paste tasks** between dates and time slots
 - **Time-based organization** with timeline views
 - **Responsive design** for all device sizes
