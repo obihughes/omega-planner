@@ -129,7 +129,7 @@ Multi-month outline for plans at **different precision**: a **week focus** colum
 - **Placed notes:** Dragging between week column, day rows, or back to the backlog **moves** the note. Empty week and day slots are plain textareas (no placeholder copy); the first line becomes a normal note (same drag/edit behavior as other notes).
 - **Horizon:** Twelve consecutive weeks anchored to a persisted **Monday** (`horizonStartKey`). On each open, `rollHorizonToCurrentWeek` advances the window so the current calendar week is week index 0 (backlog preserved; notes in dropped past weeks are discarded; if the horizon is 12+ weeks behind or in the future, weeks reset empty). Week headers show a compact date range (e.g. Mar 17–23, 2025); each day row shows a short weekday and the day-of-month with muted, tabular numerals.
 - **Persistence:** `utils/monthBoardStorage.ts`, localStorage key `omega-planner-month-board-v1`.
-- **Scrolling:** The area below the page title is one vertical scroll (backlog and week grid scroll together); the backlog column does not use a separate inner scrollbar. On open, the view auto-scrolls once to center the current week in that container.
+- **Scrolling:** Only the week grid scrolls; the **backlog** column stays fixed on the right on large screens (on small screens it sits below the grid and remains visible while weeks scroll). A long backlog scrolls inside its own panel. On open, the view auto-scrolls once to center the current week in the week grid.
 - **Implementation:** `components/month-board/MonthBoard.tsx` (`@dnd-kit/core`, grip-only drag activation).
 
 ## Usage

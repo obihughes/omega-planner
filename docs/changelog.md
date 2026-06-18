@@ -1,5 +1,9 @@
 ## 2026-06-18
 
+- **Month board: fixed backlog column** (2026-06-18)
+  - Only the week grid scrolls; the backlog stays visible on the right on large screens (and below the grid on small screens). Long backlog lists scroll inside the panel.
+  - **Files affected**: `components/month-board/MonthBoard.tsx`, `docs/planner.md`, `docs/components.md`, `docs/changelog.md`
+
 - **Sunset and Ocean themes + semantic color refactor** (2026-06-18)
   - Refactored status, priority, task-status, and calendar event colors to semantic CSS variables in [`app/theme-tokens.css`](../app/theme-tokens.css). Shared utility classes in `app/globals.css` now read from variables instead of per-theme duplicate rules.
   - Added **Sunset** (warm cream, burnt orange) and **Ocean** (cool white, deep blue) accent themes alongside Forest.

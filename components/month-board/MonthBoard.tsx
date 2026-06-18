@@ -356,11 +356,11 @@ export function MonthBoard() {
           </p>
         </header>
 
-        <div
-          ref={scrollContainerRef}
-          className="flex min-h-0 flex-1 flex-col gap-4 overflow-x-hidden overflow-y-auto lg:flex-row lg:items-start"
-        >
-          <div className="min-w-0 flex-1 overflow-x-hidden rounded-xl border border-border/60 bg-card/40 pr-1">
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden lg:flex-row lg:items-stretch">
+          <div
+            ref={scrollContainerRef}
+            className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto rounded-xl border border-border/60 bg-card/40 pr-1"
+          >
             <div className="flex flex-col gap-6 p-3 md:p-4">
               {weekMondayKeys.map((mondayKey, weekIndex) => (
                 <WeekBlock
@@ -420,7 +420,7 @@ function BacklogPanel({
   return (
     <aside
       className={cn(
-        'flex w-full shrink-0 flex-col gap-3 self-start rounded-xl border border-border/60 bg-card/50 p-4 lg:w-[min(100%,320px)] lg:max-w-sm',
+        'flex w-full shrink-0 flex-col gap-3 rounded-xl border border-border/60 bg-card/50 p-4 lg:max-h-full lg:min-h-0 lg:w-[min(100%,320px)] lg:max-w-sm lg:overflow-y-auto',
         isOver && 'ring-2 ring-primary/40'
       )}
     >
