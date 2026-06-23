@@ -118,7 +118,7 @@ export default function CalendarPage() {
     <AppLayout>
       <div className={`mx-auto px-4 py-6 ${currentView === 'weekly-goals' ? 'w-full max-w-none' : 'max-w-7xl'}`}>
         {(currentView === 'monthly' || currentView === 'yearly') && (
-          <div className="flex items-center gap-1.5 mb-4 max-w-5xl mx-auto">
+          <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border flex items-center gap-1.5 p-3 max-w-5xl mx-auto">
             <Button
               variant={currentView === 'monthly' ? 'default' : 'outline'}
               size="sm"

@@ -1,3 +1,9 @@
+## 2026-06-23
+
+- **Calendar: sticky Month / Year toggle** (2026-06-23)
+  - Month and Year view switch buttons stay fixed at the top while scrolling through long monthly or yearly calendar layouts.
+  - **Files affected**: `app/calendar/page.tsx`, `docs/planner.md`, `docs/changelog.md`
+
 ## 2026-06-18
 
 - **Month board: fixed backlog column** (2026-06-18)
