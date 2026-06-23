@@ -12,7 +12,7 @@ Minimal standalone checklist: add tasks, toggle done, remove items, clear comple
 ### MonthBoard (`components/month-board/MonthBoard.tsx`)
 **Page:** `app/month-board/page.tsx`
 
-Multi-scale month planning: twelve week blocks (`flex-1`, vertically scrollable) plus a fixed **backlog** column on the right (`lg` ~320px max; scrolls internally when long). Each block has **Mon–Sun** day rows on the left and a **week focus** drop zone on the right (~330px wide on `md+`, taller min-height); empty week slots use a taller inline `Textarea` (`variant="week"`), day slots use a compact one. Backlog and week-focus note cards use `AutosizeTextarea` (`scrollHeight` sync) so fields grow with content instead of scrolling internally. Uses `@dnd-kit` with custom collision handling so drop targets take precedence over nested note draggables; note bodies use `onPointerDownCapture` stopPropagation so typing is not captured as drag. On load, `rollHorizonToCurrentWeek` keeps the current week at index 0 and the page auto-scrolls to center that week once. State persists via `MonthBoardStorage`.
+Single-week month planning with three panels: **month picker** (12 months of current year), **week selector** (4–5 weeks per month + Prev/Next), and **main content** (week goal column ~330px + Mon–Sun day rows). One week shown at a time. Week goal notes use `AutosizeTextarea`. Uses `@dnd-kit` with custom collision handling; note bodies use `onPointerDownCapture` stopPropagation. State persists via `MonthBoardStorage` (schema v2.0, weeks keyed by Monday date). Date helpers in `utils/monthBoardDates.ts`.
 
 ## Visualizer Components
 

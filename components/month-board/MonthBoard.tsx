@@ -14,22 +14,29 @@ import {
 } from '@dnd-kit/core';
 import { nanoid } from 'nanoid';
 import { format } from 'date-fns';
-import { GripVertical, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, GripVertical, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import type { MonthBoardNote, MonthBoardState, MonthNoteSource, MonthNoteTarget } from '@/types/monthBoard';
-import { DAYS_PER_WEEK, MONTH_BOARD_WEEK_COUNT } from '@/types/monthBoard';
+import { DAYS_PER_WEEK } from '@/types/monthBoard';
 import {
-  getDefaultHorizonMondayKey,
+  ensureWeekInState,
+  getWeekSlot,
   MonthBoardStorage,
-  rollHorizonToCurrentWeek,
 } from '@/utils/monthBoardStorage';
+import {
+  formatMonthShortLabel,
+  getCurrentMonthKey,
+  getDefaultWeekStartKeyForMonth,
+  getNextWeek,
+  getPreviousWeek,
+  getWeeksInMonth,
+  getYearMonthKeys,
+} from '@/utils/monthBoardDates';
 import { addDaysToDateKey, dateFromDateKey, getTodayDateKey } from '@/utils/dateUtils';
 
-const DROP_BACKLOG = 'mbd-backlog';
-
-/** Backlog-only: grows vertically with content so inner scrollbars are not needed */
+/** Week goal notes: grows vertically with content */
 function AutosizeTextarea({
   className,
   value,
@@ -56,12 +63,16 @@ function AutosizeTextarea({
   );
 }
 
-function dropWeekId(weekIndex: number) {
-  return `mbd-w${weekIndex}-week`;
+function escapeWeekKey(weekStartKey: string): string {
+  return weekStartKey.replace(/-/g, '');
 }
 
-function dropDayId(weekIndex: number, dayIndex: number) {
-  return `mbd-w${weekIndex}-d${dayIndex}`;
+function dropWeekId(weekStartKey: string) {
+  return `mbd-${escapeWeekKey(weekStartKey)}-week`;
+}
+
+function dropDayId(weekStartKey: string, dayIndex: number) {
+  return `mbd-${escapeWeekKey(weekStartKey)}-d${dayIndex}`;
 }
 
 function draggableNoteId(noteId: string) {
@@ -76,15 +87,21 @@ function parseDraggableNoteId(id: string | number): string | null {
 
 function parseDropTarget(id: string | number): MonthNoteTarget | null {
   const s = String(id);
-  if (s === DROP_BACKLOG) return { kind: 'backlog' };
-  const wk = /^mbd-w(\d+)-week$/.exec(s);
-  if (wk) return { kind: 'week', weekIndex: Number(wk[1]) };
-  const dy = /^mbd-w(\d+)-d(\d+)$/.exec(s);
-  if (dy) return { kind: 'day', weekIndex: Number(dy[1]), dayIndex: Number(dy[2]) };
+  const wk = /^mbd-(\d{8})-week$/.exec(s);
+  if (wk) {
+    const k = wk[1];
+    const weekStartKey = `${k.slice(0, 4)}-${k.slice(4, 6)}-${k.slice(6, 8)}`;
+    return { kind: 'week', weekStartKey };
+  }
+  const dy = /^mbd-(\d{8})-d(\d+)$/.exec(s);
+  if (dy) {
+    const k = dy[1];
+    const weekStartKey = `${k.slice(0, 4)}-${k.slice(4, 6)}-${k.slice(6, 8)}`;
+    return { kind: 'day', weekStartKey, dayIndex: Number(dy[2]) };
+  }
   return null;
 }
 
-/** Prefer drop zones over note draggables when pointers overlap nested targets */
 const monthBoardCollision: CollisionDetection = (args) => {
   const collisions = pointerWithin(args);
   const drop = collisions.find((c) => String(c.id).startsWith('mbd-'));
@@ -94,17 +111,16 @@ const monthBoardCollision: CollisionDetection = (args) => {
 
 function sameTarget(a: MonthNoteSource | MonthNoteTarget, b: MonthNoteTarget): boolean {
   if (a.kind !== b.kind) return false;
-  if (a.kind === 'backlog' && b.kind === 'backlog') return true;
-  if (a.kind === 'week' && b.kind === 'week') return a.weekIndex === b.weekIndex;
+  if (a.kind === 'week' && b.kind === 'week') return a.weekStartKey === b.weekStartKey;
   if (a.kind === 'day' && b.kind === 'day') {
-    return a.weekIndex === b.weekIndex && a.dayIndex === b.dayIndex;
+    return a.weekStartKey === b.weekStartKey && a.dayIndex === b.dayIndex;
   }
   return false;
 }
 
 function formatWeekRangeLabel(mondayKey: string): string {
   const start = dateFromDateKey(mondayKey);
-  const sundayKey = addDaysToDateKey(mondayKey, 6);
+  const sundayKey = addDaysToDateKey(mondayKey, DAYS_PER_WEEK - 1);
   const end = dateFromDateKey(sundayKey);
   const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
   if (sameMonth) {
@@ -118,15 +134,22 @@ function formatDayParts(dateKey: string): { dow: string; dom: string } {
   return { dow: format(d, 'EEE'), dom: format(d, 'd') };
 }
 
+function syncYearFromMonth(draft: MonthBoardState, monthKey: string): void {
+  const y = Number(monthKey.slice(0, 4));
+  if (!Number.isNaN(y) && y !== draft.year) {
+    draft.year = y;
+  }
+}
+
 function cloneState(s: MonthBoardState): MonthBoardState {
-  return {
-    ...s,
-    backlog: s.backlog.map((n) => ({ ...n })),
-    weeks: s.weeks.map((w) => ({
-      weekNotes: w.weekNotes.map((n) => ({ ...n })),
-      days: w.days.map((col) => col.map((n) => ({ ...n }))),
-    })),
-  };
+  const weeks: MonthBoardState['weeks'] = {};
+  for (const [key, slot] of Object.entries(s.weeks)) {
+    weeks[key] = {
+      weekNotes: slot.weekNotes.map((n) => ({ ...n })),
+      days: slot.days.map((col) => col.map((n) => ({ ...n }))),
+    };
+  }
+  return { ...s, weeks };
 }
 
 function removeNote(
@@ -134,21 +157,17 @@ function removeNote(
   source: MonthNoteSource,
   noteId: string
 ): MonthBoardNote | null {
-  if (source.kind === 'backlog') {
-    const i = draft.backlog.findIndex((n) => n.id === noteId);
-    if (i < 0) return null;
-    const [removed] = draft.backlog.splice(i, 1);
-    return removed;
-  }
+  const slot = draft.weeks[source.weekStartKey];
+  if (!slot) return null;
+
   if (source.kind === 'week') {
-    const list = draft.weeks[source.weekIndex]?.weekNotes;
-    if (!list) return null;
-    const i = list.findIndex((n) => n.id === noteId);
+    const i = slot.weekNotes.findIndex((n) => n.id === noteId);
     if (i < 0) return null;
-    const [removed] = list.splice(i, 1);
+    const [removed] = slot.weekNotes.splice(i, 1);
     return removed;
   }
-  const list = draft.weeks[source.weekIndex]?.days[source.dayIndex];
+
+  const list = slot.days[source.dayIndex];
   if (!list) return null;
   const i = list.findIndex((n) => n.id === noteId);
   if (i < 0) return null;
@@ -157,26 +176,22 @@ function removeNote(
 }
 
 function appendNote(draft: MonthBoardState, target: MonthNoteTarget, note: MonthBoardNote): void {
-  if (target.kind === 'backlog') {
-    draft.backlog.push(note);
-    return;
-  }
+  const slot = ensureWeekInState(draft, target.weekStartKey);
   if (target.kind === 'week') {
-    draft.weeks[target.weekIndex].weekNotes.push(note);
+    slot.weekNotes.push(note);
     return;
   }
-  draft.weeks[target.weekIndex].days[target.dayIndex].push(note);
+  if (!slot.days[target.dayIndex]) {
+    slot.days[target.dayIndex] = [];
+  }
+  slot.days[target.dayIndex].push(note);
 }
 
 export function MonthBoard() {
   const [state, setState] = useState<MonthBoardState | null>(null);
-  const [draftInput, setDraftInput] = useState('');
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const weekBlockRefs = useRef<Map<number, HTMLElement>>(new Map());
-  const didAutoScrollRef = useRef(false);
 
   useEffect(() => {
-    setState(rollHorizonToCurrentWeek(MonthBoardStorage.load()));
+    setState(MonthBoardStorage.load());
   }, []);
 
   useEffect(() => {
@@ -191,48 +206,76 @@ export function MonthBoard() {
     })
   );
 
-  const weekMondayKeys = useMemo(() => {
+  const monthKeys = useMemo(() => {
     if (!state) return [];
-    const keys: string[] = [];
-    for (let w = 0; w < MONTH_BOARD_WEEK_COUNT; w++) {
-      keys.push(addDaysToDateKey(state.horizonStartKey, w * 7));
-    }
-    return keys;
-  }, [state?.horizonStartKey]);
+    return getYearMonthKeys(state.year);
+  }, [state?.year]);
 
-  const currentWeekIndex = useMemo(() => {
-    const currentMonday = getDefaultHorizonMondayKey();
-    return weekMondayKeys.findIndex((key) => key === currentMonday);
-  }, [weekMondayKeys]);
+  const weeksInMonth = useMemo(() => {
+    if (!state) return [];
+    return getWeeksInMonth(state.selectedMonthKey);
+  }, [state?.selectedMonthKey]);
 
-  useEffect(() => {
-    if (!state || currentWeekIndex < 0) return;
-    if (didAutoScrollRef.current) return;
+  const currentWeek = useMemo(() => {
+    if (!state) return null;
+    return getWeekSlot(state, state.selectedWeekStartKey);
+  }, [state]);
 
-    const timeoutId = window.setTimeout(() => {
-      const scrollContainer = scrollContainerRef.current;
-      const weekEl = weekBlockRefs.current.get(currentWeekIndex);
-      if (!scrollContainer || !weekEl) return;
+  const selectedWeekIndex = useMemo(() => {
+    if (!state) return 0;
+    return weeksInMonth.findIndex((w) => w.weekStartKey === state.selectedWeekStartKey);
+  }, [state?.selectedWeekStartKey, weeksInMonth]);
 
-      const containerRect = scrollContainer.getBoundingClientRect();
-      const weekRect = weekEl.getBoundingClientRect();
-      const weekHeight = weekRect.height;
-      const containerHeight = scrollContainer.clientHeight;
-      const scrollTop =
-        scrollContainer.scrollTop +
-        (weekRect.top - containerRect.top) -
-        containerHeight / 2 +
-        weekHeight / 2;
+  const selectMonth = useCallback((monthKey: string) => {
+    setState((prev) => {
+      if (!prev) return prev;
+      const next = cloneState(prev);
+      syncYearFromMonth(next, monthKey);
+      next.selectedMonthKey = monthKey;
+      next.selectedWeekStartKey = getDefaultWeekStartKeyForMonth(monthKey);
+      ensureWeekInState(next, next.selectedWeekStartKey);
+      return next;
+    });
+  }, []);
 
-      scrollContainer.scrollTo({
-        top: Math.max(0, scrollTop),
-        behavior: 'auto',
-      });
-      didAutoScrollRef.current = true;
-    }, 100);
+  const selectWeek = useCallback((weekStartKey: string) => {
+    setState((prev) => {
+      if (!prev) return prev;
+      const next = cloneState(prev);
+      next.selectedWeekStartKey = weekStartKey;
+      ensureWeekInState(next, weekStartKey);
+      return next;
+    });
+  }, []);
 
-    return () => window.clearTimeout(timeoutId);
-  }, [state, currentWeekIndex]);
+  const goPreviousWeek = useCallback(() => {
+    setState((prev) => {
+      if (!prev) return prev;
+      const { monthKey, weekStartKey } = getPreviousWeek(
+        prev.selectedMonthKey,
+        prev.selectedWeekStartKey
+      );
+      const next = cloneState(prev);
+      syncYearFromMonth(next, monthKey);
+      next.selectedMonthKey = monthKey;
+      next.selectedWeekStartKey = weekStartKey;
+      ensureWeekInState(next, weekStartKey);
+      return next;
+    });
+  }, []);
+
+  const goNextWeek = useCallback(() => {
+    setState((prev) => {
+      if (!prev) return prev;
+      const { monthKey, weekStartKey } = getNextWeek(prev.selectedMonthKey, prev.selectedWeekStartKey);
+      const next = cloneState(prev);
+      syncYearFromMonth(next, monthKey);
+      next.selectedMonthKey = monthKey;
+      next.selectedWeekStartKey = weekStartKey;
+      ensureWeekInState(next, weekStartKey);
+      return next;
+    });
+  }, []);
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
@@ -243,40 +286,17 @@ export function MonthBoard() {
     if (!source) return;
     const target = parseDropTarget(over.id);
     if (!target) return;
-
     if (sameTarget(source, target)) return;
-
-    const fromBacklog = source.kind === 'backlog';
 
     setState((prev) => {
       if (!prev) return prev;
       const next = cloneState(prev);
-
-      if (fromBacklog) {
-        const moved = removeNote(next, { kind: 'backlog' }, noteId);
-        if (!moved) return prev;
-        appendNote(next, target, moved);
-        return next;
-      }
-
       const moved = removeNote(next, source, noteId);
       if (!moved) return prev;
       appendNote(next, target, moved);
       return next;
     });
   }, []);
-
-  const addBacklogNote = useCallback(() => {
-    const text = draftInput.trim();
-    if (!text) return;
-    setDraftInput('');
-    setState((prev) => {
-      if (!prev) return prev;
-      const next = cloneState(prev);
-      next.backlog.push({ id: nanoid(), text });
-      return next;
-    });
-  }, [draftInput]);
 
   const deleteNote = useCallback((source: MonthNoteSource, noteId: string) => {
     setState((prev) => {
@@ -291,26 +311,24 @@ export function MonthBoard() {
     setState((prev) => {
       if (!prev) return prev;
       const next = cloneState(prev);
-      if (source.kind === 'backlog') {
-        const n = next.backlog.find((x) => x.id === noteId);
-        if (n) n.text = text;
-      } else if (source.kind === 'week') {
-        const n = next.weeks[source.weekIndex]?.weekNotes.find((x) => x.id === noteId);
+      const slot = next.weeks[source.weekStartKey];
+      if (!slot) return prev;
+      if (source.kind === 'week') {
+        const n = slot.weekNotes.find((x) => x.id === noteId);
         if (n) n.text = text;
       } else {
-        const n = next.weeks[source.weekIndex]?.days[source.dayIndex]?.find((x) => x.id === noteId);
+        const n = slot.days[source.dayIndex]?.find((x) => x.id === noteId);
         if (n) n.text = text;
       }
       return next;
     });
   }, []);
 
-  const upsertWeekInlineNote = useCallback((weekIndex: number, noteId: string, text: string) => {
+  const upsertWeekInlineNote = useCallback((weekStartKey: string, noteId: string, text: string) => {
     setState((prev) => {
       if (!prev) return prev;
       const next = cloneState(prev);
-      const list = next.weeks[weekIndex]?.weekNotes;
-      if (!list) return prev;
+      const list = ensureWeekInState(next, weekStartKey).weekNotes;
       if (list.length === 0) {
         list.push({ id: noteId, text });
       } else if (list.length === 1 && list[0].id === noteId) {
@@ -321,12 +339,13 @@ export function MonthBoard() {
   }, []);
 
   const upsertDayInlineNote = useCallback(
-    (weekIndex: number, dayIndex: number, noteId: string, text: string) => {
+    (weekStartKey: string, dayIndex: number, noteId: string, text: string) => {
       setState((prev) => {
         if (!prev) return prev;
         const next = cloneState(prev);
-        const list = next.weeks[weekIndex]?.days[dayIndex];
-        if (!list) return prev;
+        const slot = ensureWeekInState(next, weekStartKey);
+        if (!slot.days[dayIndex]) slot.days[dayIndex] = [];
+        const list = slot.days[dayIndex];
         if (list.length === 0) {
           list.push({ id: noteId, text });
         } else if (list.length === 1 && list[0].id === noteId) {
@@ -338,11 +357,15 @@ export function MonthBoard() {
     []
   );
 
-  if (!state) {
+  if (!state || !currentWeek) {
     return (
       <div className="flex h-full items-center justify-center text-muted-foreground text-sm">Loading…</div>
     );
   }
+
+  const weekStartKey = state.selectedWeekStartKey;
+  const rangeLabel = formatWeekRangeLabel(weekStartKey);
+  const todayMonthKey = getCurrentMonthKey();
 
   return (
     <DndContext sensors={sensors} collisionDetection={monthBoardCollision} onDragEnd={handleDragEnd}>
@@ -350,195 +373,211 @@ export function MonthBoard() {
         <header className="shrink-0 space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">Month board</h1>
           <p className="text-sm text-muted-foreground max-w-3xl">
-            Plan several months with different precision: use the week column for broad plans, or day rows for
-            detail. Drag the grip to move a note from the backlog into a week or day, or between slots. Drag back to
-            the backlog to unschedule.
+            Pick a month and week, then plan with a week goal column and Mon–Sun day rows. Drag notes
+            between slots.
           </p>
         </header>
 
-        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden lg:flex-row lg:items-stretch">
-          <div
-            ref={scrollContainerRef}
-            className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto rounded-xl border border-border/60 bg-card/40 pr-1"
-          >
-            <div className="flex flex-col gap-6 p-3 md:p-4">
-              {weekMondayKeys.map((mondayKey, weekIndex) => (
-                <WeekBlock
-                  key={mondayKey}
-                  weekIndex={weekIndex}
-                  mondayKey={mondayKey}
-                  week={state.weeks[weekIndex]}
-                  sectionRef={(el) => {
-                    if (el) weekBlockRefs.current.set(weekIndex, el);
-                    else weekBlockRefs.current.delete(weekIndex);
-                  }}
-                  onDelete={(source, id) => deleteNote(source, id)}
-                  onTextChange={(source, id, text) => updateNoteText(source, id, text)}
-                  onUpsertWeekInline={(noteId, text) => upsertWeekInlineNote(weekIndex, noteId, text)}
-                  onUpsertDayInline={(dayIndex, noteId, text) =>
-                    upsertDayInlineNote(weekIndex, dayIndex, noteId, text)
-                  }
-                />
-              ))}
-            </div>
-          </div>
-
-          <BacklogPanel
-            backlog={state.backlog}
-            draftInput={draftInput}
-            onDraftChange={setDraftInput}
-            onAdd={addBacklogNote}
-            onDelete={(id) => deleteNote({ kind: 'backlog' }, id)}
-            onTextChange={(id, text) => updateNoteText({ kind: 'backlog' }, id, text)}
+        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden lg:flex-row">
+          <MonthPicker
+            year={state.year}
+            monthKeys={monthKeys}
+            selectedMonthKey={state.selectedMonthKey}
+            todayMonthKey={todayMonthKey}
+            onSelect={selectMonth}
           />
+
+          <WeekSelector
+            weeks={weeksInMonth}
+            selectedWeekStartKey={state.selectedWeekStartKey}
+            selectedWeekIndex={selectedWeekIndex}
+            onSelect={selectWeek}
+            onPrevious={goPreviousWeek}
+            onNext={goNextWeek}
+          />
+
+          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border/60 bg-card/40">
+            <div className="shrink-0 border-b border-border/40 px-4 py-3">
+              <span className="text-xs font-semibold uppercase tracking-wide text-primary">
+                Week {selectedWeekIndex >= 0 ? selectedWeekIndex + 1 : 1}
+              </span>
+              <span className="ml-2 text-sm font-medium tabular-nums text-foreground">{rangeLabel}</span>
+            </div>
+
+            <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3 md:flex-row md:items-stretch md:p-4">
+              <div className="md:w-[min(100%,330px)] shrink-0">
+                <p className="mb-1 text-xs font-medium text-muted-foreground">Week goal</p>
+                <WeekGoalPanel
+                  weekStartKey={weekStartKey}
+                  notes={currentWeek.weekNotes}
+                  onDelete={(id) => deleteNote({ kind: 'week', weekStartKey }, id)}
+                  onTextChange={(id, text) => updateNoteText({ kind: 'week', weekStartKey }, id, text)}
+                  onUpsertInline={(noteId, text) => upsertWeekInlineNote(weekStartKey, noteId, text)}
+                />
+              </div>
+
+              <div className="min-w-0 flex-1 space-y-2">
+                {Array.from({ length: DAYS_PER_WEEK }, (_, dayIndex) => {
+                  const dateKey = addDaysToDateKey(weekStartKey, dayIndex);
+                  const { dow, dom } = formatDayParts(dateKey);
+                  const isToday = dateKey === getTodayDateKey();
+                  return (
+                    <DayRow
+                      key={dateKey}
+                      weekStartKey={weekStartKey}
+                      dayIndex={dayIndex}
+                      dow={dow}
+                      dom={dom}
+                      isToday={isToday}
+                      notes={currentWeek.days[dayIndex] ?? []}
+                      onDelete={(id) => deleteNote({ kind: 'day', weekStartKey, dayIndex }, id)}
+                      onTextChange={(id, text) =>
+                        updateNoteText({ kind: 'day', weekStartKey, dayIndex }, id, text)
+                      }
+                      onUpsertInline={(noteId, text) =>
+                        upsertDayInlineNote(weekStartKey, dayIndex, noteId, text)
+                      }
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          </main>
         </div>
       </div>
     </DndContext>
   );
 }
 
-function BacklogPanel({
-  backlog,
-  draftInput,
-  onDraftChange,
-  onAdd,
-  onDelete,
-  onTextChange,
+function MonthPicker({
+  year,
+  monthKeys,
+  selectedMonthKey,
+  todayMonthKey,
+  onSelect,
 }: {
-  backlog: MonthBoardNote[];
-  draftInput: string;
-  onDraftChange: (v: string) => void;
-  onAdd: () => void;
-  onDelete: (id: string) => void;
-  onTextChange: (id: string, text: string) => void;
+  year: number;
+  monthKeys: string[];
+  selectedMonthKey: string;
+  todayMonthKey: string;
+  onSelect: (monthKey: string) => void;
 }) {
-  const { setNodeRef, isOver } = useDroppable({
-    id: DROP_BACKLOG,
-    data: { target: { kind: 'backlog' } },
-  });
-
   return (
-    <aside
-      className={cn(
-        'flex w-full shrink-0 flex-col gap-3 rounded-xl border border-border/60 bg-card/50 p-4 lg:max-h-full lg:min-h-0 lg:w-[min(100%,320px)] lg:max-w-sm lg:overflow-y-auto',
-        isOver && 'ring-2 ring-primary/40'
-      )}
-    >
-      <h2 className="text-lg font-medium">Backlog</h2>
-      <AutosizeTextarea
-        value={draftInput}
-        onChange={(e) => onDraftChange(e.target.value)}
-        className="min-h-[88px] bg-background/80 text-sm"
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-            e.preventDefault();
-            onAdd();
-          }
-        }}
-      />
-      <Button type="button" onClick={onAdd} className="rounded-full self-start">
-        Add
-      </Button>
-      <div ref={setNodeRef} className="flex min-h-[120px] flex-col gap-2">
-        {backlog.map((note) => (
-          <NoteCard
-            key={note.id}
-            note={note}
-            source={{ kind: 'backlog' }}
-            autosizeText
-            onDelete={() => onDelete(note.id)}
-            onTextChange={(text) => onTextChange(note.id, text)}
-          />
-        ))}
-      </div>
+    <aside className="flex w-full shrink-0 flex-col gap-2 rounded-xl border border-border/60 bg-card/50 p-3 lg:w-[120px] lg:max-w-[120px]">
+      <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{year}</h2>
+      <nav className="flex flex-row flex-wrap gap-1 lg:flex-col lg:flex-nowrap">
+        {monthKeys.map((monthKey) => {
+          const isSelected = monthKey === selectedMonthKey;
+          const isCurrentMonth = monthKey === todayMonthKey;
+          return (
+            <button
+              key={monthKey}
+              type="button"
+              onClick={() => onSelect(monthKey)}
+              className={cn(
+                'rounded-md px-3 py-2 text-sm font-medium transition-colors text-left',
+                isSelected
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                isCurrentMonth && !isSelected && 'ring-1 ring-primary/30'
+              )}
+            >
+              {formatMonthShortLabel(monthKey)}
+            </button>
+          );
+        })}
+      </nav>
     </aside>
   );
 }
 
-function WeekBlock({
-  weekIndex,
-  mondayKey,
-  week,
-  sectionRef,
-  onDelete,
-  onTextChange,
-  onUpsertWeekInline,
-  onUpsertDayInline,
+function WeekSelector({
+  weeks,
+  selectedWeekStartKey,
+  selectedWeekIndex,
+  onSelect,
+  onPrevious,
+  onNext,
 }: {
-  weekIndex: number;
-  mondayKey: string;
-  week: MonthBoardState['weeks'][number];
-  sectionRef?: (el: HTMLElement | null) => void;
-  onDelete: (source: MonthNoteSource, id: string) => void;
-  onTextChange: (source: MonthNoteSource, id: string, text: string) => void;
-  onUpsertWeekInline: (noteId: string, text: string) => void;
-  onUpsertDayInline: (dayIndex: number, noteId: string, text: string) => void;
+  weeks: { weekIndex: number; weekStartKey: string }[];
+  selectedWeekStartKey: string;
+  selectedWeekIndex: number;
+  onSelect: (weekStartKey: string) => void;
+  onPrevious: () => void;
+  onNext: () => void;
 }) {
-  const rangeLabel = formatWeekRangeLabel(mondayKey);
-
   return (
-    <section
-      ref={sectionRef}
-      id={`month-board-week-${weekIndex}`}
-      className="overflow-x-hidden rounded-xl border border-border/50 bg-background/50 p-3 shadow-sm"
-    >
-      <div className="mb-3 flex flex-wrap items-baseline gap-2 border-b border-border/40 pb-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-primary">Week {weekIndex + 1}</span>
-        <span className="text-sm font-medium tabular-nums text-foreground">{rangeLabel}</span>
+    <aside className="flex w-full shrink-0 flex-col gap-2 rounded-xl border border-border/60 bg-card/50 p-3 lg:w-[160px] lg:max-w-[160px]">
+      <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Weeks</h2>
+      <nav className="flex flex-col gap-1">
+        {weeks.map(({ weekIndex, weekStartKey }) => {
+          const isSelected = weekStartKey === selectedWeekStartKey;
+          const label = formatWeekRangeLabel(weekStartKey);
+          return (
+            <button
+              key={weekStartKey}
+              type="button"
+              onClick={() => onSelect(weekStartKey)}
+              className={cn(
+                'rounded-md px-3 py-2 text-left text-sm transition-colors',
+                isSelected
+                  ? 'bg-secondary font-medium text-secondary-foreground'
+                  : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+              )}
+            >
+              <span className="block text-xs font-semibold text-primary/80">Week {weekIndex + 1}</span>
+              <span className="block text-xs tabular-nums">{label}</span>
+            </button>
+          );
+        })}
+      </nav>
+      <div className="mt-auto flex gap-1 pt-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="flex-1"
+          onClick={onPrevious}
+          aria-label="Previous week"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="flex-1"
+          onClick={onNext}
+          aria-label="Next week"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
       </div>
-      <div className="flex flex-col gap-3 md:flex-row md:items-stretch">
-        <div className="min-w-0 flex-1 space-y-2">
-          {Array.from({ length: DAYS_PER_WEEK }, (_, dayIndex) => {
-            const dateKey = addDaysToDateKey(mondayKey, dayIndex);
-            const { dow, dom } = formatDayParts(dateKey);
-            const isToday = dateKey === getTodayDateKey();
-            return (
-              <DayRow
-                key={dateKey}
-                weekIndex={weekIndex}
-                dayIndex={dayIndex}
-                dow={dow}
-                dom={dom}
-                isToday={isToday}
-                notes={week.days[dayIndex] ?? []}
-                onDelete={(id) => onDelete({ kind: 'day', weekIndex, dayIndex }, id)}
-                onTextChange={(id, text) => onTextChange({ kind: 'day', weekIndex, dayIndex }, id, text)}
-                onUpsertInline={(noteId, text) => onUpsertDayInline(dayIndex, noteId, text)}
-              />
-            );
-          })}
-        </div>
-        <div className="md:w-[min(100%,330px)] shrink-0">
-          <p className="mb-1 text-xs font-medium text-muted-foreground">Week focus</p>
-          <WeekColumnDrop
-            weekIndex={weekIndex}
-            notes={week.weekNotes}
-            onDelete={(id) => onDelete({ kind: 'week', weekIndex }, id)}
-            onTextChange={(id, text) => onTextChange({ kind: 'week', weekIndex }, id, text)}
-            onUpsertInline={onUpsertWeekInline}
-          />
-        </div>
-      </div>
-    </section>
+      {selectedWeekIndex >= 0 && (
+        <p className="text-center text-[11px] text-muted-foreground">
+          Week {selectedWeekIndex + 1} of {weeks.length}
+        </p>
+      )}
+    </aside>
   );
 }
 
-function WeekColumnDrop({
-  weekIndex,
+function WeekGoalPanel({
+  weekStartKey,
   notes,
   onDelete,
   onTextChange,
   onUpsertInline,
 }: {
-  weekIndex: number;
+  weekStartKey: string;
   notes: MonthBoardNote[];
   onDelete: (id: string) => void;
   onTextChange: (id: string, text: string) => void;
   onUpsertInline: (noteId: string, text: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({
-    id: dropWeekId(weekIndex),
-    data: { target: { kind: 'week', weekIndex } },
+    id: dropWeekId(weekStartKey),
+    data: { target: { kind: 'week', weekStartKey } },
   });
 
   return (
@@ -552,7 +591,7 @@ function WeekColumnDrop({
       {notes.length <= 1 ? (
         <SlotNoteEditor
           note={notes[0]}
-          source={{ kind: 'week', weekIndex }}
+          source={{ kind: 'week', weekStartKey }}
           variant="week"
           autosizeText
           onEnsureNote={onUpsertInline}
@@ -564,7 +603,7 @@ function WeekColumnDrop({
           <NoteCard
             key={note.id}
             note={note}
-            source={{ kind: 'week', weekIndex }}
+            source={{ kind: 'week', weekStartKey }}
             autosizeText
             onDelete={() => onDelete(note.id)}
             onTextChange={(text) => onTextChange(note.id, text)}
@@ -576,7 +615,7 @@ function WeekColumnDrop({
 }
 
 function DayRow({
-  weekIndex,
+  weekStartKey,
   dayIndex,
   dow,
   dom,
@@ -586,7 +625,7 @@ function DayRow({
   onTextChange,
   onUpsertInline,
 }: {
-  weekIndex: number;
+  weekStartKey: string;
   dayIndex: number;
   dow: string;
   dom: string;
@@ -597,15 +636,15 @@ function DayRow({
   onUpsertInline: (noteId: string, text: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({
-    id: dropDayId(weekIndex, dayIndex),
-    data: { target: { kind: 'day', weekIndex, dayIndex } },
+    id: dropDayId(weekStartKey, dayIndex),
+    data: { target: { kind: 'day', weekStartKey, dayIndex } },
   });
 
   return (
     <div
       className={cn(
         'flex gap-2 rounded-lg border border-transparent py-1 pl-1 pr-2 transition-colors',
-        isToday && 'bg-primary/5 border-primary/20'
+        isToday && 'border-primary/20 bg-primary/5'
       )}
     >
       <div className="flex w-14 shrink-0 flex-col items-center justify-start pt-1 text-center sm:w-16">
@@ -629,7 +668,7 @@ function DayRow({
         {notes.length <= 1 ? (
           <SlotNoteEditor
             note={notes[0]}
-            source={{ kind: 'day', weekIndex, dayIndex }}
+            source={{ kind: 'day', weekStartKey, dayIndex }}
             onEnsureNote={onUpsertInline}
             onTextChange={(id, text) => onTextChange(id, text)}
             onDelete={(id) => onDelete(id)}
@@ -639,7 +678,7 @@ function DayRow({
             <NoteCard
               key={note.id}
               note={note}
-              source={{ kind: 'day', weekIndex, dayIndex }}
+              source={{ kind: 'day', weekStartKey, dayIndex }}
               onDelete={() => onDelete(note.id)}
               onTextChange={(text) => onTextChange(note.id, text)}
             />
@@ -650,10 +689,6 @@ function DayRow({
   );
 }
 
-/**
- * Single editor for empty or one-note slots. Uses a stable note id on first keystroke so the
- * textarea is not swapped for NoteCard (which previously stole focus after one character).
- */
 function SlotNoteEditor({
   note,
   source,
@@ -679,10 +714,8 @@ function SlotNoteEditor({
 
   const pendingDragId =
     source.kind === 'week'
-      ? `mbn-pending-w${source.weekIndex}`
-      : source.kind === 'day'
-        ? `mbn-pending-w${source.weekIndex}-d${source.dayIndex}`
-        : 'mbn-pending-backlog';
+      ? `mbn-pending-${escapeWeekKey(source.weekStartKey)}-w`
+      : `mbn-pending-${escapeWeekKey(source.weekStartKey)}-d${source.dayIndex}`;
 
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: noteId ? draggableNoteId(noteId) : pendingDragId,
@@ -779,7 +812,6 @@ function NoteCard({
 }: {
   note: MonthBoardNote;
   source: MonthNoteSource;
-  /** Backlog notes: textarea height follows line count (no inner scrollbar) */
   autosizeText?: boolean;
   onDelete: () => void;
   onTextChange: (text: string) => void;

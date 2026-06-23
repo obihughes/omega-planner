@@ -64,5 +64,7 @@ export type {
   MonthBoardState,
   MonthNoteSource,
   MonthNoteTarget,
+  MonthBoardMonthKey,
+  MonthBoardWeekStartKey,
 } from './monthBoard';
-export { MONTH_BOARD_WEEK_COUNT, DAYS_PER_WEEK } from './monthBoard';
+export { DAYS_PER_WEEK } from './monthBoard';

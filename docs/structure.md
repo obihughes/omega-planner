@@ -30,6 +30,7 @@ Current notable feature folders include:
 - `components/meals` – Meals list and ingredient management
 - `components/study-tracker` – Study Planner (weekly day cards with tasks, monthly calendar with subject filter)
 - `components/goal-hierarchy` – Goal Hierarchy beta (month → week → day planning with summary text + sub-goals)
+- `components/month-board` – Month board (month/week pickers, single-week view with week goal + Mon–Sun rows)
 - `components/todo` – Minimal standalone todo checklist
 - `components/ui` – Shared UI primitives (layout, inputs, tabs, etc.)
 
@@ -44,7 +45,8 @@ Includes storage helpers like:
 - `utils/mealsStorage.ts` – Meals local storage (migrates legacy recipes on first load)
 - `utils/studyStorage.ts` – Study Planner (subjects, study tasks) local storage
 - `utils/todoStorage.ts` – Minimal todo list local storage
-- `utils/goalHierarchyStorage.ts` – Goal Hierarchy beta (month/week/day goals) local storage
+- `utils/monthBoardStorage.ts` – Month board local storage (schema v2.0)
+- `utils/monthBoardDates.ts` – Month board month/week date helpers
 
 #### `/docs`
 Project documentation including setup guides, component documentation, and development guidelines.

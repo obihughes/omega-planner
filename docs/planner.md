@@ -123,16 +123,15 @@ The Class Schedule view (`/class-schedule`) provides a recurring weekly timetabl
 
 **Route:** `/month-board` (sidebar: Daily Planner → **Month board**).
 
-Multi-month outline for plans at **different precision**: a **week focus** column for coarse intent and **seven day rows** (weekday + calendar date) for finer notes. This is **not** the Daily Planner Week view (`/?view=weekly`) and **not** Calendar Weekly Overview / weekly goals—data is stored separately.
+Multi-month outline scoped by **month** and **week**: pick a month (Jan–Dec of the current year), choose one of 4–5 weeks in that month, then plan with a week goal column and Mon–Sun day rows. This is **not** the Daily Planner Week view and **not** Calendar Weekly Overview—data is stored separately.
 
-- **Layout:** On large screens, the twelve-week grid is on the left and the **backlog** column on the right (`lg:w-[min(100%,320px)]`, `lg:max-w-sm`). Each week block shows **day rows** on the left and **week focus** on the right (`md+`).
-- **Backlog:** Add text notes; dragging a note by the grip into a week or day **moves** it out of the backlog (same as other moves).
-- **Week focus:** Wider, taller column on `md+` (`md:w-[min(100%,330px)]`); empty and placed notes use larger textareas (week notes auto-height like backlog).
-- **Placed notes:** Dragging between week column, day rows, or back to the backlog **moves** the note. Empty week and day slots are plain textareas (no placeholder copy); the first line becomes a normal note (same drag/edit behavior as other notes).
-- **Horizon:** Twelve consecutive weeks anchored to a persisted **Monday** (`horizonStartKey`). On each open, `rollHorizonToCurrentWeek` advances the window so the current calendar week is week index 0 (backlog preserved; notes in dropped past weeks are discarded; if the horizon is 12+ weeks behind or in the future, weeks reset empty). Week headers show a compact date range (e.g. Mar 17–23, 2025); each day row shows a short weekday and the day-of-month with muted, tabular numerals.
-- **Persistence:** `utils/monthBoardStorage.ts`, localStorage key `omega-planner-month-board-v1`.
-- **Scrolling:** Only the week grid scrolls; the **backlog** column stays fixed on the right on large screens (on small screens it sits below the grid and remains visible while weeks scroll). A long backlog scrolls inside its own panel. On open, the view auto-scrolls once to center the current week in the week grid.
-- **Implementation:** `components/month-board/MonthBoard.tsx` (`@dnd-kit/core`, grip-only drag activation).
+- **Layout:** Three-panel horizontal layout on large screens: **month picker** (left), **week selector** (center, 4–5 weeks per month + Prev/Next), **main content** (right) showing one week at a time with week goal on the left and seven day rows (Mon–Sun) on the right.
+- **Month picker:** Vertical list of 12 months for the current calendar year; selecting a month jumps to the current week (if in that month) or the first week of the month.
+- **Week selector:** Lists weeks overlapping the selected month with date ranges; Prev/Next navigates within the month and crosses month boundaries.
+- **Week goal:** Freeform droppable notes with auto-height textareas.
+- **Day rows:** Vertical stack of seven rows (Mon–Sun); each row has weekday + date label and a note drop zone.
+- **Persistence:** `utils/monthBoardStorage.ts`, localStorage key `omega-planner-month-board-v1` (schema v2.0). Week data keyed by Monday `weekStartKey`. Legacy 12-week horizon format migrates on load.
+- **Implementation:** `components/month-board/MonthBoard.tsx`, `utils/monthBoardDates.ts` (`@dnd-kit/core`, grip-only drag activation).
 
 ## Usage
 

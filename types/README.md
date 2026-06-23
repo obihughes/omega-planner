@@ -4,7 +4,7 @@ This directory contains TypeScript type definitions used throughout the applicat
 
 ## Month board (`monthBoard.ts`)
 
-Defines `MonthBoardNote`, `MonthBoardWeekSlot`, `MonthBoardState`, and source/target location types for drag-and-drop. Exported from `types/index.ts`.
+Defines `MonthBoardNote`, `MonthBoardWeekSlot`, `MonthBoardState`, and source/target location types for drag-and-drop. Weeks keyed by Monday `weekStartKey`; 7 day rows (Mon–Sun). Exported from `types/index.ts`.
 
 ## Core Types
 

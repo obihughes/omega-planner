@@ -1,5 +1,16 @@
 ## 2026-06-23
 
+- **Month board: single-week view with month/week pickers** (2026-06-23)
+  - Replaced 12-week vertical scroll with one week at a time. Three-panel layout: month picker (Jan–Dec of current year), week selector (4–5 weeks per month + Prev/Next), main content (week goal column + Mon–Sun day rows).
+  - Storage schema v2.0: weeks keyed by Monday `weekStartKey`; persists `selectedMonthKey` and `selectedWeekStartKey`. Legacy 12-week horizon format migrates on load.
+  - **Files affected**: `types/monthBoard.ts`, `utils/monthBoardStorage.ts`, `utils/monthBoardDates.ts`, `components/month-board/MonthBoard.tsx`, `types/index.ts`, `utils/index.ts`, `lib/appHierarchy.ts`, docs, READMEs
+
+- **Month board: vertical hybrid layout** (2026-06-23)
+  - Redesigned layout: twelve weeks stack vertically; each week has **week goal** on the left and **Mon–Fri** day columns on the right (horizontal grid, styled like Goal Hierarchy day columns).
+  - Removed backlog sidebar and "week focus" label (renamed to week goal). Weekend day slots removed (Mon–Fri only).
+  - Storage schema v1.1: backlog dropped on load; legacy 7-day weeks migrate to first five weekdays.
+  - **Files affected**: `types/monthBoard.ts`, `utils/monthBoardStorage.ts`, `components/month-board/MonthBoard.tsx`, `lib/appHierarchy.ts`, `types/README.md`, `utils/README.md`, `docs/planner.md`, `docs/components.md`, `docs/structure.md`, `docs/changelog.md`
+
 - **Goal Hierarchy (beta)** (2026-06-23)
   - New experimental section at `/goal-hierarchy` (Settings → Beta features): monthly summary + sub-goals, week tabs within the month, weekly summary + Mon–Fri day columns with hybrid text + checklist goals.
   - Persists to `omega-planner-goal-hierarchy-v1` in localStorage; isolated from existing Weekly Goals and Month Board.

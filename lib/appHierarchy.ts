@@ -257,7 +257,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'MonthBoard',
         kind: 'component',
         path: 'components/month-board/MonthBoard.tsx',
-        editHint: '12-week grid, backlog column, DnD notes.',
+        editHint: 'Month/week pickers + single-week view; week goal + Mon–Sun day rows, DnD notes.',
       },
       {
         id: 'dp-month-storage',

@@ -26,8 +26,24 @@ export {
   MonthBoardStorage,
   getDefaultHorizonMondayKey,
   createInitialMonthBoardState,
-  rollHorizonToCurrentWeek,
+  getWeekSlot,
+  ensureWeekInState,
 } from './monthBoardStorage';
+export {
+  getCurrentYear,
+  getCurrentMonthKey as getMonthBoardCurrentMonthKey,
+  getYearMonthKeys,
+  getWeeksInMonth as getMonthBoardWeeksInMonth,
+  getWeekDates,
+  getWeekIndexContainingDate as getMonthBoardWeekIndexContainingDate,
+  getDefaultWeekStartKeyForMonth,
+  getAdjacentMonthKey,
+  getPreviousWeek,
+  getNextWeek,
+  formatMonthLabel as formatMonthBoardMonthLabel,
+  formatMonthShortLabel,
+  monthKeyToDate as monthBoardMonthKeyToDate,
+} from './monthBoardDates';
 
 // Goal hierarchy (beta)
 export {

@@ -4,31 +4,39 @@ export interface MonthBoardNote {
   text: string;
 }
 
-/** One week slot: coarse notes + seven day columns (Mon–Sun) */
+/** One week slot: week goal notes + seven day rows (Mon–Sun) */
 export interface MonthBoardWeekSlot {
   weekNotes: MonthBoardNote[];
-  /** Index 0 = Monday of that week (relative to horizon) */
+  /** Index 0 = Monday of that week */
   days: MonthBoardNote[][];
 }
 
-export const MONTH_BOARD_WEEK_COUNT = 12;
+/** YYYY-MM */
+export type MonthBoardMonthKey = string;
+
+/** YYYY-MM-DD (Monday) */
+export type MonthBoardWeekStartKey = string;
+
+/** Days shown per week (Mon–Sun) */
 export const DAYS_PER_WEEK = 7;
 
 export interface MonthBoardState {
   version: string;
-  /** YYYY-MM-DD for the Monday of week index 0 */
-  horizonStartKey: string;
-  backlog: MonthBoardNote[];
-  weeks: MonthBoardWeekSlot[];
+  /** Calendar year for the month picker (current year on first load) */
+  year: number;
+  /** Selected month (YYYY-MM) */
+  selectedMonthKey: MonthBoardMonthKey;
+  /** Monday of the selected week (YYYY-MM-DD) */
+  selectedWeekStartKey: MonthBoardWeekStartKey;
+  /** Week data keyed by Monday date key */
+  weeks: Record<MonthBoardWeekStartKey, MonthBoardWeekSlot>;
   lastUpdated: string;
 }
 
 export type MonthNoteSource =
-  | { kind: 'backlog' }
-  | { kind: 'week'; weekIndex: number }
-  | { kind: 'day'; weekIndex: number; dayIndex: number };
+  | { kind: 'week'; weekStartKey: MonthBoardWeekStartKey }
+  | { kind: 'day'; weekStartKey: MonthBoardWeekStartKey; dayIndex: number };
 
 export type MonthNoteTarget =
-  | { kind: 'backlog' }
-  | { kind: 'week'; weekIndex: number }
-  | { kind: 'day'; weekIndex: number; dayIndex: number };
+  | { kind: 'week'; weekStartKey: MonthBoardWeekStartKey }
+  | { kind: 'day'; weekStartKey: MonthBoardWeekStartKey; dayIndex: number };
