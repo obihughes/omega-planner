@@ -28,3 +28,18 @@ export {
   createInitialMonthBoardState,
   rollHorizonToCurrentWeek,
 } from './monthBoardStorage';
+
+// Goal hierarchy (beta)
+export {
+  GoalHierarchyStorage,
+  GOAL_HIERARCHY_STORAGE_KEY,
+} from './goalHierarchyStorage';
+export {
+  getCurrentMonthKey,
+  getMonthTabs,
+  getWeeksInMonth,
+  getWeekdayDates,
+  getWeekIndexContainingDate,
+  formatMonthLabel,
+  monthKeyToDate,
+} from './goalHierarchyDates';

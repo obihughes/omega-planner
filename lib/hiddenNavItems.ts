@@ -18,4 +18,10 @@ export const HIDDEN_NAV_ITEMS: HiddenNavItem[] = [
     href: '/study-tracker',
     description: 'Weekly study planner (standalone)',
   },
+  {
+    key: 'goal-hierarchy',
+    label: 'Goal Hierarchy',
+    href: '/goal-hierarchy',
+    description: 'Monthly, weekly, and daily goal planning (experimental)',
+  },
 ];

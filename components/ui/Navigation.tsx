@@ -7,7 +7,7 @@ import {
   Calendar, CalendarDays, FolderKanban, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
   CalendarRange, ClipboardList, Settings, LayoutGrid, Map, ListTodo,
   NotebookPen, Sun, Moon, Monitor, TreePine, TreeDeciduous, Sparkles, GraduationCap, GanttChart,
-  FlaskConical, ChefHat, BookOpen, type LucideIcon,
+  FlaskConical, ChefHat, BookOpen, Target, type LucideIcon,
 } from 'lucide-react';
 import { useTheme, THEME_OPTIONS, THEME_LABELS, type ThemeOption } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 const HIDDEN_NAV_ICONS: Record<string, LucideIcon> = {
   meals: ChefHat,
   'study-tracker': BookOpen,
+  'goal-hierarchy': Target,
 };
 
 export function Navigation() {

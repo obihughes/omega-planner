@@ -1,5 +1,10 @@
 ## 2026-06-23
 
+- **Goal Hierarchy (beta)** (2026-06-23)
+  - New experimental section at `/goal-hierarchy` (Settings → Beta features): monthly summary + sub-goals, week tabs within the month, weekly summary + Mon–Fri day columns with hybrid text + checklist goals.
+  - Persists to `omega-planner-goal-hierarchy-v1` in localStorage; isolated from existing Weekly Goals and Month Board.
+  - **Files affected**: `types/goalHierarchy.ts`, `utils/goalHierarchyStorage.ts`, `utils/goalHierarchyDates.ts`, `hooks/useGoalHierarchy.ts`, `components/goal-hierarchy/*`, `app/goal-hierarchy/page.tsx`, `lib/hiddenNavItems.ts`, `components/ui/Navigation.tsx`, barrel indexes, `lib/appHierarchy.ts`, `docs/structure.md`, `docs/changelog.md`, `README.md`
+
 - **Task color palette: ROYGBIV expansion** (2026-06-23)
   - Expanded daily planner task colors from 23 to 30 swatches (7 new lighter accents: rose, red/orange/yellow/green/blue/violet 400).
   - Reordered the edit-modal color picker ROYGBIV (spectrum first, slate/gray neutrals last).

@@ -29,6 +29,7 @@ Current notable feature folders include:
 - `components/calendar` – Calendars and modals
 - `components/meals` – Meals list and ingredient management
 - `components/study-tracker` – Study Planner (weekly day cards with tasks, monthly calendar with subject filter)
+- `components/goal-hierarchy` – Goal Hierarchy beta (month → week → day planning with summary text + sub-goals)
 - `components/todo` – Minimal standalone todo checklist
 - `components/ui` – Shared UI primitives (layout, inputs, tabs, etc.)
 
@@ -43,6 +44,7 @@ Includes storage helpers like:
 - `utils/mealsStorage.ts` – Meals local storage (migrates legacy recipes on first load)
 - `utils/studyStorage.ts` – Study Planner (subjects, study tasks) local storage
 - `utils/todoStorage.ts` – Minimal todo list local storage
+- `utils/goalHierarchyStorage.ts` – Goal Hierarchy beta (month/week/day goals) local storage
 
 #### `/docs`
 Project documentation including setup guides, component documentation, and development guidelines.
@@ -50,6 +52,7 @@ Project documentation including setup guides, component documentation, and devel
 Additional feature routes in `/app` include:
 - `app/meals` — Meals page (meal names and ingredients); hidden from main sidebar nav — open via Settings → Beta features or `/meals`. Legacy `/recipes` redirects to `/meals`.
 - `app/study-tracker` — Study Planner (weekly view with day cards + tasks); hidden from main sidebar — open via Settings → Beta features or `/study-tracker` (also embeddable in Calendar weekly view)
+- `app/goal-hierarchy` — Goal Hierarchy (monthly / weekly / daily goals); hidden from main sidebar — open via Settings → Beta features or `/goal-hierarchy`
 - `app/visualizer` — 5-Year Visualizer (Calendar high-level view)
 - `app/app-map` — In-app code hierarchy reference (Settings → Developer → App Map); data in `lib/appHierarchy.ts`
 - `app/todo` — Minimal todo checklist (main sidebar nav)

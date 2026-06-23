@@ -22,3 +22,5 @@ export {
   THEME_LABELS,
   type ThemeOption,
 } from './useTheme';
+
+export { useGoalHierarchy, type GoalHierarchyLevel } from './useGoalHierarchy';

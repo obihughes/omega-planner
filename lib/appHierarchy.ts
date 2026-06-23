@@ -589,6 +589,45 @@ export const appHierarchy: AppMapNode[] = [
     ],
   },
   {
+    id: 'goal-hierarchy',
+    label: 'Goal Hierarchy (hidden nav)',
+    kind: 'area',
+    description: 'Not in sidebar — Settings → Beta features or /goal-hierarchy. Multi-level goals: month → week → Mon–Fri days.',
+    children: [
+      {
+        id: 'gh-route',
+        label: '/goal-hierarchy',
+        kind: 'route',
+      },
+      {
+        id: 'gh-page',
+        label: 'Goal hierarchy page',
+        kind: 'page',
+        path: 'app/goal-hierarchy/page.tsx',
+      },
+      {
+        id: 'gh-component',
+        label: 'GoalHierarchyView',
+        kind: 'component',
+        path: 'components/goal-hierarchy/GoalHierarchyView.tsx',
+        editHint: 'Month tabs, week tabs, weekly panel, Mon–Fri day columns with summary + sub-goals.',
+      },
+      {
+        id: 'gh-hook',
+        label: 'useGoalHierarchy',
+        kind: 'hook',
+        path: 'hooks/useGoalHierarchy.ts',
+      },
+      {
+        id: 'gh-storage',
+        label: 'goalHierarchyStorage',
+        kind: 'storage',
+        path: 'utils/goalHierarchyStorage.ts',
+        editHint: 'Key omega-planner-goal-hierarchy-v1.',
+      },
+    ],
+  },
+  {
     id: 'app-map',
     label: 'App Map (this page)',
     kind: 'area',

@@ -50,6 +50,15 @@ export type { Subject, StudyEntry, StudyStorageData } from './study';
 export type { TodoItem, TodoStorageData } from './todo';
 
 export type {
+  HierarchyGoalItem,
+  HierarchyDaySlot,
+  HierarchyWeekSlot,
+  HierarchyMonthSlot,
+  GoalHierarchyStorageData,
+} from './goalHierarchy';
+export { GOAL_HIERARCHY_WEEKDAY_COUNT } from './goalHierarchy';
+
+export type {
   MonthBoardNote,
   MonthBoardWeekSlot,
   MonthBoardState,
