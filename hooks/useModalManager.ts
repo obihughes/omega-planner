@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Task } from '@/types/planner';
-import { TASK_COLORS } from '@/lib/constants';
+import { TASK_COLORS, DEFAULT_TASK_COLOR, POOL_TASK_COLOR } from '@/lib/constants';
 import { dateFromDateKey, getDateKey } from '@/utils/dateUtils';
 
 /**
@@ -357,7 +357,7 @@ export function useModalManager({
         startHour: options?.initialStartHour ?? (isFromPool ? undefined : 9), // No specific start time for pool tasks
         duration: 1, // Default duration
         baseDate: baseDate,
-        color: TASK_COLORS[isFromPool ? 17 : 0], // Grey for pool tasks, default color for timeline tasks
+        color: isFromPool ? POOL_TASK_COLOR : DEFAULT_TASK_COLOR,
         notes: "",
         completed: false,
         isFromPool: isFromPool,
@@ -422,13 +422,13 @@ export function useModalManager({
           // Add to pool for specific date
           onAddPoolTaskForDate(taskData.poolDate, {
             ...taskData,
-            color: taskData.color || TASK_COLORS[0]
+            color: taskData.color || DEFAULT_TASK_COLOR
           });
         } else {
           // Add to general pool (unscheduled)
           onAddPoolTask({
             ...taskData,
-            color: taskData.color || TASK_COLORS[0]
+            color: taskData.color || DEFAULT_TASK_COLOR
           });
         }
       } else {
@@ -445,7 +445,7 @@ export function useModalManager({
           {
             name: taskData.name,
             duration: taskData.duration,
-            color: taskData.color || TASK_COLORS[0],
+            color: taskData.color || DEFAULT_TASK_COLOR,
             notes: taskData.notes,
             completed: taskData.completed
           },
@@ -483,7 +483,7 @@ export function useModalManager({
               {
                 name: taskDataFromForm.name,
                 duration: taskDataFromForm.duration,
-                color: taskDataFromForm.color || TASK_COLORS[0],
+                color: taskDataFromForm.color || DEFAULT_TASK_COLOR,
                 notes: taskDataFromForm.notes,
                 completed: taskDataFromForm.completed
               },
@@ -496,7 +496,7 @@ export function useModalManager({
             onAddPoolTask({
               ...taskDataFromForm,
               baseDate: '', // Clear baseDate for general pool
-              color: taskDataFromForm.color || TASK_COLORS[0]
+              color: taskDataFromForm.color || DEFAULT_TASK_COLOR
             });
             break;
 
@@ -506,14 +506,14 @@ export function useModalManager({
             if (taskDataFromForm.poolDate) {
               onAddPoolTaskForDate(taskDataFromForm.poolDate, {
                 ...taskDataFromForm,
-                color: taskDataFromForm.color || TASK_COLORS[0]
+                color: taskDataFromForm.color || DEFAULT_TASK_COLOR
               });
             } else if (taskDataFromForm.baseDate) {
               // Fallback: use baseDate as poolDate
               onAddPoolTaskForDate(taskDataFromForm.baseDate, {
                 ...taskDataFromForm,
                 poolDate: taskDataFromForm.baseDate,
-                color: taskDataFromForm.color || TASK_COLORS[0]
+                color: taskDataFromForm.color || DEFAULT_TASK_COLOR
               });
             } else {
               console.error("[useModalManager] Pool task missing date:", taskDataFromForm);
@@ -571,7 +571,7 @@ export function useModalManager({
       startHour: effectiveStartHour,
       duration: 1,
       baseDate: targetDateKey,
-      color: TASK_COLORS[0],
+      color: DEFAULT_TASK_COLOR,
       notes: "",
       completed: false,
       isFromPool: false,
@@ -598,7 +598,7 @@ export function useModalManager({
       startHour: undefined, // No specific start time for pool tasks
       duration: 1,
       baseDate: date ? getDateKey(date) : '', // Empty baseDate for general pool
-      color: TASK_COLORS[17], // Default to grey for unscheduled tasks
+      color: POOL_TASK_COLOR,
       notes: "",
       completed: false,
       isFromPool: true,
@@ -626,7 +626,7 @@ export function useModalManager({
       startHour: undefined, // Explicitly unscheduled
       duration: 1,
       baseDate: targetDateKey,
-      color: TASK_COLORS[17], // Default to grey for unscheduled tasks
+      color: POOL_TASK_COLOR,
       notes: "",
       completed: false,
       isFromPool: true,
@@ -651,7 +651,7 @@ export function useModalManager({
       startHour: 0,
       duration: 1,
       baseDate: targetDateKey,
-      color: TASK_COLORS[17], // Default grey color
+      color: POOL_TASK_COLOR,
       notes: "",
       completed: false,
       isFromPool: true,

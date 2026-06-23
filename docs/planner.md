@@ -93,6 +93,8 @@ A small calendar for assigning dates to tasks.
 ### EditTaskModal
 Modal for editing the details of a task. Includes a "To Inbox" button for scheduled tasks that moves them to the inbox (unschedules) via `moveTaskToInbox` / `handleUnassignTask`.
 
+**Task colors:** The color picker shows 30 swatches in ROYGBIV order (red → violet), with slate and gray neutrals last. New timeline tasks default to deep blue; pool/inbox tasks default to deep gray. Colors are defined in `lib/constants.ts` (`TASK_COLORS`).
+
 ### ViewTaskNotesModal
 Modal for viewing the notes of a task.
 

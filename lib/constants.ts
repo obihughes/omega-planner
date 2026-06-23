@@ -1,43 +1,68 @@
 /**
  * Available color options for tasks in the daily planner.
+ * Ordered ROYGBIV (spectrum first, neutrals last). 6 cols × 5 rows = 30 swatches.
  * Uses consistent background colors across light and dark modes,
  * but adapts text colors for proper contrast in each theme.
- * Both modes: Rich, dark backgrounds
- * Light mode: White text for contrast
- * Dark mode: Black text for contrast
  */
 export const TASK_COLORS = [
-  // Row 1: Warm colors
-  'bg-red-600 text-white dark:bg-red-600 dark:text-black',      // Deep Red
-  'bg-orange-600 text-white dark:bg-orange-600 dark:text-black',   // Deep Orange  
-  'bg-amber-600 text-white dark:bg-amber-600 dark:text-black',    // Deep Amber
-  'bg-yellow-600 text-white dark:bg-yellow-600 dark:text-black',   // Deep Yellow
-  'bg-lime-600 text-white dark:bg-lime-600 dark:text-black',     // Deep Lime
-  'bg-green-600 text-white dark:bg-green-600 dark:text-black',    // Deep Green
+  // R — Red
+  'bg-red-600 text-white dark:bg-red-600 dark:text-black',           // Deep Red
+  'task-color-red-munsell',                                          // Red (Munsell) (#F21B3F)
+  'bg-rose-600 text-white dark:bg-rose-600 dark:text-black',         // Deep Rose
+  'bg-red-400 text-black dark:bg-red-400 dark:text-black',           // Red 400
 
-  // Row 2: Cool colors
-  'bg-emerald-600 text-white dark:bg-emerald-600 dark:text-black',  // Deep Emerald
-  'bg-teal-600 text-white dark:bg-teal-600 dark:text-black',     // Deep Teal
-  'bg-cyan-600 text-white dark:bg-cyan-600 dark:text-black',     // Deep Cyan
-  'bg-sky-600 text-white dark:bg-sky-600 dark:text-black',      // Deep Sky Blue
-  'bg-blue-600 text-white dark:bg-blue-600 dark:text-black',     // Deep Blue
-  'bg-indigo-600 text-white dark:bg-indigo-600 dark:text-black',   // Deep Indigo
+  // O — Orange
+  'bg-orange-600 text-white dark:bg-orange-600 dark:text-black',     // Deep Orange
+  'task-color-princeton-orange',                                     // Princeton orange (#FF9914)
+  'bg-amber-600 text-white dark:bg-amber-600 dark:text-black',       // Deep Amber
+  'bg-orange-400 text-black dark:bg-orange-400 dark:text-black',     // Orange 400
 
-  // Row 3: Purples and neutrals
-  'bg-violet-600 text-white dark:bg-violet-600 dark:text-black',   // Deep Violet
-  'bg-purple-600 text-white dark:bg-purple-600 dark:text-black',   // Deep Purple
-  'bg-fuchsia-600 text-white dark:bg-fuchsia-600 dark:text-black',  // Deep Fuchsia
-  'bg-pink-600 text-white dark:bg-pink-600 dark:text-black',     // Deep Pink
-  'bg-slate-600 text-white dark:bg-slate-600 dark:text-black',    // Deep Slate
-  'bg-gray-600 text-white dark:bg-gray-600 dark:text-black',     // Deep Gray
+  // Y — Yellow
+  'bg-yellow-600 text-white dark:bg-yellow-600 dark:text-black',     // Deep Yellow
+  'task-color-green-yellow',                                         // Green Yellow (#ABFF4F)
+  'bg-yellow-400 text-black dark:bg-yellow-400 dark:text-black',     // Yellow 400
 
-  // Row 4: Custom hex colors
-  'task-color-kelly-green',      // Kelly green (#29BF12)
-  'task-color-green-yellow',     // Green Yellow (#ABFF4F) 
-  'task-color-verdigris',        // Verdigris (#08BDBD)
-  'task-color-red-munsell',      // Red (Munsell) (#F21B3F)
-  'task-color-princeton-orange', // Princeton orange (#FF9914)
+  // G — Green
+  'bg-lime-600 text-white dark:bg-lime-600 dark:text-black',         // Deep Lime
+  'bg-green-600 text-white dark:bg-green-600 dark:text-black',       // Deep Green
+  'bg-emerald-600 text-white dark:bg-emerald-600 dark:text-black',   // Deep Emerald
+  'task-color-kelly-green',                                          // Kelly green (#29BF12)
+  'bg-green-400 text-black dark:bg-green-400 dark:text-black',       // Green 400
+
+  // B — Blue
+  'bg-teal-600 text-white dark:bg-teal-600 dark:text-black',         // Deep Teal
+  'bg-cyan-600 text-white dark:bg-cyan-600 dark:text-black',         // Deep Cyan
+  'task-color-verdigris',                                            // Verdigris (#08BDBD)
+  'bg-sky-600 text-white dark:bg-sky-600 dark:text-black',           // Deep Sky Blue
+  'bg-blue-600 text-white dark:bg-blue-600 dark:text-black',         // Deep Blue
+  'bg-blue-400 text-black dark:bg-blue-400 dark:text-black',         // Blue 400
+
+  // I — Indigo
+  'bg-indigo-600 text-white dark:bg-indigo-600 dark:text-black',     // Deep Indigo
+
+  // V — Violet
+  'bg-violet-600 text-white dark:bg-violet-600 dark:text-black',     // Deep Violet
+  'bg-purple-600 text-white dark:bg-purple-600 dark:text-black',     // Deep Purple
+  'bg-fuchsia-600 text-white dark:bg-fuchsia-600 dark:text-black',   // Deep Fuchsia
+  'bg-pink-600 text-white dark:bg-pink-600 dark:text-black',         // Deep Pink
+  'bg-violet-400 text-black dark:bg-violet-400 dark:text-black',     // Violet 400
+
+  // Neutrals
+  'bg-slate-600 text-white dark:bg-slate-600 dark:text-black',       // Deep Slate
+  'bg-gray-600 text-white dark:bg-gray-600 dark:text-black',         // Deep Gray
 ];
+
+/** Default color for newly created timeline tasks (Deep Blue) */
+export const DEFAULT_TASK_COLOR = 'bg-blue-600 text-white dark:bg-blue-600 dark:text-black';
+
+/** Default color for pool / unscheduled tasks (Deep Gray) */
+export const POOL_TASK_COLOR = 'bg-gray-600 text-white dark:bg-gray-600 dark:text-black';
+
+/** Default color index for newly created tasks (Deep Blue) */
+export const DEFAULT_TASK_COLOR_INDEX = TASK_COLORS.indexOf(DEFAULT_TASK_COLOR);
+
+/** Index of pool / unscheduled task color (Deep Gray) */
+export const POOL_TASK_COLOR_INDEX = TASK_COLORS.indexOf(POOL_TASK_COLOR);
 
 /** The earliest hour shown on the timeline (12 AM) */
 export const TIMELINE_START_HOUR = 0;
@@ -62,9 +87,6 @@ export const DEFAULT_TOP_DAY_OFFSET = 0;
 
 /** Default day offset for the bottom timeline (Next Day) */
 export const DEFAULT_BOTTOM_DAY_OFFSET = 1; 
-
-/** Default color index for newly created tasks (Blue) */
-export const DEFAULT_TASK_COLOR_INDEX = 10;
 
 // Constants from DailyPlanner.tsx
 export const TIMELINE_COLUMN_HEIGHT = 120;

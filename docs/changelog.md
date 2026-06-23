@@ -1,5 +1,11 @@
 ## 2026-06-23
 
+- **Task color palette: ROYGBIV expansion** (2026-06-23)
+  - Expanded daily planner task colors from 23 to 30 swatches (7 new lighter accents: rose, red/orange/yellow/green/blue/violet 400).
+  - Reordered the edit-modal color picker ROYGBIV (spectrum first, slate/gray neutrals last).
+  - Added `DEFAULT_TASK_COLOR` and `POOL_TASK_COLOR` named constants; replaced magic index references in `useModalManager`.
+  - **Files affected**: `lib/constants.ts`, `hooks/useModalManager.ts`, `docs/planner.md`, `docs/changelog.md`
+
 - **Calendar: sticky Month / Year toggle** (2026-06-23)
   - Month and Year view switch buttons stay fixed at the top while scrolling through long monthly or yearly calendar layouts.
   - **Files affected**: `app/calendar/page.tsx`, `docs/planner.md`, `docs/changelog.md`
