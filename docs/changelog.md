@@ -1,5 +1,10 @@
 ## 2026-06-23
 
+- **Navigation: Month Board → beta, Goal Hierarchy → main nav** (2026-06-23)
+  - Moved **Month Board** from Daily Planner sidebar subview to Settings → Beta features (`lib/hiddenNavItems.ts`).
+  - Moved **Goal Hierarchy** from beta/hidden nav to a top-level main sidebar item (after Calendar).
+  - **Files affected**: `lib/hiddenNavItems.ts`, `components/ui/Navigation.tsx`, `lib/appHierarchy.ts`, `docs/structure.md`, `docs/planner.md`, `docs/components.md`, `docs/changelog.md`, `README.md`
+
 - **Month board: single-week view with month/week pickers** (2026-06-23)
   - Replaced 12-week vertical scroll with one week at a time. Three-panel layout: month picker (Jan–Dec of current year), week selector (4–5 weeks per month + Prev/Next), main content (week goal column + Mon–Sun day rows).
   - Storage schema v2.0: weeks keyed by Monday `weekStartKey`; persists `selectedMonthKey` and `selectedWeekStartKey`. Legacy 12-week horizon format migrates on load.

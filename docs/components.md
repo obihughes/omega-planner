@@ -10,7 +10,7 @@ Minimal standalone checklist: add tasks, toggle done, remove items, clear comple
 ## Month board
 
 ### MonthBoard (`components/month-board/MonthBoard.tsx`)
-**Page:** `app/month-board/page.tsx`
+**Page:** `app/month-board/page.tsx` (hidden from main sidebar — Settings → Beta features)
 
 Single-week month planning with three panels: **month picker** (12 months of current year), **week selector** (4–5 weeks per month + Prev/Next), and **main content** (week goal column ~330px + Mon–Sun day rows). One week shown at a time. Week goal notes use `AutosizeTextarea`. Uses `@dnd-kit` with custom collision handling; note bodies use `onPointerDownCapture` stopPropagation. State persists via `MonthBoardStorage` (schema v2.0, weeks keyed by Monday date). Date helpers in `utils/monthBoardDates.ts`.
 

@@ -22,7 +22,7 @@ import { Button } from '@/components/ui/button';
 const HIDDEN_NAV_ICONS: Record<string, LucideIcon> = {
   meals: ChefHat,
   'study-tracker': BookOpen,
-  'goal-hierarchy': Target,
+  'month-board': LayoutGrid,
 };
 
 export function Navigation() {
@@ -159,12 +159,11 @@ export function Navigation() {
       href: '/',
       label: 'Daily Planner',
       icon: NotebookPen,
-      active: (pathname === '/' || pathname === '/month-board') && !pathname.includes('/calendar'),
+      active: pathname === '/' && !pathname.includes('/calendar'),
       subViews: [
         { key: 'planner-daily', type: 'planner', mode: 'daily', label: 'Daily', icon: Sun, active: pathname === '/' && plannerViewMode === 'daily' },
         { key: 'planner-weekly', type: 'planner', mode: 'weekly', label: 'Week', icon: CalendarDays, active: pathname === '/' && plannerViewMode === 'weekly' },
         { key: 'planner-class-schedule', label: 'Class Schedule', icon: GraduationCap, href: '/class-schedule', active: pathname === '/class-schedule' },
-        { key: 'planner-month-board', label: 'Month board', icon: LayoutGrid, href: '/month-board', active: pathname === '/month-board' }
       ]
     },
     {
@@ -178,6 +177,14 @@ export function Navigation() {
         { key: 'calendar-events', type: 'calendar', mode: 'monthly', label: 'Calendar', icon: CalendarRange, active: pathname === '/calendar' && (calendarViewMode === 'monthly' || calendarViewMode === 'yearly') },
         { key: 'calendar-visualizer', label: '5-Year Visualizer', icon: GanttChart, href: '/visualizer', active: pathname === '/visualizer' }
       ]
+    },
+    {
+      key: 'goal-hierarchy',
+      href: '/goal-hierarchy',
+      label: 'Goal Hierarchy',
+      icon: Target,
+      active: pathname === '/goal-hierarchy',
+      subViews: []
     },
     {
       key: 'projects',

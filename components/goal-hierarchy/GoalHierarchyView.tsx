@@ -46,7 +46,7 @@ export function GoalHierarchyView() {
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Goal Hierarchy</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Monthly, weekly, and daily goals — experimental beta feature.
+            Monthly, weekly, and daily goals.
           </p>
         </div>
 

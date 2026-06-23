@@ -19,9 +19,9 @@ export const HIDDEN_NAV_ITEMS: HiddenNavItem[] = [
     description: 'Weekly study planner (standalone)',
   },
   {
-    key: 'goal-hierarchy',
-    label: 'Goal Hierarchy',
-    href: '/goal-hierarchy',
-    description: 'Monthly, weekly, and daily goal planning (experimental)',
+    key: 'month-board',
+    label: 'Month Board',
+    href: '/month-board',
+    description: 'Month/week pickers with week goal and Mon–Sun day rows',
   },
 ];

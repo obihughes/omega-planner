@@ -121,7 +121,7 @@ The Class Schedule view (`/class-schedule`) provides a recurring weekly timetabl
 
 ## Month board
 
-**Route:** `/month-board` (sidebar: Daily Planner → **Month board**).
+**Route:** `/month-board` (Settings → **Beta features** or direct URL).
 
 Multi-month outline scoped by **month** and **week**: pick a month (Jan–Dec of the current year), choose one of 4–5 weeks in that month, then plan with a week goal column and Mon–Sun day rows. This is **not** the Daily Planner Week view and **not** Calendar Weekly Overview—data is stored separately.
 

@@ -241,30 +241,6 @@ export const appHierarchy: AppMapNode[] = [
         kind: 'storage',
         path: 'utils/classScheduleStorage.ts',
       },
-      {
-        id: 'dp-month-board-route',
-        label: '/month-board',
-        kind: 'route',
-      },
-      {
-        id: 'dp-month-board-page',
-        label: 'Month board page',
-        kind: 'page',
-        path: 'app/month-board/page.tsx',
-      },
-      {
-        id: 'dp-month-board',
-        label: 'MonthBoard',
-        kind: 'component',
-        path: 'components/month-board/MonthBoard.tsx',
-        editHint: 'Month/week pickers + single-week view; week goal + Mon–Sun day rows, DnD notes.',
-      },
-      {
-        id: 'dp-month-storage',
-        label: 'monthBoardStorage',
-        kind: 'storage',
-        path: 'utils/monthBoardStorage.ts',
-      },
     ],
   },
   {
@@ -589,10 +565,43 @@ export const appHierarchy: AppMapNode[] = [
     ],
   },
   {
-    id: 'goal-hierarchy',
-    label: 'Goal Hierarchy (hidden nav)',
+    id: 'month-board',
+    label: 'Month Board (hidden nav)',
     kind: 'area',
-    description: 'Not in sidebar — Settings → Beta features or /goal-hierarchy. Multi-level goals: month → week → Mon–Fri days.',
+    description: 'Not in sidebar — Settings → Beta features or /month-board. Month/week pickers with week goal + Mon–Sun day rows.',
+    children: [
+      {
+        id: 'mb-route',
+        label: '/month-board',
+        kind: 'route',
+      },
+      {
+        id: 'mb-page',
+        label: 'Month board page',
+        kind: 'page',
+        path: 'app/month-board/page.tsx',
+      },
+      {
+        id: 'mb-component',
+        label: 'MonthBoard',
+        kind: 'component',
+        path: 'components/month-board/MonthBoard.tsx',
+        editHint: 'Month/week pickers + single-week view; week goal + Mon–Sun day rows, DnD notes.',
+      },
+      {
+        id: 'mb-storage',
+        label: 'monthBoardStorage',
+        kind: 'storage',
+        path: 'utils/monthBoardStorage.ts',
+        editHint: 'Key omega-planner-month-board-v1 (schema v2.0).',
+      },
+    ],
+  },
+  {
+    id: 'goal-hierarchy',
+    label: 'Goal Hierarchy',
+    kind: 'area',
+    description: 'Main sidebar nav at /goal-hierarchy. Multi-level goals: month → week → Mon–Fri days.',
     children: [
       {
         id: 'gh-route',
