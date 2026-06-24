@@ -180,7 +180,10 @@ export function useGoalHierarchy() {
           return patchWeek(prev, selectedMonthKey, selectedWeekIndex, { summary });
         }
         if (level === 'day' && dateKey) {
-          return patchDay(prev, selectedMonthKey, selectedWeekIndex, dateKey, { summary });
+          return patchDay(prev, selectedMonthKey, selectedWeekIndex, dateKey, {
+            summary,
+            items: [],
+          });
         }
         return prev;
       });

@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { dateFromDateKey, isToday } from '@/utils/dateUtils';
 import type { HierarchyDaySlot } from '@/types/goalHierarchy';
-import { GoalLevelBlock } from './GoalLevelBlock';
+import { DayGoalTextarea } from './DayGoalTextarea';
 
 const WEEKDAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
@@ -13,22 +13,11 @@ export interface DayColumnProps {
   dayIndex: number;
   day: HierarchyDaySlot;
   onSummaryChange: (summary: string) => void;
-  onAddItem: (title: string) => void;
-  onToggleItem: (itemId: string) => void;
-  onRemoveItem: (itemId: string) => void;
 }
 
-export function DayColumn({
-  dayIndex,
-  day,
-  onSummaryChange,
-  onAddItem,
-  onToggleItem,
-  onRemoveItem,
-}: DayColumnProps) {
+export function DayColumn({ dayIndex, day, onSummaryChange }: DayColumnProps) {
   const date = dateFromDateKey(day.dateKey);
   const today = isToday(day.dateKey);
-
   return (
     <div
       className={cn(
@@ -42,17 +31,7 @@ export function DayColumn({
           {format(date, 'MMM d')}
         </p>
       </div>
-      <GoalLevelBlock
-        level="day"
-        label={WEEKDAY_NAMES[dayIndex]}
-        summary={day.summary}
-        items={day.items}
-        compact
-        onSummaryChange={onSummaryChange}
-        onAddItem={onAddItem}
-        onToggleItem={onToggleItem}
-        onRemoveItem={onRemoveItem}
-      />
+      <DayGoalTextarea value={day.summary} onChange={onSummaryChange} />
     </div>
   );
 }

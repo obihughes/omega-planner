@@ -1,3 +1,23 @@
+## 2026-06-24
+
+- **Goal Hierarchy: fix Enter splitting day goal lines** (2026-06-24)
+  - Enter now splits the current line at the cursor and moves text after the cursor to the new line (plain text and bullet/checkbox lines).
+  - **Files affected**: `components/goal-hierarchy/DayGoalTextarea.tsx`, `docs/changelog.md`
+
+- **Goal Hierarchy: simplify day goal storage to text-only** (2026-06-24)
+  - Day goals now read and write `summary` directly; removed `dayGoalDisplayText()` conversion layer.
+  - Legacy day `items` migrate into `summary` as `[ ]` / `[x]` lines on load when `summary` is empty; `items` cleared on save.
+  - Month and week levels unchanged (`GoalLevelBlock` with summary + checklist).
+  - **Files affected**: `types/goalHierarchy.ts`, `components/goal-hierarchy/DayColumn.tsx`, `components/goal-hierarchy/dayGoalTextUtils.ts`, `hooks/useGoalHierarchy.ts`, `utils/goalHierarchyStorage.ts`, `docs/changelog.md`, `docs/structure.md`, `docs/README.md`
+
+- **Goal Hierarchy: plain-text day goals with bullet shortcuts** (2026-06-24)
+  - Day columns simplified to a single textarea stored in `summary` as plain text.
+  - Shortcuts: `--` at line start creates a bullet (empty line or before existing text); Tab then `--` for indented bullets; Enter continues the same bullet with wrapped lines aligned after the marker; Ctrl+Enter toggles `[ ]` / `[x]` checkboxes.
+  - Shortcut help moved to a small info button above the day grid (`DayGoalShortcutsHelp`).
+  - Legacy day `items` are shown as `[ ]` / `[x]` lines when `summary` is empty until the user edits.
+  - Removed `BulletGoalBlock`; month and week levels unchanged (`GoalLevelBlock`).
+  - **Files affected**: `components/goal-hierarchy/DayGoalTextarea.tsx`, `components/goal-hierarchy/dayGoalTextUtils.ts`, `components/goal-hierarchy/DayColumn.tsx`, `components/goal-hierarchy/GoalHierarchyView.tsx`, `components/goal-hierarchy/index.ts`, `hooks/useGoalHierarchy.ts`, `lib/appHierarchy.ts`, `docs/structure.md`, `docs/changelog.md`, `docs/README.md`
+
 ## 2026-06-23
 
 - **Navigation: Month Board → beta, Goal Hierarchy → main nav** (2026-06-23)

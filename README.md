@@ -168,7 +168,7 @@ npm test
 - **Improved Type Safety**: Enhanced TypeScript type definitions and interfaces
 
 ### Goal Hierarchy
-- Goal Hierarchy at `/goal-hierarchy` (main sidebar nav) — monthly, weekly, and Mon–Fri daily goals with summary text and checkable sub-goals
+- Goal Hierarchy at `/goal-hierarchy` (main sidebar nav) — monthly and weekly goals with summary + checkable sub-goals; Mon–Fri day columns use plain-text goals with bullet/checkbox shortcuts
 - Persists to `omega-planner-goal-hierarchy-v1` via `utils/goalHierarchyStorage.ts`
 
 ### Meals Page

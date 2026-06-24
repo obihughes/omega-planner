@@ -7,6 +7,7 @@ import { formatMonthLabel, getWeekIndexContainingDate } from '@/utils/goalHierar
 import { useGoalHierarchy } from '@/hooks/useGoalHierarchy';
 import { GoalLevelBlock } from './GoalLevelBlock';
 import { DayColumn } from './DayColumn';
+import { DayGoalShortcutsHelp } from './DayGoalShortcutsHelp';
 
 export function GoalHierarchyView() {
   const {
@@ -122,6 +123,10 @@ export function GoalHierarchyView() {
             />
           </div>
 
+          <div className="flex items-center justify-end">
+            <DayGoalShortcutsHelp />
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             {currentWeek.days.map((day, dayIndex) => (
               <DayColumn
@@ -129,9 +134,6 @@ export function GoalHierarchyView() {
                 dayIndex={dayIndex}
                 day={day}
                 onSummaryChange={(s) => setSummary('day', s, day.dateKey)}
-                onAddItem={(t) => addItem('day', t, day.dateKey)}
-                onToggleItem={(id) => toggleItem('day', id, day.dateKey)}
-                onRemoveItem={(id) => removeItem('day', id, day.dateKey)}
               />
             ))}
           </div>

@@ -14,7 +14,7 @@ This directory contains documentation for the project. Below is an overview of t
 ## Feature Documentation
 - [Daily Planner](planner.md) - Comprehensive guide to the daily planner feature
 - **Month board** - `/month-board` (Settings → Beta features); month/week pickers with week goal + Mon–Sun rows; see [planner.md](planner.md#month-board)
-- **Goal Hierarchy** - `/goal-hierarchy` (main sidebar); monthly, weekly, and daily goals
+- **Goal Hierarchy** - `/goal-hierarchy` (main sidebar); monthly/weekly summary + sub-goals; day columns store plain text in `summary` with `--` bullet shortcuts
 - Weekly Overview - `/calendar?view=weekly-goals` with inline switch to Study Tracker; see [planner.md](planner.md#weekly-overview-page)
 
 ## Quick Links

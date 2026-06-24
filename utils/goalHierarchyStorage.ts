@@ -21,11 +21,22 @@ function emptyItem(raw: Partial<HierarchyGoalItem>): HierarchyGoalItem {
   };
 }
 
+function itemsToSummaryText(items: HierarchyGoalItem[]): string {
+  return items
+    .filter((item) => item.title.trim())
+    .map((item) => `${item.done ? '[x]' : '[ ]'} ${item.title}`)
+    .join('\n');
+}
+
 function emptyDay(dateKey: string, raw?: Partial<HierarchyDaySlot>): HierarchyDaySlot {
+  const summary = String(raw?.summary ?? '');
+  const rawItems = Array.isArray(raw?.items) ? raw!.items.map(emptyItem) : [];
+  const migratedSummary = summary.trim() ? summary : itemsToSummaryText(rawItems);
+
   return {
     dateKey,
-    summary: String(raw?.summary ?? ''),
-    items: Array.isArray(raw?.items) ? raw!.items.map(emptyItem) : [],
+    summary: migratedSummary,
+    items: [],
   };
 }
 
