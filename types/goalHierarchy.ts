@@ -6,7 +6,7 @@ export interface HierarchyGoalItem {
   createdAt: string;
 }
 
-/** One weekday slot (Mon–Fri). Goals are stored as plain text in `summary` (bullets, checkboxes, multiline). */
+/** One day slot (Mon–Sun). Goals are stored as plain text in `summary` (bullets, checkboxes, multiline). */
 export interface HierarchyDaySlot {
   dateKey: string;
   /** Free-form day goals: plain text, `•` bullets, `[ ]` / `[x]` checkboxes. */
@@ -38,4 +38,11 @@ export interface GoalHierarchyStorageData {
   lastUpdated: string;
 }
 
-export const GOAL_HIERARCHY_WEEKDAY_COUNT = 5;
+/** Full week stored per slot (Mon–Sun). */
+export const GOAL_HIERARCHY_WEEKDAY_COUNT = 7;
+
+/** Primary row in the day grid (Mon–Fri). */
+export const GOAL_HIERARCHY_PRIMARY_ROW_COUNT = 5;
+
+/** Secondary row in the day grid (Sat–Wed preview). */
+export const GOAL_HIERARCHY_PREVIEW_ROW_COUNT = 5;

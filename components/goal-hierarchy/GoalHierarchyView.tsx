@@ -17,6 +17,8 @@ export function GoalHierarchyView() {
     selectedWeekIndex,
     currentMonth,
     currentWeek,
+    primaryRowDays,
+    secondaryRowDays,
     weeksInMonth,
     selectMonth,
     selectWeek,
@@ -127,15 +129,27 @@ export function GoalHierarchyView() {
             <DayGoalShortcutsHelp />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-            {currentWeek.days.map((day, dayIndex) => (
-              <DayColumn
-                key={day.dateKey}
-                dayIndex={dayIndex}
-                day={day}
-                onSummaryChange={(s) => setSummary('day', s, day.dateKey)}
-              />
-            ))}
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+              {primaryRowDays.map((day) => (
+                <DayColumn
+                  key={day.dateKey}
+                  day={day}
+                  onSummaryChange={(s) => setSummary('day', s, day.dateKey)}
+                />
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 opacity-90">
+              {secondaryRowDays.map((day) => (
+                <DayColumn
+                  key={day.dateKey}
+                  day={day}
+                  isNextWeekPreview
+                  onSummaryChange={(s) => setSummary('day', s, day.dateKey)}
+                />
+              ))}
+            </div>
           </div>
         </section>
       </div>

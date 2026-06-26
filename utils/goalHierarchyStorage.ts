@@ -52,8 +52,8 @@ function emptyWeek(
     weekStartKey,
     summary: String(raw?.summary ?? ''),
     items: Array.isArray(raw?.items) ? raw!.items.map(emptyItem) : [],
-    days: weekdayDates.map((dateKey, i) => {
-      const existing = rawDays?.find((d) => d.dateKey === dateKey) ?? rawDays?.[i];
+    days: weekdayDates.map((dateKey) => {
+      const existing = rawDays?.find((d) => d.dateKey === dateKey);
       return emptyDay(dateKey, existing);
     }),
   };

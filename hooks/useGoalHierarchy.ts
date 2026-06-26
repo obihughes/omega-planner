@@ -11,6 +11,8 @@ import type {
 import {
   getCurrentMonthKey,
   getMonthTabs,
+  getNextWeekStartKey,
+  getWeekContextForDate,
   getWeekIndexContainingDate,
   getWeeksInMonth,
 } from '@/utils/goalHierarchyDates';
@@ -19,6 +21,10 @@ import {
   GoalHierarchyStorage,
 } from '@/utils/goalHierarchyStorage';
 import { getTodayDateKey } from '@/utils/dateUtils';
+import {
+  GOAL_HIERARCHY_PRIMARY_ROW_COUNT,
+  GOAL_HIERARCHY_PREVIEW_ROW_COUNT,
+} from '@/types/goalHierarchy';
 
 const SAVE_DEBOUNCE_MS = 300;
 
@@ -156,6 +162,25 @@ export function useGoalHierarchy() {
     return GoalHierarchyStorage.ensureWeek(currentMonth, weekIndex);
   }, [currentMonth, selectedWeekIndex, weeksInMonth]);
 
+  const primaryRowDays = useMemo(
+    () => currentWeek.days.slice(0, GOAL_HIERARCHY_PRIMARY_ROW_COUNT),
+    [currentWeek]
+  );
+
+  const secondaryRowDays = useMemo(() => {
+    const weekendDays = currentWeek.days.slice(GOAL_HIERARCHY_PRIMARY_ROW_COUNT);
+    const nextWeekStartKey = getNextWeekStartKey(currentWeek.weekStartKey);
+    const { monthKey: nextMonthKey, weekIndex: nextWeekIndex } =
+      getWeekContextForDate(nextWeekStartKey);
+    const nextMonth = GoalHierarchyStorage.ensureMonth(data, nextMonthKey);
+    const nextWeek = GoalHierarchyStorage.ensureWeek(nextMonth, nextWeekIndex);
+    const nextWeekPreviewDays = nextWeek.days.slice(
+      0,
+      GOAL_HIERARCHY_PREVIEW_ROW_COUNT - weekendDays.length
+    );
+    return [...weekendDays, ...nextWeekPreviewDays];
+  }, [currentWeek, data]);
+
   const selectMonth = useCallback((monthKey: string) => {
     setSelectedMonthKey(monthKey);
     const today = getTodayDateKey();
@@ -180,7 +205,8 @@ export function useGoalHierarchy() {
           return patchWeek(prev, selectedMonthKey, selectedWeekIndex, { summary });
         }
         if (level === 'day' && dateKey) {
-          return patchDay(prev, selectedMonthKey, selectedWeekIndex, dateKey, {
+          const { monthKey, weekIndex } = getWeekContextForDate(dateKey);
+          return patchDay(prev, monthKey, weekIndex, dateKey, {
             summary,
             items: [],
           });
@@ -210,10 +236,11 @@ export function useGoalHierarchy() {
           });
         }
         if (level === 'day' && dateKey) {
-          const month = GoalHierarchyStorage.ensureMonth(prev, selectedMonthKey);
-          const week = GoalHierarchyStorage.ensureWeek(month, selectedWeekIndex);
+          const { monthKey, weekIndex } = getWeekContextForDate(dateKey);
+          const month = GoalHierarchyStorage.ensureMonth(prev, monthKey);
+          const week = GoalHierarchyStorage.ensureWeek(month, weekIndex);
           const day = GoalHierarchyStorage.ensureDay(week, dateKey);
-          return patchDay(prev, selectedMonthKey, selectedWeekIndex, dateKey, {
+          return patchDay(prev, monthKey, weekIndex, dateKey, {
             items: [...day.items, GoalHierarchyStorage.createItem(t)],
           });
         }
@@ -240,10 +267,11 @@ export function useGoalHierarchy() {
           });
         }
         if (level === 'day' && dateKey) {
-          const month = GoalHierarchyStorage.ensureMonth(prev, selectedMonthKey);
-          const week = GoalHierarchyStorage.ensureWeek(month, selectedWeekIndex);
+          const { monthKey, weekIndex } = getWeekContextForDate(dateKey);
+          const month = GoalHierarchyStorage.ensureMonth(prev, monthKey);
+          const week = GoalHierarchyStorage.ensureWeek(month, weekIndex);
           const day = GoalHierarchyStorage.ensureDay(week, dateKey);
-          return patchDay(prev, selectedMonthKey, selectedWeekIndex, dateKey, {
+          return patchDay(prev, monthKey, weekIndex, dateKey, {
             items: patchItems(day.items, itemId, 'toggle'),
           });
         }
@@ -270,10 +298,11 @@ export function useGoalHierarchy() {
           });
         }
         if (level === 'day' && dateKey) {
-          const month = GoalHierarchyStorage.ensureMonth(prev, selectedMonthKey);
-          const week = GoalHierarchyStorage.ensureWeek(month, selectedWeekIndex);
+          const { monthKey, weekIndex } = getWeekContextForDate(dateKey);
+          const month = GoalHierarchyStorage.ensureMonth(prev, monthKey);
+          const week = GoalHierarchyStorage.ensureWeek(month, weekIndex);
           const day = GoalHierarchyStorage.ensureDay(week, dateKey);
-          return patchDay(prev, selectedMonthKey, selectedWeekIndex, dateKey, {
+          return patchDay(prev, monthKey, weekIndex, dateKey, {
             items: patchItems(day.items, itemId, 'remove'),
           });
         }
@@ -290,6 +319,8 @@ export function useGoalHierarchy() {
     selectedWeekIndex,
     currentMonth,
     currentWeek,
+    primaryRowDays,
+    secondaryRowDays,
     weeksInMonth,
     selectMonth,
     selectWeek,

@@ -59,11 +59,28 @@ export function getWeeksInMonth(monthKey: string): { weekIndex: number; weekStar
   return weeks;
 }
 
-/** Mon–Fri date keys for a week starting on Monday. */
+/** Mon–Sun date keys for a week starting on Monday. */
 export function getWeekdayDates(weekStartKey: string): string[] {
   return Array.from({ length: GOAL_HIERARCHY_WEEKDAY_COUNT }, (_, i) =>
     addDaysToDateKey(weekStartKey, i)
   );
+}
+
+/** Monday date key for the week immediately after `weekStartKey`. */
+export function getNextWeekStartKey(weekStartKey: string): string {
+  return addDaysToDateKey(weekStartKey, 7);
+}
+
+/** Resolve month tab and week index for a calendar date. */
+export function getWeekContextForDate(dateKey: string): {
+  monthKey: string;
+  weekIndex: number;
+} {
+  const monthKey = dateKey.slice(0, 7);
+  return {
+    monthKey,
+    weekIndex: getWeekIndexContainingDate(monthKey, dateKey),
+  };
 }
 
 export function getWeekIndexContainingDate(monthKey: string, dateKey: string): number {

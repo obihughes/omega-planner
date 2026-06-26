@@ -55,6 +55,8 @@ export {
   getMonthTabs,
   getWeeksInMonth,
   getWeekdayDates,
+  getNextWeekStartKey,
+  getWeekContextForDate,
   getWeekIndexContainingDate,
   formatMonthLabel,
   monthKeyToDate,

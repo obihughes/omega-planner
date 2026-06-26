@@ -601,7 +601,7 @@ export const appHierarchy: AppMapNode[] = [
     id: 'goal-hierarchy',
     label: 'Goal Hierarchy',
     kind: 'area',
-    description: 'Main sidebar nav at /goal-hierarchy. Multi-level goals: month → week → Mon–Fri days.',
+    description: 'Main sidebar nav at /goal-hierarchy. Multi-level goals: month → week → two-row day grid (Mon–Fri + Sat–Wed preview).',
     children: [
       {
         id: 'gh-route',
@@ -619,7 +619,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'GoalHierarchyView',
         kind: 'component',
         path: 'components/goal-hierarchy/GoalHierarchyView.tsx',
-        editHint: 'Month tabs, week tabs, weekly panel, Mon–Fri day columns with plain-text goals (DayGoalTextarea).',
+        editHint: 'Month tabs, week tabs, weekly panel, two 5-column day rows (Mon–Fri primary, Sat–Wed muted preview) with plain-text goals (DayGoalTextarea).',
       },
       {
         id: 'gh-day-textarea',

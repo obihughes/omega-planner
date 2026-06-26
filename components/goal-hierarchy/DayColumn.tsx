@@ -7,27 +7,40 @@ import { dateFromDateKey, isToday } from '@/utils/dateUtils';
 import type { HierarchyDaySlot } from '@/types/goalHierarchy';
 import { DayGoalTextarea } from './DayGoalTextarea';
 
-const WEEKDAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-
 export interface DayColumnProps {
-  dayIndex: number;
   day: HierarchyDaySlot;
   onSummaryChange: (summary: string) => void;
+  /** Muted styling for Sat–Wed preview row (includes next-week days). */
+  isNextWeekPreview?: boolean;
 }
 
-export function DayColumn({ dayIndex, day, onSummaryChange }: DayColumnProps) {
+export function DayColumn({ day, onSummaryChange, isNextWeekPreview = false }: DayColumnProps) {
   const date = dateFromDateKey(day.dateKey);
   const today = isToday(day.dateKey);
   return (
     <div
       className={cn(
         'flex flex-col min-w-0 rounded-lg border border-border bg-card p-3 space-y-2',
-        today && 'ring-2 ring-primary/40 border-primary/30'
+        today && 'ring-2 ring-primary/40 border-primary/30',
+        isNextWeekPreview && 'bg-muted/40 border-border/60 shadow-inner'
       )}
     >
       <div className="shrink-0">
-        <p className="text-xs font-semibold text-foreground">{WEEKDAY_NAMES[dayIndex]}</p>
-        <p className={cn('text-xs text-muted-foreground', today && 'text-primary font-medium')}>
+        <p
+          className={cn(
+            'text-xs font-semibold text-foreground',
+            isNextWeekPreview && 'text-muted-foreground'
+          )}
+        >
+          {format(date, 'EEEE')}
+        </p>
+        <p
+          className={cn(
+            'text-xs text-muted-foreground',
+            today && 'text-primary font-medium',
+            isNextWeekPreview && !today && 'text-muted-foreground/70'
+          )}
+        >
           {format(date, 'MMM d')}
         </p>
       </div>

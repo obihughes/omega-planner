@@ -56,7 +56,11 @@ export type {
   HierarchyMonthSlot,
   GoalHierarchyStorageData,
 } from './goalHierarchy';
-export { GOAL_HIERARCHY_WEEKDAY_COUNT } from './goalHierarchy';
+export {
+  GOAL_HIERARCHY_WEEKDAY_COUNT,
+  GOAL_HIERARCHY_PRIMARY_ROW_COUNT,
+  GOAL_HIERARCHY_PREVIEW_ROW_COUNT,
+} from './goalHierarchy';
 
 export type {
   MonthBoardNote,

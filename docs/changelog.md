@@ -1,3 +1,12 @@
+## 2026-06-26
+
+- **Goal Hierarchy: weekend + next-week preview rows** (2026-06-26)
+  - Day grid split into two 5-column rows: Mon–Fri (primary) and Sat–Wed (muted preview row).
+  - Preview row includes current-week Sat–Sun plus Mon–Wed from the following week; all remain fully editable.
+  - Weeks now store seven day slots (Mon–Sun); legacy five-day weeks migrate by `dateKey` on load.
+  - Day edits resolve month/week from `dateKey`, so next-week preview days save to the correct week.
+  - **Files affected**: `types/goalHierarchy.ts`, `utils/goalHierarchyDates.ts`, `utils/goalHierarchyStorage.ts`, `hooks/useGoalHierarchy.ts`, `components/goal-hierarchy/DayColumn.tsx`, `components/goal-hierarchy/GoalHierarchyView.tsx`, `types/index.ts`, `utils/index.ts`, `docs/changelog.md`, `docs/structure.md`
+
 ## 2026-06-24
 
 - **Goal Hierarchy: fix Enter splitting day goal lines** (2026-06-24)
