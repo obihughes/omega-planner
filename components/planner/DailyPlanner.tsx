@@ -16,7 +16,7 @@ import { TaskInboxSidebar } from './TaskInboxSidebar';
 import { PinnedTasksSidebar } from './PinnedTasksSidebar';
 import { DailyEventsContainer } from './DailyEventsContainer';
 import { TaskAssignmentCalendar } from './TaskAssignmentCalendar';
-import { MonthlyTimelineView } from '../calendar/MonthlyTimelineView';
+import { MergedDailyView } from './MergedDailyView';
 import { useDailyPlanner } from '../../hooks/useDailyPlannerState';
 import { useCalendarData } from '../../hooks/useCalendarData';
 import { 
@@ -48,7 +48,6 @@ type DayViewMode = 'scheduled' | 'class';
 
 export default function DailyPlanner() {
   const { viewMode, setViewMode } = useViewMode();
-  const calendarContainerRef = useRef<HTMLDivElement>(null);
   const {
     tasksByDate,
     poolTasks: combinedPoolTasks,
@@ -269,16 +268,10 @@ export default function DailyPlanner() {
     showImportClassesFeedback,
   ]);
 
-  // Scroll to calendar when monthly view is activated
+  // Scroll to merged scheduling view when activated
   useEffect(() => {
-    if (viewMode === 'monthly' && calendarContainerRef.current) {
-      // Small delay to ensure the view has rendered
-      setTimeout(() => {
-        calendarContainerRef.current?.scrollIntoView({ 
-          behavior: 'auto',
-          block: 'start' 
-        });
-      }, 50);
+    if (viewMode === 'monthly') {
+      window.scrollTo({ top: 0, behavior: 'auto' });
     }
   }, [viewMode]);
 
@@ -654,37 +647,10 @@ export default function DailyPlanner() {
     setViewMode('daily');
   }, [setTopDayOffset, setViewMode]);
 
-  return (
-    <div className="h-full bg-background text-foreground transition-colors">
-      <div className="w-full mx-auto h-full">
-        {activeEditModalTask && (
-          <EditTaskModal
-            taskToEdit={activeEditModalTask}
-            onSave={saveTaskFromModal}
-            onClose={closeEditModal}
-            onColorChange={handleTaskColorChange}
-            onPinTask={handlePinTask}
-                          onMoveToInbox={moveTaskToInbox}
-            pinnedTasks={pinnedTasks}
-            onDelete={deleteTaskHandlerForModal}
-            onCopyAndEnterPasteMode={handleCopyAndEnterPasteMode}
-          />
-        )}
-        {viewingTaskNotes && (
-          <ViewTaskNotesModal task={viewingTaskNotes} onClose={closeViewNotesModal} onEdit={openEditModal} />
-        )}
-        <ConflictResolutionModal
-          isOpen={!!pendingClassCopyPlan && (pendingClassCopyPlan.status === 'needs_resolution' || pendingClassCopyPlan.status === 'all_conflicts')}
-          targetDateLabel={classCopyTargetLabel}
-          conflicts={pendingClassCopyPlan?.conflicts ?? []}
-          onResolve={handleClassCopyResolve}
-        />
-
-
-
-        {/* Conditional Content Based on View Mode */}
-        {viewMode === 'daily' && (
-          <>
+  const renderDailyPanels = (panelOptions: { deleteMode?: boolean; showSchedulingButton?: boolean } = {}) => {
+    const { deleteMode = false, showSchedulingButton = true } = panelOptions;
+    return (
+      <>
             {/* Daily Events Container */}
             <DailyEventsContainer
               events={calendarData.events}
@@ -970,14 +936,16 @@ export default function DailyPlanner() {
                       >
                         Back to Calendar
                       </Button>
-                      <Button
-                        size="sm"
-                        title="Open Scheduling (Monthly) view"
-                        onClick={() => setViewMode('monthly')}
-                        className="ml-2"
-                      >
-                        Scheduling
-                      </Button>
+                      {showSchedulingButton && (
+                        <Button
+                          size="sm"
+                          title="Open Scheduling (Monthly) view"
+                          onClick={() => setViewMode('monthly')}
+                          className="ml-2"
+                        >
+                          Scheduling
+                        </Button>
+                      )}
                       {isClient && getRelativeDayLabel(topDayOffset) && (
                         <span className="text-xs text-muted-foreground ml-2 px-1.5 py-0.5 bg-muted rounded-sm">
                           {getRelativeDayLabel(topDayOffset)}
@@ -1166,6 +1134,8 @@ export default function DailyPlanner() {
                             onResizeStart={(task, edge, e) => handleResizeStart(task, edge, e)}
                             onDropFromPool={handleDropFromPool}
                             targetDate={dateFromDateKey(getCalendarDateForColumn(topDayOffset))}
+                            deleteMode={deleteMode}
+                            onDeleteTask={handleDeleteAnyTask}
                           />
                         ))}
                     </div>
@@ -1418,13 +1388,67 @@ export default function DailyPlanner() {
                             onResizeStart={(task, edge, e) => handleResizeStart(task, edge, e)}
                             onDropFromPool={handleDropFromPool}
                             targetDate={dateFromDateKey(getCalendarDateForColumn(bottomDayOffset))}
+                            deleteMode={deleteMode}
+                            onDeleteTask={handleDeleteAnyTask}
                           />
                         ))}
                     </div>
                   </div>
                 </div>
             </div>
-          </>
+      </>
+    );
+  };
+
+  return (
+    <div className="h-full bg-background text-foreground transition-colors">
+      <div className="w-full mx-auto h-full">
+        {activeEditModalTask && (
+          <EditTaskModal
+            taskToEdit={activeEditModalTask}
+            onSave={saveTaskFromModal}
+            onClose={closeEditModal}
+            onColorChange={handleTaskColorChange}
+            onPinTask={handlePinTask}
+                          onMoveToInbox={moveTaskToInbox}
+            pinnedTasks={pinnedTasks}
+            onDelete={deleteTaskHandlerForModal}
+            onCopyAndEnterPasteMode={handleCopyAndEnterPasteMode}
+          />
+        )}
+        {viewingTaskNotes && (
+          <ViewTaskNotesModal task={viewingTaskNotes} onClose={closeViewNotesModal} onEdit={openEditModal} />
+        )}
+        <ConflictResolutionModal
+          isOpen={!!pendingClassCopyPlan && (pendingClassCopyPlan.status === 'needs_resolution' || pendingClassCopyPlan.status === 'all_conflicts')}
+          targetDateLabel={classCopyTargetLabel}
+          conflicts={pendingClassCopyPlan?.conflicts ?? []}
+          onResolve={handleClassCopyResolve}
+        />
+
+
+
+        {/* Conditional Content Based on View Mode */}
+        {viewMode === 'daily' && renderDailyPanels()}
+        {viewMode === 'monthly' && (
+          <MergedDailyView
+            poolTasks={generalPoolTasks}
+            scheduledTasks={tasksByDate}
+            pinnedTasks={pinnedTasks}
+            topDayOffset={topDayOffset}
+            setTopDayOffset={setTopDayOffset}
+            onAssignTask={handleAssignTask}
+            onUnassignTask={handleUnassignTask}
+            onRescheduleTask={handleRescheduleTask}
+            onDeleteTask={handleDeleteAnyTask}
+            getPoolTasksForDate={getPoolTasksForDate}
+            openEditModal={openEditModal}
+            onDropFromPool={handleDropFromPool}
+            savedDays={savedDays}
+            applySavedDay={applySavedDay}
+          >
+            {({ deleteMode }) => renderDailyPanels({ deleteMode, showSchedulingButton: false })}
+          </MergedDailyView>
         )}
 
         {/* Weekly View */}
@@ -1434,55 +1458,6 @@ export default function DailyPlanner() {
 
 
 
-        {/* Monthly View */}
-        {viewMode === 'monthly' && (
-          <div ref={calendarContainerRef} className="h-[80vh]">
-              <MonthlyTimelineView
-                poolTasks={generalPoolTasks}
-                scheduledTasks={tasksByDate}
-                pinnedTasks={pinnedTasks}
-                onAssignTask={handleAssignTask}
-                onUnassignTask={handleUnassignTask}
-                onRescheduleTask={handleRescheduleTask}
-                onUpdateTask={handleUpdateTask}
-                onDeleteTask={handleDeleteAnyTask}
-                onDropFromPool={handleDropFromPool}
-                getPoolTasksForDate={(dateKey) => {
-                  const tasks = getPoolTasksForDate(dateKey);
-                  console.log(`🔍 getPoolTasksForDate(${dateKey}):`, tasks.map(t => ({ id: t.id, name: t.name, baseDate: t.baseDate })));
-                  return tasks;
-                }}
-                openEditModal={openEditModal}
-                createPoolTask={createPoolTask}
-                onNavigateToDaily={(date) => {
-                  // Switch to daily view and navigate to the selected date
-                  setViewMode('daily');
-                  // Calculate day offset from today
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  const targetDate = new Date(date);
-                  targetDate.setHours(0, 0, 0, 0);
-                  const dayOffset = Math.floor((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                  setTopDayOffset(dayOffset);
-                  setBottomDayOffset(dayOffset);
-                }}
-                timelineDragContext={{
-                  draggingTask,
-                  resizingTask,
-                  copyingTaskData,
-                  targetCopyDayOffset,
-                  setTargetCopyDayOffset,
-                  handleDropCopy,
-                  handleDragStart,
-                  onResizeStart: (task, edge, e) => handleResizeStart(task, edge, e),
-                  onCopy: startCopy,
-                  onViewNotes: openViewNotesModal,
-                  onDoubleClickAdd: (date, startHour) => createTimelineTask(date, startHour),
-                  lastDoubleClickTimestampRef,
-                }}
-              />
-            </div>
-        )}
 
 
       </div>

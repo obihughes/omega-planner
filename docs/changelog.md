@@ -1,5 +1,12 @@
 ## 2026-07-04
 
+- **Daily Planner: merged scheduling + daily view** (2026-07-04)
+  - Scheduling view (`?view=monthly`) now combines the left sidebar (mini calendar + inbox) with the full daily timeline panels on the right.
+  - Bulk actions (Delete Mode, Clear Day, Apply Saved Day) moved to an expandable popover in the sidebar header.
+  - Mini calendar date selection syncs with the top day panel via `topDayOffset`.
+  - New components: `MergedDailyView.tsx`, `SchedulingSidebar.tsx`.
+  - **Files affected**: `components/planner/DailyPlanner.tsx`, `components/planner/MergedDailyView.tsx`, `components/planner/SchedulingSidebar.tsx`, `components/planner/index.ts`, `docs/planner.md`, `components/planner/README.md`, `docs/changelog.md`
+
 - **Daily Planner: import class schedule to timeline** (2026-07-04)
   - Added **Import Classes** quick action on top and bottom day panels to copy recurring class schedule entries into the planner timeline for the currently viewed date.
   - Conflict detection warns when imported classes overlap existing scheduled tasks; users can skip conflicting classes, replace existing tasks, or cancel.

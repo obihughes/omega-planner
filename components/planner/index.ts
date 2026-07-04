@@ -11,4 +11,6 @@ export { DailyEventsContainer } from './DailyEventsContainer';
 export { WeeklyEventsDisplay } from './WeeklyEventsDisplay';
 export { MiniDailyTimeline } from './MiniDailyTimeline';
 export { ConflictResolutionModal } from './ConflictResolutionModal';
+export { MergedDailyView } from './MergedDailyView';
+export { SchedulingSidebar } from './SchedulingSidebar';
  

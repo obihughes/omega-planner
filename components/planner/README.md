@@ -34,10 +34,29 @@ This directory contains all components related to the daily planning functionali
    - Space-efficient row layout
    
 3. **Scheduling View** (Monthly):
-   - MonthlyTimelineView with mini calendar, inbox, and daily timeline
-   - Inbox: Add unscheduled tasks; drag to calendar date (assigns to pool) or to timeline (schedules with time)
-   - Task pool row: Draggable tasks for selected date; drag to timeline or click Schedule (9 AM)
-   - Mini Daily Timeline: Shows scheduled + unscheduled; accepts drops from inbox/pool; **supports drag/resize/copy** (when used from Daily Planner page)
+   - **MergedDailyView**: Left sidebar (`SchedulingSidebar`) with mini calendar, inbox, and bulk-actions popover; right panel uses the same full daily timeline as Daily view
+   - Inbox: Add unscheduled tasks; drag to calendar date or timeline to schedule
+   - Mini calendar: Click a date to jump the top day panel; drag tasks onto dates to assign
+   - Bulk actions (sidebar `…` menu): Delete Mode, Clear Day, Apply/Replace Saved Day
+   - Full timeline supports drag/resize/copy/delete-mode (same as Daily view)
+
+### MergedDailyView
+**File**: `MergedDailyView.tsx`
+**Purpose**: Unified scheduling layout combining sidebar + full daily timeline panels
+
+**Features:**
+- Left: `SchedulingSidebar` (mini calendar, inbox, bulk-actions popover)
+- Right: Full daily view content (events, pool/pinned bar, dual day panels)
+- Calendar selection drives `topDayOffset` for the top day panel
+
+### SchedulingSidebar
+**File**: `SchedulingSidebar.tsx`
+**Purpose**: Left sidebar for merged scheduling view
+
+**Features:**
+- Mini month calendar with task indicators
+- Inbox for unscheduled pool tasks (drag to calendar or timeline)
+- Bulk-actions popover: Delete Mode, Clear Day, Apply/Replace Saved Day
 
 ### TaskAssignmentCalendar
 **File**: `TaskAssignmentCalendar.tsx`

@@ -17,10 +17,10 @@ The Daily Planner is the core component for task scheduling and timeline managem
 - **Daily Timeline Add/Edit**: Double-click add now uses `createTimelineTask` to set proper creation context; drag/resize commits now use `handleMouseUpGlobal` for reliable saves.
 
 ### Scheduling (Monthly) Bulk Actions
-- **Delete Mode**: Toggle a mode that shows an X on each scheduled task in the mini daily timeline; click to delete quickly.
-- **Clear Day**: Remove all tasks for the selected date with one action.
-- **Clone Saved Day**: Entry point provided; navigates to Daily view where Saved Days can be applied.
-- **Drag/Resize/Copy**: The mini timeline supports the same drag, resize, and copy-paste as Daily view when accessed from the Daily Planner page.
+- **Delete Mode**: Toggle via sidebar bulk-actions menu (`…`); shows an X on each scheduled task in the full daily timeline; click to delete quickly.
+- **Clear Day**: Remove all scheduled tasks for the selected date with one action (bulk-actions menu).
+- **Apply Saved Day**: Apply or replace with a saved day template from the bulk-actions menu.
+- **Merged layout**: Scheduling view shows mini calendar + inbox on the left and full dual-day timeline panels on the right (same drag/resize/copy as Daily view).
 
 ### Task Resize
 - **Edge Resizing**: Resize tasks by dragging the start or end edges
@@ -53,6 +53,12 @@ The Daily Planner is the core component for task scheduling and timeline managem
 
 ### DailyPlanner
 Main component that orchestrates all planner functionality.
+
+### MergedDailyView
+Unified scheduling layout: `SchedulingSidebar` (left) + full daily timeline panels (right). Used when `viewMode === 'monthly'`.
+
+### SchedulingSidebar
+Mini calendar, inbox tasks, and bulk-actions popover (Delete Mode, Clear Day, Apply Saved Day).
 
 ### TimelineColumn
 Renders individual timeline sections with tasks and time markers. **Shared** by both Daily view and Scheduling (Monthly) view via `MiniDailyTimeline`, eliminating duplicated timeline logic. Supports read-only mode (e.g. class schedule), drag/resize/copy, and pool drops.
