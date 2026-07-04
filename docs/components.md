@@ -68,7 +68,7 @@ Reusable weekly goal UI and colors used by Calendar weekly overview and Goal Hie
 ### Goal Hierarchy (`components/goal-hierarchy/GoalHierarchyView.tsx`)
 **Page:** `app/goal-hierarchy/page.tsx`
 
-Multi-level planning: month summary + sub-goals, week tabs with weekly summary + sub-goals, and a two-row day grid (Mon–Fri primary, Sat–Wed muted preview). Daily goals use the same weekly goal cards and storage as Calendar weekly overview (`WeeklyGoalsListForDay`, `DayColumn`).
+Multi-level planning: month and week goal summaries, and a two-row day grid (Mon–Fri primary, Sat–Wed muted preview). Daily goals use the same weekly goal cards and storage as Calendar weekly overview (`WeeklyGoalsListForDay`, `DayColumn`).
 
 ### ChecklistSidebar (`components/calendar/ChecklistSidebar.tsx`)
 Weekly notes checklist panel. Rendered only when opened via "Open Notes" in Weekly Overview.

@@ -23,9 +23,6 @@ export function GoalHierarchyView() {
     selectMonth,
     selectWeek,
     setSummary,
-    addItem,
-    toggleItem,
-    removeItem,
   } = useGoalHierarchy();
 
   const visibleDateKeys = useMemo(() => {
@@ -92,14 +89,9 @@ export function GoalHierarchyView() {
 
         <section className="space-y-2">
           <GoalLevelBlock
-            level="month"
             label={`${formatMonthLabel(selectedMonthKey)} goal`}
             summary={currentMonth.summary}
-            items={currentMonth.items}
             onSummaryChange={(s) => setSummary('month', s)}
-            onAddItem={(t) => addItem('month', t)}
-            onToggleItem={(id) => toggleItem('month', id)}
-            onRemoveItem={(id) => removeItem('month', id)}
           />
         </section>
 
@@ -129,14 +121,9 @@ export function GoalHierarchyView() {
         <section className="rounded-xl border border-border bg-muted/20 p-4 space-y-4">
           <div className="max-w-xl">
             <GoalLevelBlock
-              level="week"
               label={`Week ${selectedWeekIndex + 1} goal`}
               summary={currentWeek.summary}
-              items={currentWeek.items}
               onSummaryChange={(s) => setSummary('week', s)}
-              onAddItem={(t) => addItem('week', t)}
-              onToggleItem={(id) => toggleItem('week', id)}
-              onRemoveItem={(id) => removeItem('week', id)}
             />
           </div>
 

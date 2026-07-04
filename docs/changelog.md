@@ -1,5 +1,10 @@
 ## 2026-07-03
 
+- **Goal Hierarchy: simplify month/week UI** (2026-07-03)
+  - Removed sub-goal inputs and checklists from month and week levels; `GoalLevelBlock` now shows only the goal summary textarea.
+  - Existing sub-goal data remains in localStorage but is no longer rendered.
+  - **Files affected**: `components/goal-hierarchy/GoalLevelBlock.tsx`, `components/goal-hierarchy/GoalHierarchyView.tsx`, `docs/changelog.md`, `docs/structure.md`, `docs/components.md`, `docs/README.md`, `README.md`
+
 - **Goal Hierarchy: daily goals sync with Weekly Overview** (2026-07-03)
   - Replaced plain-text day goal inputs (`DayGoalTextarea`) with the same styled weekly goal cards used in Calendar weekly overview.
   - Day goals now read/write `omega-planner-weekly-goals-v1` via `useWeeklyGoals`; edits in Goal Hierarchy appear in `/calendar?view=weekly-goals` and vice versa.
