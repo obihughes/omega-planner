@@ -1,9 +1,21 @@
 'use client';
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Task, PinnedTask } from '@/types/planner';
 import { SchedulingSidebar } from './SchedulingSidebar';
 import { getCalendarDateForColumn, dateFromDateKey, getDateKey } from '@/utils/dateUtils';
+import { PIXELS_PER_HOUR, TIMELINE_COLUMN_HEIGHT } from '@/lib/constants';
+
+/** Each timeline period (night/morning/afternoon/evening) spans 6 hours */
+const PERIOD_HOURS = 6;
+const MIN_PIXELS_PER_HOUR = 40;
+const MIN_COLUMN_HEIGHT_PX = 72;
+
+export interface MergedDailyViewRenderOptions {
+  deleteMode: boolean;
+  pixelsPerHour: number;
+  columnHeightPx: number;
+}
 
 export interface MergedDailyViewProps {
   poolTasks: Task[];
@@ -29,7 +41,7 @@ export interface MergedDailyViewProps {
   onDropFromPool?: (task: Task, targetDate: Date, startHour: number) => void;
   savedDays: Array<{ id: string; name: string; dateKey: string; createdAt: string }>;
   applySavedDay: (savedDayId: string, targetDateKey: string, replace: boolean) => void;
-  children: (options: { deleteMode: boolean }) => React.ReactNode;
+  children: (options: MergedDailyViewRenderOptions) => React.ReactNode;
 }
 
 export function MergedDailyView({
@@ -50,6 +62,43 @@ export function MergedDailyView({
   children,
 }: MergedDailyViewProps) {
   const [deleteMode, setDeleteMode] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [timelineScale, setTimelineScale] = useState({
+    pixelsPerHour: PIXELS_PER_HOUR,
+    columnHeightPx: TIMELINE_COLUMN_HEIGHT,
+  });
+
+  useEffect(() => {
+    const contentEl = contentRef.current;
+    if (!contentEl) return;
+
+    const updateScale = () => {
+      const availableWidth = contentEl.clientWidth;
+      if (availableWidth <= 0) return;
+
+      const rawPixelsPerHour = Math.floor(availableWidth / PERIOD_HOURS);
+      const pixelsPerHour = Math.max(
+        MIN_PIXELS_PER_HOUR,
+        Math.min(PIXELS_PER_HOUR, rawPixelsPerHour)
+      );
+      const scale = pixelsPerHour / PIXELS_PER_HOUR;
+      const columnHeightPx = Math.max(
+        MIN_COLUMN_HEIGHT_PX,
+        Math.round(TIMELINE_COLUMN_HEIGHT * scale)
+      );
+
+      setTimelineScale((prev) =>
+        prev.pixelsPerHour === pixelsPerHour && prev.columnHeightPx === columnHeightPx
+          ? prev
+          : { pixelsPerHour, columnHeightPx }
+      );
+    };
+
+    updateScale();
+    const observer = new ResizeObserver(updateScale);
+    observer.observe(contentEl);
+    return () => observer.disconnect();
+  }, []);
 
   const selectedDate = useMemo(
     () => dateFromDateKey(getCalendarDateForColumn(topDayOffset)),
@@ -103,8 +152,8 @@ export function MergedDailyView({
         onApplySavedDay={handleApplySavedDay}
       />
 
-      <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden p-3">
-        {children({ deleteMode })}
+      <div ref={contentRef} className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden p-3">
+        {children({ deleteMode, ...timelineScale })}
       </div>
     </div>
   );

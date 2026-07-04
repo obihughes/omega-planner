@@ -171,6 +171,7 @@ export default function DailyPlanner() {
   const [classCopyTargetLabel, setClassCopyTargetLabel] = useState('');
   const [importClassesMessage, setImportClassesMessage] = useState<string | null>(null);
   const lastDoubleClickTimestampRef = useRef<number>(0);
+  const activePixelsPerHourRef = useRef(APP_PIXELS_PER_HOUR);
   
   // Get current date key for saved days functionality
   const currentDateKey = useMemo(() => getCalendarDateForColumn(topDayOffset), [topDayOffset]);
@@ -375,7 +376,7 @@ export default function DailyPlanner() {
     const { task: originalTaskAtResizeStart, edge, initialMouseX, initialStartHour, initialDuration } = resizingTask;
     
     const dx = e.clientX - initialMouseX;
-    const dHours = dx / APP_PIXELS_PER_HOUR;
+    const dHours = dx / activePixelsPerHourRef.current;
 
     let livePreviewStartHour = initialStartHour;
     let livePreviewDuration = initialDuration;
@@ -475,7 +476,7 @@ export default function DailyPlanner() {
     }
 
     if (targetDayOffset !== null) {
-      const hourInBlock = relativeXInTimelineSegment / APP_PIXELS_PER_HOUR;
+      const hourInBlock = relativeXInTimelineSegment / activePixelsPerHourRef.current;
       let newStartHour = baseHourForCalc + hourInBlock;
       const taskDuration = draggedTaskItem.duration || APP_MIN_TASK_DURATION;
       newStartHour = Math.max(APP_TIMELINE_START_HOUR, newStartHour);
@@ -647,8 +648,19 @@ export default function DailyPlanner() {
     setViewMode('daily');
   }, [setTopDayOffset, setViewMode]);
 
-  const renderDailyPanels = (panelOptions: { deleteMode?: boolean; showSchedulingButton?: boolean } = {}) => {
-    const { deleteMode = false, showSchedulingButton = true } = panelOptions;
+  const renderDailyPanels = (panelOptions: {
+    deleteMode?: boolean;
+    showSchedulingButton?: boolean;
+    pixelsPerHour?: number;
+    columnHeightPx?: number;
+  } = {}) => {
+    const {
+      deleteMode = false,
+      showSchedulingButton = true,
+      pixelsPerHour = APP_PIXELS_PER_HOUR,
+      columnHeightPx = TIMELINE_COLUMN_HEIGHT,
+    } = panelOptions;
+    activePixelsPerHourRef.current = pixelsPerHour;
     return (
       <>
             {/* Daily Events Container */}
@@ -1125,8 +1137,8 @@ export default function DailyPlanner() {
                             setTargetCopyDayOffset={setTargetCopyDayOffset}
                             lastDoubleClickTimestampRef={lastDoubleClickTimestampRef}
                             handleDragStart={handleDragStart}
-                            pixelsPerHour={APP_PIXELS_PER_HOUR}
-                            columnHeightPx={TIMELINE_COLUMN_HEIGHT}
+                            pixelsPerHour={pixelsPerHour}
+                            columnHeightPx={columnHeightPx}
                             readOnly={topDayViewMode === 'class'}
                             onDoubleClickAdd={(date, startHour) => createTimelineTask(date, startHour)}
                             onCopy={startCopy}
@@ -1379,8 +1391,8 @@ export default function DailyPlanner() {
                             setTargetCopyDayOffset={setTargetCopyDayOffset}
                             lastDoubleClickTimestampRef={lastDoubleClickTimestampRef}
                             handleDragStart={handleDragStart}
-                            pixelsPerHour={APP_PIXELS_PER_HOUR}
-                            columnHeightPx={TIMELINE_COLUMN_HEIGHT}
+                            pixelsPerHour={pixelsPerHour}
+                            columnHeightPx={columnHeightPx}
                             readOnly={bottomDayViewMode === 'class'}
                             onDoubleClickAdd={(date, startHour) => createTimelineTask(date, startHour)}
                             onCopy={startCopy}
@@ -1447,7 +1459,9 @@ export default function DailyPlanner() {
             savedDays={savedDays}
             applySavedDay={applySavedDay}
           >
-            {({ deleteMode }) => renderDailyPanels({ deleteMode, showSchedulingButton: false })}
+            {({ deleteMode, pixelsPerHour, columnHeightPx }) =>
+              renderDailyPanels({ deleteMode, showSchedulingButton: false, pixelsPerHour, columnHeightPx })
+            }
           </MergedDailyView>
         )}
 

@@ -55,7 +55,7 @@ The Daily Planner is the core component for task scheduling and timeline managem
 Main component that orchestrates all planner functionality.
 
 ### MergedDailyView
-Unified scheduling layout: `SchedulingSidebar` (left) + full daily timeline panels (right). Used when `viewMode === 'monthly'`.
+Unified scheduling layout: `SchedulingSidebar` (left) + full daily timeline panels (right). Used when `viewMode === 'monthly'`. Measures the right-hand content area with `ResizeObserver` and passes scaled `pixelsPerHour` / `columnHeightPx` to timeline panels so they fit beside the sidebar (instead of full-screen 211px/hour density).
 
 ### SchedulingSidebar
 Mini calendar, inbox tasks, and bulk-actions popover (Delete Mode, Clear Day, Apply Saved Day).

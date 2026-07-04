@@ -1,5 +1,10 @@
 ## 2026-07-04
 
+- **Daily Planner: scale scheduling view timeline to sidebar layout** (2026-07-04)
+  - Scheduling view timeline now measures the right-hand content area and scales `pixelsPerHour` / column height to fit beside the 320px sidebar instead of using full-screen density (211px/hour).
+  - Drag and resize in scheduling view use the same scaled density via `activePixelsPerHourRef`.
+  - **Files affected**: `components/planner/MergedDailyView.tsx`, `components/planner/DailyPlanner.tsx`, `components/planner/index.ts`, `docs/planner.md`, `components/planner/README.md`, `docs/changelog.md`
+
 - **Daily Planner: merged scheduling + daily view** (2026-07-04)
   - Scheduling view (`?view=monthly`) now combines the left sidebar (mini calendar + inbox) with the full daily timeline panels on the right.
   - Bulk actions (Delete Mode, Clear Day, Apply Saved Day) moved to an expandable popover in the sidebar header.

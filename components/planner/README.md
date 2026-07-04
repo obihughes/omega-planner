@@ -48,6 +48,7 @@ This directory contains all components related to the daily planning functionali
 - Left: `SchedulingSidebar` (mini calendar, inbox, bulk-actions popover)
 - Right: Full daily view content (events, pool/pinned bar, dual day panels)
 - Calendar selection drives `topDayOffset` for the top day panel
+- **Responsive timeline scale**: `ResizeObserver` on the content panel computes `pixelsPerHour` and `columnHeightPx` from available width (6 hours per period) and passes them to `DailyPlanner` via render props so drag/resize stay aligned
 
 ### SchedulingSidebar
 **File**: `SchedulingSidebar.tsx`
