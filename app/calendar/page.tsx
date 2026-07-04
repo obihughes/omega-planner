@@ -65,7 +65,7 @@ export default function CalendarPage() {
   useEffect(() => {
     const v = params?.get('view');
     if (v === 'weekly-goals') {
-      router.replace('/goal-hierarchy');
+      router.replace('/weekly-overview');
       return;
     }
     if (v === 'monthly' || v === 'yearly' || v === 'timeline') {

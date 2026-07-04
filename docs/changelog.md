@@ -1,5 +1,12 @@
 ## 2026-07-04
 
+- **Weekly Overview: merge Goal Hierarchy into single route** (2026-07-04)
+  - Consolidated Goal Hierarchy and Weekly Overview under one **Weekly Overview** page at `/weekly-overview`.
+  - Removed duplicate sidebar entries (Goal Hierarchy top-level item and Calendar → Weekly Overview sub-link); single **Weekly Overview** nav item remains.
+  - Legacy `/goal-hierarchy` redirects to `/weekly-overview`; `/calendar?view=weekly-goals` redirects to `/weekly-overview`.
+  - Month/week summaries and 7×2 daily goals grid unchanged; internal component folder `components/goal-hierarchy/` retained.
+  - **Files affected**: `app/weekly-overview/page.tsx`, `app/goal-hierarchy/page.tsx`, `components/ui/Navigation.tsx`, `app/calendar/page.tsx`, `components/goal-hierarchy/GoalHierarchyView.tsx`, `lib/appHierarchy.ts`, `docs/changelog.md`, `docs/structure.md`, `docs/components.md`, `docs/README.md`, `docs/planner.md`, `README.md`
+
 - **Goal Hierarchy: tighter header and unified week panel** (2026-07-04)
   - Removed the in-page **Goal Hierarchy** title and subtitle to reclaim vertical space.
   - Moved **Week N goal** notes inside the week panel container so the textarea, folder tabs, and day grid share one outer border.

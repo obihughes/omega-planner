@@ -1,15 +1,15 @@
 'use client';
 
-import React from 'react';
-import { AppLayout } from '@/components/ui/AppLayout';
-import { GoalHierarchyView } from '@/components/goal-hierarchy';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-export default function GoalHierarchyPage() {
-  return (
-    <AppLayout>
-      <div className="h-full w-full max-w-none">
-        <GoalHierarchyView />
-      </div>
-    </AppLayout>
-  );
+/** Legacy route — redirects to /weekly-overview */
+export default function GoalHierarchyRedirectPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace('/weekly-overview');
+  }, [router]);
+
+  return null;
 }

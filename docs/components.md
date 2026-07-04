@@ -51,14 +51,14 @@ Full year calendar view.
 Monthly calendar view.
 
 ### WeeklyGoalsCalendarView (`components/calendar/WeeklyGoalsCalendarView.tsx`)
-Legacy 4-week weekly goals grid (still available if embedded elsewhere). Primary weekly planning UI is now Goal Hierarchy at `/goal-hierarchy`.
+Legacy 4-week weekly goals grid (still available if embedded elsewhere). Primary weekly planning UI is now Weekly Overview at `/weekly-overview`.
 - **Toolbar**: Compact header with week navigation and Open Notes only (no title or helper text).
 - **Week nav label**: Center button shows **This week** / **Next week** / **Previous week** / **In 2 weeks** based on `weekOffset`; click returns to the current week.
 - **Day grid panel**: `bg-background` bordered container wrapping the 7-column grid.
-- **Shared data**: Uses `hooks/useWeeklyGoals.ts` and `components/weekly-goals/*`; day goals sync with Goal Hierarchy.
+- **Shared data**: Uses `hooks/useWeeklyGoals.ts` and `components/weekly-goals/*`; day goals sync with Weekly Overview.
 
 ### Shared Weekly Goals (`components/weekly-goals/`)
-Reusable weekly goal UI and colors used by Goal Hierarchy and Calendar weekly overview.
+Reusable weekly goal UI and colors used by Weekly Overview and legacy Calendar weekly view.
 - **`goalColors.ts`** — Color palette for goal cards.
 - **`GoalItem.tsx`** — Draggable goal card with checkbox, edit modal trigger, notes display.
 - **`GoalEditModal.tsx`** — Edit title, type (primary/supporting), color, notes; create task or delete.
@@ -66,10 +66,10 @@ Reusable weekly goal UI and colors used by Goal Hierarchy and Calendar weekly ov
 - **`WeeklyGoalsDayColumn.tsx`** — Full day column with events, goals, drag/drop, and add form.
 - **Storage**: `utils/goalsStorage.ts` (`omega-planner-weekly-goals-v1`), via `hooks/useWeeklyGoals.ts`.
 
-### Goal Hierarchy (`components/goal-hierarchy/GoalHierarchyView.tsx`)
-**Page:** `app/goal-hierarchy/page.tsx`
+### Weekly Overview (`components/goal-hierarchy/GoalHierarchyView.tsx`)
+**Page:** `app/weekly-overview/page.tsx`
 
-Multi-level planning: month goal summary, unified week panel (Week N goal notes at top, folder-style Week 1–5 tabs, inline controls for Weekly Overview / Study Tracker / week navigation / Open Notes, plus a two-row 7-column weekly goals grid). Week nav center button shows **This week** / **Next week** / **Previous week** / **In 2 weeks** via `getWeekOffsetLabel`. Day goals use shared `WeeklyGoalsDayColumn` and storage with Calendar weekly overview.
+Multi-level planning: month goal summary, unified week panel (Week N goal notes at top, folder-style Week 1–5 tabs, inline controls for Weekly Overview / Study Tracker / week navigation / Open Notes, plus a two-row 7-column weekly goals grid). Week nav center button shows **This week** / **Next week** / **Previous week** / **In 2 weeks** via `getWeekOffsetLabel`. Day goals use shared `WeeklyGoalsDayColumn` and storage. Legacy `/goal-hierarchy` redirects to this page.
 
 ### ChecklistSidebar (`components/calendar/ChecklistSidebar.tsx`)
 Weekly notes checklist panel. Rendered only when opened via "Open Notes" in Weekly Overview.

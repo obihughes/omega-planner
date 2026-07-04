@@ -7,7 +7,7 @@ import {
   Calendar, CalendarDays, FolderKanban, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
   CalendarRange, ClipboardList, Settings, LayoutGrid, Map, ListTodo,
   NotebookPen, Sun, Moon, Monitor, TreePine, TreeDeciduous, Sparkles, GraduationCap, GanttChart,
-  FlaskConical, ChefHat, BookOpen, Target, type LucideIcon,
+  FlaskConical, ChefHat, BookOpen, type LucideIcon,
 } from 'lucide-react';
 import { useTheme, THEME_OPTIONS, THEME_LABELS, type ThemeOption } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
@@ -189,16 +189,15 @@ export function Navigation() {
       icon: Calendar,
       active: pathname === '/calendar',
       subViews: [
-        { key: 'calendar-weekly-goals', type: 'calendar', mode: 'weekly-goals', label: 'Weekly Overview', icon: ClipboardList, href: '/goal-hierarchy', active: pathname === '/goal-hierarchy' },
         { key: 'calendar-events', type: 'calendar', mode: 'monthly', label: 'Calendar', icon: CalendarRange, active: pathname === '/calendar' && (calendarViewMode === 'monthly' || calendarViewMode === 'yearly') },
       ]
     },
     {
-      key: 'goal-hierarchy',
-      href: '/goal-hierarchy',
-      label: 'Goal Hierarchy',
-      icon: Target,
-      active: pathname === '/goal-hierarchy',
+      key: 'weekly-overview',
+      href: '/weekly-overview',
+      label: 'Weekly Overview',
+      icon: ClipboardList,
+      active: pathname === '/weekly-overview',
       subViews: []
     },
     {

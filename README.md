@@ -43,7 +43,7 @@ npm run dev:clean
 
 ### Meals
 - Meals page at `/meals` (hidden from main sidebar; open via Settings → Beta features or direct URL)
-- Goal Hierarchy at `/goal-hierarchy` (main sidebar nav; monthly → weekly → daily goal planning)
+- Weekly Overview at `/weekly-overview` (main sidebar nav; monthly → weekly → daily goal planning)
 - Add meals with a name and ingredient list (optional amounts)
 - Left-side free-text **Notes** panel (scratchpad; stacks above the grid on small screens)
 - Local persistence via `utils/mealsStorage.ts` (migrates legacy recipes data on first load)
@@ -167,10 +167,10 @@ npm test
 - **Documentation**: Added JSDoc comments and README files across the codebase
 - **Improved Type Safety**: Enhanced TypeScript type definitions and interfaces
 
-### Goal Hierarchy
-- Goal Hierarchy at `/goal-hierarchy` (main sidebar nav) — monthly goal summary; week tabs with inline Study Tracker toggle, week nav, and Open Notes; 7×2 weekly goals grid; daily goals use shared Weekly Goals cards synced with Calendar
-- Calendar sidebar **Weekly Overview** link and legacy `/calendar?view=weekly-goals` redirect here
-- Persists to `omega-planner-goal-hierarchy-v1` via `utils/goalHierarchyStorage.ts`
+### Weekly Overview
+- Weekly Overview at `/weekly-overview` (main sidebar nav) — monthly goal summary; week tabs with inline Study Tracker toggle, week nav, and Open Notes; 7×2 weekly goals grid; daily goals use shared Weekly Goals cards
+- Legacy `/goal-hierarchy` and `/calendar?view=weekly-goals` redirect here
+- Persists month/week summaries to `omega-planner-goal-hierarchy-v1` via `utils/goalHierarchyStorage.ts`
 
 ### Meals Page
 - Meals page at `/meals` (hidden from main sidebar; Settings → Beta features) for meal names and ingredients.

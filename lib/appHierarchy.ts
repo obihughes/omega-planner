@@ -600,28 +600,34 @@ export const appHierarchy: AppMapNode[] = [
     ],
   },
   {
-    id: 'goal-hierarchy',
-    label: 'Goal Hierarchy',
+    id: 'weekly-overview',
+    label: 'Weekly Overview',
     kind: 'area',
-    description: 'Main sidebar nav at /goal-hierarchy. Multi-level goals: month goal summary, week tabs with inline controls (Weekly Overview / Study Tracker, week nav, Open Notes), and a two-row 7-column day grid (selected week + next week preview). Daily goals sync with Calendar weekly overview.',
+    description: 'Main sidebar nav at /weekly-overview. Multi-level goals: month goal summary, week tabs with inline controls (Weekly Overview / Study Tracker, week nav, Open Notes), and a two-row 7-column day grid (selected week + next week preview). Daily goals sync with shared weekly goals storage.',
     children: [
       {
-        id: 'gh-route',
-        label: '/goal-hierarchy',
+        id: 'wo-route',
+        label: '/weekly-overview',
         kind: 'route',
       },
       {
-        id: 'gh-page',
-        label: 'Goal hierarchy page',
+        id: 'wo-page',
+        label: 'Weekly overview page',
         kind: 'page',
-        path: 'app/goal-hierarchy/page.tsx',
+        path: 'app/weekly-overview/page.tsx',
       },
       {
-        id: 'gh-component',
+        id: 'wo-legacy-route',
+        label: '/goal-hierarchy (redirect)',
+        kind: 'route',
+        description: 'Legacy URL redirects to /weekly-overview.',
+      },
+      {
+        id: 'wo-component',
         label: 'GoalHierarchyView',
         kind: 'component',
         path: 'components/goal-hierarchy/GoalHierarchyView.tsx',
-        editHint: 'Month tabs, week tabs, weekly panel, two 7-column day rows (selected week + next week preview) with WeeklyGoalsDayColumn, Study Tracker toggle, week nav, and Open Notes.',
+        editHint: 'Weekly Overview UI: month tabs, week tabs, weekly panel, two 7-column day rows (selected week + next week preview) with WeeklyGoalsDayColumn, Study Tracker toggle, week nav, and Open Notes.',
       },
       {
         id: 'gh-day-column',
@@ -656,7 +662,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'useWeeklyGoals',
         kind: 'hook',
         path: 'hooks/useWeeklyGoals.ts',
-        editHint: 'Shared weekly goals CRUD for Goal Hierarchy day grid and Calendar weekly overview. Key omega-planner-weekly-goals-v1.',
+        editHint: 'Shared weekly goals CRUD for Weekly Overview day grid and legacy Calendar weekly view. Key omega-planner-weekly-goals-v1.',
       },
       {
         id: 'gh-storage',

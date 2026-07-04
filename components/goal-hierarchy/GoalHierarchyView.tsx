@@ -1,5 +1,9 @@
 'use client';
 
+/**
+ * Weekly Overview page — month/week goal summaries plus 7×2 daily goals grid.
+ * Rendered at `/weekly-overview` via `app/weekly-overview/page.tsx`.
+ */
 import React, { useMemo, useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import {

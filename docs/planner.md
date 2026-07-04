@@ -300,8 +300,8 @@ The Saved Days feature allows you to save daily task configurations as reusable 
 - **Event Planning:** Save template schedules for recurring events or meetings
 - **Quick Setup:** Rapidly populate new days with common task patterns
 
-### Weekly Overview Page (`/goal-hierarchy`)
-Weekly planning is combined with Goal Hierarchy at `/goal-hierarchy`. The Calendar sidebar **Weekly Overview** link and legacy `/calendar?view=weekly-goals` URL redirect here.
+### Weekly Overview Page (`/weekly-overview`)
+Weekly planning at `/weekly-overview` (main sidebar nav). Legacy `/goal-hierarchy` and `/calendar?view=weekly-goals` redirect here.
 - **Weekly Overview**: Two-row 7-column grid (selected week + next week preview) with drag-and-drop, calendar events, and optional Weekly Notes panel.
 - **Study Tracker**: Same Study Planner component as `/study-tracker`, embedded in-place with full subject/task management.
 - **Week navigation**: Prev / Today / Next buttons sync with the week tabs above.
@@ -313,4 +313,4 @@ The Monthly and Yearly calendar views are accessible from the main navigation un
 - Monthly Calendar View: the full calendar page's monthly mode; includes a compact grid and an Events/Periods list under the calendar for the selected month. In the grid, hover an event to reveal a delete icon for quick removal. Deletions prompt for confirmation.
 - Yearly Calendar: the full calendar page's yearly mode
 
-Note: Monthly and yearly event calendars share `/calendar`. The sidebar **Calendar** link opens monthly view; use the in-page **Month** / **Year** toggle to switch (sticky at the top while scrolling). Weekly Overview lives at `/goal-hierarchy`. **5-Year Visualizer** is a top-level sidebar item at the bottom (after Text Documents). Task timeline (`?view=timeline`) is URL-only.
+Note: Monthly and yearly event calendars share `/calendar`. The sidebar **Calendar** link opens monthly view; use the in-page **Month** / **Year** toggle to switch (sticky at the top while scrolling). Weekly Overview lives at `/weekly-overview`. **5-Year Visualizer** is a top-level sidebar item at the bottom (after Text Documents). Task timeline (`?view=timeline`) is URL-only.
