@@ -5,7 +5,12 @@
 export type { 
   Task, 
   StorageData, 
-  PinnedTask 
+  PinnedTask,
+  ClassScheduleTask,
+  ClassScheduleConflict,
+  ClassCopyConflictStrategy,
+  PrepareClassCopyResult,
+  ApplyClassCopyResult,
 } from './planner';
 
 // Weekly Goals

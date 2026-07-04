@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Button } from "@/components/ui";
-import { Pin, Eye, Trash2, Calendar, Clock, Edit3, PinOff, Scissors, X, Plus, ChevronDown, Bookmark } from 'lucide-react';
+import { Pin, Eye, Trash2, Calendar, Clock, Edit3, PinOff, Scissors, X, Plus, ChevronDown, Bookmark, GraduationCap } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 
 import { formatDuration } from '@/utils/formatters';
 import { MiniSchedulerCalendar } from '../calendar/MiniSchedulerCalendar';
-import { Task, PinnedTask } from '../../types/planner';
+import { Task, PinnedTask, PrepareClassCopyResult } from '../../types/planner';
 import { TaskInboxSidebar } from './TaskInboxSidebar';
 import { PinnedTasksSidebar } from './PinnedTasksSidebar';
 import { DailyEventsContainer } from './DailyEventsContainer';
@@ -33,6 +33,7 @@ import {
 import { TimelineColumn } from './TimelineColumn';
 import { EditTaskModal } from './EditTaskModal';
 import { ViewTaskNotesModal } from './ViewTaskNotesModal';
+import { ConflictResolutionModal, ClassCopyResolutionChoice } from './ConflictResolutionModal';
 import { getCalendarDateForColumn, getDateKey, dateFromDateKey } from '../../utils/dateUtils';
 import { resolveCollisionsForResize, resolveCollisionsForDrag } from '../../utils/taskUtils';
 import WeeklyView from './WeeklyView';
@@ -128,6 +129,8 @@ export default function DailyPlanner() {
     deleteSavedDay,
     renameSavedDay,
     applySavedDay,
+    prepareCopyClassesFromSchedule,
+    applyPreparedClassCopy,
   } = useDailyPlanner();
 
   // Calendar data for events and periods
@@ -165,6 +168,9 @@ export default function DailyPlanner() {
   const [savingName, setSavingName] = useState('');
   const [topDayViewMode, setTopDayViewMode] = useState<DayViewMode>('scheduled');
   const [bottomDayViewMode, setBottomDayViewMode] = useState<DayViewMode>('scheduled');
+  const [pendingClassCopyPlan, setPendingClassCopyPlan] = useState<PrepareClassCopyResult | null>(null);
+  const [classCopyTargetLabel, setClassCopyTargetLabel] = useState('');
+  const [importClassesMessage, setImportClassesMessage] = useState<string | null>(null);
   const lastDoubleClickTimestampRef = useRef<number>(0);
   
   // Get current date key for saved days functionality
@@ -174,6 +180,94 @@ export default function DailyPlanner() {
       const timerId = setInterval(() => setCurrentTimeForMarker(new Date()), 60000);
       return () => clearInterval(timerId);
   }, []);
+
+  useEffect(() => {
+    if (!importClassesMessage) return;
+    const timerId = window.setTimeout(() => setImportClassesMessage(null), 4000);
+    return () => window.clearTimeout(timerId);
+  }, [importClassesMessage]);
+
+  const showImportClassesFeedback = useCallback((result: {
+    status: string;
+    addedCount: number;
+    skippedCount: number;
+    replacedCount: number;
+  }, dateLabel: string) => {
+    if (result.status === 'empty') {
+      setImportClassesMessage(`No classes scheduled for ${dateLabel}.`);
+      return;
+    }
+
+    if (result.status === 'success') {
+      if (result.addedCount === 0 && result.skippedCount > 0) {
+        setImportClassesMessage(`All classes already overlap with existing tasks on ${dateLabel}.`);
+        return;
+      }
+
+      const parts: string[] = [`Added ${result.addedCount} class${result.addedCount === 1 ? '' : 'es'} to ${dateLabel}`];
+      if (result.skippedCount > 0) {
+        parts.push(`skipped ${result.skippedCount}`);
+      }
+      if (result.replacedCount > 0) {
+        parts.push(`replaced ${result.replacedCount} existing task${result.replacedCount === 1 ? '' : 's'}`);
+      }
+      setImportClassesMessage(parts.join(', ') + '.');
+    }
+  }, []);
+
+  const handleImportClassesForDay = useCallback((dayOffset: number) => {
+    const targetDateKey = getCalendarDateForColumn(dayOffset);
+    const dateLabel = isClient ? getDateLabel(dayOffset) : targetDateKey;
+    const plan = prepareCopyClassesFromSchedule(targetDateKey, classTasks);
+
+    if (plan.status === 'empty') {
+      showImportClassesFeedback({ status: 'empty', addedCount: 0, skippedCount: 0, replacedCount: 0 }, dateLabel);
+      return;
+    }
+
+    if (plan.status === 'ready') {
+      const result = applyPreparedClassCopy(plan, 'copy_all');
+      showImportClassesFeedback(result, dateLabel);
+      return;
+    }
+
+    if (plan.status === 'all_conflicts') {
+      setPendingClassCopyPlan(plan);
+      setClassCopyTargetLabel(dateLabel);
+      return;
+    }
+
+    setPendingClassCopyPlan(plan);
+    setClassCopyTargetLabel(dateLabel);
+  }, [
+    applyPreparedClassCopy,
+    classTasks,
+    getDateLabel,
+    isClient,
+    prepareCopyClassesFromSchedule,
+    showImportClassesFeedback,
+  ]);
+
+  const handleClassCopyResolve = useCallback((choice: ClassCopyResolutionChoice) => {
+    if (!pendingClassCopyPlan) return;
+
+    const dateLabel = classCopyTargetLabel;
+    const plan = pendingClassCopyPlan;
+    setPendingClassCopyPlan(null);
+
+    if (choice === 'cancel') {
+      applyPreparedClassCopy(plan, 'cancel');
+      return;
+    }
+
+    const result = applyPreparedClassCopy(plan, choice);
+    showImportClassesFeedback(result, dateLabel);
+  }, [
+    applyPreparedClassCopy,
+    classCopyTargetLabel,
+    pendingClassCopyPlan,
+    showImportClassesFeedback,
+  ]);
 
   // Scroll to calendar when monthly view is activated
   useEffect(() => {
@@ -579,6 +673,12 @@ export default function DailyPlanner() {
         {viewingTaskNotes && (
           <ViewTaskNotesModal task={viewingTaskNotes} onClose={closeViewNotesModal} onEdit={openEditModal} />
         )}
+        <ConflictResolutionModal
+          isOpen={!!pendingClassCopyPlan && (pendingClassCopyPlan.status === 'needs_resolution' || pendingClassCopyPlan.status === 'all_conflicts')}
+          targetDateLabel={classCopyTargetLabel}
+          conflicts={pendingClassCopyPlan?.conflicts ?? []}
+          onResolve={handleClassCopyResolve}
+        />
 
 
 
@@ -593,6 +693,12 @@ export default function DailyPlanner() {
               eventsOnly={true}
               showHeader={false}
             />
+
+            {importClassesMessage && (
+              <div className="mb-3 rounded-lg border border-border bg-muted/50 px-4 py-2 text-sm text-foreground">
+                {importClassesMessage}
+              </div>
+            )}
 
             {/* Unified Task Pool and Pinned Tasks View */}
             <div className="mb-4 bg-card border border-border shadow-sm overflow-hidden">
@@ -1018,6 +1124,16 @@ export default function DailyPlanner() {
                           </PopoverContent>
                         </PopoverPrimitive.Portal>
                       </Popover>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex items-center gap-1"
+                        onClick={() => handleImportClassesForDay(topDayOffset)}
+                        title="Copy class schedule for this day into the planner timeline"
+                      >
+                        <GraduationCap className="w-4 h-4" />
+                        Import Classes
+                      </Button>
                       <Button size="sm" onClick={() => openEditModal()}>
                         Add Task
                       </Button>
@@ -1260,6 +1376,16 @@ export default function DailyPlanner() {
                           </PopoverContent>
                         </PopoverPrimitive.Portal>
                       </Popover>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex items-center gap-1"
+                        onClick={() => handleImportClassesForDay(bottomDayOffset)}
+                        title="Copy class schedule for this day into the planner timeline"
+                      >
+                        <GraduationCap className="w-4 h-4" />
+                        Import Classes
+                      </Button>
                       <Button size="sm" onClick={() => cloneDayTasks(dateFromDateKey(getCalendarDateForColumn(bottomDayOffset)), dateFromDateKey(getCalendarDateForColumn(topDayOffset)))} title="Clone tasks to the other visible day">
                         Clone to {bottomDayOffset < topDayOffset ? 'Bottom' : 'Top'}
                       </Button>

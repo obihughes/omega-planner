@@ -18,6 +18,9 @@ export * from './dateUtils';
 // Task utilities
 export * from './taskUtils';
 
+// Class schedule import utilities
+export * from './classScheduleUtils';
+
 // Study storage
 export { StudyStorage } from './studyStorage';
 

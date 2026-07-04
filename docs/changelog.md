@@ -1,3 +1,16 @@
+## 2026-07-04
+
+- **Daily Planner: import class schedule to timeline** (2026-07-04)
+  - Added **Import Classes** quick action on top and bottom day panels to copy recurring class schedule entries into the planner timeline for the currently viewed date.
+  - Conflict detection warns when imported classes overlap existing scheduled tasks; users can skip conflicting classes, replace existing tasks, or cancel.
+  - New utilities: `utils/classScheduleUtils.ts`; new modal: `components/planner/ConflictResolutionModal.tsx`.
+  - **Files affected**: `types/planner.ts`, `utils/classScheduleUtils.ts`, `utils/classScheduleUtils.test.ts`, `utils/index.ts`, `hooks/useDailyPlannerState.ts`, `components/planner/DailyPlanner.tsx`, `components/planner/ConflictResolutionModal.tsx`, `components/planner/index.ts`, `types/index.ts`, `docs/planner.md`, `components/planner/README.md`, `docs/utils.md`, `docs/changelog.md`
+
+- **Goal Hierarchy: highlight today in day grid** (2026-07-04)
+  - Today's day column uses the same green border highlight as Calendar weekly overview.
+  - Preview-row styling no longer overrides today's border when today falls on Sat–Wed.
+  - **Files affected**: `components/goal-hierarchy/DayColumn.tsx`, `docs/changelog.md`
+
 ## 2026-07-03
 
 - **Goal Hierarchy: simplify month/week UI** (2026-07-03)

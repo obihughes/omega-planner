@@ -164,4 +164,17 @@ Handles consistent time formatting across the application.
 Converts decimal hour to readable time format (e.g., 14.5 → "2:30 PM").
 
 #### `formatDuration(hours): string`
-Formats duration for display. 
+Formats duration for display.
+
+## Class Schedule Import Utilities (`utils/classScheduleUtils.ts`)
+
+Converts recurring class schedule entries into date-specific planner tasks and handles overlap detection when importing.
+
+#### `convertClassTaskToTask(classTask, targetDateKey, generateId)`
+Maps a `ClassScheduleTask` to a planner `Task` for a specific calendar date.
+
+#### `prepareClassCopy(classTasks, plannerTasks, targetDateKey, generateId)`
+Analyzes an import without mutating state. Returns conflict info and tasks ready to add.
+
+#### `mergeClassCopyIntoTasks(plannerTasks, plan, strategy)`
+Applies a prepared import plan with `skip`, `replace`, `copy_all`, or `cancel` strategy.

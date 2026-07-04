@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Task, PinnedTask, SavedDay } from '../types/planner'; // Removed PlannerMode, TaskColor, CloneConfirmationData, ModalOpenOptions
+import { Task, PinnedTask, SavedDay, ClassScheduleTask, ClassCopyConflictStrategy, PrepareClassCopyResult, ApplyClassCopyResult } from '../types/planner'; // Removed PlannerMode, TaskColor, CloneConfirmationData, ModalOpenOptions
 import TaskStorage, { DayViewSettings } from '../utils/storage'; // TaskStorage is default, DayViewSettings is named
 // import { TASK_COLORS } from '../components/planner/DailyPlanner'; // TODO: Decouple this, maybe move to a constants file
 import { formatTime, formatDuration } from '../utils/formatters'; // Ensure this is imported
@@ -18,6 +18,7 @@ import {
 import { useModalManager } from './useModalManager';
 import type { ActiveModalTask as ImportedActiveModalTask } from './useModalManager';
 import { getDateKeyFromOffset, dateFromDateKey, getTodayDateKey, addDaysToDateKey, getDateKey } from '../utils/dateUtils'; // Import the new utility functions
+import { mergeClassCopyIntoTasks, prepareClassCopy } from '../utils/classScheduleUtils';
 import { nanoid } from 'nanoid';
 // import { checkOverlap } from '../utils/taskUtils'; // checkOverlap is available via wildcard import
 
@@ -733,6 +734,33 @@ export function useDailyPlanner() {
 
   }, [tasks, getNextId, cloneConflictStrategy, TIMELINE_END_HOUR, TIMELINE_START_HOUR, checkOverlap, setTasks]);
 
+  /**
+   * Analyze importing recurring class schedule entries for a specific date.
+   * Does not mutate planner state.
+   */
+  const prepareCopyClassesFromSchedule = useCallback((
+    targetDateKey: string,
+    classTasks: ClassScheduleTask[]
+  ): PrepareClassCopyResult => {
+    return prepareClassCopy(classTasks, tasks, targetDateKey, getNextId);
+  }, [tasks, getNextId]);
+
+  /**
+   * Apply a prepared class import plan using the chosen conflict strategy.
+   */
+  const applyPreparedClassCopy = useCallback((
+    plan: PrepareClassCopyResult,
+    strategy: ClassCopyConflictStrategy | 'copy_all' | 'cancel'
+  ): ApplyClassCopyResult => {
+    const { nextTasks, result } = mergeClassCopyIntoTasks(tasks, plan, strategy);
+
+    if (result.status === 'success') {
+      setTasks(nextTasks);
+    }
+
+    return result;
+  }, [tasks, setTasks]);
+
   // --- Saved Days Functions ---
 
   /**
@@ -1354,6 +1382,8 @@ export function useDailyPlanner() {
     cancelCopy,
     handleDropCopy,
     cloneDayTasks,
+    prepareCopyClassesFromSchedule,
+    applyPreparedClassCopy,
 
     // Memoized Data
     tasksByDate,

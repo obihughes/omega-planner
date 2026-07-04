@@ -10,4 +10,5 @@ export { WeeklyTaskCard, MemoizedWeeklyTaskCard } from './WeeklyTaskCard';
 export { DailyEventsContainer } from './DailyEventsContainer';
 export { WeeklyEventsDisplay } from './WeeklyEventsDisplay';
 export { MiniDailyTimeline } from './MiniDailyTimeline';
+export { ConflictResolutionModal } from './ConflictResolutionModal';
  

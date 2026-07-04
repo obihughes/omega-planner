@@ -101,6 +101,8 @@ Modal for viewing the notes of a task.
 ### ClassSchedule Page
 The Class Schedule view (`/class-schedule`) provides a recurring weekly timetable where entries are stored by day-of-week instead of a specific date. Implementation is in `components/planner/ClassSchedule.tsx` with state handled by `hooks/useClassScheduleState.ts` and storage handled by `utils/classScheduleStorage.ts`.
 
+**Import to Daily Planner:** On the Daily view, use **Import Classes** on either day panel to copy that weekday's recurring classes into the planner timeline for the date you're viewing. Overlapping scheduled tasks trigger `ConflictResolutionModal` with skip, replace, or cancel options. Logic lives in `utils/classScheduleUtils.ts` and `hooks/useDailyPlannerState.ts` (`prepareCopyClassesFromSchedule`, `applyPreparedClassCopy`).
+
 **Key Features:**
 - **7-Day Stack**: Timeline showing all 7 days stacked vertically, each split into 3 time periods (morning, afternoon, evening)
   - Uses the same timeline scale as the Daily Planner daily view

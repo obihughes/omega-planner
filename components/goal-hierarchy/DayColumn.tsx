@@ -47,11 +47,13 @@ export function DayColumn({
       className={cn(
         'flex flex-col min-w-0 min-h-[280px] border transition-colors',
         today
-          ? 'border-green-500 bg-card'
+          ? 'border-green-500'
           : isDragOver
             ? 'border-primary bg-primary/5'
-            : 'border-border bg-card',
-        isNextWeekPreview && 'bg-muted/40 border-border/60 shadow-inner opacity-90'
+            : cn(
+                'bg-muted/20',
+                isNextWeekPreview && 'bg-muted/40 border-border/60 shadow-inner opacity-90'
+              )
       )}
       onDragEnter={() => setIsDragOver(true)}
       onDragLeave={(e) => {
@@ -73,8 +75,7 @@ export function DayColumn({
           <p
             className={cn(
               'text-xs text-muted-foreground',
-              today && 'text-green-600 dark:text-green-400 font-medium',
-              isNextWeekPreview && !today && 'text-muted-foreground/70'
+              isNextWeekPreview && 'text-muted-foreground/70'
             )}
           >
             {format(date, 'MMM d')}

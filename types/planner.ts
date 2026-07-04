@@ -148,4 +148,39 @@ export interface ClassScheduleStorageData {
   /** Timestamp of when the data was last updated */
   lastUpdated: string;
 }
+
+/** How to resolve overlapping planner tasks when importing classes */
+export type ClassCopyConflictStrategy = 'skip' | 'replace';
+
+/** A single overlap between a class schedule entry and an existing planner task */
+export interface ClassScheduleConflict {
+  /** The recurring class being imported */
+  classTask: ClassScheduleTask;
+  /** The planner task that overlaps the class time slot */
+  plannerTask: Task;
+  /** Converted planner task representation of the class (new id) */
+  convertedTask: Task;
+}
+
+/** Result of analyzing a class-to-planner copy before applying changes */
+export interface PrepareClassCopyResult {
+  status: 'empty' | 'ready' | 'needs_resolution' | 'all_conflicts';
+  targetDateKey: string;
+  /** Recurring classes for the target weekday */
+  classesForDay: ClassScheduleTask[];
+  /** Overlaps with existing scheduled planner tasks */
+  conflicts: ClassScheduleConflict[];
+  /** Converted tasks that can be added without removing existing tasks */
+  tasksToAdd: Task[];
+  /** All converted tasks (including those that conflict) */
+  allConvertedTasks: Task[];
+}
+
+/** Result after applying a class import to the planner */
+export interface ApplyClassCopyResult {
+  status: 'success' | 'empty' | 'cancelled';
+  addedCount: number;
+  skippedCount: number;
+  replacedCount: number;
+}
  

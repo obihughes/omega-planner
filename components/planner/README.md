@@ -25,6 +25,7 @@ This directory contains all components related to the daily planning functionali
    - Timeline sections via shared `TimelineColumn` for detailed time-based planning
    - Task collision detection and resolution
    - **Per-panel view toggle**: Each day panel (top and bottom) has a Tasks | Class toggle to switch between scheduled tasks for that date and the recurring class schedule for that weekday. Class schedule view is read-only (view notes only; edit via Class Schedule page).
+- **Import Classes**: Quick action on each day panel copies that weekday's recurring class schedule into the planner timeline for the viewed date, with conflict resolution when times overlap.
    
 2. **Weekly View**:
    - Weekly overview showing scheduled and inbox tasks
