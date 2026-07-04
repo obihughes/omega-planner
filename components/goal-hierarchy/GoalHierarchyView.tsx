@@ -2,7 +2,14 @@
 
 import React, { useMemo, useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { getDateKey, getTodayDateKey, dateFromDateKey } from '@/utils/dateUtils';
+import {
+  getDateKey,
+  getTodayDateKey,
+  dateFromDateKey,
+  getWeekStartKeyFromDateKey,
+  getWeekOffsetFromWeekStarts,
+  getWeekOffsetLabel,
+} from '@/utils/dateUtils';
 import {
   formatMonthLabel,
   getNextWeekStartKey,
@@ -90,12 +97,15 @@ export function GoalHierarchyView() {
   } = useWeeklyGoals(visibleDateKeys);
 
   const todayKey = getTodayDateKey();
+  const todayWeekStartKey = getWeekStartKeyFromDateKey(todayKey);
+  const weekOffset = getWeekOffsetFromWeekStarts(currentWeek.weekStartKey, todayWeekStartKey);
+  const weekLabel = getWeekOffsetLabel(weekOffset);
   const todayMonthKey = todayKey.slice(0, 7);
   const todayWeekIndex =
     selectedMonthKey === todayMonthKey
       ? getWeekIndexContainingDate(selectedMonthKey, todayKey)
       : -1;
-  const isCurrentWeekSelected = selectedWeekIndex === todayWeekIndex;
+  const isCurrentWeekSelected = weekOffset === 0;
 
   const handleWeekTabClick = useCallback(
     (weekIndex: number) => {
@@ -150,96 +160,100 @@ export function GoalHierarchyView() {
             />
           </section>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {weeksInMonth.map(({ weekIndex }) => {
-              const isCurrentWeek = weekIndex === todayWeekIndex;
+          <div className="rounded-lg border border-border bg-background">
+            <div className="flex flex-wrap items-end justify-between gap-2 px-4 pt-2">
+              <div className="flex flex-wrap items-end gap-0.5">
+                {weeksInMonth.map(({ weekIndex }) => {
+                  const isCurrentWeek = weekIndex === todayWeekIndex;
+                  const isSelected = selectedWeekIndex === weekIndex;
 
-              return (
-                <button
-                  key={weekIndex}
-                  type="button"
-                  onClick={() => handleWeekTabClick(weekIndex)}
-                  className={cn(
-                    'px-3 py-1.5 rounded-md text-sm transition-colors',
-                    selectedWeekIndex === weekIndex
-                      ? 'bg-secondary text-secondary-foreground font-medium'
-                      : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground',
-                    isCurrentWeek && selectedWeekIndex !== weekIndex && 'ring-1 ring-primary/30'
-                  )}
+                  return (
+                    <button
+                      key={weekIndex}
+                      type="button"
+                      onClick={() => handleWeekTabClick(weekIndex)}
+                      className={cn(
+                        'relative px-3 py-2 text-sm rounded-t-md border transition-colors',
+                        isSelected
+                          ? 'bg-background border-border border-b-background -mb-px z-10 font-medium text-foreground'
+                          : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30',
+                        isCurrentWeek && !isSelected && 'ring-1 ring-primary/30'
+                      )}
+                    >
+                      Week {weekIndex + 1}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5 ml-auto pb-1">
+                <Button
+                  variant={weeklyPageMode === 'weekly-overview' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setWeeklyPageMode('weekly-overview')}
+                  className="h-8 px-3 gap-1.5 text-xs"
                 >
-                  Week {weekIndex + 1}
-                </button>
-              );
-            })}
-
-            <div className="flex flex-wrap items-center gap-1.5 ml-auto">
-              <Button
-                variant={weeklyPageMode === 'weekly-overview' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setWeeklyPageMode('weekly-overview')}
-                className="h-8 px-3 gap-1.5 text-xs"
-              >
-                <Target className="w-3.5 h-3.5" />
-                Weekly Overview
-              </Button>
-              <Button
-                variant={weeklyPageMode === 'study-tracker' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setWeeklyPageMode('study-tracker')}
-                className="h-8 px-3 gap-1.5 text-xs"
-              >
-                <BookOpen className="w-3.5 h-3.5" />
-                Study Tracker
-              </Button>
-              {weeklyPageMode === 'weekly-overview' && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={goToPreviousWeek}
-                    className="h-8 w-8 p-0"
-                    title="Previous week"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant={isCurrentWeekSelected ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={goToCurrentWeek}
-                    className="h-8 px-3 text-xs"
-                    title="Go to current week"
-                  >
-                    Today
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={goToNextWeek}
-                    className="h-8 w-8 p-0"
-                    title="Next week"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsNotesOpen(!isNotesOpen)}
-                    className="h-8 px-3 gap-2"
-                    title={isNotesOpen ? 'Hide notes' : 'Open notes'}
-                  >
-                    {isNotesOpen ? (
-                      <PanelLeftClose className="w-4 h-4" />
-                    ) : (
-                      <StickyNote className="w-4 h-4" />
-                    )}
-                    <span className="text-xs font-medium">{isNotesOpen ? 'Close' : 'Open Notes'}</span>
-                  </Button>
-                </>
-              )}
+                  <Target className="w-3.5 h-3.5" />
+                  Weekly Overview
+                </Button>
+                <Button
+                  variant={weeklyPageMode === 'study-tracker' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setWeeklyPageMode('study-tracker')}
+                  className="h-8 px-3 gap-1.5 text-xs"
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  Study Tracker
+                </Button>
+                {weeklyPageMode === 'weekly-overview' && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={goToPreviousWeek}
+                      className="h-8 w-8 p-0"
+                      title="Previous week"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant={isCurrentWeekSelected ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={goToCurrentWeek}
+                      className="h-8 px-3 text-xs"
+                      title="Go to current week"
+                    >
+                      {weekLabel}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={goToNextWeek}
+                      className="h-8 w-8 p-0"
+                      title="Next week"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsNotesOpen(!isNotesOpen)}
+                      className="h-8 px-3 gap-2"
+                      title={isNotesOpen ? 'Hide notes' : 'Open notes'}
+                    >
+                      {isNotesOpen ? (
+                        <PanelLeftClose className="w-4 h-4" />
+                      ) : (
+                        <StickyNote className="w-4 h-4" />
+                      )}
+                      <span className="text-xs font-medium">{isNotesOpen ? 'Close' : 'Open Notes'}</span>
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
 
-          <section className="rounded-xl border border-border bg-muted/20 p-4">
+            <div className="border-t border-border p-4">
               {weeklyPageMode === 'weekly-overview' ? (
                 <div className="flex min-h-0 gap-0 -mx-1">
                   <div className="flex-1 min-w-0 space-y-4">
@@ -319,7 +333,8 @@ export function GoalHierarchyView() {
                   </StudyTrackerProvider>
                 </div>
               )}
-          </section>
+            </div>
+          </div>
         </div>
       </div>
 

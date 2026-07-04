@@ -3,7 +3,12 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import { CalendarData } from '@/types/calendar';
 import { Button } from '@/components/ui/button';
-import { getDateKey, getMondayStart, getTodayDateKey } from '@/utils/dateUtils';
+import {
+  getDateKey,
+  getMondayStart,
+  getTodayDateKey,
+  getWeekOffsetLabel,
+} from '@/utils/dateUtils';
 import { ChevronLeft, ChevronRight, PanelLeftClose, StickyNote } from 'lucide-react';
 import { ChecklistSidebar } from './ChecklistSidebar';
 import { WeeklyGoalsDayColumn } from '@/components/weekly-goals';
@@ -53,6 +58,7 @@ export function WeeklyGoalsCalendarView({ calendarData, onNavigateToDaily }: Wee
   } = useWeeklyGoals(dateKeys);
 
   const todayKey = getTodayDateKey();
+  const weekLabel = getWeekOffsetLabel(weekOffset);
 
   const goToPreviousWeek = useCallback(() => {
     setWeekOffset((prev) => prev - 1);
@@ -93,7 +99,7 @@ export function WeeklyGoalsCalendarView({ calendarData, onNavigateToDaily }: Wee
           className="h-8 px-3 text-xs"
           title="Go to current week"
         >
-          Today
+          {weekLabel}
         </Button>
         <Button
           variant="outline"
@@ -118,7 +124,8 @@ export function WeeklyGoalsCalendarView({ calendarData, onNavigateToDaily }: Wee
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <div className="flex-1 overflow-y-auto px-6 py-6 min-h-0">
-          <div className="grid grid-cols-7 gap-4 auto-rows-fr">
+          <div className="rounded-lg border border-border bg-background p-4">
+            <div className="grid grid-cols-7 gap-4 auto-rows-fr">
             {days.map((d) => {
               const dateKey = getDateKey(d);
               const items = getGoalsForDate(dateKey);
@@ -150,6 +157,7 @@ export function WeeklyGoalsCalendarView({ calendarData, onNavigateToDaily }: Wee
                 />
               );
             })}
+            </div>
           </div>
         </div>
 

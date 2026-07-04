@@ -237,4 +237,32 @@ export function getWeekStartKeyFromDateKey(dateKey: string): string {
   return getWeekStartKeyFromDate(dateFromDateKey(dateKey));
 }
 
+/** Whole-week offset between two Monday week-start keys (selected minus reference). */
+export function getWeekOffsetFromWeekStarts(
+  weekStartKey: string,
+  referenceWeekStartKey: string
+): number {
+  const selected = dateFromDateKey(weekStartKey).getTime();
+  const reference = dateFromDateKey(referenceWeekStartKey).getTime();
+  return Math.round((selected - reference) / (7 * 24 * 60 * 60 * 1000));
+}
+
+/** Human-readable label for a week offset relative to the current week. */
+export function getWeekOffsetLabel(weekOffset: number): string {
+  switch (weekOffset) {
+    case 0:
+      return 'This week';
+    case 1:
+      return 'Next week';
+    case -1:
+      return 'Previous week';
+    case 2:
+      return 'In 2 weeks';
+    default:
+      if (weekOffset > 2) return `In ${weekOffset} weeks`;
+      if (weekOffset < -1) return `${Math.abs(weekOffset)} weeks ago`;
+      return 'This week';
+  }
+}
+
  

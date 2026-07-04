@@ -1,5 +1,12 @@
 ## 2026-07-04
 
+- **Goal Hierarchy: week nav label + folder-style week panel** (2026-07-04)
+  - Replaced the green **Today** week-nav button with a dynamic label: **This week**, **Next week**, **Previous week**, **In 2 weeks** (and fallbacks for other offsets).
+  - Week 1–5 tabs now sit on a folder-style header row that connects into the day-cards panel; the panel uses `bg-background` instead of `bg-muted/20` so it matches the page.
+  - Shared helpers: `getWeekOffsetFromWeekStarts` and `getWeekOffsetLabel` in `utils/dateUtils.ts`.
+  - Applied the same dynamic week label to legacy `WeeklyGoalsCalendarView`.
+  - **Files affected**: `components/goal-hierarchy/GoalHierarchyView.tsx`, `components/calendar/WeeklyGoalsCalendarView.tsx`, `utils/dateUtils.ts`, `docs/changelog.md`, `docs/components.md`, `docs/structure.md`
+
 - **Goal Hierarchy: simplified weekly goals toolbar** (2026-07-04)
   - Removed the week-level goal summary block ("Week N goal" textarea) and the "Weekly Goals" section heading.
   - Moved Weekly Overview, Study Tracker, week navigation, and Open Notes onto the same row as the Week 1–5 tabs.
