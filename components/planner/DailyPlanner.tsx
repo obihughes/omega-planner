@@ -526,7 +526,7 @@ export default function DailyPlanner() {
       const dayOffset = Math.floor((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
       setTopDayOffset(dayOffset);
       setBottomDayOffset(dayOffset);
-      setViewMode('daily');
+      setViewMode('monthly');
       // store last calendar context for back navigation as YYYY-MM-DD key
       try {
         const year = target.getFullYear();
@@ -643,20 +643,15 @@ export default function DailyPlanner() {
     
     // Set the top day offset to show the target date
     setTopDayOffset(dayOffset);
-    
-    // Switch to daily view
-    setViewMode('daily');
-  }, [setTopDayOffset, setViewMode]);
+  }, [setTopDayOffset]);
 
   const renderDailyPanels = (panelOptions: {
     deleteMode?: boolean;
-    showSchedulingButton?: boolean;
     pixelsPerHour?: number;
     columnHeightPx?: number;
   } = {}) => {
     const {
       deleteMode = false,
-      showSchedulingButton = true,
       pixelsPerHour = APP_PIXELS_PER_HOUR,
       columnHeightPx = TIMELINE_COLUMN_HEIGHT,
     } = panelOptions;
@@ -955,16 +950,6 @@ export default function DailyPlanner() {
                       >
                         Calendar
                       </Button>
-                      {showSchedulingButton && (
-                        <Button
-                          size="sm"
-                          title="Open Scheduling (Monthly) view"
-                          onClick={() => setViewMode('monthly')}
-                          className={cn(headerBtn, 'ml-1 shrink-0')}
-                        >
-                          Schedule
-                        </Button>
-                      )}
                       {isClient && getRelativeDayLabel(topDayOffset) && (
                         <span className="text-[11px] text-muted-foreground ml-1 px-1 py-0.5 bg-muted rounded-sm shrink-0">
                           {getRelativeDayLabel(topDayOffset)}
@@ -1453,8 +1438,9 @@ export default function DailyPlanner() {
 
 
         {/* Conditional Content Based on View Mode */}
-        {viewMode === 'daily' && renderDailyPanels()}
-        {viewMode === 'monthly' && (
+        {viewMode === 'weekly' ? (
+          <WeeklyView />
+        ) : (
           <MergedDailyView
             poolTasks={generalPoolTasks}
             scheduledTasks={tasksByDate}
@@ -1472,14 +1458,9 @@ export default function DailyPlanner() {
             applySavedDay={applySavedDay}
           >
             {({ deleteMode, pixelsPerHour, columnHeightPx }) =>
-              renderDailyPanels({ deleteMode, showSchedulingButton: false, pixelsPerHour, columnHeightPx })
+              renderDailyPanels({ deleteMode, pixelsPerHour, columnHeightPx })
             }
           </MergedDailyView>
-        )}
-
-        {/* Weekly View */}
-        {viewMode === 'weekly' && (
-          <WeeklyView />
         )}
 
 

@@ -9,40 +9,20 @@ This directory contains all components related to the daily planning functionali
 **Purpose**: Main orchestrating component with page-level view mode navigation
 
 **Features:**
-- **Page-Level View Modes**: Toggle between Daily, Weekly, and Scheduling views
-  - Daily View: Timeline-based planning with Pool/Pinned sidebar
-  - Weekly View: Weekly overview of scheduled and inbox tasks
-  - Scheduling View: Full-page calendar for task assignment and inbox management
+- **Page-Level View Modes**: Default scheduling layout (sidebar + timeline) and optional weekly overview
+  - **Daily View** (default, `viewMode === 'monthly'`): `MergedDailyView` with scheduling sidebar + full timeline panels
+  - **Weekly View** (`viewMode === 'weekly'`): Weekly overview of scheduled and inbox tasks (beta / `/?view=weekly`)
 - Timeline visualization across 4 periods (night, morning, afternoon, evening)
 - Dual-day view with independent navigation
 - Task management (create, edit, delete, move, resize)
 - Drag and drop functionality between time slots and days
 - Copy/paste tasks across different days
-
-**View Modes:**
-1. **Daily View** (default):
-   - Pool/Pinned task sidebar with tabs
-   - Timeline sections via shared `TimelineColumn` for detailed time-based planning
-   - Task collision detection and resolution
-   - **Per-panel view toggle**: Each day panel (top and bottom) has a Tasks | Class toggle to switch between scheduled tasks for that date and the recurring class schedule for that weekday. Class schedule view is read-only (view notes only; edit via Class Schedule page).
+- **Per-panel view toggle**: Each day panel (top and bottom) has a Tasks | Class toggle to switch between scheduled tasks for that date and the recurring class schedule for that weekday. Class schedule view is read-only (view notes only; edit via Class Schedule page).
 - **Import Classes**: Quick action on each day panel copies that weekday's recurring class schedule into the planner timeline for the viewed date, with conflict resolution when times overlap.
-   
-2. **Weekly View**:
-   - Weekly overview showing scheduled and inbox tasks
-   - Separate sections for scheduled tasks and inbox tasks per day
-   - Dual timeline headers (top and bottom) for easy time tracking
-   - Space-efficient row layout
-   
-3. **Scheduling View** (Monthly):
-   - **MergedDailyView**: Left sidebar (`SchedulingSidebar`) with mini calendar, inbox, and bulk-actions popover; right panel uses the same full daily timeline as Daily view
-   - Inbox: Add unscheduled tasks; drag to calendar date or timeline to schedule
-   - Mini calendar: Click a date to jump the top day panel; drag tasks onto dates to assign
-   - Bulk actions (sidebar `…` menu): Delete Mode, Clear Day, Apply/Replace Saved Day
-   - Full timeline supports drag/resize/copy/delete-mode (same as Daily view)
 
 ### MergedDailyView
 **File**: `MergedDailyView.tsx`
-**Purpose**: Unified scheduling layout combining sidebar + full daily timeline panels
+**Purpose**: Default daily planner layout combining sidebar + full daily timeline panels
 
 **Features:**
 - Left: `SchedulingSidebar` (mini calendar, inbox, bulk-actions popover)
@@ -54,7 +34,7 @@ This directory contains all components related to the daily planning functionali
 
 ### SchedulingSidebar
 **File**: `SchedulingSidebar.tsx`
-**Purpose**: Left sidebar for merged scheduling view
+**Purpose**: Left sidebar for the default daily planner view
 
 **Features:**
 - Mini month calendar with task indicators
@@ -62,9 +42,19 @@ This directory contains all components related to the daily planning functionali
 - Bulk-actions popover: Delete Mode, Clear Day, Apply/Replace Saved Day
 - Fixed width `w-72` (288px, 10% narrower than prior 320px layout)
 
+### WeeklyView
+**File**: `WeeklyView.tsx`
+**Purpose**: Optional weekly timeline overview (`/?view=weekly`)
+
+**Features:**
+- Weekly overview showing scheduled and inbox tasks
+- Separate sections for scheduled tasks and inbox tasks per day
+- Dual timeline headers (top and bottom) for easy time tracking
+- Space-efficient row layout
+
 ### TaskAssignmentCalendar
 **File**: `TaskAssignmentCalendar.tsx`
-**Purpose**: Calendar view for assigning pool tasks to specific dates and managing inbox tasks
+**Purpose**: Legacy calendar view for assigning pool tasks (not mounted in current DailyPlanner)
 
 **Features:**
 - Projects-calendar visual styling (month grid, 130px cells)
@@ -74,12 +64,6 @@ This directory contains all components related to the daily planning functionali
 - Task rescheduling between dates
 - Monthly navigation and summary statistics
 - Direct inbox task creation functionality
-
-**Integration:**
-- Used within DailyPlanner's Monthly View mode
-- Shares task data and operations with daily timeline
-- Maintains consistent styling with projects calendar
-- Provides primary interface for inbox task management
 
 ### Timeline Components
 
@@ -99,7 +83,7 @@ This directory contains all components related to the daily planning functionali
 
 #### TimelineColumn
 **File**: `TimelineColumn.tsx`
-**Purpose**: Single timeline period container. **Shared** by Daily view and Scheduling view (via MiniDailyTimeline).
+**Purpose**: Single timeline period container. **Shared** by daily timeline and class schedule views.
 
 **Features:**
 - Hour-by-hour grid layout (hierarchical lines: major hours `border-border/30`, minor `border-border/10`; matches Class Schedule styling)
@@ -155,24 +139,18 @@ All components use the `useDailyPlannerState` hook for:
 
 ```
 DailyPlanner
-├── View Mode Navigation (Daily | Weekly | Monthly)
-├── Daily View
-│   ├── Pool/Pinned Sidebar Tabs
-│   └── Timeline Sections (Top Day + Bottom Day)
-├── Weekly View
-│   └── Weekly Overview with Scheduled & Inbox Tasks
-└── Monthly View (Scheduling)
-    └── MonthlyTimelineView (Calendar + Inbox + Task Pool + Mini Daily Timeline)
+├── Default: MergedDailyView (SchedulingSidebar + timeline panels)
+└── Weekly View (?view=weekly)
+    └── WeeklyView
 ```
 
 ## Usage Patterns
 
-1. **Daily Planning**: Use Daily View for detailed time-based task scheduling
-2. **Weekly Overview**: Use Weekly View to see scheduled and inbox tasks across the week
-3. **Task Assignment**: Use Monthly View to assign pool tasks to specific dates
-4. **Inbox Management**: Use Monthly View to create and manage inbox tasks
+1. **Daily Planning**: Home (`/`) opens the scheduling sidebar + timeline for time-based task scheduling
+2. **Weekly Overview**: Use `/?view=weekly` to see scheduled and inbox tasks across the week
+3. **Task Assignment**: Use the sidebar mini calendar and inbox to assign pool tasks to dates
+4. **Inbox Management**: Add unscheduled tasks in the sidebar inbox; drag to calendar or timeline
 5. **Task Management**: Edit tasks through modals accessible from all views
-6. **Workflow**: Create tasks in Inbox (Monthly) → Drag to calendar date (pool) or timeline (schedule) → Or use Schedule button for 9 AM 
 
 ## Class Schedule (Recurring)
 

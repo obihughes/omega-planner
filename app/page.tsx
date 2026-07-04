@@ -72,10 +72,12 @@ export default function Home() {
 function DailyPlannerWrapper({ Component, paramsDate, paramsView }: { Component: React.ComponentType; paramsDate?: string; paramsView?: string }) {
   const { setViewMode } = useViewMode();
   
-  // Handle view mode from URL query param
+  // Handle view mode from URL query param (?view=daily aliases to monthly for backward compatibility)
   useEffect(() => {
-    if (paramsView === 'daily' || paramsView === 'weekly' || paramsView === 'monthly') {
+    if (paramsView === 'weekly' || paramsView === 'monthly') {
       setViewMode(paramsView);
+    } else if (paramsView === 'daily') {
+      setViewMode('monthly');
     }
   }, [paramsView, setViewMode]);
   

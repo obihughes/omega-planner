@@ -178,7 +178,7 @@ export function Navigation() {
       icon: NotebookPen,
       active: pathname === '/' && !pathname.includes('/calendar'),
       subViews: [
-        { key: 'planner-daily', type: 'planner', mode: 'daily', label: 'Daily', icon: Sun, active: pathname === '/' && plannerViewMode === 'daily' },
+        { key: 'planner-daily', type: 'planner', mode: 'monthly', label: 'Daily', icon: Sun, active: pathname === '/' && plannerViewMode === 'monthly' },
         { key: 'planner-class-schedule', label: 'Class Schedule', icon: GraduationCap, href: '/class-schedule', active: pathname === '/class-schedule' },
       ]
     },

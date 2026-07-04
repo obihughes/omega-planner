@@ -135,7 +135,7 @@ export const appHierarchy: AppMapNode[] = [
         id: 'dp-home',
         label: '/',
         kind: 'route',
-        description: 'Home route. ?view=daily|weekly|monthly, ?date=YYYY-MM-DD',
+        description: 'Home route. Default scheduling view; ?view=weekly|monthly (daily aliases to monthly), ?date=YYYY-MM-DD',
       },
       {
         id: 'dp-page-home',
@@ -161,7 +161,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'DailyPlanner',
         kind: 'component',
         path: 'components/planner/DailyPlanner.tsx',
-        editHint: 'Main planner UI: timeline, sidebars, view switching.',
+        editHint: 'Main planner UI: scheduling sidebar + timeline panels; weekly view via ?view=weekly.',
         children: [
           {
             id: 'dp-task-card',
