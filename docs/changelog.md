@@ -1,5 +1,10 @@
 ## 2026-07-04
 
+- **Goal Hierarchy: restore week notes text area** (2026-07-04)
+  - Re-added the **Week N goal** free-text area below the month goal and above the folder-style week panel.
+  - Uses existing `GoalLevelBlock`, `currentWeek.summary`, and `setSummary('week', …)` — notes persist per week in `GoalHierarchyStorage`.
+  - **Files affected**: `components/goal-hierarchy/GoalHierarchyView.tsx`, `docs/changelog.md`, `docs/components.md`, `docs/structure.md`
+
 - **Goal Hierarchy: week nav label + folder-style week panel** (2026-07-04)
   - Replaced the green **Today** week-nav button with a dynamic label: **This week**, **Next week**, **Previous week**, **In 2 weeks** (and fallbacks for other offsets).
   - Week 1–5 tabs now sit on a folder-style header row that connects into the day-cards panel; the panel uses `bg-background` instead of `bg-muted/20` so it matches the page.

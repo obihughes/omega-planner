@@ -160,6 +160,14 @@ export function GoalHierarchyView() {
             />
           </section>
 
+          <section className="space-y-2">
+            <GoalLevelBlock
+              label={`Week ${selectedWeekIndex + 1} goal`}
+              summary={currentWeek.summary}
+              onSummaryChange={(s) => setSummary('week', s)}
+            />
+          </section>
+
           <div className="rounded-lg border border-border bg-background">
             <div className="flex flex-wrap items-end justify-between gap-2 px-4 pt-2">
               <div className="flex flex-wrap items-end gap-0.5">

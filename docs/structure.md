@@ -29,7 +29,7 @@ Current notable feature folders include:
 - `components/calendar` – Calendars and modals
 - `components/meals` – Meals list and ingredient management
 - `components/study-tracker` – Study Planner (weekly day cards with tasks, monthly calendar with subject filter)
-- `components/goal-hierarchy` – Goal Hierarchy (month goal summary + folder-style week panel with Week 1–5 tabs in the panel header; day grid is two 7-column rows — selected week Mon–Sun + next week Mon–Sun preview; daily goals use shared Weekly Goals storage and `WeeklyGoalsDayColumn`, synced with Calendar weekly overview; panel header also has Study Tracker toggle, dynamic week nav label, and Open Notes)
+- `components/goal-hierarchy` – Goal Hierarchy (month goal summary + Week N goal notes per selected week; folder-style week panel with Week 1–5 tabs in the panel header; day grid is two 7-column rows — selected week Mon–Sun + next week Mon–Sun preview; daily goals use shared Weekly Goals storage and `WeeklyGoalsDayColumn`, synced with Calendar weekly overview; panel header also has Study Tracker toggle, dynamic week nav label, and Open Notes)
 - `components/month-board` – Month board beta (month/week pickers, single-week view with week goal + Mon–Sun rows)
 - `components/todo` – Minimal standalone todo checklist
 - `components/ui` – Shared UI primitives (layout, inputs, tabs, etc.)
