@@ -217,4 +217,24 @@ export const normalizeDueDate = (dueDate?: string): string | undefined => {
   }
 };
 
+/** Monday 12:00 local time for the week containing `date`. */
+export function getMondayStart(date: Date): Date {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = (day === 0 ? -6 : 1) - day;
+  d.setDate(d.getDate() + diff);
+  d.setHours(12, 0, 0, 0);
+  return d;
+}
+
+/** Week start (Monday) as YYYY-MM-DD for a Date. */
+export function getWeekStartKeyFromDate(date: Date): string {
+  return getDateKey(getMondayStart(date));
+}
+
+/** Week start (Monday) as YYYY-MM-DD for a date key. */
+export function getWeekStartKeyFromDateKey(dateKey: string): string {
+  return getWeekStartKeyFromDate(dateFromDateKey(dateKey));
+}
+
  

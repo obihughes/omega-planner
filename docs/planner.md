@@ -58,7 +58,7 @@ Main component that orchestrates all planner functionality.
 Renders individual timeline sections with tasks and time markers. **Shared** by both Daily view and Scheduling (Monthly) view via `MiniDailyTimeline`, eliminating duplicated timeline logic. Supports read-only mode (e.g. class schedule), drag/resize/copy, and pool drops.
 
 ### WeeklyView
-Displays a 7-day view of scheduled tasks in a horizontal timeline format. Weeks start on Monday and end on Sunday. When opening the weekly overview, the view now auto-scrolls to highlight today within the current week by default. Features include:
+Displays a 7-day view of scheduled tasks in a horizontal timeline format. Weeks start on Monday and end on Sunday. **Not in the main sidebar** — open via Settings → Beta features or `/?view=weekly`. When opening the weekly overview, the view now auto-scrolls to highlight today within the current week by default. Features include:
 
 - **Enhanced Visual Design**: Modern gradient backgrounds, improved spacing, and better color hierarchy
 - **Smart Time Management**: Focused timeline from 6 AM to 10 PM for optimal productivity planning
@@ -301,4 +301,4 @@ The Monthly and Yearly calendar views are accessible from the main navigation un
 - Monthly Calendar View: the full calendar page's monthly mode; includes a compact grid and an Events/Periods list under the calendar for the selected month. In the grid, hover an event to reveal a delete icon for quick removal. Deletions prompt for confirmation.
 - Yearly Calendar: the full calendar page's yearly mode
 
-Note: Monthly and yearly event calendars share `/calendar`. The sidebar **Calendar** link opens monthly view; use the in-page **Month** / **Year** toggle to switch (sticky at the top while scrolling). Weekly Overview and the 5-Year Visualizer remain separate sidebar entries. Task timeline (`?view=timeline`) is URL-only.
+Note: Monthly and yearly event calendars share `/calendar`. The sidebar **Calendar** link opens monthly view; use the in-page **Month** / **Year** toggle to switch (sticky at the top while scrolling). Weekly Overview is a Calendar subview. **5-Year Visualizer** is a top-level sidebar item at the bottom (after Text Documents). Task timeline (`?view=timeline`) is URL-only.

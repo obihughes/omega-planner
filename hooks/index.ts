@@ -24,3 +24,4 @@ export {
 } from './useTheme';
 
 export { useGoalHierarchy, type GoalHierarchyLevel, type DayGridSlot } from './useGoalHierarchy';
+export { useWeeklyGoals } from './useWeeklyGoals';

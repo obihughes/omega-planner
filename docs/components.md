@@ -18,7 +18,7 @@ Single-week month planning with three panels: **month picker** (12 months of cur
 
 ### FiveYearVisualizer (`components/visualizer/FiveYearVisualizer.tsx`)
 **Location**: `components/visualizer/FiveYearVisualizer.tsx`
-**Page**: `app/visualizer/page.tsx`
+**Page**: `app/visualizer/page.tsx` (main sidebar nav — last item, after Text Documents)
 
 A 5-year high-level visualizer for long-term planning.
 - **5-Year Grid**: Displays 5 years vertically, with months horizontally.
@@ -55,6 +55,20 @@ Weekly goals management interface. Accessible from `/calendar?view=weekly-goals`
 - **Inline view switch**: Toggle between Weekly Overview (goals) and Study Tracker within the same page.
 - **Weekly Notes**: Hidden by default; click "Open Notes" in the header to reveal the notes panel. Notes are fully absent when compressed.
 - **Styling**: Matches Study Tracker header spacing, border treatment, and grid layout for visual consistency.
+- **Shared data**: Uses `hooks/useWeeklyGoals.ts` and `components/weekly-goals/*`; day goals sync with Goal Hierarchy (`/goal-hierarchy`).
+
+### Shared Weekly Goals (`components/weekly-goals/`)
+Reusable weekly goal UI and colors used by Calendar weekly overview and Goal Hierarchy day columns.
+- **`goalColors.ts`** — Color palette for goal cards.
+- **`GoalItem.tsx`** — Draggable goal card with checkbox, edit modal trigger, notes display.
+- **`GoalEditModal.tsx`** — Edit title, type (primary/supporting), color, notes; create task or delete.
+- **`WeeklyGoalsAddForm.tsx`** — Inline add form with color picker and goal type toggle.
+- **Storage**: `utils/goalsStorage.ts` (`omega-planner-weekly-goals-v1`), via `hooks/useWeeklyGoals.ts`.
+
+### Goal Hierarchy (`components/goal-hierarchy/GoalHierarchyView.tsx`)
+**Page:** `app/goal-hierarchy/page.tsx`
+
+Multi-level planning: month summary + sub-goals, week tabs with weekly summary + sub-goals, and a two-row day grid (Mon–Fri primary, Sat–Wed muted preview). Daily goals use the same weekly goal cards and storage as Calendar weekly overview (`WeeklyGoalsListForDay`, `DayColumn`).
 
 ### ChecklistSidebar (`components/calendar/ChecklistSidebar.tsx`)
 Weekly notes checklist panel. Rendered only when opened via "Open Notes" in Weekly Overview.

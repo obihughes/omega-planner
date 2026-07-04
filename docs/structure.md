@@ -29,7 +29,7 @@ Current notable feature folders include:
 - `components/calendar` – Calendars and modals
 - `components/meals` – Meals list and ingredient management
 - `components/study-tracker` – Study Planner (weekly day cards with tasks, monthly calendar with subject filter)
-- `components/goal-hierarchy` – Goal Hierarchy (month → week → day planning; month/week use summary + sub-goals; day grid is two 5-column rows — Mon–Fri primary, Sat–Wed muted preview with next-week Mon–Wed; days store plain text in `summary` with `--` bullet shortcuts via `DayGoalTextarea`; day saves use the grid slot’s month/week context so cross-month weeks persist correctly)
+- `components/goal-hierarchy` – Goal Hierarchy (month → week → day planning; month/week use summary + sub-goals; day grid is two 5-column rows — Mon–Fri primary, Sat–Wed muted preview with next-week Mon–Wed; daily goals use shared Weekly Goals storage and styled goal cards from `components/weekly-goals`, synced with Calendar weekly overview)
 - `components/month-board` – Month board beta (month/week pickers, single-week view with week goal + Mon–Sun rows)
 - `components/todo` – Minimal standalone todo checklist
 - `components/ui` – Shared UI primitives (layout, inputs, tabs, etc.)
@@ -55,8 +55,9 @@ Additional feature routes in `/app` include:
 - `app/meals` — Meals page (meal names and ingredients); hidden from main sidebar nav — open via Settings → Beta features or `/meals`. Legacy `/recipes` redirects to `/meals`.
 - `app/study-tracker` — Study Planner (weekly view with day cards + tasks); hidden from main sidebar — open via Settings → Beta features or `/study-tracker` (also embeddable in Calendar weekly view)
 - `app/month-board` — Month board (month/week pickers, week goal + Mon–Sun rows); hidden from main sidebar — open via Settings → Beta features or `/month-board`
+- Daily Planner **Week** view (`/?view=weekly`) — hidden from main sidebar — open via Settings → Beta features
 - `app/goal-hierarchy` — Goal Hierarchy (monthly / weekly / daily goals); main sidebar nav
-- `app/visualizer` — 5-Year Visualizer (Calendar high-level view)
+- `app/visualizer` — 5-Year Visualizer; main sidebar nav (last item, after Text Documents)
 - `app/app-map` — In-app code hierarchy reference (Settings → Developer → App Map); data in `lib/appHierarchy.ts`
 - `app/todo` — Minimal todo checklist (main sidebar nav)
 

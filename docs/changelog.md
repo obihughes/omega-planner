@@ -1,3 +1,19 @@
+## 2026-07-03
+
+- **Goal Hierarchy: daily goals sync with Weekly Overview** (2026-07-03)
+  - Replaced plain-text day goal inputs (`DayGoalTextarea`) with the same styled weekly goal cards used in Calendar weekly overview.
+  - Day goals now read/write `omega-planner-weekly-goals-v1` via `useWeeklyGoals`; edits in Goal Hierarchy appear in `/calendar?view=weekly-goals` and vice versa.
+  - Shared UI extracted to `components/weekly-goals/` (`GoalItem`, `GoalEditModal`, `WeeklyGoalsAddForm`, `goalColors`).
+  - **Files affected**: `components/goal-hierarchy/DayColumn.tsx`, `components/goal-hierarchy/GoalHierarchyView.tsx`, `components/goal-hierarchy/WeeklyGoalsListForDay.tsx`, `components/weekly-goals/*`, `components/calendar/WeeklyGoalsCalendarView.tsx`, `hooks/useWeeklyGoals.ts`, `hooks/index.ts`, `utils/dateUtils.ts`, `lib/appHierarchy.ts`, `docs/changelog.md`, `docs/structure.md`, `docs/components.md`, `docs/README.md`
+
+- **Navigation: Week moved to beta features** (2026-07-03)
+  - Removed **Week** from Daily Planner sidebar subviews; open via Settings → Beta features or `/?view=weekly`.
+  - **Files affected**: `lib/hiddenNavItems.ts`, `components/ui/Navigation.tsx`, `lib/appHierarchy.ts`, `docs/planner.md`, `docs/structure.md`, `docs/changelog.md`
+
+- **Navigation: 5-Year Visualizer moved to bottom of main nav** (2026-07-03)
+  - Removed **5-Year Visualizer** from Calendar subviews; added as a top-level sidebar item after **Text Documents**.
+  - **Files affected**: `components/ui/Navigation.tsx`, `lib/appHierarchy.ts`, `docs/planner.md`, `docs/structure.md`, `docs/components.md`, `docs/changelog.md`
+
 ## 2026-06-30
 
 - **Goal Hierarchy: fix typing on cross-month day columns** (2026-06-30)

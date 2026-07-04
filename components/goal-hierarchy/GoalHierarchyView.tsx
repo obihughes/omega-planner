@@ -1,13 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { getTodayDateKey } from '@/utils/dateUtils';
 import { formatMonthLabel, getWeekIndexContainingDate } from '@/utils/goalHierarchyDates';
 import { useGoalHierarchy } from '@/hooks/useGoalHierarchy';
+import { useWeeklyGoals } from '@/hooks/useWeeklyGoals';
 import { GoalLevelBlock } from './GoalLevelBlock';
 import { DayColumn } from './DayColumn';
-import { DayGoalShortcutsHelp } from './DayGoalShortcutsHelp';
 
 export function GoalHierarchyView() {
   const {
@@ -28,6 +28,25 @@ export function GoalHierarchyView() {
     removeItem,
   } = useGoalHierarchy();
 
+  const visibleDateKeys = useMemo(() => {
+    const keys = new Set<string>();
+    primaryRowDays.forEach((slot) => keys.add(slot.day.dateKey));
+    secondaryRowDays.forEach((slot) => keys.add(slot.day.dateKey));
+    return Array.from(keys);
+  }, [primaryRowDays, secondaryRowDays]);
+
+  const {
+    hydrated: goalsHydrated,
+    getGoalsForDate,
+    canAddMore,
+    addGoal,
+    toggleGoal,
+    removeGoal,
+    updateGoal,
+    moveGoal,
+    createTaskFromGoal,
+  } = useWeeklyGoals(visibleDateKeys);
+
   const todayKey = getTodayDateKey();
   const todayMonthKey = todayKey.slice(0, 7);
   const todayWeekIndex =
@@ -35,7 +54,7 @@ export function GoalHierarchyView() {
       ? getWeekIndexContainingDate(selectedMonthKey, todayKey)
       : -1;
 
-  if (!hydrated) {
+  if (!hydrated || !goalsHydrated) {
     return (
       <div className="h-full w-full px-6 py-6">
         <p className="text-sm text-muted-foreground">Loading…</p>
@@ -49,11 +68,10 @@ export function GoalHierarchyView() {
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Goal Hierarchy</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Monthly, weekly, and daily goals.
+            Monthly, weekly, and daily goals. Daily goals sync with Calendar weekly overview.
           </p>
         </div>
 
-        {/* Month tabs */}
         <div className="flex flex-wrap gap-2 border-b border-border pb-3">
           {monthTabs.map((monthKey) => (
             <button
@@ -72,7 +90,6 @@ export function GoalHierarchyView() {
           ))}
         </div>
 
-        {/* Month level */}
         <section className="space-y-2">
           <GoalLevelBlock
             level="month"
@@ -86,7 +103,6 @@ export function GoalHierarchyView() {
           />
         </section>
 
-        {/* Week tabs */}
         <div className="flex flex-wrap gap-2">
           {weeksInMonth.map(({ weekIndex }) => {
             const isCurrentWeek = weekIndex === todayWeekIndex;
@@ -110,7 +126,6 @@ export function GoalHierarchyView() {
           })}
         </div>
 
-        {/* Week panel + day grid */}
         <section className="rounded-xl border border-border bg-muted/20 p-4 space-y-4">
           <div className="max-w-xl">
             <GoalLevelBlock
@@ -125,32 +140,42 @@ export function GoalHierarchyView() {
             />
           </div>
 
-          <div className="flex items-center justify-end">
-            <DayGoalShortcutsHelp />
-          </div>
-
           <div className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
               {primaryRowDays.map((slot) => (
                 <DayColumn
                   key={slot.day.dateKey}
-                  day={slot.day}
-                  onSummaryChange={(s) =>
-                    setSummary('day', s, slot.day.dateKey, slot.monthKey, slot.weekIndex)
+                  dateKey={slot.day.dateKey}
+                  goals={getGoalsForDate(slot.day.dateKey)}
+                  canAddMore={canAddMore(slot.day.dateKey)}
+                  onAddGoal={(title, color, goalType) =>
+                    addGoal(slot.day.dateKey, title, color, goalType)
                   }
+                  onToggleGoal={(id) => toggleGoal(slot.day.dateKey, id)}
+                  onRemoveGoal={(id) => removeGoal(slot.day.dateKey, id)}
+                  onUpdateGoal={(id, updates) => updateGoal(slot.day.dateKey, id, updates)}
+                  onMoveGoal={moveGoal}
+                  onCreateTask={(goal) => createTaskFromGoal(goal, slot.day.dateKey)}
                 />
               ))}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 opacity-90">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
               {secondaryRowDays.map((slot) => (
                 <DayColumn
                   key={slot.day.dateKey}
-                  day={slot.day}
+                  dateKey={slot.day.dateKey}
+                  goals={getGoalsForDate(slot.day.dateKey)}
+                  canAddMore={canAddMore(slot.day.dateKey)}
                   isNextWeekPreview
-                  onSummaryChange={(s) =>
-                    setSummary('day', s, slot.day.dateKey, slot.monthKey, slot.weekIndex)
+                  onAddGoal={(title, color, goalType) =>
+                    addGoal(slot.day.dateKey, title, color, goalType)
                   }
+                  onToggleGoal={(id) => toggleGoal(slot.day.dateKey, id)}
+                  onRemoveGoal={(id) => removeGoal(slot.day.dateKey, id)}
+                  onUpdateGoal={(id, updates) => updateGoal(slot.day.dateKey, id, updates)}
+                  onMoveGoal={moveGoal}
+                  onCreateTask={(goal) => createTaskFromGoal(goal, slot.day.dateKey)}
                 />
               ))}
             </div>

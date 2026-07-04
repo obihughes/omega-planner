@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useCallback, useMemo } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   Calendar, CalendarDays, FolderKanban, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
   CalendarRange, ClipboardList, Settings, LayoutGrid, Map, ListTodo,
@@ -23,13 +23,30 @@ const HIDDEN_NAV_ICONS: Record<string, LucideIcon> = {
   meals: ChefHat,
   'study-tracker': BookOpen,
   'month-board': LayoutGrid,
+  'planner-weekly': CalendarDays,
 };
+
+function isHiddenNavItemActive(
+  pathname: string,
+  searchParams: URLSearchParams,
+  href: string
+): boolean {
+  const [path, query] = href.split('?');
+  if (pathname !== path) return false;
+  if (!query) return true;
+  const expected = new URLSearchParams(query);
+  for (const [key, value] of expected.entries()) {
+    if (searchParams.get(key) !== value) return false;
+  }
+  return true;
+}
 
 export function Navigation() {
   const { isCollapsed, sidebarWidth, toggleSidebar, setSidebarWidth } = useSidebar();
   
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { theme, setTheme, mounted } = useTheme();
   const { viewMode: plannerViewMode, setViewMode: setPlannerViewMode } = useViewMode();
   const { viewMode: projectsViewMode, setViewMode: setProjectsViewMode } = useProjectsView();
@@ -162,7 +179,6 @@ export function Navigation() {
       active: pathname === '/' && !pathname.includes('/calendar'),
       subViews: [
         { key: 'planner-daily', type: 'planner', mode: 'daily', label: 'Daily', icon: Sun, active: pathname === '/' && plannerViewMode === 'daily' },
-        { key: 'planner-weekly', type: 'planner', mode: 'weekly', label: 'Week', icon: CalendarDays, active: pathname === '/' && plannerViewMode === 'weekly' },
         { key: 'planner-class-schedule', label: 'Class Schedule', icon: GraduationCap, href: '/class-schedule', active: pathname === '/class-schedule' },
       ]
     },
@@ -175,7 +191,6 @@ export function Navigation() {
       subViews: [
         { key: 'calendar-weekly-goals', type: 'calendar', mode: 'weekly-goals', label: 'Weekly Overview', icon: ClipboardList, active: pathname === '/calendar' && calendarViewMode === 'weekly-goals' },
         { key: 'calendar-events', type: 'calendar', mode: 'monthly', label: 'Calendar', icon: CalendarRange, active: pathname === '/calendar' && (calendarViewMode === 'monthly' || calendarViewMode === 'yearly') },
-        { key: 'calendar-visualizer', label: '5-Year Visualizer', icon: GanttChart, href: '/visualizer', active: pathname === '/visualizer' }
       ]
     },
     {
@@ -208,6 +223,14 @@ export function Navigation() {
       label: 'Text Documents',
       icon: FileText,
       active: pathname === '/documents',
+      subViews: []
+    },
+    {
+      key: 'calendar-visualizer',
+      href: '/visualizer',
+      label: '5-Year Visualizer',
+      icon: GanttChart,
+      active: pathname === '/visualizer',
       subViews: []
     }
   ];
@@ -511,7 +534,7 @@ export function Navigation() {
           <div className="space-y-1 py-2">
             {HIDDEN_NAV_ITEMS.map((item) => {
               const Icon = HIDDEN_NAV_ICONS[item.key] ?? FlaskConical;
-              const isActive = pathname === item.href;
+              const isActive = isHiddenNavItemActive(pathname, searchParams, item.href);
 
               return (
                 <button
