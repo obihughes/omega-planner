@@ -46,6 +46,13 @@
   - New utilities: `utils/classScheduleUtils.ts`; new modal: `components/planner/ConflictResolutionModal.tsx`.
   - **Files affected**: `types/planner.ts`, `utils/classScheduleUtils.ts`, `utils/classScheduleUtils.test.ts`, `utils/index.ts`, `hooks/useDailyPlannerState.ts`, `components/planner/DailyPlanner.tsx`, `components/planner/ConflictResolutionModal.tsx`, `components/planner/index.ts`, `types/index.ts`, `docs/planner.md`, `components/planner/README.md`, `docs/utils.md`, `docs/changelog.md`
 
+- **Goal Hierarchy: combine with Weekly Overview** (2026-07-04)
+  - Goal Hierarchy day grid replaced with Weekly Overview-style 7-column × 2-row layout (selected week + next week preview).
+  - Added inline Weekly Overview / Study Tracker toggle, week navigation (prev/today/next), and Open Notes beside the weekly goals header.
+  - Extracted shared `WeeklyGoalsDayColumn` for Goal Hierarchy and Calendar weekly overview.
+  - Sidebar **Weekly Overview** link and `/calendar?view=weekly-goals` now route to `/goal-hierarchy`.
+  - **Files affected**: `components/goal-hierarchy/GoalHierarchyView.tsx`, `components/weekly-goals/WeeklyGoalsDayColumn.tsx`, `components/weekly-goals/index.ts`, `components/calendar/WeeklyGoalsCalendarView.tsx`, `hooks/useGoalHierarchy.ts`, `components/ui/Navigation.tsx`, `app/calendar/page.tsx`, `lib/appHierarchy.ts`, `docs/changelog.md`, `docs/structure.md`, `docs/components.md`, `docs/README.md`, `README.md`
+
 - **Goal Hierarchy: highlight today in day grid** (2026-07-04)
   - Today's day column uses the same green border highlight as Calendar weekly overview.
   - Preview-row styling no longer overrides today's border when today falls on Sat–Wed.

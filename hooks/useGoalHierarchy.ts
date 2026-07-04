@@ -216,6 +216,42 @@ export function useGoalHierarchy() {
     setSelectedWeekIndex(weekIndex);
   }, []);
 
+  const goToPreviousWeek = useCallback(() => {
+    const currentIdx = weeksInMonth.findIndex((w) => w.weekIndex === selectedWeekIndex);
+    if (currentIdx > 0) {
+      setSelectedWeekIndex(weeksInMonth[currentIdx - 1].weekIndex);
+      return;
+    }
+    const tabIdx = monthTabs.indexOf(selectedMonthKey);
+    if (tabIdx > 0) {
+      const prevMonthKey = monthTabs[tabIdx - 1];
+      const prevWeeks = getWeeksInMonth(prevMonthKey);
+      setSelectedMonthKey(prevMonthKey);
+      setSelectedWeekIndex(prevWeeks[prevWeeks.length - 1]?.weekIndex ?? 0);
+    }
+  }, [weeksInMonth, selectedWeekIndex, monthTabs, selectedMonthKey]);
+
+  const goToNextWeek = useCallback(() => {
+    const currentIdx = weeksInMonth.findIndex((w) => w.weekIndex === selectedWeekIndex);
+    if (currentIdx >= 0 && currentIdx < weeksInMonth.length - 1) {
+      setSelectedWeekIndex(weeksInMonth[currentIdx + 1].weekIndex);
+      return;
+    }
+    const tabIdx = monthTabs.indexOf(selectedMonthKey);
+    if (tabIdx >= 0 && tabIdx < monthTabs.length - 1) {
+      const nextMonthKey = monthTabs[tabIdx + 1];
+      setSelectedMonthKey(nextMonthKey);
+      setSelectedWeekIndex(0);
+    }
+  }, [weeksInMonth, selectedWeekIndex, monthTabs, selectedMonthKey]);
+
+  const goToCurrentWeek = useCallback(() => {
+    const today = getTodayDateKey();
+    const monthKey = today.slice(0, 7);
+    setSelectedMonthKey(monthKey);
+    setSelectedWeekIndex(getWeekIndexContainingDate(monthKey, today));
+  }, []);
+
   const setSummary = useCallback(
     (
       level: Level,
@@ -355,6 +391,9 @@ export function useGoalHierarchy() {
     weeksInMonth,
     selectMonth,
     selectWeek,
+    goToPreviousWeek,
+    goToNextWeek,
+    goToCurrentWeek,
     setSummary,
     addItem,
     toggleItem,

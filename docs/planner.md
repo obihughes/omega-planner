@@ -300,11 +300,12 @@ The Saved Days feature allows you to save daily task configurations as reusable 
 - **Event Planning:** Save template schedules for recurring events or meetings
 - **Quick Setup:** Rapidly populate new days with common task patterns
 
-### Weekly Overview Page (`/calendar?view=weekly-goals`)
-The Weekly Overview page provides an inline switch between two views for quick comparison:
-- **Weekly Overview**: 4-week grid of weekly goals with drag-and-drop, calendar events, and optional Weekly Notes panel.
+### Weekly Overview Page (`/goal-hierarchy`)
+Weekly planning is combined with Goal Hierarchy at `/goal-hierarchy`. The Calendar sidebar **Weekly Overview** link and legacy `/calendar?view=weekly-goals` URL redirect here.
+- **Weekly Overview**: Two-row 7-column grid (selected week + next week preview) with drag-and-drop, calendar events, and optional Weekly Notes panel.
 - **Study Tracker**: Same Study Planner component as `/study-tracker`, embedded in-place with full subject/task management.
-- **Weekly Notes**: Hidden by default. Click "Open Notes" to reveal the checklist panel; click the close icon to hide it again. When hidden, no sidebar column is shown.
+- **Week navigation**: Prev / Today / Next buttons sync with the week tabs above.
+- **Weekly Notes**: Hidden by default. Click "Open Notes" to reveal the checklist panel; click the close icon to hide it again.
 
 ### Calendar Views (under Daily Planner)
 The Monthly and Yearly calendar views are accessible from the main navigation under `Daily Planner`:
@@ -312,4 +313,4 @@ The Monthly and Yearly calendar views are accessible from the main navigation un
 - Monthly Calendar View: the full calendar page's monthly mode; includes a compact grid and an Events/Periods list under the calendar for the selected month. In the grid, hover an event to reveal a delete icon for quick removal. Deletions prompt for confirmation.
 - Yearly Calendar: the full calendar page's yearly mode
 
-Note: Monthly and yearly event calendars share `/calendar`. The sidebar **Calendar** link opens monthly view; use the in-page **Month** / **Year** toggle to switch (sticky at the top while scrolling). Weekly Overview is a Calendar subview. **5-Year Visualizer** is a top-level sidebar item at the bottom (after Text Documents). Task timeline (`?view=timeline`) is URL-only.
+Note: Monthly and yearly event calendars share `/calendar`. The sidebar **Calendar** link opens monthly view; use the in-page **Month** / **Year** toggle to switch (sticky at the top while scrolling). Weekly Overview lives at `/goal-hierarchy`. **5-Year Visualizer** is a top-level sidebar item at the bottom (after Text Documents). Task timeline (`?view=timeline`) is URL-only.

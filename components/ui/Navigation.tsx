@@ -189,7 +189,7 @@ export function Navigation() {
       icon: Calendar,
       active: pathname === '/calendar',
       subViews: [
-        { key: 'calendar-weekly-goals', type: 'calendar', mode: 'weekly-goals', label: 'Weekly Overview', icon: ClipboardList, active: pathname === '/calendar' && calendarViewMode === 'weekly-goals' },
+        { key: 'calendar-weekly-goals', type: 'calendar', mode: 'weekly-goals', label: 'Weekly Overview', icon: ClipboardList, href: '/goal-hierarchy', active: pathname === '/goal-hierarchy' },
         { key: 'calendar-events', type: 'calendar', mode: 'monthly', label: 'Calendar', icon: CalendarRange, active: pathname === '/calendar' && (calendarViewMode === 'monthly' || calendarViewMode === 'yearly') },
       ]
     },

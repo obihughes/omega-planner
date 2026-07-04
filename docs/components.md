@@ -51,24 +51,23 @@ Full year calendar view.
 Monthly calendar view.
 
 ### WeeklyGoalsCalendarView (`components/calendar/WeeklyGoalsCalendarView.tsx`)
-Weekly goals management interface. Accessible from `/calendar?view=weekly-goals` alongside an inline switch to Study Tracker for quick comparison.
-- **Inline view switch**: Toggle between Weekly Overview (goals) and Study Tracker within the same page.
-- **Weekly Notes**: Hidden by default; click "Open Notes" in the header to reveal the notes panel. Notes are fully absent when compressed.
-- **Styling**: Matches Study Tracker header spacing, border treatment, and grid layout for visual consistency.
-- **Shared data**: Uses `hooks/useWeeklyGoals.ts` and `components/weekly-goals/*`; day goals sync with Goal Hierarchy (`/goal-hierarchy`).
+Legacy 4-week weekly goals grid (still available if embedded elsewhere). Primary weekly planning UI is now Goal Hierarchy at `/goal-hierarchy`.
+- **Weekly Notes**: Hidden by default; click "Open Notes" in the header to reveal the notes panel.
+- **Shared data**: Uses `hooks/useWeeklyGoals.ts` and `components/weekly-goals/*`; day goals sync with Goal Hierarchy.
 
 ### Shared Weekly Goals (`components/weekly-goals/`)
-Reusable weekly goal UI and colors used by Calendar weekly overview and Goal Hierarchy day columns.
+Reusable weekly goal UI and colors used by Goal Hierarchy and Calendar weekly overview.
 - **`goalColors.ts`** — Color palette for goal cards.
 - **`GoalItem.tsx`** — Draggable goal card with checkbox, edit modal trigger, notes display.
 - **`GoalEditModal.tsx`** — Edit title, type (primary/supporting), color, notes; create task or delete.
 - **`WeeklyGoalsAddForm.tsx`** — Inline add form with color picker and goal type toggle.
+- **`WeeklyGoalsDayColumn.tsx`** — Full day column with events, goals, drag/drop, and add form.
 - **Storage**: `utils/goalsStorage.ts` (`omega-planner-weekly-goals-v1`), via `hooks/useWeeklyGoals.ts`.
 
 ### Goal Hierarchy (`components/goal-hierarchy/GoalHierarchyView.tsx`)
 **Page:** `app/goal-hierarchy/page.tsx`
 
-Multi-level planning: month and week goal summaries, and a two-row day grid (Mon–Fri primary, Sat–Wed muted preview). Daily goals use the same weekly goal cards and storage as Calendar weekly overview (`WeeklyGoalsListForDay`, `DayColumn`).
+Multi-level planning: month and week goal summaries, plus a two-row 7-column weekly goals grid (selected week Mon–Sun + next week preview). Inline Weekly Overview / Study Tracker toggle, week navigation, and Open Notes. Daily goals use shared `WeeklyGoalsDayColumn` and storage with Calendar weekly overview.
 
 ### ChecklistSidebar (`components/calendar/ChecklistSidebar.tsx`)
 Weekly notes checklist panel. Rendered only when opened via "Open Notes" in Weekly Overview.

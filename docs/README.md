@@ -14,8 +14,8 @@ This directory contains documentation for the project. Below is an overview of t
 ## Feature Documentation
 - [Daily Planner](planner.md) - Comprehensive guide to the daily planner feature
 - **Month board** - `/month-board` (Settings → Beta features); month/week pickers with week goal + Mon–Sun rows; see [planner.md](planner.md#month-board)
-- **Goal Hierarchy** - `/goal-hierarchy` (main sidebar); monthly/weekly goal summaries; day columns use shared Weekly Goals cards (synced with Calendar weekly overview)
-- Weekly Overview - `/calendar?view=weekly-goals` with inline switch to Study Tracker; see [planner.md](planner.md#weekly-overview-page)
+- **Goal Hierarchy** - `/goal-hierarchy` (main sidebar); monthly/weekly goal summaries; 7×2 weekly goals grid with Study Tracker toggle, week nav, and Open Notes; daily goals sync with Calendar weekly overview
+- Weekly Overview - `/goal-hierarchy` (Calendar sidebar link redirects here; legacy `/calendar?view=weekly-goals` redirects); see [planner.md](planner.md#weekly-overview-page)
 
 ## Quick Links
 - [Getting Started](getting-started.md) - Quick start guide for new developers

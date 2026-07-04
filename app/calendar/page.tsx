@@ -64,7 +64,11 @@ export default function CalendarPage() {
   // Respect ?view=monthly|yearly|timeline|weekly-goals from query params; default to monthly
   useEffect(() => {
     const v = params?.get('view');
-    if (v === 'monthly' || v === 'yearly' || v === 'timeline' || v === 'weekly-goals') {
+    if (v === 'weekly-goals') {
+      router.replace('/goal-hierarchy');
+      return;
+    }
+    if (v === 'monthly' || v === 'yearly' || v === 'timeline') {
       setCurrentView(v as CalendarViewMode);
       return;
     }
