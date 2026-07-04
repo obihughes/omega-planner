@@ -633,6 +633,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'useGoalHierarchy',
         kind: 'hook',
         path: 'hooks/useGoalHierarchy.ts',
+        editHint: 'Day grid slots carry monthKey + weekIndex; setSummary for day level must use that context (not getWeekContextForDate) so cross-month weeks read/write the same storage slot.',
       },
       {
         id: 'gh-storage',

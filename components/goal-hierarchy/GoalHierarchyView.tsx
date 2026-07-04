@@ -131,22 +131,26 @@ export function GoalHierarchyView() {
 
           <div className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-              {primaryRowDays.map((day) => (
+              {primaryRowDays.map((slot) => (
                 <DayColumn
-                  key={day.dateKey}
-                  day={day}
-                  onSummaryChange={(s) => setSummary('day', s, day.dateKey)}
+                  key={slot.day.dateKey}
+                  day={slot.day}
+                  onSummaryChange={(s) =>
+                    setSummary('day', s, slot.day.dateKey, slot.monthKey, slot.weekIndex)
+                  }
                 />
               ))}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 opacity-90">
-              {secondaryRowDays.map((day) => (
+              {secondaryRowDays.map((slot) => (
                 <DayColumn
-                  key={day.dateKey}
-                  day={day}
+                  key={slot.day.dateKey}
+                  day={slot.day}
                   isNextWeekPreview
-                  onSummaryChange={(s) => setSummary('day', s, day.dateKey)}
+                  onSummaryChange={(s) =>
+                    setSummary('day', s, slot.day.dateKey, slot.monthKey, slot.weekIndex)
+                  }
                 />
               ))}
             </div>

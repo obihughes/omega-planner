@@ -23,4 +23,4 @@ export {
   type ThemeOption,
 } from './useTheme';
 
-export { useGoalHierarchy, type GoalHierarchyLevel } from './useGoalHierarchy';
+export { useGoalHierarchy, type GoalHierarchyLevel, type DayGridSlot } from './useGoalHierarchy';

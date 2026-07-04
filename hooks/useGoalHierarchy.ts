@@ -30,6 +30,13 @@ const SAVE_DEBOUNCE_MS = 300;
 
 type Level = 'month' | 'week' | 'day';
 
+/** Day column with the month/week storage slot it was read from. */
+export type DayGridSlot = {
+  day: HierarchyDaySlot;
+  monthKey: string;
+  weekIndex: number;
+};
+
 function patchMonth(
   data: GoalHierarchyStorageData,
   monthKey: string,
@@ -162,24 +169,38 @@ export function useGoalHierarchy() {
     return GoalHierarchyStorage.ensureWeek(currentMonth, weekIndex);
   }, [currentMonth, selectedWeekIndex, weeksInMonth]);
 
-  const primaryRowDays = useMemo(
-    () => currentWeek.days.slice(0, GOAL_HIERARCHY_PRIMARY_ROW_COUNT),
-    [currentWeek]
-  );
+  const primaryRowDays = useMemo((): DayGridSlot[] => {
+    const weekIndex = currentWeek.weekIndex;
+    return currentWeek.days.slice(0, GOAL_HIERARCHY_PRIMARY_ROW_COUNT).map((day) => ({
+      day,
+      monthKey: selectedMonthKey,
+      weekIndex,
+    }));
+  }, [currentWeek, selectedMonthKey]);
 
-  const secondaryRowDays = useMemo(() => {
-    const weekendDays = currentWeek.days.slice(GOAL_HIERARCHY_PRIMARY_ROW_COUNT);
+  const secondaryRowDays = useMemo((): DayGridSlot[] => {
+    const weekIndex = currentWeek.weekIndex;
+    const weekendDays: DayGridSlot[] = currentWeek.days
+      .slice(GOAL_HIERARCHY_PRIMARY_ROW_COUNT)
+      .map((day) => ({
+        day,
+        monthKey: selectedMonthKey,
+        weekIndex,
+      }));
     const nextWeekStartKey = getNextWeekStartKey(currentWeek.weekStartKey);
     const { monthKey: nextMonthKey, weekIndex: nextWeekIndex } =
       getWeekContextForDate(nextWeekStartKey);
     const nextMonth = GoalHierarchyStorage.ensureMonth(data, nextMonthKey);
     const nextWeek = GoalHierarchyStorage.ensureWeek(nextMonth, nextWeekIndex);
-    const nextWeekPreviewDays = nextWeek.days.slice(
-      0,
-      GOAL_HIERARCHY_PREVIEW_ROW_COUNT - weekendDays.length
-    );
+    const nextWeekPreviewDays: DayGridSlot[] = nextWeek.days
+      .slice(0, GOAL_HIERARCHY_PREVIEW_ROW_COUNT - weekendDays.length)
+      .map((day) => ({
+        day,
+        monthKey: nextMonthKey,
+        weekIndex: nextWeekIndex,
+      }));
     return [...weekendDays, ...nextWeekPreviewDays];
-  }, [currentWeek, data]);
+  }, [currentWeek, data, selectedMonthKey]);
 
   const selectMonth = useCallback((monthKey: string) => {
     setSelectedMonthKey(monthKey);
@@ -196,7 +217,13 @@ export function useGoalHierarchy() {
   }, []);
 
   const setSummary = useCallback(
-    (level: Level, summary: string, dateKey?: string) => {
+    (
+      level: Level,
+      summary: string,
+      dateKey?: string,
+      dayMonthKey?: string,
+      dayWeekIndex?: number
+    ) => {
       setData((prev) => {
         if (level === 'month') {
           return patchMonth(prev, selectedMonthKey, { summary });
@@ -204,9 +231,13 @@ export function useGoalHierarchy() {
         if (level === 'week') {
           return patchWeek(prev, selectedMonthKey, selectedWeekIndex, { summary });
         }
-        if (level === 'day' && dateKey) {
-          const { monthKey, weekIndex } = getWeekContextForDate(dateKey);
-          return patchDay(prev, monthKey, weekIndex, dateKey, {
+        if (
+          level === 'day' &&
+          dateKey &&
+          dayMonthKey !== undefined &&
+          dayWeekIndex !== undefined
+        ) {
+          return patchDay(prev, dayMonthKey, dayWeekIndex, dateKey, {
             summary,
             items: [],
           });

@@ -1,3 +1,10 @@
+## 2026-06-30
+
+- **Goal Hierarchy: fix typing on cross-month day columns** (2026-06-30)
+  - Day saves now use the same month/week storage slot the grid read from, instead of routing by the date’s calendar month (`getWeekContextForDate(dateKey)`).
+  - Fixes Wed–Fri and Sat–Sun columns when the viewed week spans two months (keystrokes no longer reset on July dates while on the June tab).
+  - **Files affected**: `hooks/useGoalHierarchy.ts`, `components/goal-hierarchy/GoalHierarchyView.tsx`, `hooks/index.ts`, `utils/goalHierarchyDates.test.ts`, `docs/changelog.md`, `docs/structure.md`, `lib/appHierarchy.ts`
+
 ## 2026-06-26
 
 - **Goal Hierarchy: weekend + next-week preview rows** (2026-06-26)

@@ -5,11 +5,34 @@ import {
   getWeeksInMonth,
 } from './goalHierarchyDates';
 import { GoalHierarchyStorage } from './goalHierarchyStorage';
+import type { GoalHierarchyStorageData, HierarchyDaySlot } from '../types/goalHierarchy';
 import {
   GOAL_HIERARCHY_PRIMARY_ROW_COUNT,
   GOAL_HIERARCHY_PREVIEW_ROW_COUNT,
   GOAL_HIERARCHY_WEEKDAY_COUNT,
 } from '../types/goalHierarchy';
+
+function patchDayForTest(
+  data: GoalHierarchyStorageData,
+  monthKey: string,
+  weekIndex: number,
+  dateKey: string,
+  patch: Partial<Pick<HierarchyDaySlot, 'summary' | 'items'>>
+): GoalHierarchyStorageData {
+  const month = GoalHierarchyStorage.ensureMonth(data, monthKey);
+  const week = GoalHierarchyStorage.ensureWeek(month, weekIndex);
+  const days = week.days.map((d) => (d.dateKey === dateKey ? { ...d, ...patch } : d));
+  const weeks = month.weeks.map((w) =>
+    w.weekIndex === weekIndex ? { ...w, days } : w
+  );
+  return {
+    ...data,
+    months: {
+      ...data.months,
+      [monthKey]: { ...month, weeks },
+    },
+  };
+}
 
 describe('goalHierarchyDates', () => {
   it('returns seven Mon–Sun dates for a week', () => {
@@ -90,5 +113,39 @@ describe('GoalHierarchyStorage migration', () => {
     expect(merged.days[5].dateKey).toBe('2026-06-27');
     expect(merged.days[5].summary).toBe('');
     expect(merged.days[6].dateKey).toBe('2026-06-28');
+  });
+});
+
+describe('Goal Hierarchy cross-month day saves', () => {
+  it('patches July dates in the June month week slot when using June view context', () => {
+    const juneWeeks = getWeeksInMonth('2026-06');
+    const week5 = juneWeeks[4];
+    expect(week5.weekStartKey).toBe('2026-06-29');
+
+    const emptyData = { version: '1.0', months: {}, lastUpdated: '' };
+    const juneMonth = GoalHierarchyStorage.ensureMonth(emptyData, '2026-06');
+    const juneWeek = GoalHierarchyStorage.ensureWeek(juneMonth, week5.weekIndex);
+
+    expect(juneWeek.days.some((d) => d.dateKey === '2026-07-01')).toBe(true);
+
+    const updated = patchDayForTest(emptyData, '2026-06', week5.weekIndex, '2026-07-01', {
+      summary: 'Cross-month goal',
+      items: [],
+    });
+
+    const updatedJuneWeek = GoalHierarchyStorage.ensureWeek(
+      GoalHierarchyStorage.ensureMonth(updated, '2026-06'),
+      week5.weekIndex
+    );
+    const jul1InJuneSlot = updatedJuneWeek.days.find((d) => d.dateKey === '2026-07-01');
+    expect(jul1InJuneSlot?.summary).toBe('Cross-month goal');
+
+    const julyContext = getWeekContextForDate('2026-07-01');
+    const julyWeek = GoalHierarchyStorage.ensureWeek(
+      GoalHierarchyStorage.ensureMonth(updated, julyContext.monthKey),
+      julyContext.weekIndex
+    );
+    const jul1InJulySlot = julyWeek.days.find((d) => d.dateKey === '2026-07-01');
+    expect(jul1InJulySlot?.summary).not.toBe('Cross-month goal');
   });
 });
