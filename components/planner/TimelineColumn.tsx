@@ -131,6 +131,14 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
         ((hour - startHour) / periodHours) * 100;
     const getDurationPercent = (duration: number) => (duration / periodHours) * 100;
 
+    const getVisibleTaskSegment = (task: Task & { startHour: number }) => {
+        const taskEnd = task.startHour + task.duration;
+        const visibleStart = Math.max(task.startHour, startHour);
+        const visibleEnd = Math.min(taskEnd, endHour);
+        const visibleDuration = visibleEnd - visibleStart;
+        return { visibleStart, visibleDuration, continuesFromPrior: visibleStart > task.startHour };
+    };
+
     let currentTimeMarker = null;
     if (dayOffset === 0) {
         const now = currentTimeForMarker;
@@ -298,6 +306,10 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
                         if (resizingTask?.task.id === task.id) {
                             displayTask = resizingTask.task;
                         }
+
+                        const { visibleStart, visibleDuration, continuesFromPrior } =
+                            getVisibleTaskSegment(displayTask);
+                        if (visibleDuration <= 0) return null;
                         
                         let colorIndex = 0;
                         if (displayTask.id) {
@@ -318,16 +330,18 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
                                 style={{
                                     position: 'absolute',
                                     left: fillWidth
-                                        ? `${getHourOffsetPercent(displayTask.startHour)}%`
-                                        : `${(displayTask.startHour - startHour) * pixelsPerHourEffective}px`,
+                                        ? `${getHourOffsetPercent(visibleStart)}%`
+                                        : `${(visibleStart - startHour) * pixelsPerHourEffective}px`,
                                     width: fillWidth
-                                        ? `${getDurationPercent(displayTask.duration)}%`
-                                        : `${displayTask.duration * pixelsPerHourEffective}px`,
+                                        ? `${getDurationPercent(visibleDuration)}%`
+                                        : `${visibleDuration * pixelsPerHourEffective}px`,
                                     height: '100%',
                                     top: 0,
                                 }}
                             >
-                                <div className="relative w-full h-full overflow-visible">
+                                <div
+                                    className={`relative w-full h-full overflow-hidden${continuesFromPrior ? ' rounded-l-none' : ''}`}
+                                >
                                     {deleteMode && onDeleteTask && (
                                         <button
                                             type="button"

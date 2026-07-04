@@ -1,5 +1,9 @@
 ## 2026-07-04
 
+- **Daily Planner: clip cross-period tasks per timeline row** (2026-07-04)
+  - Tasks spanning two timeline periods (e.g. 11am–1pm) are now clipped to the visible segment in each row instead of using negative left offsets that overflowed into the sidebar.
+  - **Files affected**: `components/planner/TimelineColumn.tsx`, `docs/changelog.md`
+
 - **Daily Planner: compact day panel header** (2026-07-04)
   - Day panel headers use a single nowrap row with smaller buttons (`h-7`, `text-xs`), tighter spacing, and shorter labels (`Calendar`, `Saved`, `Import`, `Schedule`) so controls fit on one line.
   - **Files affected**: `components/planner/DailyPlanner.tsx`, `docs/changelog.md`
