@@ -265,7 +265,6 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
                     width: fillWidth ? '100%' : `${pixelsPerHourEffective * periodHours}px`,
                     minWidth: fillWidth ? '100%' : undefined,
                     height: `${columnHeight}px`,
-                    overflow: 'hidden',
                 }}
                 data-section-period={period}
                 data-day-offset={dayOffset}
@@ -275,7 +274,7 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
             >
                 {renderTimelineHeader()}
                 <div
-                    className={`relative flex-grow bg-background ${isTargetCopyDay ? 'bg-blue-50/80 dark:bg-blue-900/30 cursor-copy' : 'cursor-pointer'}`}
+                    className={`relative flex-grow overflow-visible bg-background ${isTargetCopyDay ? 'bg-blue-50/80 dark:bg-blue-900/30 cursor-copy' : 'cursor-pointer'}`}
                     data-testid={`timeline-area-${dayOffset}-${period}`}
                     data-day-offset={dayOffset}
                     data-section-period={period}
@@ -328,7 +327,7 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
                                     top: 0,
                                 }}
                             >
-                                <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                                <div className="relative w-full h-full overflow-visible">
                                     {deleteMode && onDeleteTask && (
                                         <button
                                             type="button"

@@ -63,7 +63,7 @@ export const DailyEventsContainer: React.FC<DailyEventsContainerProps> = ({
   };
 
   return (
-    <div className="mb-3 bg-card/40 border border-border/60 shadow-sm rounded-lg overflow-hidden">
+    <div className="mb-3 bg-card/40 border border-border/60 shadow-sm rounded-lg overflow-visible">
       {/* Header - conditionally rendered */}
       {showHeader && (
         <div className="flex items-center justify-between p-3 border-b border-border bg-muted/20">
@@ -86,10 +86,10 @@ export const DailyEventsContainer: React.FC<DailyEventsContainerProps> = ({
         </div>
       )}
 
-      {/* Content - Fixed height container */}
-      <div className="px-2 py-1.5 h-9 overflow-hidden">
+      {/* Content */}
+      <div className="px-2 py-2 min-h-9 overflow-visible">
         {hasContent ? (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 overflow-visible">
             {/* Events */}
             {todaysEvents.map((event) => (
             <div
@@ -207,8 +207,8 @@ export const DailyEventsContainer: React.FC<DailyEventsContainerProps> = ({
           ))}
           </div>
         ) : (
-          /* Empty state - show message in fixed height container */
-          <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+          /* Empty state */
+          <div className="flex items-center justify-center min-h-9 text-muted-foreground text-sm">
             No events for today
           </div>
         )}

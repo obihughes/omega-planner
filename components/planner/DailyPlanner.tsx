@@ -679,11 +679,11 @@ export default function DailyPlanner() {
             )}
 
             {/* Unified Task Pool and Pinned Tasks View */}
-            <div className="mb-4 bg-card border border-border shadow-sm overflow-hidden">
+            <div className="mb-4 bg-card border border-border shadow-sm overflow-visible">
               {/* Collapsible Content */}
               {isTaskPoolOpen && (
-                <div className="h-12 px-2 py-1">
-                  <div className="flex items-center gap-3 h-full overflow-x-auto overflow-y-hidden scrollbar-hide">
+                <div className="min-h-12 px-2 py-2">
+                  <div className="flex items-center gap-3 min-h-10 overflow-x-auto overflow-y-visible scrollbar-hide">
                   
                   {/* Add to Pool Button */}
                   <div className="flex items-center justify-center">
@@ -712,7 +712,7 @@ export default function DailyPlanner() {
                       onDragStart={(e) => {
                         e.dataTransfer.setData('text/plain', JSON.stringify({ ...task, source: 'pool' }));
                       }}
-                      className="relative px-2 py-1 bg-emerald-500/10 border border-emerald-500/25 hover:bg-emerald-500/15 hover:shadow-md transition-all duration-150 group flex-shrink-0 h-8 min-w-[9rem] max-w-[12rem] cursor-grab active:cursor-grabbing rounded"
+                      className="relative px-2 py-1.5 bg-emerald-500/10 border border-emerald-500/25 hover:bg-emerald-500/15 hover:shadow-md transition-all duration-150 group flex-shrink-0 min-h-8 h-auto min-w-[9rem] max-w-[12rem] cursor-grab active:cursor-grabbing rounded"
                     >
                                               <div className="flex items-center justify-between gap-2 h-full">
                           <p className="font-medium text-xs text-foreground truncate">
@@ -774,7 +774,7 @@ export default function DailyPlanner() {
                       return (
                         <div
                           key={`pinned-${task.id}`}
-                          className={`relative px-2 py-1 border hover:shadow-md transition-all duration-150 group flex-shrink-0 h-8 min-w-[9rem] max-w-[12rem] rounded ${
+                          className={`relative px-2 py-1.5 border hover:shadow-md transition-all duration-150 group flex-shrink-0 min-h-8 h-auto min-w-[9rem] max-w-[12rem] rounded ${
                             timeRemaining.isOverdue
                               ? 'bg-red-500/10 border-red-500/30'
                               : 'bg-sky-500/10 border-sky-500/25 hover:bg-sky-500/15'
@@ -869,9 +869,9 @@ export default function DailyPlanner() {
             </div>
 
             <div className="space-y-6" ref={timelineScrollRef}>
-                <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card/95 backdrop-blur-sm">
-                    <div className="flex items-center">
+                <div className="bg-card rounded-lg shadow-sm border border-border overflow-visible">
+                  <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-b border-border bg-card/95 backdrop-blur-sm">
+                    <div className="flex flex-wrap items-center min-w-0">
                       <Button variant="ghost" size="sm" onClick={() => setTopDayOffset(topDayOffset - 7)} title="Previous week">«</Button>
                       <Button variant="ghost" size="sm" onClick={() => setTopDayOffset(topDayOffset - 1)} title="Previous day">‹</Button>
                       <Popover>
@@ -972,7 +972,7 @@ export default function DailyPlanner() {
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button size="sm" variant="outline" className="flex items-center gap-1">
@@ -1119,7 +1119,7 @@ export default function DailyPlanner() {
                       </Button>
                     </div>
                   </div>
-                  <div className="border border-border/20 rounded-b-lg overflow-hidden">
+                  <div className="border border-border/20 rounded-b-lg overflow-visible">
                     <div className="flex flex-col">
                         {(['night', 'morning', 'afternoon', 'evening'] as const).map((period) => (
                           <TimelineColumn
@@ -1154,9 +1154,9 @@ export default function DailyPlanner() {
                   </div>
                 </div>
 
-                <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card/95 backdrop-blur-sm">
-                    <div className="flex items-center">
+                <div className="bg-card rounded-lg shadow-sm border border-border overflow-visible">
+                  <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-b border-border bg-card/95 backdrop-blur-sm">
+                    <div className="flex flex-wrap items-center min-w-0">
                         <Button variant="ghost" size="sm" onClick={() => setBottomDayOffset(bottomDayOffset - 7)} title="Previous week">«</Button>
                         <Button variant="ghost" size="sm" onClick={() => setBottomDayOffset(bottomDayOffset - 1)} title="Previous day">‹</Button>
                         <Popover>
@@ -1226,7 +1226,7 @@ export default function DailyPlanner() {
                           </span>
                         )}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button size="sm" variant="outline" className="flex items-center gap-1">
@@ -1373,7 +1373,7 @@ export default function DailyPlanner() {
                       </Button>
                     </div>
                   </div>
-                  <div className="border border-border/20 rounded-b-lg overflow-hidden">
+                  <div className="border border-border/20 rounded-b-lg overflow-visible">
                     <div className="flex flex-col">
                         {(['night', 'morning', 'afternoon', 'evening'] as const).map((period) => (
                           <TimelineColumn

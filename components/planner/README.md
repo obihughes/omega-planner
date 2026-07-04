@@ -60,6 +60,7 @@ This directory contains all components related to the daily planning functionali
 - Mini month calendar with task indicators
 - Inbox for unscheduled pool tasks (drag to calendar or timeline)
 - Bulk-actions popover: Delete Mode, Clear Day, Apply/Replace Saved Day
+- Fixed width `w-72` (288px, 10% narrower than prior 320px layout)
 
 ### TaskAssignmentCalendar
 **File**: `TaskAssignmentCalendar.tsx`
@@ -92,6 +93,8 @@ This directory contains all components related to the daily planning functionali
 - Drag handles for repositioning (action buttons and resize handles do not initiate drag)
 - Resize handles for duration adjustment
 - Click actions for editing, copy, and notes
+- Action buttons scale with timeline row height (compact horizontal row on short rows)
+- `overflow-visible` on card root so hover action buttons are not clipped at the right edge
 - Time conflict indicators
 
 #### TimelineColumn
@@ -105,6 +108,7 @@ This directory contains all components related to the daily planning functionali
 - Period-specific styling (night, morning, afternoon, evening)
 - Optional: readOnly (class schedule), drag/resize/copy handlers, onDoubleClickAdd
 - Task wrapper skips drag when mousedown targets action buttons or resize handles (so copy works on past/greyed tasks)
+- Timeline task area uses `overflow-visible` so TaskCard buttons are not clipped by parent containers
 
 ### Sidebar Components
 

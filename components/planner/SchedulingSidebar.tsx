@@ -362,7 +362,7 @@ export function SchedulingSidebar({
   };
 
   return (
-    <div className="w-80 shrink-0 border-r border-border bg-card/30 flex flex-col h-full">
+    <div className="w-72 shrink-0 border-r border-border bg-card/30 flex flex-col h-full">
       <div className="p-3 border-b border-border">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-base font-semibold">Calendar</h3>

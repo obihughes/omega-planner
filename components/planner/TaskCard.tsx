@@ -71,6 +71,45 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     onStartEdit(task, {isNew: false});
   };
 
+  const actionScale = (() => {
+    if (isCompressed || height < 56) {
+      return {
+        btn: 'h-3.5 w-3.5',
+        icon: 'w-2 h-2',
+        gap: 'gap-0',
+        inset: 'top-0.5 right-0.5',
+        dragRight: 'right-4',
+      };
+    }
+    if (height < 80) {
+      return {
+        btn: 'h-4 w-4',
+        icon: 'w-2 h-2',
+        gap: 'gap-0.5',
+        inset: 'top-0.5 right-0.5',
+        dragRight: 'right-4',
+      };
+    }
+    if (height < 110) {
+      return {
+        btn: 'h-5 w-5',
+        icon: 'w-2.5 h-2.5',
+        gap: 'gap-0.5',
+        inset: 'top-1 right-1',
+        dragRight: 'right-5',
+      };
+    }
+    return {
+      btn: 'h-6 w-6',
+      icon: 'w-3 h-3',
+      gap: 'gap-0.5',
+      inset: 'top-1 right-1.5',
+      dragRight: 'right-6',
+    };
+  })();
+
+  const useCompactActionLayout = height < 80 || isCompressed;
+
   return (
     <>
       <div 
@@ -84,7 +123,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           hover:shadow-md
           transition-all duration-200
           ${isCompressed ? 'min-h-[24px]' : 'min-h-[32px]'}
-          h-full max-h-full relative overflow-hidden
+          h-full max-h-full relative overflow-visible
           ${isPastTask ? 'opacity-50' : ''}
           group
           font-medium
@@ -101,7 +140,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         
         {/* Drag handle area - middle section that doesn't cover button areas */}
         <div 
-          className={`absolute left-1.5 top-0 bottom-0 cursor-grab active:cursor-grabbing z-20 right-6`}
+          className={`absolute left-1.5 top-0 bottom-0 cursor-grab active:cursor-grabbing z-20 ${actionScale.dragRight}`}
           draggable={false}
           onDragStart={(e) => e.preventDefault()}
           onMouseDown={(e) => {
@@ -166,12 +205,14 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           </div>
         </div>
 
-        {/* Action buttons - styled to match pool tasks */}
-        <div className="absolute top-1 right-1.5 flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-40">
+        {/* Action buttons - scale with timeline row height */}
+        <div
+          className={`absolute ${actionScale.inset} flex ${useCompactActionLayout ? 'flex-row' : 'flex-col'} ${actionScale.gap} opacity-0 group-hover:opacity-100 transition-opacity z-40`}
+        >
           {onViewNotes && (
             <button
               type="button"
-              className="h-6 w-6 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+              className={`${actionScale.btn} rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors`}
               onMouseDown={stopActionButtonPropagation}
               onClick={(e) => {
                 e.preventDefault();
@@ -180,23 +221,23 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               }}
               title="View Notes"
             >
-              <Eye className="w-3 h-3" />
+              <Eye className={actionScale.icon} />
             </button>
           )}
           
           <button
             type="button"
-            className="h-6 w-6 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+            className={`${actionScale.btn} rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors`}
             onMouseDown={stopActionButtonPropagation}
             onClick={handleEditClick}
             title="Edit Task"
           >
-            <Edit3 className="w-3 h-3" />
+            <Edit3 className={actionScale.icon} />
           </button>
           
           <button
             type="button"
-            className="h-6 w-6 rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+            className={`${actionScale.btn} rounded bg-accent/50 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors`}
             onMouseDown={stopActionButtonPropagation}
             onClick={(e) => {
               e.preventDefault();
@@ -205,7 +246,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             }}
             title="Copy Task"
           >
-            <Copy className="w-3 h-3" />
+            <Copy className={actionScale.icon} />
           </button>
         </div>
         
