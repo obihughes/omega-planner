@@ -1,5 +1,11 @@
 ## 2026-07-04
 
+- **Goal Hierarchy: tighter header and unified week panel** (2026-07-04)
+  - Removed the in-page **Goal Hierarchy** title and subtitle to reclaim vertical space.
+  - Moved **Week N goal** notes inside the week panel container so the textarea, folder tabs, and day grid share one outer border.
+  - Tightened main column spacing (`space-y-4`).
+  - **Files affected**: `components/goal-hierarchy/GoalHierarchyView.tsx`, `docs/changelog.md`, `docs/components.md`
+
 - **Goal Hierarchy: restore week notes text area** (2026-07-04)
   - Re-added the **Week N goal** free-text area below the month goal and above the folder-style week panel.
   - Uses existing `GoalLevelBlock`, `currentWeek.summary`, and `setSummary('week', …)` — notes persist per week in `GoalHierarchyStorage`.

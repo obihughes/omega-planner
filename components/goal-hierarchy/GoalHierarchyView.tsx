@@ -126,14 +126,7 @@ export function GoalHierarchyView() {
   return (
     <div className="h-full w-full flex flex-col min-h-0">
       <div className="flex-1 overflow-y-auto px-6 py-6">
-        <div className="max-w-[1600px] mx-auto space-y-6">
-          <div>
-            <h1 className="text-2xl font-semibold text-foreground">Goal Hierarchy</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Monthly, weekly, and daily goals. Daily goals sync with Weekly Overview.
-            </p>
-          </div>
-
+        <div className="max-w-[1600px] mx-auto space-y-4">
           <div className="flex flex-wrap gap-2 border-b border-border pb-3">
             {monthTabs.map((monthKey) => (
               <button
@@ -160,16 +153,15 @@ export function GoalHierarchyView() {
             />
           </section>
 
-          <section className="space-y-2">
-            <GoalLevelBlock
-              label={`Week ${selectedWeekIndex + 1} goal`}
-              summary={currentWeek.summary}
-              onSummaryChange={(s) => setSummary('week', s)}
-            />
-          </section>
-
           <div className="rounded-lg border border-border bg-background">
-            <div className="flex flex-wrap items-end justify-between gap-2 px-4 pt-2">
+            <div className="px-4 pt-4 pb-0">
+              <GoalLevelBlock
+                label={`Week ${selectedWeekIndex + 1} goal`}
+                summary={currentWeek.summary}
+                onSummaryChange={(s) => setSummary('week', s)}
+              />
+            </div>
+            <div className="flex flex-wrap items-end justify-between gap-2 px-4 pt-2 border-t border-border">
               <div className="flex flex-wrap items-end gap-0.5">
                 {weeksInMonth.map(({ weekIndex }) => {
                   const isCurrentWeek = weekIndex === todayWeekIndex;
