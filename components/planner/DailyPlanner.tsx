@@ -661,6 +661,13 @@ export default function DailyPlanner() {
       columnHeightPx = TIMELINE_COLUMN_HEIGHT,
     } = panelOptions;
     activePixelsPerHourRef.current = pixelsPerHour;
+    const headerBtn = 'h-7 px-2 text-xs';
+    const headerIconBtn = 'h-7 w-7 p-0';
+    const headerActionBtn = 'h-7 px-1.5 text-xs gap-1';
+    const headerRow =
+      'flex flex-nowrap items-center justify-between gap-1 px-3 py-1.5 border-b border-border bg-card/95 backdrop-blur-sm overflow-x-auto scrollbar-hide';
+    const headerLeft = 'flex items-center min-w-0 flex-1 gap-0.5 flex-nowrap';
+    const headerRight = 'flex items-center gap-1 shrink-0 flex-nowrap';
     return (
       <>
             {/* Daily Events Container */}
@@ -870,15 +877,15 @@ export default function DailyPlanner() {
 
             <div className="space-y-6" ref={timelineScrollRef}>
                 <div className="bg-card rounded-lg shadow-sm border border-border overflow-visible">
-                  <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-b border-border bg-card/95 backdrop-blur-sm">
-                    <div className="flex flex-wrap items-center min-w-0">
-                      <Button variant="ghost" size="sm" onClick={() => setTopDayOffset(topDayOffset - 7)} title="Previous week">«</Button>
-                      <Button variant="ghost" size="sm" onClick={() => setTopDayOffset(topDayOffset - 1)} title="Previous day">‹</Button>
+                  <div className={headerRow}>
+                    <div className={headerLeft}>
+                      <Button variant="ghost" size="sm" className={headerIconBtn} onClick={() => setTopDayOffset(topDayOffset - 7)} title="Previous week">«</Button>
+                      <Button variant="ghost" size="sm" className={headerIconBtn} onClick={() => setTopDayOffset(topDayOffset - 1)} title="Previous day">‹</Button>
                       <Popover>
                         <PopoverTrigger asChild>
                           <button
                             type="button"
-                            className="text-foreground font-medium text-center px-3 w-52 hover:underline"
+                            className="text-sm font-medium text-center px-1.5 min-w-0 max-w-[8.5rem] truncate hover:underline"
                             title="Pick a date"
                           >
                             {isClient ? getDateLabel(topDayOffset) : "Loading..."}
@@ -901,14 +908,14 @@ export default function DailyPlanner() {
                           </PopoverContent>
                         </PopoverPrimitive.Portal>
                       </Popover>
-                      <Button variant="ghost" size="sm" onClick={() => setTopDayOffset(topDayOffset + 1)} title="Next day">›</Button>
-                      <Button variant="ghost" size="sm" onClick={() => setTopDayOffset(topDayOffset + 7)} title="Next week">»</Button>
-                      <div className="flex rounded-md border border-border/60 ml-2" role="group">
+                      <Button variant="ghost" size="sm" className={headerIconBtn} onClick={() => setTopDayOffset(topDayOffset + 1)} title="Next day">›</Button>
+                      <Button variant="ghost" size="sm" className={headerIconBtn} onClick={() => setTopDayOffset(topDayOffset + 7)} title="Next week">»</Button>
+                      <div className="flex rounded-md border border-border/60 ml-1 shrink-0" role="group">
                         <button
                           type="button"
                           onClick={() => setTopDayViewMode('scheduled')}
                           className={cn(
-                            "px-2 py-1 text-xs font-medium rounded-l-md transition-colors",
+                            "px-1.5 py-0.5 text-[11px] font-medium rounded-l-md transition-colors",
                             topDayViewMode === 'scheduled' ? "bg-primary text-primary-foreground" : "bg-transparent hover:bg-muted"
                           )}
                           title="Scheduled tasks for this day"
@@ -919,7 +926,7 @@ export default function DailyPlanner() {
                           type="button"
                           onClick={() => setTopDayViewMode('class')}
                           className={cn(
-                            "px-2 py-1 text-xs font-medium rounded-r-md border-l border-border/60 transition-colors",
+                            "px-1.5 py-0.5 text-[11px] font-medium rounded-r-md border-l border-border/60 transition-colors",
                             topDayViewMode === 'class' ? "bg-primary text-primary-foreground" : "bg-transparent hover:bg-muted"
                           )}
                           title="Class schedule for this weekday"
@@ -944,40 +951,40 @@ export default function DailyPlanner() {
                             window.location.href = `/calendar?view=monthly`;
                           }
                         }}
-                        className="ml-2"
+                        className={cn(headerBtn, 'ml-1 shrink-0')}
                       >
-                        Back to Calendar
+                        Calendar
                       </Button>
                       {showSchedulingButton && (
                         <Button
                           size="sm"
                           title="Open Scheduling (Monthly) view"
                           onClick={() => setViewMode('monthly')}
-                          className="ml-2"
+                          className={cn(headerBtn, 'ml-1 shrink-0')}
                         >
-                          Scheduling
+                          Schedule
                         </Button>
                       )}
                       {isClient && getRelativeDayLabel(topDayOffset) && (
-                        <span className="text-xs text-muted-foreground ml-2 px-1.5 py-0.5 bg-muted rounded-sm">
+                        <span className="text-[11px] text-muted-foreground ml-1 px-1 py-0.5 bg-muted rounded-sm shrink-0">
                           {getRelativeDayLabel(topDayOffset)}
                         </span>
                       )}
                       {isClient && savedDays.some(saved => saved.dateKey === getCalendarDateForColumn(topDayOffset)) && (
                         <span 
-                          className="ml-2 px-2 py-1 text-xs bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/50 dark:to-indigo-950/50 text-blue-700 dark:text-blue-300 rounded-full border border-blue-200/50 dark:border-blue-700/50 font-medium cursor-help shadow-sm"
+                          className="ml-1 px-1.5 py-0.5 text-[11px] max-w-[5rem] truncate bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/50 dark:to-indigo-950/50 text-blue-700 dark:text-blue-300 rounded-full border border-blue-200/50 dark:border-blue-700/50 font-medium cursor-help shadow-sm shrink-0"
                           title={`Template: ${savedDays.filter(saved => saved.dateKey === getCalendarDateForColumn(topDayOffset)).map(saved => saved.name).join(', ')}`}
                         >
                           📋 {savedDays.filter(saved => saved.dateKey === getCalendarDateForColumn(topDayOffset)).map(saved => saved.name).join(', ')}
                         </span>
                       )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    <div className={headerRight}>
                       <Popover>
                         <PopoverTrigger asChild>
-                          <Button size="sm" variant="outline" className="flex items-center gap-1">
-                            <Bookmark className="w-4 h-4" />
-                            Saved Days
+                          <Button size="sm" variant="outline" className={headerActionBtn}>
+                            <Bookmark className="w-3 h-3" />
+                            Saved
                           </Button>
                         </PopoverTrigger>
                         <PopoverPrimitive.Portal>
@@ -1107,14 +1114,14 @@ export default function DailyPlanner() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="flex items-center gap-1"
+                        className={headerActionBtn}
                         onClick={() => handleImportClassesForDay(topDayOffset)}
                         title="Copy class schedule for this day into the planner timeline"
                       >
-                        <GraduationCap className="w-4 h-4" />
-                        Import Classes
+                        <GraduationCap className="w-3 h-3" />
+                        Import
                       </Button>
-                      <Button size="sm" onClick={() => openEditModal()}>
+                      <Button size="sm" className={headerBtn} onClick={() => openEditModal()}>
                         Add Task
                       </Button>
                     </div>
@@ -1155,15 +1162,15 @@ export default function DailyPlanner() {
                 </div>
 
                 <div className="bg-card rounded-lg shadow-sm border border-border overflow-visible">
-                  <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-b border-border bg-card/95 backdrop-blur-sm">
-                    <div className="flex flex-wrap items-center min-w-0">
-                        <Button variant="ghost" size="sm" onClick={() => setBottomDayOffset(bottomDayOffset - 7)} title="Previous week">«</Button>
-                        <Button variant="ghost" size="sm" onClick={() => setBottomDayOffset(bottomDayOffset - 1)} title="Previous day">‹</Button>
+                  <div className={headerRow}>
+                    <div className={headerLeft}>
+                        <Button variant="ghost" size="sm" className={headerIconBtn} onClick={() => setBottomDayOffset(bottomDayOffset - 7)} title="Previous week">«</Button>
+                        <Button variant="ghost" size="sm" className={headerIconBtn} onClick={() => setBottomDayOffset(bottomDayOffset - 1)} title="Previous day">‹</Button>
                         <Popover>
                           <PopoverTrigger asChild>
                             <button
                               type="button"
-                              className="text-foreground font-medium text-center px-3 w-52 hover:underline"
+                              className="text-sm font-medium text-center px-1.5 min-w-0 max-w-[8.5rem] truncate hover:underline"
                               title="Pick a date"
                             >
                               {isClient ? getDateLabel(bottomDayOffset) : "Loading..."}
@@ -1186,14 +1193,14 @@ export default function DailyPlanner() {
                             </PopoverContent>
                           </PopoverPrimitive.Portal>
                         </Popover>
-                        <Button variant="ghost" size="sm" onClick={() => setBottomDayOffset(bottomDayOffset + 1)} title="Next day">›</Button>
-                        <Button variant="ghost" size="sm" onClick={() => setBottomDayOffset(bottomDayOffset + 7)} title="Next week">»</Button>
-                        <div className="flex rounded-md border border-border/60 ml-2" role="group">
+                        <Button variant="ghost" size="sm" className={headerIconBtn} onClick={() => setBottomDayOffset(bottomDayOffset + 1)} title="Next day">›</Button>
+                        <Button variant="ghost" size="sm" className={headerIconBtn} onClick={() => setBottomDayOffset(bottomDayOffset + 7)} title="Next week">»</Button>
+                        <div className="flex rounded-md border border-border/60 ml-1 shrink-0" role="group">
                           <button
                             type="button"
                             onClick={() => setBottomDayViewMode('scheduled')}
                             className={cn(
-                              "px-2 py-1 text-xs font-medium rounded-l-md transition-colors",
+                              "px-1.5 py-0.5 text-[11px] font-medium rounded-l-md transition-colors",
                               bottomDayViewMode === 'scheduled' ? "bg-primary text-primary-foreground" : "bg-transparent hover:bg-muted"
                             )}
                             title="Scheduled tasks for this day"
@@ -1204,7 +1211,7 @@ export default function DailyPlanner() {
                             type="button"
                             onClick={() => setBottomDayViewMode('class')}
                             className={cn(
-                              "px-2 py-1 text-xs font-medium rounded-r-md border-l border-border/60 transition-colors",
+                              "px-1.5 py-0.5 text-[11px] font-medium rounded-r-md border-l border-border/60 transition-colors",
                               bottomDayViewMode === 'class' ? "bg-primary text-primary-foreground" : "bg-transparent hover:bg-muted"
                             )}
                             title="Class schedule for this weekday"
@@ -1213,25 +1220,25 @@ export default function DailyPlanner() {
                           </button>
                         </div>
                         {isClient && getRelativeDayLabel(bottomDayOffset) && (
-                            <span className="text-xs text-muted-foreground ml-2 px-1.5 py-0.5 bg-muted rounded-sm">
+                            <span className="text-[11px] text-muted-foreground ml-1 px-1 py-0.5 bg-muted rounded-sm shrink-0">
                             {getRelativeDayLabel(bottomDayOffset)}
                             </span>
                         )}
                         {isClient && savedDays.some(saved => saved.dateKey === getCalendarDateForColumn(bottomDayOffset)) && (
                           <span 
-                            className="ml-2 px-2 py-1 text-xs bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/50 dark:to-indigo-950/50 text-blue-700 dark:text-blue-300 rounded-full border border-blue-200/50 dark:border-blue-700/50 font-medium cursor-help shadow-sm"
+                            className="ml-1 px-1.5 py-0.5 text-[11px] max-w-[5rem] truncate bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/50 dark:to-indigo-950/50 text-blue-700 dark:text-blue-300 rounded-full border border-blue-200/50 dark:border-blue-700/50 font-medium cursor-help shadow-sm shrink-0"
                             title={`Template: ${savedDays.filter(saved => saved.dateKey === getCalendarDateForColumn(bottomDayOffset)).map(saved => saved.name).join(', ')}`}
                           >
                             📋 {savedDays.filter(saved => saved.dateKey === getCalendarDateForColumn(bottomDayOffset)).map(saved => saved.name).join(', ')}
                           </span>
                         )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    <div className={headerRight}>
                       <Popover>
                         <PopoverTrigger asChild>
-                          <Button size="sm" variant="outline" className="flex items-center gap-1">
-                            <Bookmark className="w-4 h-4" />
-                            Saved Days
+                          <Button size="sm" variant="outline" className={headerActionBtn}>
+                            <Bookmark className="w-3 h-3" />
+                            Saved
                           </Button>
                         </PopoverTrigger>
                         <PopoverPrimitive.Portal>
@@ -1361,15 +1368,20 @@ export default function DailyPlanner() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="flex items-center gap-1"
+                        className={headerActionBtn}
                         onClick={() => handleImportClassesForDay(bottomDayOffset)}
                         title="Copy class schedule for this day into the planner timeline"
                       >
-                        <GraduationCap className="w-4 h-4" />
-                        Import Classes
+                        <GraduationCap className="w-3 h-3" />
+                        Import
                       </Button>
-                      <Button size="sm" onClick={() => cloneDayTasks(dateFromDateKey(getCalendarDateForColumn(bottomDayOffset)), dateFromDateKey(getCalendarDateForColumn(topDayOffset)))} title="Clone tasks to the other visible day">
-                        Clone to {bottomDayOffset < topDayOffset ? 'Bottom' : 'Top'}
+                      <Button
+                        size="sm"
+                        className={headerBtn}
+                        onClick={() => cloneDayTasks(dateFromDateKey(getCalendarDateForColumn(bottomDayOffset)), dateFromDateKey(getCalendarDateForColumn(topDayOffset)))}
+                        title="Clone tasks to the other visible day"
+                      >
+                        Clone {bottomDayOffset < topDayOffset ? '↑' : '↓'}
                       </Button>
                     </div>
                   </div>

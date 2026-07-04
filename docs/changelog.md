@@ -1,5 +1,9 @@
 ## 2026-07-04
 
+- **Daily Planner: compact day panel header** (2026-07-04)
+  - Day panel headers use a single nowrap row with smaller buttons (`h-7`, `text-xs`), tighter spacing, and shorter labels (`Calendar`, `Saved`, `Import`, `Schedule`) so controls fit on one line.
+  - **Files affected**: `components/planner/DailyPlanner.tsx`, `docs/changelog.md`
+
 - **Daily Planner: narrower scheduling sidebar and scaled task buttons** (2026-07-04)
   - Scheduling sidebar width reduced 10% (`w-80` / 320px → `w-72` / 288px) to give more room to the timeline.
   - `TaskCard` action buttons now scale with timeline row height: smaller icons/buttons in compact rows, horizontal layout when height &lt; 80px, full-size stack on taller rows.
