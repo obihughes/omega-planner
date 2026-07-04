@@ -603,7 +603,7 @@ export const appHierarchy: AppMapNode[] = [
     id: 'goal-hierarchy',
     label: 'Goal Hierarchy',
     kind: 'area',
-    description: 'Main sidebar nav at /goal-hierarchy. Multi-level goals: month → week → two-row 7-column day grid (selected week + next week preview). Inline Weekly Overview / Study Tracker toggle, week nav, and Open Notes. Daily goals sync with Calendar weekly overview.',
+    description: 'Main sidebar nav at /goal-hierarchy. Multi-level goals: month goal summary, week tabs with inline controls (Weekly Overview / Study Tracker, week nav, Open Notes), and a two-row 7-column day grid (selected week + next week preview). Daily goals sync with Calendar weekly overview.',
     children: [
       {
         id: 'gh-route',

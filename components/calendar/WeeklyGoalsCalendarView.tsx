@@ -66,22 +66,6 @@ export function WeeklyGoalsCalendarView({ calendarData, onNavigateToDaily }: Wee
     setWeekOffset(0);
   }, []);
 
-  const currentWeekRange = useMemo(() => {
-    if (days.length === 0) return '';
-    const startDate = days[0];
-    const endDate = days[days.length - 1];
-    const startMonth = startDate.toLocaleDateString(undefined, { month: 'short' });
-    const endMonth = endDate.toLocaleDateString(undefined, { month: 'short' });
-    const startDay = startDate.getDate();
-    const endDay = endDate.getDate();
-    const year = endDate.getFullYear();
-
-    if (startDate.getMonth() === endDate.getMonth()) {
-      return `${startMonth} ${startDay}-${endDay}, ${year}`;
-    }
-    return `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${year}`;
-  }, [days]);
-
   if (!hydrated) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -92,54 +76,44 @@ export function WeeklyGoalsCalendarView({ calendarData, onNavigateToDaily }: Wee
 
   return (
     <div className="h-full flex flex-col">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-border/50">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-medium">Weekly Goals</h1>
-          <div className="flex items-center gap-1.5">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={goToPreviousWeek}
-              className="h-8 w-8 p-0"
-              title="Previous week"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <Button
-              variant={weekOffset === 0 ? 'default' : 'outline'}
-              size="sm"
-              onClick={goToCurrentWeek}
-              className="h-8 px-3 text-xs"
-              title="Go to current week"
-            >
-              Today
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={goToNextWeek}
-              className="h-8 w-8 p-0"
-              title="Next week"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="text-sm text-muted-foreground">
-            {currentWeekRange} · Up to 6 goals per day
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsNotesOpen(!isNotesOpen)}
-            className="h-8 px-3 gap-2"
-            title={isNotesOpen ? 'Hide notes' : 'Open notes'}
-          >
-            {isNotesOpen ? <PanelLeftClose className="w-4 h-4" /> : <StickyNote className="w-4 h-4" />}
-            <span className="text-xs font-medium">{isNotesOpen ? 'Close' : 'Open Notes'}</span>
-          </Button>
-        </div>
+      <header className="flex flex-wrap items-center justify-end gap-1.5 px-6 py-4 border-b border-border/50">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={goToPreviousWeek}
+          className="h-8 w-8 p-0"
+          title="Previous week"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </Button>
+        <Button
+          variant={weekOffset === 0 ? 'default' : 'outline'}
+          size="sm"
+          onClick={goToCurrentWeek}
+          className="h-8 px-3 text-xs"
+          title="Go to current week"
+        >
+          Today
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={goToNextWeek}
+          className="h-8 w-8 p-0"
+          title="Next week"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsNotesOpen(!isNotesOpen)}
+          className="h-8 px-3 gap-2"
+          title={isNotesOpen ? 'Hide notes' : 'Open notes'}
+        >
+          {isNotesOpen ? <PanelLeftClose className="w-4 h-4" /> : <StickyNote className="w-4 h-4" />}
+          <span className="text-xs font-medium">{isNotesOpen ? 'Close' : 'Open Notes'}</span>
+        </Button>
       </header>
 
       <div className="flex-1 flex min-h-0 overflow-hidden">

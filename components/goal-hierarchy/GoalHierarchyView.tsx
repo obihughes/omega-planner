@@ -97,22 +97,6 @@ export function GoalHierarchyView() {
       : -1;
   const isCurrentWeekSelected = selectedWeekIndex === todayWeekIndex;
 
-  const currentWeekRange = useMemo(() => {
-    if (gridDays.length === 0) return '';
-    const startDate = gridDays[0].date;
-    const endDate = gridDays[gridDays.length - 1].date;
-    const startMonth = startDate.toLocaleDateString(undefined, { month: 'short' });
-    const endMonth = endDate.toLocaleDateString(undefined, { month: 'short' });
-    const startDay = startDate.getDate();
-    const endDay = endDate.getDate();
-    const year = endDate.getFullYear();
-
-    if (startDate.getMonth() === endDate.getMonth()) {
-      return `${startMonth} ${startDay}-${endDay}, ${year}`;
-    }
-    return `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${year}`;
-  }, [gridDays]);
-
   const handleWeekTabClick = useCallback(
     (weekIndex: number) => {
       selectWeek(weekIndex);
@@ -166,7 +150,7 @@ export function GoalHierarchyView() {
             />
           </section>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {weeksInMonth.map(({ weekIndex }) => {
               const isCurrentWeek = weekIndex === todayWeekIndex;
 
@@ -187,98 +171,75 @@ export function GoalHierarchyView() {
                 </button>
               );
             })}
+
+            <div className="flex flex-wrap items-center gap-1.5 ml-auto">
+              <Button
+                variant={weeklyPageMode === 'weekly-overview' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setWeeklyPageMode('weekly-overview')}
+                className="h-8 px-3 gap-1.5 text-xs"
+              >
+                <Target className="w-3.5 h-3.5" />
+                Weekly Overview
+              </Button>
+              <Button
+                variant={weeklyPageMode === 'study-tracker' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setWeeklyPageMode('study-tracker')}
+                className="h-8 px-3 gap-1.5 text-xs"
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                Study Tracker
+              </Button>
+              {weeklyPageMode === 'weekly-overview' && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={goToPreviousWeek}
+                    className="h-8 w-8 p-0"
+                    title="Previous week"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant={isCurrentWeekSelected ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={goToCurrentWeek}
+                    className="h-8 px-3 text-xs"
+                    title="Go to current week"
+                  >
+                    Today
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={goToNextWeek}
+                    className="h-8 w-8 p-0"
+                    title="Next week"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsNotesOpen(!isNotesOpen)}
+                    className="h-8 px-3 gap-2"
+                    title={isNotesOpen ? 'Hide notes' : 'Open notes'}
+                  >
+                    {isNotesOpen ? (
+                      <PanelLeftClose className="w-4 h-4" />
+                    ) : (
+                      <StickyNote className="w-4 h-4" />
+                    )}
+                    <span className="text-xs font-medium">{isNotesOpen ? 'Close' : 'Open Notes'}</span>
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
 
-          <section className="rounded-xl border border-border bg-muted/20 p-4 space-y-4">
-            <div className="max-w-xl">
-              <GoalLevelBlock
-                label={`Week ${selectedWeekIndex + 1} goal`}
-                summary={currentWeek.summary}
-                onSummaryChange={(s) => setSummary('week', s)}
-              />
-            </div>
-
-            <div className="border-t border-border/50 pt-4">
-              <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
-                <div className="flex flex-wrap items-center gap-3">
-                  <h2 className="text-lg font-medium text-foreground">Weekly Goals</h2>
-                  <div className="flex items-center gap-1.5">
-                    <Button
-                      variant={weeklyPageMode === 'weekly-overview' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setWeeklyPageMode('weekly-overview')}
-                      className="h-8 px-3 gap-1.5 text-xs"
-                    >
-                      <Target className="w-3.5 h-3.5" />
-                      Weekly Overview
-                    </Button>
-                    <Button
-                      variant={weeklyPageMode === 'study-tracker' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setWeeklyPageMode('study-tracker')}
-                      className="h-8 px-3 gap-1.5 text-xs"
-                    >
-                      <BookOpen className="w-3.5 h-3.5" />
-                      Study Tracker
-                    </Button>
-                  </div>
-                  {weeklyPageMode === 'weekly-overview' && (
-                    <div className="flex items-center gap-1.5">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={goToPreviousWeek}
-                        className="h-8 w-8 p-0"
-                        title="Previous week"
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant={isCurrentWeekSelected ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={goToCurrentWeek}
-                        className="h-8 px-3 text-xs"
-                        title="Go to current week"
-                      >
-                        Today
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={goToNextWeek}
-                        className="h-8 w-8 p-0"
-                        title="Next week"
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                  {weeklyPageMode === 'weekly-overview' && (
-                    <div className="text-sm text-muted-foreground">
-                      {currentWeekRange} · Up to 6 goals per day
-                    </div>
-                  )}
-                  {weeklyPageMode === 'weekly-overview' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsNotesOpen(!isNotesOpen)}
-                      className="h-8 px-3 gap-2"
-                      title={isNotesOpen ? 'Hide notes' : 'Open notes'}
-                    >
-                      {isNotesOpen ? (
-                        <PanelLeftClose className="w-4 h-4" />
-                      ) : (
-                        <StickyNote className="w-4 h-4" />
-                      )}
-                      <span className="text-xs font-medium">{isNotesOpen ? 'Close' : 'Open Notes'}</span>
-                    </Button>
-                  )}
-                </div>
-              </header>
-
+          <section className="rounded-xl border border-border bg-muted/20 p-4">
               {weeklyPageMode === 'weekly-overview' ? (
                 <div className="flex min-h-0 gap-0 -mx-1">
                   <div className="flex-1 min-w-0 space-y-4">
@@ -358,7 +319,6 @@ export function GoalHierarchyView() {
                   </StudyTrackerProvider>
                 </div>
               )}
-            </div>
           </section>
         </div>
       </div>

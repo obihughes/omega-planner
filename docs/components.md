@@ -52,7 +52,7 @@ Monthly calendar view.
 
 ### WeeklyGoalsCalendarView (`components/calendar/WeeklyGoalsCalendarView.tsx`)
 Legacy 4-week weekly goals grid (still available if embedded elsewhere). Primary weekly planning UI is now Goal Hierarchy at `/goal-hierarchy`.
-- **Weekly Notes**: Hidden by default; click "Open Notes" in the header to reveal the notes panel.
+- **Toolbar**: Compact header with week navigation and Open Notes only (no title or helper text).
 - **Shared data**: Uses `hooks/useWeeklyGoals.ts` and `components/weekly-goals/*`; day goals sync with Goal Hierarchy.
 
 ### Shared Weekly Goals (`components/weekly-goals/`)
@@ -67,7 +67,7 @@ Reusable weekly goal UI and colors used by Goal Hierarchy and Calendar weekly ov
 ### Goal Hierarchy (`components/goal-hierarchy/GoalHierarchyView.tsx`)
 **Page:** `app/goal-hierarchy/page.tsx`
 
-Multi-level planning: month and week goal summaries, plus a two-row 7-column weekly goals grid (selected week Mon–Sun + next week preview). Inline Weekly Overview / Study Tracker toggle, week navigation, and Open Notes. Daily goals use shared `WeeklyGoalsDayColumn` and storage with Calendar weekly overview.
+Multi-level planning: month goal summary, week tabs with inline controls (Weekly Overview / Study Tracker toggle, week navigation, Open Notes), plus a two-row 7-column weekly goals grid (selected week Mon–Sun + next week preview). Daily goals use shared `WeeklyGoalsDayColumn` and storage with Calendar weekly overview.
 
 ### ChecklistSidebar (`components/calendar/ChecklistSidebar.tsx`)
 Weekly notes checklist panel. Rendered only when opened via "Open Notes" in Weekly Overview.

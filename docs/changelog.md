@@ -1,5 +1,12 @@
 ## 2026-07-04
 
+- **Goal Hierarchy: simplified weekly goals toolbar** (2026-07-04)
+  - Removed the week-level goal summary block ("Week N goal" textarea) and the "Weekly Goals" section heading.
+  - Moved Weekly Overview, Study Tracker, week navigation, and Open Notes onto the same row as the Week 1–5 tabs.
+  - Removed the date range and "Up to 6 goals per day" helper text.
+  - Applied the same header cleanup to legacy `WeeklyGoalsCalendarView` for consistency.
+  - **Files affected**: `components/goal-hierarchy/GoalHierarchyView.tsx`, `components/calendar/WeeklyGoalsCalendarView.tsx`, `docs/changelog.md`, `docs/structure.md`, `docs/components.md`
+
 - **Daily Planner: clip cross-period tasks per timeline row** (2026-07-04)
   - Tasks spanning two timeline periods (e.g. 11am–1pm) are now clipped to the visible segment in each row instead of using negative left offsets that overflowed into the sidebar.
   - **Files affected**: `components/planner/TimelineColumn.tsx`, `docs/changelog.md`

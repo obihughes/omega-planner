@@ -168,7 +168,7 @@ npm test
 - **Improved Type Safety**: Enhanced TypeScript type definitions and interfaces
 
 ### Goal Hierarchy
-- Goal Hierarchy at `/goal-hierarchy` (main sidebar nav) — monthly and weekly goal summaries; 7×2 weekly goals grid with Study Tracker toggle, week nav, and Open Notes; daily goals use shared Weekly Goals cards synced with Calendar
+- Goal Hierarchy at `/goal-hierarchy` (main sidebar nav) — monthly goal summary; week tabs with inline Study Tracker toggle, week nav, and Open Notes; 7×2 weekly goals grid; daily goals use shared Weekly Goals cards synced with Calendar
 - Calendar sidebar **Weekly Overview** link and legacy `/calendar?view=weekly-goals` redirect here
 - Persists to `omega-planner-goal-hierarchy-v1` via `utils/goalHierarchyStorage.ts`
 
