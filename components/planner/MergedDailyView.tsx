@@ -131,7 +131,7 @@ export function MergedDailyView({
   );
 
   return (
-    <div className="h-[calc(100vh-8rem)] min-h-[600px] flex bg-background overflow-hidden">
+    <div className="flex flex-1 min-h-0 bg-background overflow-hidden">
       <SchedulingSidebar
         poolTasks={poolTasks}
         scheduledTasks={scheduledTasks}
@@ -152,7 +152,10 @@ export function MergedDailyView({
         onApplySavedDay={handleApplySavedDay}
       />
 
-      <div ref={contentRef} className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden p-3">
+      <div
+        ref={contentRef}
+        className="flex-1 min-h-0 min-w-0 overflow-y-scroll overflow-x-hidden pl-3 pt-3 pb-3 pr-0 scrollbar-overlay"
+      >
         {children({ deleteMode, ...timelineScale })}
       </div>
     </div>

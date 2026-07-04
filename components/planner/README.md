@@ -47,6 +47,8 @@ This directory contains all components related to the daily planning functionali
 **Features:**
 - Left: `SchedulingSidebar` (mini calendar, inbox, bulk-actions popover)
 - Right: Full daily view content (events, pool/pinned bar, dual day panels)
+- **Viewport fill**: Uses `flex-1 min-h-0` to expand to available height from the page shell
+- **Edge scrollbar**: Right panel uses `overflow-y-scroll` with `.scrollbar-overlay` and no right padding so the scrollbar sits flush with the screen edge
 - Calendar selection drives `topDayOffset` for the top day panel
 - **Responsive timeline scale**: `ResizeObserver` on the content panel computes `pixelsPerHour` and `columnHeightPx` from available width (6 hours per period) and passes them to `DailyPlanner` via render props so drag/resize stay aligned
 

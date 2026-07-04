@@ -1413,8 +1413,8 @@ export default function DailyPlanner() {
   };
 
   return (
-    <div className="h-full bg-background text-foreground transition-colors">
-      <div className="w-full mx-auto h-full">
+    <div className="flex flex-col flex-1 min-h-0 h-full bg-background text-foreground transition-colors">
+      <div className="flex flex-col flex-1 min-h-0 w-full h-full">
         {activeEditModalTask && (
           <EditTaskModal
             taskToEdit={activeEditModalTask}

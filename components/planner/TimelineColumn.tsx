@@ -124,18 +124,25 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
 
     const pixelsPerHourEffective = pixelsPerHour ?? PIXELS_PER_HOUR;
     const columnHeight = columnHeightPx ?? TIMELINE_COLUMN_HEIGHT;
+    const periodHours = endHour - startHour;
     const isTargetCopyDay = copyingTaskData && targetCopyDayOffset === dayOffset;
+
+    const getHourOffsetPercent = (hour: number) =>
+        ((hour - startHour) / periodHours) * 100;
+    const getDurationPercent = (duration: number) => (duration / periodHours) * 100;
 
     let currentTimeMarker = null;
     if (dayOffset === 0) {
         const now = currentTimeForMarker;
         const currentHourFloat = now.getHours() + now.getMinutes() / 60;
         if (currentHourFloat >= startHour && currentHourFloat < endHour) {
-            const markerLeft = (currentHourFloat - startHour) * pixelsPerHourEffective;
+            const markerLeft = fillWidth
+                ? `${getHourOffsetPercent(currentHourFloat)}%`
+                : `${(currentHourFloat - startHour) * pixelsPerHourEffective}px`;
             currentTimeMarker = (
                 <div
                     className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-[120] pointer-events-none"
-                    style={{ left: `${markerLeft}px` }}
+                    style={{ left: markerLeft }}
                     title={`Current time: ${formatTime(currentHourFloat)}`}
                 >
                     <div style={{ 
@@ -153,13 +160,17 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
         }
     }
 
+    const getPixelsPerHourFromRect = (width: number) =>
+        fillWidth ? width / periodHours : pixelsPerHourEffective;
+
     const handleTimelineSingleClick = (e: React.MouseEvent<HTMLDivElement>) => {
         e.stopPropagation();
         if (readOnly || !copyingTaskData) return;
 
         const rect = e.currentTarget.getBoundingClientRect();
         const clickXrelative = e.clientX - rect.left;
-        const hourInBlock = (clickXrelative / pixelsPerHourEffective);
+        const hourPixels = getPixelsPerHourFromRect(rect.width);
+        const hourInBlock = clickXrelative / hourPixels;
         const calculatedNewStartHour = startHour + hourInBlock;
         const snappedNewStartHour = Math.round(calculatedNewStartHour * 4) / 4;
         const targetDateKey = getCalendarDateForColumn(dayOffset);
@@ -175,7 +186,8 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
 
         const rect = e.currentTarget.getBoundingClientRect();
         const clickXrelative = e.clientX - rect.left;
-        const hourInBlock = (clickXrelative / pixelsPerHourEffective);
+        const hourPixels = getPixelsPerHourFromRect(rect.width);
+        const hourInBlock = clickXrelative / hourPixels;
         const calculatedNewStartHour = startHour + hourInBlock;
         let snappedNewStartHour = Math.round(calculatedNewStartHour * 4) / 4;
         snappedNewStartHour = Math.max(TIMELINE_START_HOUR, Math.min(snappedNewStartHour, TIMELINE_END_HOUR - 1));
@@ -217,7 +229,8 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
             if (!task || !task.id) return;
             const rect = e.currentTarget.getBoundingClientRect();
             const x = e.clientX - rect.left;
-            const hourInBlock = x / pixelsPerHourEffective;
+            const hourPixels = getPixelsPerHourFromRect(rect.width);
+            const hourInBlock = x / hourPixels;
             const calculatedNewStartHour = startHour + hourInBlock;
             let snappedNewStartHour = Math.round(calculatedNewStartHour * 4) / 4;
             snappedNewStartHour = Math.max(TIMELINE_START_HOUR, Math.min(snappedNewStartHour, TIMELINE_END_HOUR - 1));
@@ -228,15 +241,18 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
     };
 
     const renderTimelineHeader = () => {
-        const timelineHours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
+        const timelineHours = Array.from({ length: periodHours }, (_, i) => startHour + i);
         return (
-            <div className="flex h-8 border-b border-border/30 sticky top-0 bg-card/95 backdrop-blur-sm z-20">
+            <div className="flex h-8 w-full border-b border-border/30 sticky top-0 bg-card/95 backdrop-blur-sm z-20">
                 {timelineHours.map((hour) => (
-                    <div key={`timeline-hour-${hour}-${period}`} className="flex-none text-xs text-muted-foreground pt-1 pl-0.5 border-l border-border/20" style={{ width: `${pixelsPerHourEffective}px` }}>
+                    <div
+                        key={`timeline-hour-${hour}-${period}`}
+                        className={`text-xs text-muted-foreground pt-1 pl-0.5 border-l border-border/20 ${fillWidth ? 'flex-1 min-w-0' : 'flex-none'}`}
+                        style={fillWidth ? undefined : { width: `${pixelsPerHourEffective}px` }}
+                    >
                         {formatTime(hour)}
                     </div>
                 ))}
-                <div key={`timeline-end-marker-${period}`} className="flex-none border-l border-border/20" style={{ width: `1px` }}></div>
             </div>
         );
     };
@@ -244,8 +260,13 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
     return (
         <div className={`w-full transition-colors duration-200 relative ${isTargetCopyDay ? 'bg-blue-50/80 dark:bg-blue-900/20 ring-2 ring-blue-400 dark:ring-blue-500' : ''}`}>
             <div
-                className={`relative border border-border/20 rounded-md flex flex-col`}
-                style={{ width: `${pixelsPerHourEffective * (endHour - startHour)}px`, minWidth: fillWidth ? '100%' : undefined, height: `${columnHeight}px`, overflow: 'hidden' }}
+                className={`relative border border-border/20 rounded-md flex flex-col ${fillWidth ? 'w-full' : ''}`}
+                style={{
+                    width: fillWidth ? '100%' : `${pixelsPerHourEffective * periodHours}px`,
+                    minWidth: fillWidth ? '100%' : undefined,
+                    height: `${columnHeight}px`,
+                    overflow: 'hidden',
+                }}
                 data-section-period={period}
                 data-day-offset={dayOffset}
                 onClick={readOnly ? undefined : handleTimelineSingleClick}
@@ -262,8 +283,15 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
                     onDrop={onDropFromPool && targetDate ? handleDropFromPoolInner : undefined}
                 >
                     {isTargetCopyDay && <div className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center text-blue-500 dark:text-blue-300 font-bold text-lg">Click to paste task</div>}
-                    {Array.from({ length: endHour - startHour }).map((_, i) => (
-                        <div key={`grid-${i}-${dayOffset}-${period}`} className={`absolute h-full border-l ${i % 6 === 0 ? 'border-border/30' : 'border-border/10'}`} style={{ left: `${i * pixelsPerHourEffective}px`, top: 0 }} />
+                    {Array.from({ length: periodHours }).map((_, i) => (
+                        <div
+                            key={`grid-${i}-${dayOffset}-${period}`}
+                            className={`absolute h-full border-l ${i % 6 === 0 ? 'border-border/30' : 'border-border/10'}`}
+                            style={{
+                                left: fillWidth ? `${(i / periodHours) * 100}%` : `${i * pixelsPerHourEffective}px`,
+                                top: 0,
+                            }}
+                        />
                     ))}
                     {currentTimeMarker}
                     {finalTasksToRender.map((task) => {
@@ -290,8 +318,12 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
                                 }}
                                 style={{
                                     position: 'absolute',
-                                    left: `${(displayTask.startHour - startHour) * pixelsPerHourEffective}px`,
-                                    width: `${displayTask.duration * pixelsPerHourEffective}px`,
+                                    left: fillWidth
+                                        ? `${getHourOffsetPercent(displayTask.startHour)}%`
+                                        : `${(displayTask.startHour - startHour) * pixelsPerHourEffective}px`,
+                                    width: fillWidth
+                                        ? `${getDurationPercent(displayTask.duration)}%`
+                                        : `${displayTask.duration * pixelsPerHourEffective}px`,
                                     height: '100%',
                                     top: 0,
                                 }}

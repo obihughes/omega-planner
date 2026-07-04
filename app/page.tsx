@@ -56,8 +56,8 @@ export default function Home() {
 
   return (
     <AppLayout>
-      <div className="h-full p-4">
-        <div className="max-w-7xl mx-auto h-full">
+      <div className="flex flex-col flex-1 min-h-0 h-full pl-4 pt-4 pb-4 pr-0">
+        <div className="flex flex-col flex-1 min-h-0 w-full h-full">
           <DailyPlannerWrapper 
             Component={DailyPlanner} 
             paramsDate={params?.get('date') || undefined}

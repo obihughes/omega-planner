@@ -55,13 +55,13 @@ The Daily Planner is the core component for task scheduling and timeline managem
 Main component that orchestrates all planner functionality.
 
 ### MergedDailyView
-Unified scheduling layout: `SchedulingSidebar` (left) + full daily timeline panels (right). Used when `viewMode === 'monthly'`. Measures the right-hand content area with `ResizeObserver` and passes scaled `pixelsPerHour` / `columnHeightPx` to timeline panels so they fit beside the sidebar (instead of full-screen 211px/hour density).
+Unified scheduling layout: `SchedulingSidebar` (left) + full daily timeline panels (right). Used when `viewMode === 'monthly'`. Fills remaining viewport height via flex layout (`flex-1 min-h-0`) from the home page shell. Measures the right-hand content area with `ResizeObserver` and passes scaled `pixelsPerHour` / `columnHeightPx` to timeline panels so they fit beside the sidebar (instead of full-screen 211px/hour density). Right content panel scrolls with edge-aligned `.scrollbar-overlay` styling.
 
 ### SchedulingSidebar
 Mini calendar, inbox tasks, and bulk-actions popover (Delete Mode, Clear Day, Apply Saved Day).
 
 ### TimelineColumn
-Renders individual timeline sections with tasks and time markers. **Shared** by both Daily view and Scheduling (Monthly) view via `MiniDailyTimeline`, eliminating duplicated timeline logic. Supports read-only mode (e.g. class schedule), drag/resize/copy, and pool drops.
+Renders individual timeline sections with tasks and time markers. **Shared** by both Daily view and Scheduling (Monthly) view via `MiniDailyTimeline`, eliminating duplicated timeline logic. Supports read-only mode (e.g. class schedule), drag/resize/copy, and pool drops. When `fillWidth` is true (scheduling view), hour columns use equal flex distribution and percentage-based task/grid positioning so the last hour column matches the rest.
 
 ### WeeklyView
 Displays a 7-day view of scheduled tasks in a horizontal timeline format. Weeks start on Monday and end on Sunday. **Not in the main sidebar** — open via Settings → Beta features or `/?view=weekly`. When opening the weekly overview, the view now auto-scrolls to highlight today within the current week by default. Features include:

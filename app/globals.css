@@ -163,11 +163,38 @@ html.resize-active .resize-handle {
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-muted-foreground/20;
+  @apply bg-muted-foreground/20 rounded-full;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-muted-foreground/40;
+}
+
+/* Overlay-style scrollbar: sits at container edge without shifting content */
+.scrollbar-overlay {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.2) transparent;
+}
+
+.scrollbar-overlay::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollbar-overlay::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-overlay::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.2);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.scrollbar-overlay::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.4);
+  background-clip: padding-box;
 }
 
 /* Smooth transitions for theme changes */

@@ -1,5 +1,12 @@
 ## 2026-07-04
 
+- **Daily Planner: scheduling layout fills viewport** (2026-07-04)
+  - Scheduling view now uses a flex height chain (`AppLayout` → home page → `DailyPlanner` → `MergedDailyView`) so the timeline fills the bottom of the screen instead of stopping at `calc(100vh - 8rem)`.
+  - Removed `max-w-7xl` on the home page so the planner uses full width beside the sidebar; right padding removed so the scroll container sits flush with the screen edge.
+  - Added `.scrollbar-overlay` utility for edge-aligned scrollbars; scheduling content panel uses `overflow-y-scroll` with overlay styling.
+  - `TimelineColumn` hour headers now use equal `flex-1` columns when `fillWidth` is true; removed the extra 1px end marker that compressed the last hour column. Task/grid positioning uses percentage layout in fill-width mode for consistent column sizing.
+  - **Files affected**: `app/page.tsx`, `components/ui/AppLayout.tsx`, `components/planner/DailyPlanner.tsx`, `components/planner/MergedDailyView.tsx`, `components/planner/TimelineColumn.tsx`, `app/globals.css`, `docs/planner.md`, `components/planner/README.md`, `docs/changelog.md`
+
 - **Daily Planner: scale scheduling view timeline to sidebar layout** (2026-07-04)
   - Scheduling view timeline now measures the right-hand content area and scales `pixelsPerHour` / column height to fit beside the 320px sidebar instead of using full-screen density (211px/hour).
   - Drag and resize in scheduling view use the same scaled density via `activePixelsPerHourRef`.

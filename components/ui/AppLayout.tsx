@@ -23,10 +23,10 @@ const AppLayoutContent: React.FC<AppLayoutProps> = ({ children }) => {
       <Navigation />
       
       <main 
-        className="flex-1 relative"
+        className="flex flex-col flex-1 min-h-0 relative overflow-hidden"
         style={{ marginLeft: isCollapsed ? `${collapsedWidth}px` : `${sidebarWidth}px` }}
       >
-        <div className="h-full">
+        <div className="flex flex-col flex-1 min-h-0 h-full">
           {children}
         </div>
       </main>
