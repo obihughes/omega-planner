@@ -9,6 +9,7 @@ The Daily Planner is the core component for task scheduling and timeline managem
 - **Collision Detection**: Automatically resolves overlaps when dropping tasks
 - **Smart Positioning**: Tasks are positioned to avoid conflicts with existing tasks
 - **Cross-Day Support**: Move tasks between different days while maintaining proper date tracking
+- **Wide-layout drag**: Live drag/resize hour math uses each timeline segment's measured width (same as pool drop and double-click), with pointer capture, header-inclusive drop zones, and preview hit-testing fixes for multi-monitor / stretched layouts. Helpers live in `utils/timelineDragUtils.ts`.
 
 ### Recent Bug Fixes
 - **Fixed Copy/Paste Rendering Issue**: Resolved bug where copied tasks wouldn't render until page reload by ensuring consistent YYYY-MM-DD date format in the `handleDropCopy` function
@@ -55,7 +56,7 @@ The Daily Planner is the core component for task scheduling and timeline managem
 Main component that orchestrates all planner functionality.
 
 ### MergedDailyView
-Unified scheduling layout: `SchedulingSidebar` (left) + full daily timeline panels (right). Used when `viewMode === 'monthly'`. Fills remaining viewport height via flex layout (`flex-1 min-h-0`) from the home page shell. Measures the right-hand content area with `ResizeObserver` and passes scaled `pixelsPerHour` / `columnHeightPx` to timeline panels so they fit beside the sidebar (instead of full-screen 211px/hour density). Right content panel scrolls with edge-aligned `.scrollbar-overlay` styling.
+Unified scheduling layout: `SchedulingSidebar` (left) + full daily timeline panels (right). Used when `viewMode === 'monthly'`. Fills remaining viewport height via flex layout (`flex-1 min-h-0`) from the home page shell. Measures the right-hand content area with `ResizeObserver` and passes scaled `pixelsPerHour` / `columnHeightPx` to timeline panels so they fit beside the sidebar (instead of full-screen 211px/hour density). Scale updates pause during active drag/resize (`timelineInteractionActive`) and flush when the interaction ends. Right content panel scrolls with edge-aligned `.scrollbar-overlay` styling.
 
 ### SchedulingSidebar
 Mini calendar, inbox tasks, and bulk-actions popover (Delete Mode, Clear Day, Apply Saved Day). Sidebar width is `w-72` (288px).

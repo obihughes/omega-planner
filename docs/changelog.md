@@ -1,3 +1,13 @@
+## 2026-07-06
+
+- **Daily Planner: smoother timeline drag on wide / multi-monitor layouts** (2026-07-06)
+  - Live drag and resize now use each timeline segment's actual width (`rect.width / 6`) instead of a global `pixelsPerHour` ref, matching double-click and pool-drop placement.
+  - Pointer capture with `pointermove` / `pointerup` / `pointercancel` / `blur` handlers replaces mouse-only listeners; stuck-drag cursor should clear when releasing outside the window.
+  - Drop targets include sticky hour headers via `data-timeline-drop`; last-valid-zone fallback keeps preview updating across panel gaps.
+  - Drag preview uses `pointer-events-none`; `ResizeObserver` scale updates pause during active drag/resize.
+  - New helpers in `utils/timelineDragUtils.ts`.
+  - **Files affected**: `components/planner/DailyPlanner.tsx`, `components/planner/TimelineColumn.tsx`, `components/planner/MergedDailyView.tsx`, `components/planner/TaskCard.tsx`, `components/planner/MiniDailyTimeline.tsx`, `hooks/useDailyPlannerState.ts`, `utils/timelineDragUtils.ts`, `utils/timelineDragUtils.test.ts`, `utils/index.ts`, `docs/planner.md`, `components/planner/README.md`, `docs/utils.md`, `docs/changelog.md`
+
 ## 2026-07-04
 
 - **Weekly Overview: merge Goal Hierarchy into single route** (2026-07-04)

@@ -18,6 +18,9 @@ export * from './dateUtils';
 // Task utilities
 export * from './taskUtils';
 
+// Timeline drag utilities
+export * from './timelineDragUtils';
+
 // Class schedule import utilities
 export * from './classScheduleUtils';
 

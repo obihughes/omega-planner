@@ -114,6 +114,16 @@ Resolves conflicts when dragging tasks to new positions, ensuring proper placeme
 - Improved conflict detection accuracy
 - Better handling of edge cases in collision resolution
 
+## Timeline Drag Utilities (`utils/timelineDragUtils.ts`)
+
+Shared coordinate and hit-testing helpers for daily planner timeline drag/resize. Used by `DailyPlanner.tsx` so live pointer moves match pool-drop and double-click placement (`rect.width / 6` per period).
+
+- **`getPixelsPerHourFromRect(width)`** — px per hour from a measured segment width
+- **`getHourFromPointerInSegment(clientX, contentRect, offsetX, baseHour)`** — pointer X → timeline hour
+- **`findTimelineDropZone` / `resolveTimelineDropZone`** — `elementFromPoint` hit test with last-valid-zone fallback for headers and panel gaps
+- **`isPointerNearTimelineZone`** — keeps fallback active near the last segment
+- **`snapHourToQuarter`** — 15-minute snap aligned with collision helpers
+
 ## Date Utilities (`utils/dateUtils.ts`)
 
 ### Date Key Management

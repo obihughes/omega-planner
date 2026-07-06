@@ -19,6 +19,7 @@ import { useModalManager } from './useModalManager';
 import type { ActiveModalTask as ImportedActiveModalTask } from './useModalManager';
 import { getDateKeyFromOffset, dateFromDateKey, getTodayDateKey, addDaysToDateKey, getDateKey } from '../utils/dateUtils'; // Import the new utility functions
 import { mergeClassCopyIntoTasks, prepareClassCopy } from '../utils/classScheduleUtils';
+import type { TimelineDropZoneRef } from '../utils/timelineDragUtils';
 import { nanoid } from 'nanoid';
 // import { checkOverlap } from '../utils/taskUtils'; // checkOverlap is available via wildcard import
 
@@ -29,7 +30,7 @@ interface ResizingTaskState {
   initialMouseX: number;
   initialStartHour: number;
   initialDuration: number;
-  // initialWidth?: number; // No longer strictly needed by the new resize logic
+  initialPixelsPerHour: number;
 }
 
 // Add a temporary marker to distinguish task source for modal
@@ -55,12 +56,14 @@ export function useDailyPlanner() {
   const [isTaskPoolOpen, setIsTaskPoolOpen] = useState<boolean>(true); // Added for default open task pool
 
   const [draggingTask, setDraggingTask] = useState<{
-    initialMouseY: number; 
-    initialStartHour: number; 
-    taskElement: HTMLDivElement | null; 
-    task: Task; 
+    initialMouseY: number;
+    initialStartHour: number;
+    taskElement: HTMLDivElement | null;
+    task: Task;
     offsetX?: number;
-    originalBaseDate?: string; // Track the original date when drag started
+    originalBaseDate?: string;
+    lastValidDropZone?: TimelineDropZoneRef;
+    initialPixelsPerHour?: number;
   } | null>(null);
   
   // Use the new ResizingTaskState interface here
@@ -984,15 +987,7 @@ export function useDailyPlanner() {
   // Persisting them would cause the view to show incorrect dates on subsequent loads.
   // The view will always default to showing today (top) and tomorrow (bottom).
 
-  // Effect to add and remove global mouse up listener
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-        window.addEventListener('mouseup', handleMouseUpGlobal);
-        return () => {
-            window.removeEventListener('mouseup', handleMouseUpGlobal);
-        };
-    }
-  }, [handleMouseUpGlobal]);
+  // Drag/resize end is handled by DailyPlanner pointer listeners during active interactions.
 
   // Effect to detect and fix duplicate task IDs in the main tasks state
   useEffect(() => {

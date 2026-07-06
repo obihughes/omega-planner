@@ -13,7 +13,7 @@ export interface TaskCardProps {
   onStartEdit: (task: Task, options?: { isNew?: boolean, isFromPool?: boolean }) => void;
   onCopy: (task: Task) => void;
   onViewNotes: (task: Task) => void;
-  onResizeStart: (edge: 'start' | 'end', e: React.MouseEvent<HTMLDivElement>) => void;
+  onResizeStart: (edge: 'start' | 'end', e: React.PointerEvent<HTMLDivElement>) => void;
   onDragStart?: (task: Task, e: React.MouseEvent<HTMLDivElement>) => void;
   currentTime?: Date; // Optional prop to check if task is in the past
 }
@@ -135,7 +135,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       >
         <div 
           className="resize-handle absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize group-hover:bg-blue-500/20 active:bg-blue-500/30 z-30 transition-colors"
-          onMouseDown={(e) => { e.stopPropagation(); onResizeStart('start', e); }}
+          onPointerDown={(e) => { e.stopPropagation(); onResizeStart('start', e); }}
         />
         
         {/* Drag handle area - middle section that doesn't cover button areas */}
@@ -252,7 +252,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         
         <div 
           className="resize-handle absolute right-0 top-0 bottom-0 w-1.5 cursor-ew-resize group-hover:bg-blue-500/20 active:bg-blue-500/30 z-30 transition-colors"
-          onMouseDown={(e) => { e.stopPropagation(); onResizeStart('end', e); }}
+          onPointerDown={(e) => { e.stopPropagation(); onResizeStart('end', e); }}
         />
       </div>
     </>

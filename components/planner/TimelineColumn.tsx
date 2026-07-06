@@ -30,7 +30,7 @@ interface TimelineColumnProps {
     openEditModal: (task: Task, options: { isNew: boolean; isFromPool: boolean }) => void;
     setTargetCopyDayOffset: (offset: number | null) => void;
     lastDoubleClickTimestampRef: React.MutableRefObject<number>;
-    handleDragStart: (task: Task, e: React.MouseEvent) => void;
+    handleDragStart: (task: Task, e: React.PointerEvent<HTMLElement>) => void;
     /** Optional horizontal density override (px per hour). Defaults to PIXELS_PER_HOUR */
     pixelsPerHour?: number;
     /** Optional column height override. Defaults to TIMELINE_COLUMN_HEIGHT */
@@ -54,7 +54,7 @@ interface TimelineColumnProps {
     /** Optional: view notes handler for task card */
     onViewNotes?: (task: Task) => void;
     /** Optional: resize handler for task card */
-    onResizeStart?: (task: Task, edge: 'start' | 'end', e: React.MouseEvent<HTMLDivElement>) => void;
+    onResizeStart?: (task: Task, edge: 'start' | 'end', e: React.PointerEvent<HTMLDivElement>) => void;
 }
 
 export const TimelineColumn: React.FC<TimelineColumnProps> = ({
@@ -274,6 +274,7 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
                     minWidth: fillWidth ? '100%' : undefined,
                     height: `${columnHeight}px`,
                 }}
+                data-timeline-drop
                 data-section-period={period}
                 data-day-offset={dayOffset}
                 onClick={readOnly ? undefined : handleTimelineSingleClick}
@@ -319,10 +320,15 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
                             }
                         }
                         
+                        const isDraggingPreview =
+                            draggingTask?.task.id === displayTask.id &&
+                            draggingTask.task.baseDate === columnCalendarDateKey;
+
                         return (
                             <div
                                 key={displayTask.id}
-                                onMouseDown={readOnly ? undefined : (e) => {
+                                onPointerDown={readOnly ? undefined : (e) => {
+                                    if (e.button !== 0) return;
                                     const target = e.target as HTMLElement;
                                     if (target.closest('button, .resize-handle')) return;
                                     handleDragStart(task, e);
@@ -337,6 +343,7 @@ export const TimelineColumn: React.FC<TimelineColumnProps> = ({
                                         : `${visibleDuration * pixelsPerHourEffective}px`,
                                     height: '100%',
                                     top: 0,
+                                    ...(isDraggingPreview ? { pointerEvents: 'none' as const, opacity: 0.85 } : {}),
                                 }}
                             >
                                 <div

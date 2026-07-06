@@ -28,7 +28,7 @@ interface TimelineDragContext {
   targetCopyDayOffset: number | null;
   setTargetCopyDayOffset: (offset: number | null) => void;
   handleDropCopy: (targetDate: Date, startHour: number) => void;
-  handleDragStart: (task: Task, e: React.MouseEvent) => void;
+  handleDragStart: (task: Task, e: React.PointerEvent<HTMLElement>) => void;
   onResizeStart: (task: Task, edge: 'start' | 'end', e: React.MouseEvent<HTMLDivElement>) => void;
   onCopy: (task: Task) => void;
   onViewNotes: (task: Task) => void;

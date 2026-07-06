@@ -42,6 +42,8 @@ export interface MergedDailyViewProps {
   savedDays: Array<{ id: string; name: string; dateKey: string; createdAt: string }>;
   applySavedDay: (savedDayId: string, targetDateKey: string, replace: boolean) => void;
   children: (options: MergedDailyViewRenderOptions) => React.ReactNode;
+  /** When true, skip ResizeObserver scale updates to avoid mid-drag layout jumps */
+  timelineInteractionActive?: boolean;
 }
 
 export function MergedDailyView({
@@ -60,19 +62,25 @@ export function MergedDailyView({
   savedDays,
   applySavedDay,
   children,
+  timelineInteractionActive = false,
 }: MergedDailyViewProps) {
   const [deleteMode, setDeleteMode] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
+  const interactionActiveRef = useRef(timelineInteractionActive);
+  interactionActiveRef.current = timelineInteractionActive;
   const [timelineScale, setTimelineScale] = useState({
     pixelsPerHour: PIXELS_PER_HOUR,
     columnHeightPx: TIMELINE_COLUMN_HEIGHT,
   });
+  const updateScaleRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     const contentEl = contentRef.current;
     if (!contentEl) return;
 
     const updateScale = () => {
+      if (interactionActiveRef.current) return;
+
       const availableWidth = contentEl.clientWidth;
       if (availableWidth <= 0) return;
 
@@ -94,11 +102,18 @@ export function MergedDailyView({
       );
     };
 
+    updateScaleRef.current = updateScale;
     updateScale();
     const observer = new ResizeObserver(updateScale);
     observer.observe(contentEl);
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (!timelineInteractionActive) {
+      updateScaleRef.current?.();
+    }
+  }, [timelineInteractionActive]);
 
   const selectedDate = useMemo(
     () => dateFromDateKey(getCalendarDateForColumn(topDayOffset)),
