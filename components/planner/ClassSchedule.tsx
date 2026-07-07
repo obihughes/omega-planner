@@ -543,7 +543,7 @@ export default React.memo(function ClassSchedule() {
         width: `${renderWidth}px`,
         top: `${TASK_BASE_TOP}px`,
         height: `${cardHeight}px`,
-        zIndex: isOverlay ? 50 : 40,
+        zIndex: isOverlay ? 40 : 50,
         ...(isDraggingPreview
           ? { pointerEvents: "none" as const, opacity: 0.85 }
           : {}),
@@ -707,11 +707,11 @@ export default React.memo(function ClassSchedule() {
           {Array.from({ length: endHour - startHour }, (_, i) => (
             <div key={`grid-${i}`} className={`absolute h-full ${i % 6 === 0 ? 'border-l border-border/30' : 'border-l border-border/10'}`} style={{ left: `${i * PIXELS_PER_HOUR}px`, top: '0', bottom: '0' }} />
           ))}
-          {tasksToRender.map((task) =>
-            renderTaskCard(getDisplayTask(task), startHour, endHour)
-          )}
           {dailyTasksToRender.map((task) =>
             renderTaskCard(task, startHour, endHour, { overlay: true })
+          )}
+          {tasksToRender.map((task) =>
+            renderTaskCard(getDisplayTask(task), startHour, endHour)
           )}
         </div>
       </div>

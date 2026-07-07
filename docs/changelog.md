@@ -1,5 +1,9 @@
 ## 2026-07-06
 
+- **Class Schedule: fix drag/edit when Daily Tasks overlay is on** (2026-07-06)
+  - Daily overlay cards now render underneath class cards with lower `z-index` (40 vs 50), so class drag, resize, and action buttons stay clickable when the **Daily Tasks** toggle is enabled.
+  - **Files affected**: `components/planner/ClassSchedule.tsx`, `docs/planner.md`, `components/planner/README.md`, `docs/changelog.md`
+
 - **Class Schedule: fix task card drag, resize, and edit buttons** (2026-07-06)
   - Removed the dead internal drag-handle overlay in `TaskCard` that blocked title double-click and action-button clicks.
   - Class cards on `/class-schedule` now support **drag** (move start time within the same weekday), **resize** (edge handles), and working **View Notes / Edit / Copy** buttons.
