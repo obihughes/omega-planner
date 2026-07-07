@@ -544,4 +544,64 @@ h1, h2, h3, h4, h5, h6 {
   color: black;
 }
 
+.task-color-saddle-brown {
+  background-color: #8B4513;
+  color: white;
+}
+
+:is(.dark, .dark-forest, .midnight) .task-color-saddle-brown {
+  background-color: #8B4513;
+  color: black;
+}
+
+.task-color-sienna {
+  background-color: #A0522D;
+  color: white;
+}
+
+:is(.dark, .dark-forest, .midnight) .task-color-sienna {
+  background-color: #A0522D;
+  color: black;
+}
+
+.task-color-peru {
+  background-color: #CD853F;
+  color: black;
+}
+
+:is(.dark, .dark-forest, .midnight) .task-color-peru {
+  background-color: #CD853F;
+  color: black;
+}
+
+.task-color-dusty-brown {
+  background-color: #8B7355;
+  color: white;
+}
+
+:is(.dark, .dark-forest, .midnight) .task-color-dusty-brown {
+  background-color: #8B7355;
+  color: black;
+}
+
+.task-color-light-gray {
+  background-color: #D3D3D3;
+  color: black;
+}
+
+:is(.dark, .dark-forest, .midnight) .task-color-light-gray {
+  background-color: #D3D3D3;
+  color: black;
+}
+
+.task-color-charcoal {
+  background-color: #4A4A4A;
+  color: white;
+}
+
+:is(.dark, .dark-forest, .midnight) .task-color-charcoal {
+  background-color: #4A4A4A;
+  color: black;
+}
+
  

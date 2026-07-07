@@ -312,20 +312,18 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = React.memo(({
                     )}
                 </div>
             </div>
+          </div>
 
-            <div>
-                {/* <label className="block text-xs font-medium text-neutral-400 mb-1">Color</label> */}
-                {/* Adjusting top padding for alignment in the new grid structure */}
-                <div className="grid grid-cols-6 gap-1 pt-1 md:pt-[26px]"> {/* pt-1 for mobile, pt-[26px] for md+ to align with label+input above */}
-                    {TASK_COLORS.map(c => (
-                        <button
-                        type="button"
-                        key={c}
-                        className={`w-full aspect-square rounded ${c} ${color === c ? 'ring-2 ring-offset-2 ring-offset-card ring-foreground' : 'hover:opacity-80'}`}
-                        onClick={() => setColor(c)}
-                        />
-                    ))}
-                </div>
+          <div>
+            <div className="grid grid-cols-12 gap-2">
+                {TASK_COLORS.map(c => (
+                    <button
+                    type="button"
+                    key={c}
+                    className={`w-full aspect-square rounded ${c} ${color === c ? 'ring-2 ring-offset-2 ring-offset-card ring-foreground' : 'hover:opacity-80'}`}
+                    onClick={() => setColor(c)}
+                    />
+                ))}
             </div>
           </div>
           

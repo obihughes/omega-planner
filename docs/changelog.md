@@ -1,5 +1,15 @@
 ## 2026-07-06
 
+- **Edit Task modal: larger full-width color picker** (2026-07-06)
+  - Color swatches now span the full modal width (moved out of the half-width duration column).
+  - Swatch size roughly doubled via full-width 12-column grid with increased spacing (`gap-2`, `rounded-md`).
+  - **Files affected**: `components/planner/EditTaskModal.tsx`, `components/modals/TaskFormModal.tsx`, `docs/changelog.md`
+
+- **Task color palette: browns and monochromes** (2026-07-06)
+  - Expanded daily planner task colors from 30 to 36 swatches: 4 browns (saddle brown, sienna, peru, dusty brown) and 2 monochromes (light gray, charcoal).
+  - Edit modal color picker grid updated to 12 columns (3 rows); `TaskFormModal` grid updated to 12 columns.
+  - **Files affected**: `lib/constants.ts`, `app/globals.css`, `components/planner/EditTaskModal.tsx`, `components/modals/TaskFormModal.tsx`, `docs/planner.md`, `docs/changelog.md`
+
 - **Class Schedule: interactive Daily Tasks mode** (2026-07-06)
   - Daily Tasks mode now supports full timeline interaction: drag (including cross-day within the week), resize, edit, delete, copy, and double-click add.
   - Daily task changes route to Daily Planner storage via `handleAddTask`, `handleUpdateTask`, and `handleDeleteTask`; class changes continue to use class schedule storage.

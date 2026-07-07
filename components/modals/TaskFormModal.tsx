@@ -308,12 +308,12 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
         </div>
 
         <div>
-          <div className="grid grid-cols-8 gap-0.5">
+          <div className="grid grid-cols-12 gap-2">
             {TASK_COLORS.map(colorClass => (
               <button
                 key={colorClass}
                 type="button"
-                className={`w-8 h-8 rounded-md ${colorClass} hover:ring-2 ring-gray-400 transition-all ${color === colorClass ? 'ring-2 ring-blue-500' : ''}`}
+                className={`w-full aspect-square rounded ${colorClass} hover:ring-2 ring-gray-400 transition-all ${color === colorClass ? 'ring-2 ring-blue-500' : ''}`}
                 onClick={() => setColor(colorClass)}
                 title={colorClass.split(' ')[0].replace('bg-', '').replace(/-\d+/, '')} // More robust title parsing
               />

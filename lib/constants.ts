@@ -1,6 +1,6 @@
 /**
  * Available color options for tasks in the daily planner.
- * Ordered ROYGBIV (spectrum first, neutrals last). 6 cols × 5 rows = 30 swatches.
+ * Ordered ROYGBIV (spectrum first, neutrals last). 12 cols × 3 rows = 36 swatches.
  * Uses consistent background colors across light and dark modes,
  * but adapts text colors for proper contrast in each theme.
  */
@@ -50,6 +50,14 @@ export const TASK_COLORS = [
   // Neutrals
   'bg-slate-600 text-white dark:bg-slate-600 dark:text-black',       // Deep Slate
   'bg-gray-600 text-white dark:bg-gray-600 dark:text-black',         // Deep Gray
+
+  // Browns & monochromes
+  'task-color-saddle-brown',                                         // Saddle Brown (#8B4513)
+  'task-color-sienna',                                               // Sienna (#A0522D)
+  'task-color-peru',                                                 // Peru (#CD853F)
+  'task-color-dusty-brown',                                          // Dusty Brown (#8B7355)
+  'task-color-light-gray',                                           // Light Gray (#D3D3D3)
+  'task-color-charcoal',                                             // Charcoal (#4A4A4A)
 ];
 
 /** Default color for newly created timeline tasks (Deep Blue) */
