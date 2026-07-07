@@ -1,5 +1,17 @@
 ## 2026-07-06
 
+- **Class Schedule: fix task card drag, resize, and edit buttons** (2026-07-06)
+  - Removed the dead internal drag-handle overlay in `TaskCard` that blocked title double-click and action-button clicks.
+  - Class cards on `/class-schedule` now support **drag** (move start time within the same weekday), **resize** (edge handles), and working **View Notes / Edit / Copy** buttons.
+  - Drag/resize use pointer capture and `utils/timelineDragUtils.ts` helpers; commits persist via new `updateClassTaskTime` in `useClassScheduleState`.
+  - Overlay daily tasks remain read-only.
+  - **Files affected**: `components/planner/TaskCard.tsx`, `components/planner/ClassSchedule.tsx`, `hooks/useClassScheduleState.ts`, `docs/planner.md`, `components/planner/README.md`, `docs/changelog.md`
+
+- **Class Schedule: working task card actions** (2026-07-06)
+  - Class cards on `/class-schedule` now wire **View Notes**, **Edit**, and **Copy** to real handlers (notes modal, edit modal, copy to daily planner pool via `addPoolTask`).
+  - Overlay daily tasks remain read-only; class cards keep drag/resize disabled on this page.
+  - **Files affected**: `components/planner/ClassSchedule.tsx`, `docs/planner.md`, `components/planner/README.md`, `docs/changelog.md`
+
 - **Class Schedule: daily planner task overlay toggle** (2026-07-06)
   - Added a **Classes | Daily Tasks** toggle on `/class-schedule` to overlay daily planner tasks on the recurring class schedule timeline for layout testing.
   - Toggle state persists in localStorage (`omega-planner-class-schedule-show-daily-tasks`) and restores on reload.

@@ -33,6 +33,8 @@ export interface UseClassScheduleStateResult {
   upsertFromModal: (task: Task, isNew?: boolean) => void;
   /** Delete handler for removing a class by id */
   deleteTaskById: (taskId: string) => void;
+  /** Update start hour and duration after drag/resize on the timeline */
+  updateClassTaskTime: (taskId: string, startHour: number, duration: number) => void;
 }
 
 /**
@@ -192,6 +194,25 @@ export function useClassScheduleState(): UseClassScheduleStateResult {
     });
   }, []);
 
+  const updateClassTaskTime = useCallback(
+    (taskId: string, startHour: number, duration: number) => {
+      const nowIso = new Date().toISOString();
+      setClassTasks((prev) => {
+        const index = prev.findIndex((t) => t.id === taskId);
+        if (index === -1) return prev;
+        const next = [...prev];
+        next[index] = {
+          ...next[index],
+          startHour,
+          duration,
+          updatedAt: nowIso,
+        };
+        return next;
+      });
+    },
+    []
+  );
+
   return {
     weekMeta,
     tasksByDate,
@@ -200,6 +221,7 @@ export function useClassScheduleState(): UseClassScheduleStateResult {
     setShowDailyTasks,
     upsertFromModal,
     deleteTaskById,
+    updateClassTaskTime,
   };
 }
 

@@ -11,6 +11,7 @@ import { Task } from "@/types/planner";
 import { useClassScheduleState, ClassScheduleDayMeta } from "@/hooks/useClassScheduleState";
 import { useDailyPlanner } from "@/hooks/useDailyPlannerState";
 import { EditTaskModal } from "./EditTaskModal";
+import { ViewTaskNotesModal } from "./ViewTaskNotesModal";
 import { EnhancedActiveModalTask } from "@/hooks/useModalManager";
 import { dateFromDateKey } from "@/utils/dateUtils";
 import { Button } from "@/components/ui/button";
@@ -25,10 +26,38 @@ import {
   TIMELINE_COLUMN_HEIGHT,
   TASK_BASE_TOP,
   TASK_BASE_BOTTOM_PADDING,
+  MIN_TASK_DURATION,
 } from "@/lib/constants";
+import {
+  getPeriodBaseHour,
+  getDropZoneContentRect,
+  parseTimelineDropZone,
+  resolveTimelineDropZone,
+  getHourFromPointerInSegment,
+  snapHourToQuarter,
+  getPixelsPerHourFromRect,
+  type TimelinePeriod as DragTimelinePeriod,
+} from "@/utils/timelineDragUtils";
 import { MemoizedTaskCard } from "./TaskCard";
 
 type TimelinePeriod = "morning" | "afternoon" | "evening";
+
+interface ClassDraggingTask {
+  task: Task;
+  offsetX: number;
+  taskDayOfWeek: number;
+  lastValidDropZone?: { dayOffset: number; period: DragTimelinePeriod };
+  initialPixelsPerHour: number;
+}
+
+interface ClassResizingTask {
+  task: Task;
+  edge: "start" | "end";
+  initialMouseX: number;
+  initialStartHour: number;
+  initialDuration: number;
+  initialPixelsPerHour: number;
+}
 
 export default React.memo(function ClassSchedule() {
   console.log('🎨 [ClassSchedule] Component rendering');
@@ -40,9 +69,10 @@ export default React.memo(function ClassSchedule() {
     setShowDailyTasks,
     upsertFromModal,
     deleteTaskById,
+    updateClassTaskTime,
   } = useClassScheduleState();
 
-  const { tasksByDate: dailyTasksByDate } = useDailyPlanner();
+  const { tasksByDate: dailyTasksByDate, addPoolTask, getNextId } = useDailyPlanner();
 
   console.log('📊 [ClassSchedule] Received from hook:', {
     weekMetaLength: weekMeta.length,
@@ -55,6 +85,9 @@ export default React.memo(function ClassSchedule() {
   );
   const [activeEditModalTask, setActiveEditModalTask] =
     useState<EnhancedActiveModalTask | null>(null);
+  const [viewingTaskNotes, setViewingTaskNotes] = useState<Task | null>(null);
+  const [draggingTask, setDraggingTask] = useState<ClassDraggingTask | null>(null);
+  const [resizingTask, setResizingTask] = useState<ClassResizingTask | null>(null);
 
   const lastDoubleClickTimestampRef = useRef<number>(0);
   const dailyScrollRef = useRef<HTMLDivElement>(null);
@@ -157,6 +190,289 @@ export default React.memo(function ClassSchedule() {
     setActiveEditModalTask(null);
   }, []);
 
+  const handleViewNotes = useCallback((task: Task) => {
+    setViewingTaskNotes(task);
+  }, []);
+
+  const handleCloseNotesModal = useCallback(() => {
+    setViewingTaskNotes(null);
+  }, []);
+
+  const handleCopyTask = useCallback(
+    (task: Task) => {
+      const poolTaskCopy: Task = {
+        ...task,
+        id: getNextId(),
+        completed: false,
+        poolDate: undefined,
+      };
+      addPoolTask(poolTaskCopy);
+    },
+    [addPoolTask, getNextId]
+  );
+
+  const handleResizeStart = useCallback(
+    (task: Task, edge: "start" | "end", e: React.PointerEvent<HTMLDivElement>) => {
+      e.stopPropagation();
+      e.preventDefault();
+      if (e.button !== 0) return;
+      setDraggingTask(null);
+      document.body.style.cursor = "col-resize";
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        // Ignore capture failures on unsupported targets
+      }
+      if (task.startHour === undefined) return;
+
+      const dropZone = (e.currentTarget as HTMLElement).closest(
+        "[data-timeline-drop]"
+      ) as HTMLElement | null;
+      const contentRect = dropZone ? getDropZoneContentRect(dropZone) : null;
+      const initialPixelsPerHour = contentRect
+        ? getPixelsPerHourFromRect(contentRect.width)
+        : PIXELS_PER_HOUR;
+
+      setResizingTask({
+        task: { ...task },
+        edge,
+        initialMouseX: e.clientX,
+        initialStartHour: task.startHour,
+        initialDuration: task.duration,
+        initialPixelsPerHour,
+      });
+    },
+    []
+  );
+
+  const handleDragStart = useCallback(
+    (task: Task, e: React.PointerEvent<HTMLElement>) => {
+      e.preventDefault();
+      if (e.button !== 0) return;
+      setResizingTask(null);
+
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        // Ignore capture failures on unsupported targets
+      }
+
+      const rect = e.currentTarget.getBoundingClientRect();
+      const offsetX = e.clientX - rect.left;
+      const dropZone = (e.currentTarget as HTMLElement).closest(
+        "[data-timeline-drop]"
+      ) as HTMLElement | null;
+      const parsedZone = dropZone ? parseTimelineDropZone(dropZone) : null;
+      const contentRect = dropZone ? getDropZoneContentRect(dropZone) : null;
+      const initialPixelsPerHour = contentRect
+        ? getPixelsPerHourFromRect(contentRect.width)
+        : PIXELS_PER_HOUR;
+      const taskDayOfWeek = dateFromDateKey(task.baseDate).getDay();
+
+      setDraggingTask({
+        task: { ...task },
+        offsetX,
+        taskDayOfWeek,
+        lastValidDropZone: parsedZone
+          ? { dayOffset: parsedZone.dayOffset, period: parsedZone.period }
+          : undefined,
+        initialPixelsPerHour,
+      });
+    },
+    []
+  );
+
+  const handlePointerMoveResize = useCallback(
+    (e: PointerEvent) => {
+      if (!resizingTask) return;
+      e.preventDefault();
+
+      const {
+        edge,
+        initialMouseX,
+        initialStartHour,
+        initialDuration,
+        initialPixelsPerHour,
+      } = resizingTask;
+
+      const dx = e.clientX - initialMouseX;
+      const dHours = dx / initialPixelsPerHour;
+
+      let livePreviewStartHour = initialStartHour;
+      let livePreviewDuration = initialDuration;
+
+      if (edge === "start") {
+        const nearestSnapPoint = Math.round((initialStartHour + dHours) * 4) / 4;
+        livePreviewStartHour = nearestSnapPoint;
+        livePreviewDuration =
+          initialStartHour + initialDuration - livePreviewStartHour;
+      } else {
+        const nearestSnapPoint =
+          Math.round((initialStartHour + initialDuration + dHours) * 4) / 4;
+        livePreviewDuration = nearestSnapPoint - initialStartHour;
+      }
+
+      livePreviewDuration = Math.max(MIN_TASK_DURATION, livePreviewDuration);
+
+      if (edge === "start") {
+        const originalTaskEnd = initialStartHour + initialDuration;
+        livePreviewStartHour = Math.min(
+          livePreviewStartHour,
+          originalTaskEnd - MIN_TASK_DURATION
+        );
+        livePreviewStartHour = Math.max(
+          TIMELINE_SPLIT_HOUR_1,
+          livePreviewStartHour
+        );
+        livePreviewDuration = originalTaskEnd - livePreviewStartHour;
+      } else {
+        livePreviewDuration = Math.min(
+          livePreviewDuration,
+          TIMELINE_END_HOUR - livePreviewStartHour
+        );
+      }
+
+      livePreviewStartHour = Math.max(
+        TIMELINE_SPLIT_HOUR_1,
+        livePreviewStartHour
+      );
+      livePreviewDuration = Math.max(
+        MIN_TASK_DURATION,
+        Math.min(livePreviewDuration, TIMELINE_END_HOUR - livePreviewStartHour)
+      );
+
+      setResizingTask((prev) => {
+        if (!prev) return null;
+        if (
+          prev.task.startHour === livePreviewStartHour &&
+          prev.task.duration === livePreviewDuration
+        ) {
+          return prev;
+        }
+        return {
+          ...prev,
+          task: {
+            ...prev.task,
+            startHour: livePreviewStartHour,
+            duration: livePreviewDuration,
+          },
+        };
+      });
+    },
+    [resizingTask]
+  );
+
+  const handlePointerMoveDrag = useCallback(
+    (e: PointerEvent) => {
+      if (!draggingTask) return;
+      e.preventDefault();
+
+      const { task, offsetX, taskDayOfWeek, lastValidDropZone } = draggingTask;
+      const zoneInfo = resolveTimelineDropZone(
+        e.clientX,
+        e.clientY,
+        lastValidDropZone
+      );
+      if (!zoneInfo || zoneInfo.dayOffset !== taskDayOfWeek) return;
+
+      const baseHour = getPeriodBaseHour(zoneInfo.period);
+      let newStartHour = getHourFromPointerInSegment(
+        e.clientX,
+        zoneInfo.contentRect,
+        offsetX,
+        baseHour
+      );
+
+      const taskDuration = task.duration || MIN_TASK_DURATION;
+      newStartHour = Math.max(TIMELINE_SPLIT_HOUR_1, newStartHour);
+      newStartHour = Math.min(TIMELINE_END_HOUR - taskDuration, newStartHour);
+      const snappedNewStartHour = snapHourToQuarter(newStartHour);
+
+      setDraggingTask((prev) => {
+        if (!prev) return null;
+        if (
+          prev.task.startHour === snappedNewStartHour &&
+          prev.lastValidDropZone?.period === zoneInfo.period
+        ) {
+          return prev;
+        }
+        return {
+          ...prev,
+          lastValidDropZone: {
+            dayOffset: zoneInfo.dayOffset,
+            period: zoneInfo.period,
+          },
+          task: { ...prev.task, startHour: snappedNewStartHour },
+        };
+      });
+    },
+    [draggingTask]
+  );
+
+  const endTimelineInteraction = useCallback(() => {
+    if (resizingTask?.task.startHour !== undefined) {
+      updateClassTaskTime(
+        resizingTask.task.id,
+        resizingTask.task.startHour,
+        resizingTask.task.duration
+      );
+      setResizingTask(null);
+    }
+    if (draggingTask?.task.startHour !== undefined) {
+      updateClassTaskTime(
+        draggingTask.task.id,
+        draggingTask.task.startHour,
+        draggingTask.task.duration
+      );
+      setDraggingTask(null);
+    }
+    document.body.style.cursor = "";
+  }, [resizingTask, draggingTask, updateClassTaskTime]);
+
+  useEffect(() => {
+    if (!draggingTask && !resizingTask) {
+      document.body.style.cursor = "";
+      return;
+    }
+
+    const onPointerMove = (event: PointerEvent) => {
+      if (resizingTask) handlePointerMoveResize(event);
+      if (draggingTask) handlePointerMoveDrag(event);
+    };
+
+    const onInteractionEnd = () => {
+      endTimelineInteraction();
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onInteractionEnd);
+    window.addEventListener("pointercancel", onInteractionEnd);
+    window.addEventListener("blur", onInteractionEnd);
+    document.body.style.cursor = draggingTask ? "grabbing" : "col-resize";
+
+    return () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onInteractionEnd);
+      window.removeEventListener("pointercancel", onInteractionEnd);
+      window.removeEventListener("blur", onInteractionEnd);
+    };
+  }, [
+    draggingTask,
+    resizingTask,
+    handlePointerMoveResize,
+    handlePointerMoveDrag,
+    endTimelineInteraction,
+  ]);
+
+  const getDisplayTask = useCallback(
+    (task: Task): Task => {
+      if (resizingTask?.task.id === task.id) return resizingTask.task;
+      if (draggingTask?.task.id === task.id) return draggingTask.task;
+      return task;
+    },
+    [resizingTask, draggingTask]
+  );
+
   const renderTimeline = useCallback((period: TimelinePeriod) => {
     let startHour, endHour;
     switch (period) {
@@ -217,6 +533,8 @@ export default React.memo(function ClassSchedule() {
       if (renderWidth <= 0) return null;
 
       const isOverlay = options?.overlay ?? false;
+      const isDraggingPreview =
+        !isOverlay && draggingTask?.task.id === task.id;
       const cardHeight =
         TIMELINE_COLUMN_HEIGHT - TASK_BASE_TOP - TASK_BASE_BOTTOM_PADDING;
 
@@ -226,6 +544,9 @@ export default React.memo(function ClassSchedule() {
         top: `${TASK_BASE_TOP}px`,
         height: `${cardHeight}px`,
         zIndex: isOverlay ? 50 : 40,
+        ...(isDraggingPreview
+          ? { pointerEvents: "none" as const, opacity: 0.85 }
+          : {}),
       };
 
       return (
@@ -238,6 +559,16 @@ export default React.memo(function ClassSchedule() {
           )}
           style={taskStyle}
           title={isOverlay ? `Daily planner task: ${task.name}` : undefined}
+          onPointerDown={
+            isOverlay
+              ? undefined
+              : (e) => {
+                  if (e.button !== 0) return;
+                  const target = e.target as HTMLElement;
+                  if (target.closest("button, .resize-handle")) return;
+                  handleDragStart(task, e);
+                }
+          }
         >
           <MemoizedTaskCard
             task={task}
@@ -248,16 +579,27 @@ export default React.memo(function ClassSchedule() {
                 : (taskToEdit, editOptions) =>
                     handleOpenEditModal(taskToEdit, editOptions)
             }
-            onCopy={() => {}}
-            onViewNotes={() => {}}
-            onResizeStart={() => {}}
-            onDragStart={() => {}}
+            onCopy={isOverlay ? () => {} : handleCopyTask}
+            onViewNotes={isOverlay ? () => {} : handleViewNotes}
+            onResizeStart={
+              isOverlay
+                ? () => {}
+                : (edge, e) => handleResizeStart(task, edge, e)
+            }
             currentTime={currentTimeForMarker}
           />
         </div>
       );
     },
-    [currentTimeForMarker, handleOpenEditModal]
+    [
+      currentTimeForMarker,
+      handleOpenEditModal,
+      handleCopyTask,
+      handleViewNotes,
+      handleDragStart,
+      handleResizeStart,
+      draggingTask,
+    ]
   );
 
   const renderDayPeriod = (dayMeta: ClassScheduleDayMeta, period: TimelinePeriod) => {
@@ -283,10 +625,11 @@ export default React.memo(function ClassSchedule() {
       ? dailyTasksByDate.get(dateKey) || []
       : [];
     
-    const tasksToRender = tasksForThisColumnDate.filter(t => {
-      if (t.startHour === undefined) return false;
-      const taskStart = t.startHour as number;
-      const taskEnd = taskStart + t.duration;
+    const tasksToRender = tasksForThisColumnDate.filter((t) => {
+      const display = getDisplayTask(t);
+      if (display.startHour === undefined) return false;
+      const taskStart = display.startHour as number;
+      const taskEnd = taskStart + display.duration;
       return taskEnd > startHour && taskStart < endHour;
     });
 
@@ -352,14 +695,21 @@ export default React.memo(function ClassSchedule() {
         }}
       >
         {renderTimeline(period)}
-        <div className="relative flex-grow bg-background pt-6 cursor-pointer"
+        <div
+          className="relative flex-grow bg-background pt-6 cursor-pointer overflow-visible"
+          data-timeline-drop
+          data-day-offset={dayMeta.dayOfWeek}
+          data-section-period={period}
+          data-testid={`timeline-area-${period}`}
           onDoubleClick={handleTimelineDoubleClick}
         >
           {currentTimeMarker}
           {Array.from({ length: endHour - startHour }, (_, i) => (
             <div key={`grid-${i}`} className={`absolute h-full ${i % 6 === 0 ? 'border-l border-border/30' : 'border-l border-border/10'}`} style={{ left: `${i * PIXELS_PER_HOUR}px`, top: '0', bottom: '0' }} />
           ))}
-          {tasksToRender.map((task) => renderTaskCard(task, startHour, endHour))}
+          {tasksToRender.map((task) =>
+            renderTaskCard(getDisplayTask(task), startHour, endHour)
+          )}
           {dailyTasksToRender.map((task) =>
             renderTaskCard(task, startHour, endHour, { overlay: true })
           )}
@@ -379,6 +729,14 @@ export default React.memo(function ClassSchedule() {
             onDelete={handleDeleteFromModal}
           />
         )}
+        <ViewTaskNotesModal
+          task={viewingTaskNotes}
+          onClose={handleCloseNotesModal}
+          onEdit={(task) => {
+            handleOpenEditModal(task, { isNew: false });
+            handleCloseNotesModal();
+          }}
+        />
 
         <div className="flex flex-col flex-1 min-h-0 px-6 pb-6 gap-6">
           <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden flex flex-col flex-1 min-h-0">

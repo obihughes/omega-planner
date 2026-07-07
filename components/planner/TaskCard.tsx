@@ -14,6 +14,7 @@ export interface TaskCardProps {
   onCopy: (task: Task) => void;
   onViewNotes: (task: Task) => void;
   onResizeStart: (edge: 'start' | 'end', e: React.PointerEvent<HTMLDivElement>) => void;
+  /** @deprecated Drag is handled by timeline wrapper onPointerDown; not used inside TaskCard */
   onDragStart?: (task: Task, e: React.MouseEvent<HTMLDivElement>) => void;
   currentTime?: Date; // Optional prop to check if task is in the past
 }
@@ -25,7 +26,6 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   onCopy,
   onViewNotes,
   onResizeStart,
-  onDragStart,
   currentTime,
 }) => {
   const [isViewing, setIsViewing] = useState(false);
@@ -138,24 +138,6 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           onPointerDown={(e) => { e.stopPropagation(); onResizeStart('start', e); }}
         />
         
-        {/* Drag handle area - middle section that doesn't cover button areas */}
-        <div 
-          className={`absolute left-1.5 top-0 bottom-0 cursor-grab active:cursor-grabbing z-20 ${actionScale.dragRight}`}
-          draggable={false}
-          onDragStart={(e) => e.preventDefault()}
-          onMouseDown={(e) => {
-            e.preventDefault(); // Prevent browser default drag behavior
-            // Don't stop propagation for drag - let it bubble up
-            if (onDragStart) {
-              onDragStart(task, e);
-            }
-          }}
-          onMouseEnter={() => {
-          }}
-          onMouseLeave={() => {
-          }}
-        />
-        
         <div className="flex flex-col min-w-0 flex-grow relative z-10 pointer-events-none">
           <div className="flex flex-row justify-between items-start min-w-0 draggable-area h-full gap-1 relative">
             <div className="flex-grow flex flex-col min-w-0 justify-between">
@@ -175,27 +157,13 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                         onStartEdit(task, {isNew: false}); 
                     }
                 }}
-                onMouseDown={(e) => {
-                  // Allow dragging from the task name
-                  if (e.detail === 1 && onDragStart) {
-                    e.preventDefault();
-                    onDragStart(task, e);
-                  }
-                }}
                 style={{ pointerEvents: 'auto' }}
                 >
                   {task.name}
                 </div>
               </div>
               {!isCompressed && (
-                <div className="mt-2 cursor-grab active:cursor-grabbing" 
-                     onMouseDown={(e) => {
-                       if (onDragStart) {
-                         e.preventDefault();
-                         onDragStart(task, e);
-                       }
-                     }}
-                     style={{ pointerEvents: 'auto' }}>
+                <div className="mt-2 cursor-grab active:cursor-grabbing" style={{ pointerEvents: 'auto' }}>
                   <div className="text-xs font-semibold opacity-90 leading-tight drop-shadow-sm">
                     {formatDuration(task.duration)}
                   </div>
@@ -207,7 +175,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
         {/* Action buttons - scale with timeline row height */}
         <div
-          className={`absolute ${actionScale.inset} flex ${useCompactActionLayout ? 'flex-row' : 'flex-col'} ${actionScale.gap} opacity-0 group-hover:opacity-100 transition-opacity z-40`}
+          className={`absolute ${actionScale.inset} flex ${useCompactActionLayout ? 'flex-row' : 'flex-col'} ${actionScale.gap} opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-auto`}
         >
           {onViewNotes && (
             <button
