@@ -1,5 +1,14 @@
 ## 2026-07-06
 
+- **Class Schedule: interactive Daily Tasks mode** (2026-07-06)
+  - Daily Tasks mode now supports full timeline interaction: drag (including cross-day within the week), resize, edit, delete, copy, and double-click add.
+  - Daily task changes route to Daily Planner storage via `handleAddTask`, `handleUpdateTask`, and `handleDeleteTask`; class changes continue to use class schedule storage.
+
+- **Class Schedule: exclusive Daily Tasks view** (2026-07-06)
+  - **Classes | Daily Tasks** toggle now shows one view at a time instead of overlaying daily tasks on top of classes.
+  - Daily Tasks mode displays this week's scheduled tasks read-only; class CRUD, drag, and resize are disabled in that mode.
+  - **+ Add Class** is hidden while Daily Tasks mode is active; day headers show the relevant count for the active view.
+
 - **Class Schedule: fix drag/edit when Daily Tasks overlay is on** (2026-07-06)
   - Daily overlay cards now render underneath class cards with lower `z-index` (40 vs 50), so class drag, resize, and action buttons stay clickable when the **Daily Tasks** toggle is enabled.
   - **Files affected**: `components/planner/ClassSchedule.tsx`, `docs/planner.md`, `components/planner/README.md`, `docs/changelog.md`

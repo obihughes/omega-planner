@@ -120,7 +120,7 @@ The Class Schedule view (`/class-schedule`) provides a recurring weekly timetabl
   - Vertically scrollable when all days do not fit on screen
   - Auto-scrolls to center the current day when the view opens
 - **Add Classes**: Click "+ Add Class" button or double-click timeline to create new recurring classes
-- **Daily Tasks Overlay**: Use the **Classes | Daily Tasks** toggle in the header to overlay daily planner tasks on the class schedule timeline for layout comparison. The choice persists across reloads via localStorage. Overlay cards render underneath class cards so drag, edit, and resize on class tasks remain usable while the overlay is on.
+- **Daily Tasks View**: Use the **Classes | Daily Tasks** toggle in the header to switch between recurring classes and this week's daily planner tasks. Only one set is shown at a time. The choice persists across reloads via localStorage. Daily Tasks mode supports drag, resize, edit, delete, copy, and double-click add; changes sync to Daily Planner storage.
 - **Edit Classes**: Click any existing class card to edit name, time, duration, color, and notes (hover **Edit** button, double-click title, or **View Notes** → Edit)
 - **Task card actions**: Class cards support **View Notes**, **Edit**, **Copy** (to daily planner pool), **drag** (move start time on the same weekday), and **resize** (edge handles). Changes persist to recurring class storage.
 - **Delete Classes**: Delete classes via the edit modal

@@ -72,7 +72,14 @@ export default React.memo(function ClassSchedule() {
     updateClassTaskTime,
   } = useClassScheduleState();
 
-  const { tasksByDate: dailyTasksByDate, addPoolTask, getNextId } = useDailyPlanner();
+  const {
+    tasksByDate: dailyTasksByDate,
+    addPoolTask,
+    getNextId,
+    handleAddTask,
+    handleUpdateTask,
+    handleDeleteTask,
+  } = useDailyPlanner();
 
   console.log('📊 [ClassSchedule] Received from hook:', {
     weekMetaLength: weekMeta.length,
@@ -144,6 +151,30 @@ export default React.memo(function ClassSchedule() {
     return weekMeta.find((m) => m.dayOfWeek === currentDow) ?? weekMeta[0];
   }, [weekMeta]);
 
+  const dateKeyByDayOfWeek = useMemo(() => {
+    const map = new Map<number, string>();
+    weekMeta.forEach((meta) => map.set(meta.dayOfWeek, meta.dateKey));
+    return map;
+  }, [weekMeta]);
+
+  const isDailyTask = useCallback(
+    (taskId: string): boolean => {
+      return Array.from(dailyTasksByDate.values()).some((tasks) =>
+        tasks.some((task) => task.id === taskId)
+      );
+    },
+    [dailyTasksByDate]
+  );
+
+  const shouldUseDailyPlanner = useCallback(
+    (task?: Task, isNew?: boolean): boolean => {
+      if (isNew) return showDailyTasks;
+      if (!task) return showDailyTasks;
+      return showDailyTasks || isDailyTask(task.id);
+    },
+    [showDailyTasks, isDailyTask]
+  );
+
   const handleOpenEditModal = useCallback(
     (task: Task, options?: { isNew?: boolean; isFromPool?: boolean }) => {
       const targetDate = dateFromDateKey(task.baseDate);
@@ -173,17 +204,45 @@ export default React.memo(function ClassSchedule() {
         isNew: options?.isNew,
       });
       const isNew = options?.isNew ?? false;
+
+      if (shouldUseDailyPlanner(task, isNew)) {
+        if (isNew) {
+          handleAddTask(task.baseDate, task.startHour ?? 9, {
+            name: task.name,
+            duration: task.duration,
+            color: task.color ?? "bg-blue-500",
+            notes: task.notes,
+            completed: task.completed,
+          });
+        } else {
+          handleUpdateTask(task.id, {
+            name: task.name,
+            startHour: task.startHour,
+            duration: task.duration,
+            color: task.color,
+            baseDate: task.baseDate,
+            notes: task.notes,
+            completed: task.completed,
+          });
+        }
+        return;
+      }
+
       upsertFromModal(task, isNew);
     },
-    [upsertFromModal]
+    [shouldUseDailyPlanner, handleAddTask, handleUpdateTask, upsertFromModal]
   );
 
   const handleDeleteFromModal = useCallback(
     (taskId: string, _isFromPool?: boolean) => {
       console.log('🗑️ [ClassSchedule] handleDeleteFromModal called for task:', taskId);
+      if (showDailyTasks || isDailyTask(taskId)) {
+        handleDeleteTask(taskId);
+        return;
+      }
       deleteTaskById(taskId);
     },
-    [deleteTaskById]
+    [showDailyTasks, isDailyTask, handleDeleteTask, deleteTaskById]
   );
 
   const handleCloseModal = useCallback(() => {
@@ -373,7 +432,11 @@ export default React.memo(function ClassSchedule() {
         e.clientY,
         lastValidDropZone
       );
-      if (!zoneInfo || zoneInfo.dayOffset !== taskDayOfWeek) return;
+      if (!zoneInfo) return;
+      if (!showDailyTasks && zoneInfo.dayOffset !== taskDayOfWeek) return;
+
+      const targetDateKey = dateKeyByDayOfWeek.get(zoneInfo.dayOffset);
+      if (showDailyTasks && !targetDateKey) return;
 
       const baseHour = getPeriodBaseHour(zoneInfo.period);
       let newStartHour = getHourFromPointerInSegment(
@@ -390,44 +453,82 @@ export default React.memo(function ClassSchedule() {
 
       setDraggingTask((prev) => {
         if (!prev) return null;
+
+        const nextTask = showDailyTasks && targetDateKey
+          ? {
+              ...prev.task,
+              startHour: snappedNewStartHour,
+              baseDate: targetDateKey,
+            }
+          : { ...prev.task, startHour: snappedNewStartHour };
+
         if (
-          prev.task.startHour === snappedNewStartHour &&
-          prev.lastValidDropZone?.period === zoneInfo.period
+          prev.task.startHour === nextTask.startHour &&
+          prev.task.baseDate === nextTask.baseDate &&
+          prev.lastValidDropZone?.period === zoneInfo.period &&
+          prev.lastValidDropZone?.dayOffset === zoneInfo.dayOffset
         ) {
           return prev;
         }
+
         return {
           ...prev,
           lastValidDropZone: {
             dayOffset: zoneInfo.dayOffset,
             period: zoneInfo.period,
           },
-          task: { ...prev.task, startHour: snappedNewStartHour },
+          task: nextTask,
         };
       });
     },
-    [draggingTask]
+    [draggingTask, showDailyTasks, dateKeyByDayOfWeek]
+  );
+
+  const commitDailyTaskTime = useCallback(
+    (task: Task) => {
+      handleUpdateTask(task.id, {
+        startHour: task.startHour,
+        duration: task.duration,
+        baseDate: task.baseDate,
+      });
+    },
+    [handleUpdateTask]
   );
 
   const endTimelineInteraction = useCallback(() => {
     if (resizingTask?.task.startHour !== undefined) {
-      updateClassTaskTime(
-        resizingTask.task.id,
-        resizingTask.task.startHour,
-        resizingTask.task.duration
-      );
+      if (showDailyTasks || isDailyTask(resizingTask.task.id)) {
+        commitDailyTaskTime(resizingTask.task);
+      } else {
+        updateClassTaskTime(
+          resizingTask.task.id,
+          resizingTask.task.startHour,
+          resizingTask.task.duration
+        );
+      }
       setResizingTask(null);
     }
     if (draggingTask?.task.startHour !== undefined) {
-      updateClassTaskTime(
-        draggingTask.task.id,
-        draggingTask.task.startHour,
-        draggingTask.task.duration
-      );
+      if (showDailyTasks || isDailyTask(draggingTask.task.id)) {
+        commitDailyTaskTime(draggingTask.task);
+      } else {
+        updateClassTaskTime(
+          draggingTask.task.id,
+          draggingTask.task.startHour,
+          draggingTask.task.duration
+        );
+      }
       setDraggingTask(null);
     }
     document.body.style.cursor = "";
-  }, [resizingTask, draggingTask, updateClassTaskTime]);
+  }, [
+    resizingTask,
+    draggingTask,
+    showDailyTasks,
+    isDailyTask,
+    commitDailyTaskTime,
+    updateClassTaskTime,
+  ]);
 
   useEffect(() => {
     if (!draggingTask && !resizingTask) {
@@ -633,7 +734,28 @@ export default React.memo(function ClassSchedule() {
       return taskEnd > startHour && taskStart < endHour;
     });
 
-    const dailyTasksToRender = dailyTasksForThisColumnDate.filter((t) => {
+    const dailyTasksForRender = (() => {
+      let tasksForColumn = dailyTasksForThisColumnDate;
+
+      if (showDailyTasks) {
+        if (draggingTask?.task) {
+          tasksForColumn = tasksForColumn.filter(
+            (task) => task.id !== draggingTask.task.id
+          );
+          if (draggingTask.task.baseDate === dateKey) {
+            tasksForColumn = [...tasksForColumn, draggingTask.task];
+          }
+        } else if (resizingTask?.task?.baseDate === dateKey) {
+          tasksForColumn = tasksForColumn.map((task) =>
+            task.id === resizingTask.task.id ? resizingTask.task : task
+          );
+        }
+      }
+
+      return tasksForColumn;
+    })();
+
+    const dailyTasksToRender = dailyTasksForRender.filter((t) => {
       if (t.startHour === undefined) return false;
       const taskStart = t.startHour as number;
       const taskEnd = taskStart + t.duration;
@@ -669,11 +791,10 @@ export default React.memo(function ClassSchedule() {
       const clickXrelative = e.clientX - rect.left;
       const hourInBlock = (clickXrelative / PIXELS_PER_HOUR);
       const snappedNewStartHour = Math.round((startHour + hourInBlock) * 4) / 4;
-      
-      const targetDate = dateFromDateKey(dateKey);
+
       const newTask: Task = {
         id: `temp-new-task-${Date.now()}`,
-        name: "New Class",
+        name: showDailyTasks ? "New Task" : "New Class",
         startHour: snappedNewStartHour,
         duration: 1,
         baseDate: dateKey,
@@ -696,7 +817,7 @@ export default React.memo(function ClassSchedule() {
       >
         {renderTimeline(period)}
         <div
-          className="relative flex-grow bg-background pt-6 cursor-pointer overflow-visible"
+          className="relative flex-grow bg-background pt-6 overflow-visible cursor-pointer"
           data-timeline-drop
           data-day-offset={dayMeta.dayOfWeek}
           data-section-period={period}
@@ -707,12 +828,13 @@ export default React.memo(function ClassSchedule() {
           {Array.from({ length: endHour - startHour }, (_, i) => (
             <div key={`grid-${i}`} className={`absolute h-full ${i % 6 === 0 ? 'border-l border-border/30' : 'border-l border-border/10'}`} style={{ left: `${i * PIXELS_PER_HOUR}px`, top: '0', bottom: '0' }} />
           ))}
-          {dailyTasksToRender.map((task) =>
-            renderTaskCard(task, startHour, endHour, { overlay: true })
-          )}
-          {tasksToRender.map((task) =>
-            renderTaskCard(getDisplayTask(task), startHour, endHour)
-          )}
+          {showDailyTasks
+            ? dailyTasksToRender.map((task) =>
+                renderTaskCard(getDisplayTask(task), startHour, endHour)
+              )
+            : tasksToRender.map((task) =>
+                renderTaskCard(getDisplayTask(task), startHour, endHour)
+              )}
         </div>
       </div>
     );
@@ -746,14 +868,16 @@ export default React.memo(function ClassSchedule() {
                   Class Schedule
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  • Recurring weekly schedule
+                  {showDailyTasks
+                    ? "• This week's daily planner tasks"
+                    : "• Recurring weekly schedule"}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <div
                   className="flex rounded-md border border-border/60 shrink-0"
                   role="group"
-                  aria-label="Daily planner task overlay"
+                  aria-label="Class schedule view mode"
                 >
                   <button
                     type="button"
@@ -764,7 +888,7 @@ export default React.memo(function ClassSchedule() {
                         ? "bg-primary text-primary-foreground"
                         : "bg-transparent hover:bg-muted"
                     )}
-                    title="Show class schedule only"
+                    title="Show recurring class schedule"
                   >
                     Classes
                   </button>
@@ -777,19 +901,21 @@ export default React.memo(function ClassSchedule() {
                         ? "bg-primary text-primary-foreground"
                         : "bg-transparent hover:bg-muted"
                     )}
-                    title="Overlay daily planner tasks on the class schedule"
+                    title="Show daily planner tasks for this week"
                   >
                     Daily Tasks
                   </button>
                 </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="px-3 text-xs h-7"
-                  onClick={handleAddNewClass}
-                >
-                  + Add Class
-                </Button>
+                {!showDailyTasks && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="px-3 text-xs h-7"
+                    onClick={handleAddNewClass}
+                  >
+                    + Add Class
+                  </Button>
+                )}
 
               </div>
             </div>
@@ -808,6 +934,7 @@ export default React.memo(function ClassSchedule() {
                         if (!meta) return null;
                         const isToday = meta.dayOfWeek === new Date().getDay();
                         const dayTasks = tasksByDate.get(meta.dateKey) || [];
+                        const dailyTasks = dailyTasksByDate.get(meta.dateKey) || [];
 
                         return (
                           <div
@@ -849,15 +976,9 @@ export default React.memo(function ClassSchedule() {
                                 )}
                               </div>
                               <span className="text-xs text-muted-foreground">
-                                {dayTasks.length} {dayTasks.length === 1 ? "class" : "classes"}
-                                {showDailyTasks && (
-                                  <>
-                                    {" "}
-                                    •{" "}
-                                    {(dailyTasksByDate.get(meta.dateKey) || []).length}{" "}
-                                    daily
-                                  </>
-                                )}
+                                {showDailyTasks
+                                  ? `${dailyTasks.length} ${dailyTasks.length === 1 ? "task" : "tasks"}`
+                                  : `${dayTasks.length} ${dayTasks.length === 1 ? "class" : "classes"}`}
                               </span>
                             </div>
                             <div className="flex flex-col">
