@@ -164,3 +164,4 @@ DailyPlanner
 - Supports vertical scrolling through all seven day cards.
 - Auto-scrolls to today's day card when the view opens.
 - Preserves class CRUD flows (double-click add, card click edit, modal delete) and keeps recurring storage keyed by day-of-week.
+- **Daily Tasks overlay**: Header toggle **Classes | Daily Tasks** overlays read-only daily planner tasks on the timeline for layout testing; preference persists in `omega-planner-class-schedule-show-daily-tasks`.

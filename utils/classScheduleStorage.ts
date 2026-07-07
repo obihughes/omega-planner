@@ -1,6 +1,7 @@
 import { ClassScheduleTask, ClassScheduleStorageData } from '@/types/planner';
 
 const STORAGE_KEY = 'omega-planner-class-schedule';
+const SHOW_DAILY_TASKS_KEY = 'omega-planner-class-schedule-show-daily-tasks';
 const STORAGE_VERSION = '1.0';
 
 export const ClassScheduleStorage = {
@@ -84,6 +85,31 @@ export const ClassScheduleStorage = {
       typeof task.color === 'string' &&
       typeof task.dayOfWeek === 'number'
     );
+  },
+
+  getShowDailyTasks(): boolean {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    const raw = localStorage.getItem(SHOW_DAILY_TASKS_KEY);
+    if (raw === null) {
+      return false;
+    }
+
+    try {
+      return JSON.parse(raw) === true;
+    } catch {
+      return false;
+    }
+  },
+
+  setShowDailyTasks(value: boolean): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    localStorage.setItem(SHOW_DAILY_TASKS_KEY, JSON.stringify(value));
   },
 
   clean(task: any): ClassScheduleTask {

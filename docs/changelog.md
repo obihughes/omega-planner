@@ -1,5 +1,11 @@
 ## 2026-07-06
 
+- **Class Schedule: daily planner task overlay toggle** (2026-07-06)
+  - Added a **Classes | Daily Tasks** toggle on `/class-schedule` to overlay daily planner tasks on the recurring class schedule timeline for layout testing.
+  - Toggle state persists in localStorage (`omega-planner-class-schedule-show-daily-tasks`) and restores on reload.
+  - Overlay tasks render read-only above class cards with a primary ring for visual distinction.
+  - **Files affected**: `utils/classScheduleStorage.ts`, `utils/classScheduleStorage.test.ts`, `hooks/useClassScheduleState.ts`, `components/planner/ClassSchedule.tsx`, `docs/planner.md`, `components/planner/README.md`, `docs/changelog.md`
+
 - **Daily Planner: smoother timeline drag on wide / multi-monitor layouts** (2026-07-06)
   - Live drag and resize now use each timeline segment's actual width (`rect.width / 6`) instead of a global `pixelsPerHour` ref, matching double-click and pool-drop placement.
   - Pointer capture with `pointermove` / `pointerup` / `pointercancel` / `blur` handlers replaces mouse-only listeners; stuck-drag cursor should clear when releasing outside the window.

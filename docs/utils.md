@@ -188,3 +188,13 @@ Analyzes an import without mutating state. Returns conflict info and tasks ready
 
 #### `mergeClassCopyIntoTasks(plannerTasks, plan, strategy)`
 Applies a prepared import plan with `skip`, `replace`, `copy_all`, or `cancel` strategy.
+
+## Class Schedule Storage (`utils/classScheduleStorage.ts`)
+
+Persists recurring class schedule tasks and UI preferences for the Class Schedule page.
+
+#### `ClassScheduleStorage.load()` / `save(tasks)`
+Load and save recurring `ClassScheduleTask[]` under `omega-planner-class-schedule`.
+
+#### `ClassScheduleStorage.getShowDailyTasks()` / `setShowDailyTasks(value)`
+Persist the **Classes | Daily Tasks** overlay toggle on `/class-schedule` under `omega-planner-class-schedule-show-daily-tasks`.

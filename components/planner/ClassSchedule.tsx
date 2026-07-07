@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import { Task } from "@/types/planner";
 import { useClassScheduleState, ClassScheduleDayMeta } from "@/hooks/useClassScheduleState";
+import { useDailyPlanner } from "@/hooks/useDailyPlannerState";
 import { EditTaskModal } from "./EditTaskModal";
 import { EnhancedActiveModalTask } from "@/hooks/useModalManager";
 import { dateFromDateKey } from "@/utils/dateUtils";
@@ -35,9 +36,13 @@ export default React.memo(function ClassSchedule() {
   const {
     weekMeta,
     tasksByDate,
+    showDailyTasks,
+    setShowDailyTasks,
     upsertFromModal,
     deleteTaskById,
   } = useClassScheduleState();
+
+  const { tasksByDate: dailyTasksByDate } = useDailyPlanner();
 
   console.log('📊 [ClassSchedule] Received from hook:', {
     weekMetaLength: weekMeta.length,
@@ -192,6 +197,69 @@ export default React.memo(function ClassSchedule() {
     handleOpenEditModal(newTask, { isNew: true, isFromPool: false });
   }, [currentDayMeta, handleOpenEditModal]);
 
+  const renderTaskCard = useCallback(
+    (
+      task: Task,
+      startHour: number,
+      endHour: number,
+      options?: { overlay?: boolean }
+    ) => {
+      const startHourVal = task.startHour ?? startHour;
+      const taskStartRelativeToSection = Math.max(0, startHourVal - startHour);
+      const taskEndRelativeToSection = Math.min(
+        endHour - startHour,
+        startHourVal + task.duration - startHour
+      );
+      const renderLeft = taskStartRelativeToSection * PIXELS_PER_HOUR;
+      const renderWidth =
+        (taskEndRelativeToSection - taskStartRelativeToSection) * PIXELS_PER_HOUR;
+
+      if (renderWidth <= 0) return null;
+
+      const isOverlay = options?.overlay ?? false;
+      const cardHeight =
+        TIMELINE_COLUMN_HEIGHT - TASK_BASE_TOP - TASK_BASE_BOTTOM_PADDING;
+
+      const taskStyle: React.CSSProperties = {
+        left: `${renderLeft}px`,
+        width: `${renderWidth}px`,
+        top: `${TASK_BASE_TOP}px`,
+        height: `${cardHeight}px`,
+        zIndex: isOverlay ? 50 : 40,
+      };
+
+      return (
+        <div
+          key={isOverlay ? `overlay-${task.id}` : task.id}
+          className={cn(
+            "absolute",
+            isOverlay &&
+              "pointer-events-none ring-2 ring-primary/50 ring-inset rounded-md opacity-90"
+          )}
+          style={taskStyle}
+          title={isOverlay ? `Daily planner task: ${task.name}` : undefined}
+        >
+          <MemoizedTaskCard
+            task={task}
+            height={cardHeight}
+            onStartEdit={
+              isOverlay
+                ? () => {}
+                : (taskToEdit, editOptions) =>
+                    handleOpenEditModal(taskToEdit, editOptions)
+            }
+            onCopy={() => {}}
+            onViewNotes={() => {}}
+            onResizeStart={() => {}}
+            onDragStart={() => {}}
+            currentTime={currentTimeForMarker}
+          />
+        </div>
+      );
+    },
+    [currentTimeForMarker, handleOpenEditModal]
+  );
+
   const renderDayPeriod = (dayMeta: ClassScheduleDayMeta, period: TimelinePeriod) => {
     let startHour, endHour;
     switch (period) {
@@ -211,8 +279,18 @@ export default React.memo(function ClassSchedule() {
 
     const dateKey = dayMeta.dateKey;
     const tasksForThisColumnDate = tasksByDate.get(dateKey) || [];
+    const dailyTasksForThisColumnDate = showDailyTasks
+      ? dailyTasksByDate.get(dateKey) || []
+      : [];
     
     const tasksToRender = tasksForThisColumnDate.filter(t => {
+      if (t.startHour === undefined) return false;
+      const taskStart = t.startHour as number;
+      const taskEnd = taskStart + t.duration;
+      return taskEnd > startHour && taskStart < endHour;
+    });
+
+    const dailyTasksToRender = dailyTasksForThisColumnDate.filter((t) => {
       if (t.startHour === undefined) return false;
       const taskStart = t.startHour as number;
       const taskEnd = taskStart + t.duration;
@@ -281,41 +359,10 @@ export default React.memo(function ClassSchedule() {
           {Array.from({ length: endHour - startHour }, (_, i) => (
             <div key={`grid-${i}`} className={`absolute h-full ${i % 6 === 0 ? 'border-l border-border/30' : 'border-l border-border/10'}`} style={{ left: `${i * PIXELS_PER_HOUR}px`, top: '0', bottom: '0' }} />
           ))}
-          {tasksToRender.map((task) => {
-            const startHourVal = (task.startHour ?? startHour);
-            const taskStartRelativeToSection = Math.max(0, startHourVal - startHour);
-            const taskEndRelativeToSection = Math.min(endHour - startHour, (startHourVal + task.duration) - startHour);
-            const renderLeft = taskStartRelativeToSection * PIXELS_PER_HOUR;
-            const renderWidth = (taskEndRelativeToSection - taskStartRelativeToSection) * PIXELS_PER_HOUR;
-            
-            if (renderWidth <= 0) return null;
-            
-            const taskStyle: React.CSSProperties = {
-              left: `${renderLeft}px`,
-              width: `${renderWidth}px`,
-              top: `${TASK_BASE_TOP}px`,
-              height: `${TIMELINE_COLUMN_HEIGHT - TASK_BASE_TOP - TASK_BASE_BOTTOM_PADDING}px`,
-              zIndex: 40,
-            };
-
-            return (
-              <div key={task.id}
-                className="absolute" 
-                style={taskStyle}
-              >
-                <MemoizedTaskCard
-                  task={task}
-                  height={TIMELINE_COLUMN_HEIGHT - TASK_BASE_TOP - TASK_BASE_BOTTOM_PADDING}
-                  onStartEdit={(taskToEdit, options) => handleOpenEditModal(taskToEdit, options)} 
-                  onCopy={() => {}}
-                  onViewNotes={() => {}}
-                  onResizeStart={() => {}}
-                  onDragStart={() => {}}
-                  currentTime={currentTimeForMarker}
-                />
-              </div>
-            );
-          })}
+          {tasksToRender.map((task) => renderTaskCard(task, startHour, endHour))}
+          {dailyTasksToRender.map((task) =>
+            renderTaskCard(task, startHour, endHour, { overlay: true })
+          )}
         </div>
       </div>
     );
@@ -345,6 +392,38 @@ export default React.memo(function ClassSchedule() {
                 </span>
               </div>
               <div className="flex items-center gap-2">
+                <div
+                  className="flex rounded-md border border-border/60 shrink-0"
+                  role="group"
+                  aria-label="Daily planner task overlay"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setShowDailyTasks(false)}
+                    className={cn(
+                      "px-2 py-1 text-xs font-medium rounded-l-md transition-colors",
+                      !showDailyTasks
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-transparent hover:bg-muted"
+                    )}
+                    title="Show class schedule only"
+                  >
+                    Classes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowDailyTasks(true)}
+                    className={cn(
+                      "px-2 py-1 text-xs font-medium rounded-r-md border-l border-border/60 transition-colors",
+                      showDailyTasks
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-transparent hover:bg-muted"
+                    )}
+                    title="Overlay daily planner tasks on the class schedule"
+                  >
+                    Daily Tasks
+                  </button>
+                </div>
                 <Button
                   size="sm"
                   variant="outline"
@@ -413,6 +492,14 @@ export default React.memo(function ClassSchedule() {
                               </div>
                               <span className="text-xs text-muted-foreground">
                                 {dayTasks.length} {dayTasks.length === 1 ? "class" : "classes"}
+                                {showDailyTasks && (
+                                  <>
+                                    {" "}
+                                    •{" "}
+                                    {(dailyTasksByDate.get(meta.dateKey) || []).length}{" "}
+                                    daily
+                                  </>
+                                )}
                               </span>
                             </div>
                             <div className="flex flex-col">

@@ -25,6 +25,10 @@ export interface UseClassScheduleStateResult {
   tasksByDate: Map<string, Task[]>;
   /** Underlying recurring class tasks stored by day-of-week */
   classTasks: ClassScheduleTask[];
+  /** Whether daily planner tasks are shown as an overlay on the class schedule */
+  showDailyTasks: boolean;
+  /** Toggle daily planner task overlay visibility (persisted to localStorage) */
+  setShowDailyTasks: (value: boolean) => void;
   /** Upsert handler for saving from EditTaskModal */
   upsertFromModal: (task: Task, isNew?: boolean) => void;
   /** Delete handler for removing a class by id */
@@ -47,6 +51,10 @@ export function useClassScheduleState(): UseClassScheduleStateResult {
     console.log('✅ [useClassScheduleState] Initial state loaded with', loaded.length, 'tasks');
     return loaded;
   });
+
+  const [showDailyTasks, setShowDailyTasksState] = useState<boolean>(() =>
+    ClassScheduleStorage.getShowDailyTasks()
+  );
 
   // Track mount/unmount
   useEffect(() => {
@@ -110,6 +118,11 @@ export function useClassScheduleState(): UseClassScheduleStateResult {
 
     return map;
   }, [classTasks, weekMeta]);
+
+  const setShowDailyTasks = useCallback((value: boolean) => {
+    setShowDailyTasksState(value);
+    ClassScheduleStorage.setShowDailyTasks(value);
+  }, []);
 
   const upsertFromModal = useCallback((taskFromModal: Task, isNew?: boolean) => {
     console.log('✏️ [useClassScheduleState] upsertFromModal called:', {
@@ -183,6 +196,8 @@ export function useClassScheduleState(): UseClassScheduleStateResult {
     weekMeta,
     tasksByDate,
     classTasks,
+    showDailyTasks,
+    setShowDailyTasks,
     upsertFromModal,
     deleteTaskById,
   };
