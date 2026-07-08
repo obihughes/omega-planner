@@ -53,7 +53,12 @@ The Daily Planner is the core component for task scheduling and timeline managem
 ## Components
 
 ### DailyPlanner
-Main component that orchestrates all planner functionality.
+Main component that orchestrates all planner functionality. Includes a **Plan Day** floating button (daily view only) that opens `QuickPlanDayModal` for fast batch entry of unscheduled tasks into the viewed day's pool bar.
+
+### QuickPlanDayModal
+**File**: `components/planner/modals/QuickPlanDayModal.tsx`
+
+Modal for quickly typing tasks (Enter to add) and reviewing a draft list before saving. On close (Done, Escape, backdrop), tasks are added to the date-specific pool via `addPoolTasksForDate` in `useDailyPlannerState` and the pool bar expands so tasks can be dragged onto the timeline.
 
 ### MergedDailyView
 Unified scheduling layout: `SchedulingSidebar` (left) + full daily timeline panels (right). Used when `viewMode === 'monthly'`. Fills remaining viewport height via flex layout (`flex-1 min-h-0`) from the home page shell. Measures the right-hand content area with `ResizeObserver` and passes scaled `pixelsPerHour` / `columnHeightPx` to timeline panels so they fit beside the sidebar (instead of full-screen 211px/hour density). Scale updates pause during active drag/resize (`timelineInteractionActive`) and flush when the interaction ends. Right content panel scrolls with edge-aligned `.scrollbar-overlay` styling.

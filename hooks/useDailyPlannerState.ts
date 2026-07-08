@@ -1049,6 +1049,35 @@ export function useDailyPlanner() {
     return newTask;
   }, []);
 
+  const addPoolTasksForDate = useCallback((date: Date, taskNames: string[]) => {
+    const trimmedNames = taskNames.map((name) => name.trim()).filter(Boolean);
+    if (trimmedNames.length === 0) return [];
+
+    const dateKey = getDateKey(date);
+    const newTasks: Task[] = trimmedNames.map((name) => ({
+      id: getNextId(),
+      name,
+      startHour: undefined,
+      duration: DEFAULT_TASK_DURATION,
+      color: '',
+      baseDate: dateKey,
+      notes: '',
+      completed: false,
+      poolDate: dateKey,
+      createdAt: new Date().toISOString(),
+      autoRollover: true,
+    }));
+
+    setPoolTasksByDate((prev) => {
+      const newMap = new Map(prev);
+      const existingTasks = newMap.get(dateKey) || [];
+      newMap.set(dateKey, [...existingTasks, ...newTasks]);
+      return newMap;
+    });
+
+    return newTasks;
+  }, [getNextId]);
+
   const getPoolTasksForDate = useCallback((dateKey: string): Task[] => {
     return poolTasksByDate.get(dateKey) || [];
   }, [poolTasksByDate]);
@@ -1397,6 +1426,7 @@ export function useDailyPlanner() {
     // Pool Tasks By Date Functions
     poolTasksByDate,
     addPoolTaskForDate,
+    addPoolTasksForDate,
     getPoolTasksForDate,
     removePoolTaskForDate,
     updatePoolTaskForDate,

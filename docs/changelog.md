@@ -1,5 +1,10 @@
 ## 2026-07-08
 
+- **Daily Planner: Plan Day quick entry** (2026-07-08)
+  - Added a floating **Plan Day** button on the daily view that opens a modal for fast batch task entry (Enter to add, list below input).
+  - Tasks are saved to the viewed day's pool bar on Done/close and can be dragged onto the timeline.
+  - **Files affected**: `components/planner/modals/QuickPlanDayModal.tsx`, `components/planner/modals/QuickPlanDayModal.test.tsx`, `components/planner/DailyPlanner.tsx`, `hooks/useDailyPlannerState.ts`, `components/planner/index.ts`, `components/planner/README.md`, `docs/planner.md`, `docs/changelog.md`
+
 - **Text Documents: text selection fix** (2026-07-08)
   - Fixed text immediately deselecting when trying to copy or cut: `select-none` is now scoped to Move mode only, and the block click handler no longer collapses an existing selection.
   - **Files affected**: `components/documents/CanvasTextEditor.tsx`, `components/documents/README.md`, `docs/changelog.md`

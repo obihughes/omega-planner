@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Button } from "@/components/ui";
-import { Pin, Eye, Trash2, Calendar, Clock, Edit3, PinOff, Scissors, X, Plus, ChevronDown, Bookmark, GraduationCap } from 'lucide-react';
+import { Pin, Eye, Trash2, Calendar, Clock, Edit3, PinOff, Scissors, X, Plus, ChevronDown, Bookmark, GraduationCap, ListChecks } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
@@ -43,6 +43,7 @@ import {
   getDropZoneContentRect,
 } from '../../utils/timelineDragUtils';
 import WeeklyView from './WeeklyView';
+import { QuickPlanDayModal, type QuickPlanDraftTask } from './modals/QuickPlanDayModal';
 
 import { useModalManager } from '../../hooks/useModalManager';
 import { useViewMode } from '@/app/context/ViewModeContext';
@@ -100,6 +101,7 @@ export default function DailyPlanner() {
     handleRescheduleTask,
     moveTaskToInbox,
     addPoolTaskForDate,
+    addPoolTasksForDate,
     getPoolTasksForDate,
     removePoolTaskForDate,
     getCombinedPoolTasks,
@@ -146,6 +148,10 @@ export default function DailyPlanner() {
   const { classTasks } = useClassScheduleState();
 
   const currentViewDateKey = useMemo(() => getDateKey(getCalendarDateForColumn(topDayOffset)), [topDayOffset]);
+  const currentViewDate = useMemo(
+    () => dateFromDateKey(getCalendarDateForColumn(topDayOffset)),
+    [topDayOffset]
+  );
 
   /** Get class schedule tasks for a given date, projected as Task[] for timeline rendering */
   const getClassTasksForDate = useCallback((dateKey: string): Task[] => {
@@ -175,8 +181,10 @@ export default function DailyPlanner() {
   const [pendingClassCopyPlan, setPendingClassCopyPlan] = useState<PrepareClassCopyResult | null>(null);
   const [classCopyTargetLabel, setClassCopyTargetLabel] = useState('');
   const [importClassesMessage, setImportClassesMessage] = useState<string | null>(null);
+  const [showQuickPlanModal, setShowQuickPlanModal] = useState(false);
   const lastDoubleClickTimestampRef = useRef<number>(0);
   const activePixelsPerHourRef = useRef(APP_PIXELS_PER_HOUR);
+  const planDayButtonRef = useRef<HTMLButtonElement>(null);
   
   // Get current date key for saved days functionality
   const currentDateKey = useMemo(() => getCalendarDateForColumn(topDayOffset), [topDayOffset]);
@@ -191,6 +199,21 @@ export default function DailyPlanner() {
     const timerId = window.setTimeout(() => setImportClassesMessage(null), 4000);
     return () => window.clearTimeout(timerId);
   }, [importClassesMessage]);
+
+  const handleQuickPlanModalClose = useCallback(() => {
+    setShowQuickPlanModal(false);
+    window.setTimeout(() => planDayButtonRef.current?.focus(), 0);
+  }, []);
+
+  const handleQuickAddTasks = useCallback((tasks: QuickPlanDraftTask[]) => {
+    if (tasks.length === 0) return;
+
+    addPoolTasksForDate(
+      currentViewDate,
+      tasks.map((task) => task.name)
+    );
+    setIsTaskPoolOpen(true);
+  }, [addPoolTasksForDate, currentViewDate, setIsTaskPoolOpen]);
 
   const showImportClassesFeedback = useCallback((result: {
     status: string;
@@ -1453,7 +1476,31 @@ export default function DailyPlanner() {
   };
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 h-full bg-background text-foreground transition-colors">
+    <div className="relative flex flex-col flex-1 min-h-0 h-full bg-background text-foreground transition-colors">
+      {viewMode !== 'weekly' && (
+        <>
+          <button
+            ref={planDayButtonRef}
+            type="button"
+            onClick={() => setShowQuickPlanModal(true)}
+            className={cn(
+              "absolute top-3 right-3 z-40 inline-flex items-center gap-1.5 rounded-full border border-border",
+              "bg-card/95 px-3 py-1.5 text-xs font-medium text-foreground shadow-sm backdrop-blur-sm",
+              "transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            )}
+            title="Quickly plan tasks for this day"
+          >
+            <ListChecks className="h-3.5 w-3.5" />
+            Plan Day
+          </button>
+          <QuickPlanDayModal
+            isOpen={showQuickPlanModal}
+            onClose={handleQuickPlanModalClose}
+            onAddTasks={handleQuickAddTasks}
+            currentDate={currentViewDate}
+          />
+        </>
+      )}
       <div className="flex flex-col flex-1 min-h-0 w-full h-full">
         {activeEditModalTask && (
           <EditTaskModal

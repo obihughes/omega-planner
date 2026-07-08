@@ -11,6 +11,7 @@ This directory contains custom React hooks used throughout the application.
 - Core data state (tasks, poolTasks, pinnedTasks)
 - UI state (active tab, dragging/resizing state, modals)
 - Task manipulation functions (add, delete, update)
+- Batch pool helpers (`addPoolTasksForDate` for Plan Day quick entry)
 - Data persistence via localStorage
 
 **Usage:**

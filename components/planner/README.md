@@ -19,6 +19,17 @@ This directory contains all components related to the daily planning functionali
 - Copy/paste tasks across different days
 - **Per-panel view toggle**: Each day panel (top and bottom) has a Tasks | Class toggle to switch between scheduled tasks for that date and the recurring class schedule for that weekday. Class schedule view is read-only (view notes only; edit via Class Schedule page).
 - **Import Classes**: Quick action on each day panel copies that weekday's recurring class schedule into the planner timeline for the viewed date, with conflict resolution when times overlap.
+- **Plan Day**: Floating button opens a quick-entry modal to batch-add unscheduled tasks for the viewed day into the pool/pinned bar; tasks can then be dragged onto the timeline.
+
+### QuickPlanDayModal
+**File**: `modals/QuickPlanDayModal.tsx`
+**Purpose**: Fast batch task entry for the current viewed day
+
+**Features:**
+- Text input with Enter-to-add (input clears after each task)
+- Live list of draft tasks in the modal with per-task delete and clear-all
+- On Done, Escape, or backdrop close: tasks are added to the date-specific pool via `addPoolTasksForDate` and the pool bar expands
+- Cancel discards draft tasks without saving
 
 ### MergedDailyView
 **File**: `MergedDailyView.tsx`
