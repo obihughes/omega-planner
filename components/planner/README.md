@@ -11,7 +11,7 @@ This directory contains all components related to the daily planning functionali
 **Features:**
 - **Page-Level View Modes**: Default scheduling layout (sidebar + timeline) and optional weekly overview
   - **Daily View** (default, `viewMode === 'monthly'`): `MergedDailyView` with scheduling sidebar + full timeline panels
-  - **Weekly View** (`viewMode === 'weekly'`): Weekly overview of scheduled and inbox tasks (beta / `/?view=weekly`)
+  - **Weekly View** (`viewMode === 'weekly'`): Weekly overview of scheduled and inbox tasks (sidebar: Daily Planner → Week, or `/?view=weekly`)
 - Timeline visualization across 4 periods (night, morning, afternoon, evening)
 - Dual-day view with independent navigation
 - Task management (create, edit, delete, move, resize)
@@ -44,13 +44,24 @@ This directory contains all components related to the daily planning functionali
 
 ### WeeklyView
 **File**: `WeeklyView.tsx`
-**Purpose**: Optional weekly timeline overview (`/?view=weekly`)
+**Purpose**: Weekly timeline overview (sidebar: Daily Planner → Week, or `/?view=weekly`)
 
 **Features:**
 - Weekly overview showing scheduled and inbox tasks
+- Narrow blocks use width-aware font sizing and single-dot truncation (`.` instead of `...`) so short-duration tasks show more of the title
 - Separate sections for scheduled tasks and inbox tasks per day
 - Dual timeline headers (top and bottom) for easy time tracking
 - Space-efficient row layout
+- **Day notes layer**: Toolbar **Day Notes** toggle shows a semi-transparent text overlay on each day's timeline for free-form notes. Persisted via `utils/dayNotesStorage.ts` (`daily-planner-day-notes-v1`).
+
+### WeeklyDayNotesPanel
+**File**: `WeeklyDayNotesPanel.tsx`
+**Purpose**: Per-day notes overlay for Weekly View timeline rows
+
+**Features:**
+- Textarea overlay positioned over AM/PM timeline area
+- Autosave (debounced) via `useDayNotes`; immediate flush on blur
+- Stops pointer/double-click propagation so notes editing does not create tasks
 
 ### TaskAssignmentCalendar
 **File**: `TaskAssignmentCalendar.tsx`
@@ -149,7 +160,7 @@ DailyPlanner
 ## Usage Patterns
 
 1. **Daily Planning**: Home (`/`) opens the scheduling sidebar + timeline for time-based task scheduling
-2. **Weekly Overview**: Use `/?view=weekly` to see scheduled and inbox tasks across the week
+2. **Weekly Overview**: Use Daily Planner → **Week** in the sidebar or `/?view=weekly` to see scheduled and inbox tasks across the week
 3. **Task Assignment**: Use the sidebar mini calendar and inbox to assign pool tasks to dates
 4. **Inbox Management**: Add unscheduled tasks in the sidebar inbox; drag to calendar or timeline
 5. **Task Management**: Edit tasks through modals accessible from all views

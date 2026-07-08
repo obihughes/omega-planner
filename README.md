@@ -40,6 +40,7 @@ npm run dev:clean
 - **Responsive design** for all device sizes
 - **Task inbox** for unscheduled tasks
 - **Pinned tasks** for quick access
+- **Weekly day notes** on the Daily Planner weekly timeline (`/?view=weekly`): toggle **Day Notes** to overlay per-day scratchpad text on the timeline; saved to `daily-planner-day-notes-v1`
 
 ### Meals
 - Meals page at `/meals` (hidden from main sidebar; open via Settings → Beta features or direct URL)
@@ -106,7 +107,11 @@ npm test
 
 ## Recent Changes
 
-### Advanced Task Management System (Latest)
+### Weekly Day Notes (Latest)
+- **Day Notes layer** on Daily Planner → Week view: toolbar toggle overlays a textarea on each day's timeline for free-form notes
+- Persisted in localStorage via `utils/dayNotesStorage.ts` (`daily-planner-day-notes-v1`)
+
+### Advanced Task Management System
 - **Multi-Criteria Sorting**: Tasks can now be sorted by multiple fields simultaneously
   - Example: Sort by completion status first, then by title alphabetically
   - Configure up to 4 sort criteria with independent ascending/descending order

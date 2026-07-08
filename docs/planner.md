@@ -68,7 +68,7 @@ Renders individual tasks on the timeline with drag, resize, edit, copy, and view
 Renders individual timeline sections with tasks and time markers. **Shared** by both Daily view and Scheduling (Monthly) view via `MiniDailyTimeline`, eliminating duplicated timeline logic. Supports read-only mode (e.g. class schedule), drag/resize/copy, and pool drops. When `fillWidth` is true (scheduling view), hour columns use equal flex distribution and percentage-based task/grid positioning so the last hour column matches the rest. Timeline task area uses `overflow-visible` so task action buttons are not clipped by parent containers.
 
 ### WeeklyView
-Displays a 7-day view of scheduled tasks in a horizontal timeline format. Weeks start on Monday and end on Sunday. **Not in the main sidebar** — open via Settings → Beta features or `/?view=weekly`. When opening the weekly overview, the view now auto-scrolls to highlight today within the current week by default. Features include:
+Displays a 7-day view of scheduled tasks in a horizontal timeline format. Weeks start on Monday and end on Sunday. Available in the main sidebar under Daily Planner → **Week** (`/?view=weekly`). When opening the weekly overview, the view now auto-scrolls to highlight today within the current week by default. Features include:
 
 - **Enhanced Visual Design**: Modern gradient backgrounds, improved spacing, and better color hierarchy
 - **Smart Time Management**: Focused timeline from 6 AM to 10 PM for optimal productivity planning
@@ -79,6 +79,7 @@ Displays a 7-day view of scheduled tasks in a horizontal timeline format. Weeks 
 - **Current Time Indicator**: Live red line with floating time badge for real-time context
 - **Task Collision Handling**: Automatic lane assignment for overlapping tasks
 - **Inbox Integration**: Separate section for unscheduled tasks with clear visual distinction
+- **Narrow-block labels**: Short-duration blocks scale font size down and truncate with a single `.` (not `...`) so more of the task name fits
 - **Interactive Elements**: Hover effects, smooth animations, and click-to-add functionality
 - **Enhanced Scrollbar**: Larger, more accessible scrollbar for easier timeline navigation
 - **Standard Scrolling**: Uses native vertical scrolling with Shift+Wheel for horizontal navigation

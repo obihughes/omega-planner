@@ -1,5 +1,12 @@
 # Component Documentation
 
+## Daily Log
+
+### DailyLogView (`components/dailyLog/DailyLogView.tsx`)
+**Page:** `app/daily-log/page.tsx`
+
+Simple daily journal: one text entry per calendar day. Two views — **3-Week Grid** and **By Day of Week** (both use the same Weekly Overview–style bordered panel, `GridDay` columns, folder tabs, and blur-to-save textareas). State persists via `utils/dailyLogStorage.ts` (`omega-planner-daily-log-v1`). Uses `hooks/useDailyLog.ts`.
+
 ## Todo
 
 ### TodoView (`components/todo/TodoView.tsx`)

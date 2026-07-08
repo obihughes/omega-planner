@@ -50,7 +50,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'Navigation',
         kind: 'shell',
         path: 'components/ui/Navigation.tsx',
-        editHint: 'Sidebar nav items; settings modal (theme, Beta features dialog for hidden routes, App Map). Hidden routes: lib/hiddenNavItems.ts.',
+        editHint: 'Sidebar nav items; settings modal (theme, Beta features dialog for hidden routes, App Map). Daily Planner subviews: Daily, Week, Class Schedule. Hidden routes: lib/hiddenNavItems.ts.',
       },
       {
         id: 'shell-providers',
@@ -175,7 +175,7 @@ export const appHierarchy: AppMapNode[] = [
             label: 'WeeklyView',
             kind: 'component',
             path: 'components/planner/WeeklyView.tsx',
-            editHint: 'Weekly timeline on /. Not in sidebar — Settings → Beta features or /?view=weekly.',
+            editHint: 'Weekly timeline on /. Main sidebar: Daily Planner → Week, or /?view=weekly.',
           },
           {
             id: 'dp-edit-task',
@@ -415,6 +415,65 @@ export const appHierarchy: AppMapNode[] = [
         label: 'useDocuments',
         kind: 'hook',
         path: 'hooks/useDocuments.ts',
+      },
+    ],
+  },
+  {
+    id: 'daily-log',
+    label: 'Daily Log',
+    kind: 'area',
+    description: 'Main sidebar nav at /daily-log. One text entry per day with weekly and day-of-week comparison views.',
+    children: [
+      {
+        id: 'daily-log-route',
+        label: '/daily-log',
+        kind: 'route',
+      },
+      {
+        id: 'daily-log-page',
+        label: 'Daily Log page',
+        kind: 'page',
+        path: 'app/daily-log/page.tsx',
+      },
+      {
+        id: 'daily-log-view',
+        label: 'DailyLogView',
+        kind: 'component',
+        path: 'components/dailyLog/DailyLogView.tsx',
+        editHint: 'Tabs: 3-Week Grid (7×3 last/this/next week) and By Day of Week (filter same weekday across weeks).',
+        children: [
+          {
+            id: 'daily-log-weekly',
+            label: 'WeeklyView',
+            kind: 'component',
+            path: 'components/dailyLog/WeeklyView.tsx',
+          },
+          {
+            id: 'daily-log-grid-day',
+            label: 'GridDay',
+            kind: 'component',
+            path: 'components/dailyLog/GridDay.tsx',
+          },
+          {
+            id: 'daily-log-filter',
+            label: 'DayOfWeekFilter',
+            kind: 'component',
+            path: 'components/dailyLog/DayOfWeekFilter.tsx',
+          },
+        ],
+      },
+      {
+        id: 'daily-log-hook',
+        label: 'useDailyLog',
+        kind: 'hook',
+        path: 'hooks/useDailyLog.ts',
+      },
+      {
+        id: 'daily-log-storage',
+        label: 'DailyLogStorage',
+        kind: 'storage',
+        path: 'utils/dailyLogStorage.ts',
+        editHint: 'localStorage key omega-planner-daily-log-v1',
       },
     ],
   },

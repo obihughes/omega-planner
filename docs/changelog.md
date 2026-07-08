@@ -1,3 +1,31 @@
+## 2026-07-08
+
+- **Daily Log page** (2026-07-08)
+  - New `/daily-log` route: one text entry per day stored in localStorage (`omega-planner-daily-log-v1`).
+  - **3-Week Grid** tab shows last week, this week, and next week in a 7-column Mon–Sun grid with inline editing; **By Day of Week** tab filters entries by weekday to compare across weeks.
+  - Main sidebar nav item (after Todo). App Map entry in `lib/appHierarchy.ts`.
+  - **Files affected**: `types/dailyLog.ts`, `utils/dailyLogStorage.ts`, `hooks/useDailyLog.ts`, `components/dailyLog/*`, `app/daily-log/page.tsx`, `components/ui/Navigation.tsx`, `lib/appHierarchy.ts`, `docs/structure.md`, `docs/components.md`, `docs/changelog.md`
+
+- **Daily Log: 3-week grid layout** (2026-07-08)
+  - Replaced single-week card layout with a 7×3 grid (last / this / next week) and week navigation (prev, next, jump to today).
+  - Added `GridDay.tsx` for compact cells with click-to-edit inline `EntryForm`; `EntryForm` supports `compact` mode.
+  - **Files affected**: `components/dailyLog/WeeklyView.tsx`, `components/dailyLog/GridDay.tsx`, `components/dailyLog/EntryForm.tsx`, `components/dailyLog/DailyLogView.tsx`, `docs/changelog.md`, `docs/components.md`
+
+- **Daily Log: Weekly Overview styling** (2026-07-08)
+  - Grid view now mirrors Weekly Overview minimalism: bordered panel, compact week nav, `lg:grid-cols-7` day columns, green today border, muted adjacent weeks.
+  - Day cells use always-visible textarea with blur-to-save; page shell matches `GoalHierarchyView` (`max-w-[1600px]`, month-style tab buttons).
+  - **By Day of Week** view updated to match: folder-style weekday tabs, same `GridDay` columns in a 3×7 grid (21 weeks of the selected weekday), blur-to-save editing.
+  - **Files affected**: `components/dailyLog/DailyLogView.tsx`, `components/dailyLog/WeeklyView.tsx`, `components/dailyLog/GridDay.tsx`, `components/dailyLog/DayOfWeekFilter.tsx`, `docs/changelog.md`, `docs/components.md`
+
+- **Weekly view: shorter labels in narrow task blocks** (2026-07-08)
+  - Narrow weekly timeline blocks now use a single `.` instead of CSS `...` ellipsis, with smaller font sizes scaled to block width so more of the task name is visible.
+  - **Files affected**: `components/planner/WeeklyTaskCard.tsx`, `components/planner/WeeklyView.tsx`, `docs/changelog.md`, `components/planner/README.md`
+
+- **Navigation: Week restored to Daily Planner sidebar** (2026-07-08)
+  - Restored **Week** as a main sidebar subview between **Daily** and **Class Schedule** (`/?view=weekly`).
+  - Removed **Week** from Settings → Beta features (`lib/hiddenNavItems.ts`).
+  - **Files affected**: `components/ui/Navigation.tsx`, `lib/hiddenNavItems.ts`, `lib/appHierarchy.ts`, `docs/structure.md`, `docs/planner.md`, `components/planner/README.md`, `docs/changelog.md`
+
 ## 2026-07-06
 
 - **Edit Task modal: larger full-width color picker** (2026-07-06)

@@ -23,7 +23,6 @@ const HIDDEN_NAV_ICONS: Record<string, LucideIcon> = {
   meals: ChefHat,
   'study-tracker': BookOpen,
   'month-board': LayoutGrid,
-  'planner-weekly': CalendarDays,
 };
 
 function isHiddenNavItemActive(
@@ -179,6 +178,7 @@ export function Navigation() {
       active: pathname === '/' && !pathname.includes('/calendar'),
       subViews: [
         { key: 'planner-daily', type: 'planner', mode: 'monthly', label: 'Daily', icon: Sun, active: pathname === '/' && plannerViewMode === 'monthly' },
+        { key: 'planner-weekly', type: 'planner', mode: 'weekly', label: 'Week', icon: CalendarDays, active: pathname === '/' && plannerViewMode === 'weekly' },
         { key: 'planner-class-schedule', label: 'Class Schedule', icon: GraduationCap, href: '/class-schedule', active: pathname === '/class-schedule' },
       ]
     },
@@ -214,6 +214,14 @@ export function Navigation() {
       label: 'Todo',
       icon: ListTodo,
       active: pathname === '/todo',
+      subViews: []
+    },
+    {
+      key: 'daily-log',
+      href: '/daily-log',
+      label: 'Daily Log',
+      icon: BookOpen,
+      active: pathname === '/daily-log',
       subViews: []
     },
     {

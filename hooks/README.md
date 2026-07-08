@@ -94,6 +94,14 @@ Debounced localStorage scratchpad for the Meals page left notes panel.
 
 **Storage key:** `omega-planner-meals-notes-v1` (`utils/mealsNotesStorage.ts`)
 
+### useDayNotes
+
+Debounced localStorage map of per-day notes for the Daily Planner weekly timeline view.
+
+**API:** `getNotes(dateKey)`, `setNotes(dateKey, text)`, `deleteNotes(dateKey)`, `hasNotes(dateKey)`, `flushNotes()`, `hydrated`, `notesByDate`
+
+**Storage key:** `daily-planner-day-notes-v1` (`utils/dayNotesStorage.ts`)
+
 ### useTheme
 
 Wraps `next-themes` for light, dark, forest, sunset, ocean, and system appearance.

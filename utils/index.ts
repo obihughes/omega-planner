@@ -27,6 +27,13 @@ export * from './classScheduleUtils';
 // Study storage
 export { StudyStorage } from './studyStorage';
 
+// Weekly day notes
+export {
+  DayNotesStorage,
+  DAY_NOTES_STORAGE_KEY,
+  type DayNotesMap,
+} from './dayNotesStorage';
+
 // Month board
 export {
   MonthBoardStorage,

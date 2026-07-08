@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Edit3, Eye } from 'lucide-react';
 import { formatTime } from '@/utils/formatters';
 import { Task } from '../../types/planner';
@@ -8,14 +8,59 @@ import { cn } from '@/lib/utils';
 export interface WeeklyTaskCardProps {
   task: Task;
   height: number;
+  width?: number;
   onStartEdit: (task: Task, options?: { isNew?: boolean, isFromPool?: boolean }) => void;
   onViewNotes: (task: Task) => void;
   currentTime?: Date;
 }
 
+function truncateWithDot(text: string, maxChars: number): string {
+  if (maxChars <= 0) return '';
+  if (text.length <= maxChars) return text;
+  if (maxChars === 1) return '.';
+  return `${text.slice(0, maxChars - 1)}.`;
+}
+
+function getWeeklyTextLayout(width: number) {
+  if (width <= 35) {
+    return {
+      fontClass: 'text-[8px]',
+      paddingClass: 'px-0.5',
+      maxChars: Math.max(1, Math.floor((width - 4) / 4.2)),
+    };
+  }
+  if (width <= 50) {
+    return {
+      fontClass: 'text-[9px]',
+      paddingClass: 'px-0.5',
+      maxChars: Math.max(2, Math.floor((width - 4) / 4.8)),
+    };
+  }
+  if (width <= 70) {
+    return {
+      fontClass: 'text-[10px]',
+      paddingClass: 'px-1',
+      maxChars: Math.max(3, Math.floor((width - 8) / 5.2)),
+    };
+  }
+  if (width <= 100) {
+    return {
+      fontClass: 'text-[11px]',
+      paddingClass: 'px-1',
+      maxChars: Math.max(4, Math.floor((width - 8) / 5.8)),
+    };
+  }
+  return {
+    fontClass: 'text-[13px]',
+    paddingClass: 'px-1.5',
+    maxChars: Math.max(6, Math.floor((width - 12) / 7)),
+  };
+}
+
 export const WeeklyTaskCard: React.FC<WeeklyTaskCardProps> = ({
   task,
   height,
+  width,
   onStartEdit,
   onViewNotes,
   currentTime,
@@ -28,6 +73,14 @@ export const WeeklyTaskCard: React.FC<WeeklyTaskCardProps> = ({
   const showDuration = task.duration > 0.5; // Only show duration for tasks longer than 30 minutes
   const isSquareFormat = height >= 50; // More square layout for weekly view
   const useSmallTimeFont = task.duration >= 1; // Use smaller font for 1+ hour tasks
+  const textLayout = useMemo(
+    () => (typeof width === 'number' ? getWeeklyTextLayout(width) : null),
+    [width]
+  );
+  const displayName = useMemo(() => {
+    if (!textLayout) return task.name;
+    return truncateWithDot(task.name, textLayout.maxChars);
+  }, [task.name, textLayout]);
 
   const timeLabel = `${formatTime(task.startHour)}${showDuration ? ` - ${formatTime(endTime)}` : ''}`;
 
@@ -69,20 +122,30 @@ export const WeeklyTaskCard: React.FC<WeeklyTaskCardProps> = ({
       onClick={handleViewClick}
     >
       {/* Content Container */}
-      <div className={`h-full ${isSquareFormat ? 'flex flex-col justify-center px-1.5 py-1' : `flex items-center ${isVeryCompact ? 'px-1' : 'px-2'}`} relative`}>
+      <div className={cn(
+        'h-full relative',
+        textLayout
+          ? `flex items-center ${textLayout.paddingClass}`
+          : isSquareFormat
+            ? 'flex flex-col justify-center px-1.5 py-1'
+            : `flex items-center ${isVeryCompact ? 'px-1' : 'px-2'}`
+      )}>
         {/* Task Text */}
         <div className="flex-1 min-w-0" title={timeLabel}>
           <div 
-            className={`
-              font-bold 
-              ${isSquareFormat ? 'text-[13px]' : isVeryCompact ? 'text-xs' : 'text-sm'} 
-              ${isSquareFormat ? 'leading-snug text-center' : 'leading-tight line-clamp-1'}
-              tracking-tight
-              drop-shadow-sm
-            `}
+            className={cn(
+              'font-bold tracking-tight drop-shadow-sm whitespace-nowrap overflow-hidden',
+              textLayout
+                ? `${textLayout.fontClass} leading-none`
+                : isSquareFormat
+                  ? 'text-[13px] leading-snug text-center'
+                  : isVeryCompact
+                    ? 'text-xs leading-tight line-clamp-1'
+                    : 'text-sm leading-tight line-clamp-1'
+            )}
             title={task.name}
           >
-            {task.name}
+            {displayName}
           </div>
           
 

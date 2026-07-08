@@ -54,6 +54,13 @@ export type { Subject, StudyEntry, StudyStorageData } from './study';
 
 export type { TodoItem, TodoStorageData } from './todo';
 
+export type { DailyLogEntry, DailyLogData } from './dailyLog';
+export {
+  DAILY_LOG_WEEKDAY_ORDER,
+  DAILY_LOG_DAY_LABELS,
+  DAILY_LOG_DAY_SHORT,
+} from './dailyLog';
+
 export type {
   HierarchyGoalItem,
   HierarchyDaySlot,

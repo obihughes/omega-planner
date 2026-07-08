@@ -24,10 +24,4 @@ export const HIDDEN_NAV_ITEMS: HiddenNavItem[] = [
     href: '/month-board',
     description: 'Month/week pickers with week goal and Mon–Sun day rows',
   },
-  {
-    key: 'planner-weekly',
-    label: 'Week',
-    href: '/?view=weekly',
-    description: 'Daily Planner weekly timeline view',
-  },
 ];

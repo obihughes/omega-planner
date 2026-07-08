@@ -8,7 +8,10 @@ import {
   ChevronRight, 
   Calendar,
   Plus,
+  StickyNote,
 } from 'lucide-react';
+import { useDayNotes } from '@/hooks/useDayNotes';
+import { WeeklyDayNotesPanel } from './WeeklyDayNotesPanel';
 import { Task } from '@/types';
 import { useDailyPlanner } from '@/hooks/useDailyPlannerState';
 import { useCalendarData } from '@/hooks/useCalendarData';
@@ -52,10 +55,18 @@ export default function WeeklyView({}: WeeklyViewProps) {
     data: calendarData,
   } = useCalendarData();
 
+  const {
+    getNotes,
+    setNotes,
+    flushNotes,
+    hydrated: dayNotesHydrated,
+  } = useDayNotes();
+
   // State for week navigation and view mode
   const [weekOffset, setWeekOffset] = useState(0);
   const [isSameDayView, setIsSameDayView] = useState(false);
   const [selectedDayOfWeek, setSelectedDayOfWeek] = useState(0); // 0 = Sunday, 1 = Monday, etc.
+  const [showNotesLayer, setShowNotesLayer] = useState(false);
   const timelineScrollRef = useRef<HTMLDivElement>(null);
   const didAutoScrollToTodayRef = useRef(false);
 
@@ -368,12 +379,13 @@ export default function WeeklyView({}: WeeklyViewProps) {
         
         const renderLeft = (visibleStart - hourOffset) * WEEKLY_PIXELS_PER_HOUR;
         const renderWidth = (visibleEnd - visibleStart) * WEEKLY_PIXELS_PER_HOUR;
+        const cardWidth = Math.max(renderWidth - 4, 30);
         
         if (renderWidth <= 0) return null;
         
         const taskStyle: React.CSSProperties = {
           left: `${renderLeft + 2}px`, // +2 for gap
-          width: `${Math.max(renderWidth - 4, 30)}px`,
+          width: `${cardWidth}px`,
           top: `0px`, // Aligned with row top since heights match
           height: `${WEEKLY_TASK_HEIGHT}px`,
           zIndex: 40,
@@ -384,6 +396,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
             <MemoizedWeeklyTaskCard
               task={task}
               height={WEEKLY_TASK_HEIGHT}
+              width={cardWidth}
               onStartEdit={(taskToEdit, options) => openEditModal(taskToEdit, options)} 
               onViewNotes={openViewNotesModal}
               currentTime={new Date()}
@@ -451,7 +464,16 @@ export default function WeeklyView({}: WeeklyViewProps) {
         </div>
 
         {/* 12-hour Timelines (AM and PM rows) */}
-        <div className="flex flex-col flex-1">
+        <div className="relative flex flex-col flex-1">
+            {showNotesLayer && dayNotesHydrated && (
+              <WeeklyDayNotesPanel
+                dateKey={dateKey}
+                value={getNotes(dateKey)}
+                onChange={(text) => setNotes(dateKey, text)}
+                onBlur={flushNotes}
+              />
+            )}
+
             {/* AM Row */}
             <div 
                 className="relative border-b border-border/10 flex-1"
@@ -500,7 +522,20 @@ export default function WeeklyView({}: WeeklyViewProps) {
         </div>
       </div>
     );
-  }, [tasksByDate, getPoolTasksForDate, openEditModal, openViewNotesModal, isSameDayView, selectedDayOfWeek, calendarData.events]);
+  }, [
+    tasksByDate,
+    getPoolTasksForDate,
+    openEditModal,
+    openViewNotesModal,
+    isSameDayView,
+    selectedDayOfWeek,
+    calendarData.events,
+    showNotesLayer,
+    dayNotesHydrated,
+    getNotes,
+    setNotes,
+    flushNotes,
+  ]);
 
   // Get week statistics
   const getWeekStats = () => {
@@ -623,6 +658,17 @@ export default function WeeklyView({}: WeeklyViewProps) {
           </div>
 
           <div className="flex items-center gap-4">
+            <Button
+              variant={showNotesLayer ? 'default' : 'outline'}
+              size="sm"
+              className="flex items-center gap-2 h-8"
+              onClick={() => setShowNotesLayer((prev) => !prev)}
+              title={showNotesLayer ? 'Hide day notes layer' : 'Show day notes layer'}
+            >
+              <StickyNote className="w-4 h-4" />
+              {showNotesLayer ? 'Hide Notes' : 'Day Notes'}
+            </Button>
+
             <Button 
               size="sm" 
               className="flex items-center gap-2 h-8"

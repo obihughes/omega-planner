@@ -9,6 +9,7 @@ export { default as WeeklyView } from './WeeklyView';
 export { WeeklyTaskCard, MemoizedWeeklyTaskCard } from './WeeklyTaskCard';
 export { DailyEventsContainer } from './DailyEventsContainer';
 export { WeeklyEventsDisplay } from './WeeklyEventsDisplay';
+export { WeeklyDayNotesPanel } from './WeeklyDayNotesPanel';
 export { MiniDailyTimeline } from './MiniDailyTimeline';
 export { ConflictResolutionModal } from './ConflictResolutionModal';
 export { MergedDailyView, type MergedDailyViewRenderOptions } from './MergedDailyView';

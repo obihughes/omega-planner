@@ -15,6 +15,7 @@ export {
 } from './useModalManager';
 
 export { useMeals } from './useMeals';
+export { useDayNotes } from './useDayNotes';
 export { useProjects } from './useProjects';
 export {
   useTheme,
