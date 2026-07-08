@@ -11,6 +11,7 @@ The Text Canvas provides a simple, intuitive interface for free-form text editin
 
 ### Text Interaction
 - **Edit Text**: Single-click any existing text block to start editing
+- **Select Text**: Drag to highlight text when not in Move mode; use Ctrl+C / Ctrl+X / Ctrl+V to copy, cut, and paste
 - **Move Text**: Enable "Move" mode in toolbar, then drag text blocks to new positions
 - **Deselect**: Press `Escape` to deselect active text or cancel text addition mode
 

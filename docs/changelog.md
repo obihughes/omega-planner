@@ -1,5 +1,9 @@
 ## 2026-07-08
 
+- **Text Documents: text selection fix** (2026-07-08)
+  - Fixed text immediately deselecting when trying to copy or cut: `select-none` is now scoped to Move mode only, and the block click handler no longer collapses an existing selection.
+  - **Files affected**: `components/documents/CanvasTextEditor.tsx`, `components/documents/README.md`, `docs/changelog.md`
+
 - **Daily Log page** (2026-07-08)
   - New `/daily-log` route: one text entry per day stored in localStorage (`omega-planner-daily-log-v1`).
   - **3-Week Grid** tab shows last week, this week, and next week in a 7-column Mon–Sun grid with inline editing; **By Day of Week** tab filters entries by weekday to compare across weeks.

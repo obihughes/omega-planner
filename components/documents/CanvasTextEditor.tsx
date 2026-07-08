@@ -517,7 +517,7 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
         {textBlocks.map((block) => (
           <div
             key={block.id}
-            className={`absolute select-none group p-1 ${
+            className={`absolute group p-1 ${effectiveDragMode ? 'select-none' : ''} ${
               block.isActive 
                 ? 'ring-2 ring-blue-500' 
                 : effectiveDragMode 
@@ -581,6 +581,16 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
                 const contentDiv = currentTarget.querySelector('[contenteditable]') as HTMLElement;
                 if (contentDiv) {
                   contentDiv.focus();
+                  const sel = window.getSelection();
+                  if (sel && sel.rangeCount > 0) {
+                    const range = sel.getRangeAt(0);
+                    if (
+                      sel.toString().length > 0 ||
+                      (!range.collapsed && contentDiv.contains(range.commonAncestorContainer))
+                    ) {
+                      return;
+                    }
+                  }
                   try {
                     if (hasCaretPositionFromPoint(document)) {
                       const caretPos = document.caretPositionFromPoint(clientX, clientY);
@@ -645,7 +655,7 @@ const CanvasTextEditor: React.FC<CanvasTextEditorProps> = ({
                  handleBlockChange(block.id, newContent);
               }}
               onKeyDown={handleKeyDown}
-              className={`outline-none ${block.isActive ? 'cursor-text' : ''}`}
+              className={`outline-none ${block.isActive ? 'cursor-text' : ''} ${!effectiveDragMode ? 'select-text' : ''}`}
               style={{
                 minWidth: block.isActive ? '100px' : 'auto',
                 minHeight: '20px',
