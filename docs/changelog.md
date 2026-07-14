@@ -1,3 +1,11 @@
+## 2026-07-14
+
+- **Calendar page: restore vertical scrolling** (2026-07-14)
+  - Fixed month/year calendar views not scrolling after `AppLayout` gained `overflow-hidden`: calendar page now uses a `flex-1 min-h-0 overflow-y-auto` scroll container (same pattern as Daily Planner and Weekly Overview).
+  - Timeline view (`?view=timeline`) uses full viewport height with internal panel scrolling.
+  - Year navigation when switching to a non-current year scrolls to January via `scrollIntoView` instead of `window.scrollTo`.
+  - **Files affected**: `app/calendar/page.tsx`, `components/calendar/YearCalendar.tsx`, `docs/changelog.md`, `docs/planner.md`, `docs/components.md`
+
 ## 2026-07-08
 
 - **Daily Planner: Plan Day quick entry** (2026-07-08)

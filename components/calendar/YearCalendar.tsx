@@ -380,8 +380,14 @@ export function YearCalendar({
             });
           }
         } else {
-          // For other years, scroll to top (January)
-          window.scrollTo({ top: 0, behavior: 'auto' });
+          // For other years, scroll to January within the calendar scroll container
+          const januaryElement = document.getElementById('month-0');
+          if (januaryElement) {
+            januaryElement.scrollIntoView({
+              behavior: 'auto',
+              block: 'start'
+            });
+          }
         }
       }, 150);
     }, 0);

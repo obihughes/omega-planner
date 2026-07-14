@@ -52,10 +52,10 @@ Modal for creating and editing calendar periods. Supports pre-filling both start
 Modal for creating and editing calendar events.
 
 ### YearCalendar (`components/calendar/YearCalendar.tsx`)
-Full year calendar view.
+Full year calendar view. Auto-scrolls to the current month (or January when viewing other years) within the calendar page scroll container.
 
 ### MonthlyCalendar (`components/calendar/MonthlyCalendar.tsx`)
-Monthly calendar view.
+Monthly calendar view (12-month vertical layout). Auto-scrolls to the current or `initialDate` month on mount.
 
 ### WeeklyGoalsCalendarView (`components/calendar/WeeklyGoalsCalendarView.tsx`)
 Legacy 4-week weekly goals grid (still available if embedded elsewhere). Primary weekly planning UI is now Weekly Overview at `/weekly-overview`.

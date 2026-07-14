@@ -106,11 +106,15 @@ export default function CalendarPage() {
   if (isLoading) {
     return (
       <AppLayout>
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
-              <p className="text-muted-foreground">Loading calendar...</p>
+        <div className="flex flex-col flex-1 min-h-0 h-full">
+          <div className="flex-1 min-h-0 overflow-y-auto scrollbar-overlay">
+            <div className="max-w-7xl mx-auto px-4 py-6">
+              <div className="flex items-center justify-center min-h-[400px]">
+                <div className="text-center">
+                  <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+                  <p className="text-muted-foreground">Loading calendar...</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -118,8 +122,7 @@ export default function CalendarPage() {
     );
   }
 
-  return (
-    <AppLayout>
+  const calendarContent = (
       <div className={`mx-auto px-4 py-6 ${currentView === 'weekly-goals' ? 'w-full max-w-none' : 'max-w-7xl'}`}>
         {(currentView === 'monthly' || currentView === 'yearly') && (
           <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border flex items-center gap-1.5 p-3 max-w-5xl mx-auto">
@@ -168,27 +171,6 @@ export default function CalendarPage() {
             }}
             initialDate={initialDateFromQuery}
           />
-        ) : currentView === 'timeline' ? (
-          isClient && (
-            <MonthlyTimelineView
-              poolTasks={poolTasks}
-              scheduledTasks={tasksByDate}
-              pinnedTasks={pinnedTasks}
-              onAssignTask={handleAssignTask}
-              onUnassignTask={handleUnassignTask}
-              onRescheduleTask={handleRescheduleTask}
-              onUpdateTask={handleUpdateTask}
-              onDeleteTask={(task) => handleDeleteTask(task.id)}
-              getPoolTasksForDate={getPoolTasksForDate}
-              openEditModal={openEditModal}
-              createPoolTask={createPoolTask}
-              onNavigateToDaily={(date) => {
-                // Navigate to home page (daily planner) with the selected date
-                // You could implement date-specific navigation here
-                window.location.href = '/';
-              }}
-            />
-          )
         ) : currentView === 'weekly-goals' ? (
           <div className="h-full flex flex-col">
             <div className="flex items-center gap-1.5 px-4 py-3 border-b border-border/50 mb-0">
@@ -301,6 +283,38 @@ export default function CalendarPage() {
               </div>
             )}
         </div>
+      </div>
+  );
+
+  return (
+    <AppLayout>
+      <div className="flex flex-col flex-1 min-h-0 h-full">
+        {currentView === 'timeline' ? (
+          isClient && (
+            <div className="flex-1 min-h-0 h-full">
+              <MonthlyTimelineView
+                poolTasks={poolTasks}
+                scheduledTasks={tasksByDate}
+                pinnedTasks={pinnedTasks}
+                onAssignTask={handleAssignTask}
+                onUnassignTask={handleUnassignTask}
+                onRescheduleTask={handleRescheduleTask}
+                onUpdateTask={handleUpdateTask}
+                onDeleteTask={(task) => handleDeleteTask(task.id)}
+                getPoolTasksForDate={getPoolTasksForDate}
+                openEditModal={openEditModal}
+                createPoolTask={createPoolTask}
+                onNavigateToDaily={() => {
+                  window.location.href = '/';
+                }}
+              />
+            </div>
+          )
+        ) : (
+          <div className="flex-1 min-h-0 overflow-y-auto scrollbar-overlay">
+            {calendarContent}
+          </div>
+        )}
       </div>
     </AppLayout>
   );
