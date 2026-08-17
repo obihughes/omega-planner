@@ -43,6 +43,7 @@ export const TodoStorage = {
     return {
       id: String(raw.id || nanoid()),
       title: String(raw.title || '').trim(),
+      notes: String(raw.notes || ''),
       done: Boolean(raw.done),
       createdAt: String(raw.createdAt || now),
       updatedAt: String(raw.updatedAt || now),

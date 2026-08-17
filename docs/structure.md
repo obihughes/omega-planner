@@ -31,7 +31,7 @@ Current notable feature folders include:
 - `components/study-tracker` – Study Planner (weekly day cards with tasks, monthly calendar with subject filter)
 - `components/goal-hierarchy` – Weekly Overview UI (month goal summary + unified week panel: Week N goal notes, folder-style Week 1–5 tabs, Study Tracker toggle, dynamic week nav label, Open Notes; day grid is two 7-column rows — selected week Mon–Sun + next week Mon–Sun preview; daily goals use shared Weekly Goals storage and `WeeklyGoalsDayColumn`)
 - `components/month-board` – Month board beta (month/week pickers, single-week view with week goal + Mon–Sun rows)
-- `components/todo` – Minimal standalone todo checklist
+- `components/todo` – Minimal standalone todo checklist with expandable per-item notes
 - `components/dailyLog` – Daily log (one entry per day; weekly and day-of-week views)
 - `components/ui` – Shared UI primitives (layout, inputs, tabs, etc.)
 

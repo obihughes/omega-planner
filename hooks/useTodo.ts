@@ -51,6 +51,7 @@ export function useTodo() {
     const item: TodoItem = {
       id: nanoid(),
       title: t,
+      notes: '',
       done: false,
       createdAt: now,
       updatedAt: now,
@@ -77,6 +78,16 @@ export function useTodo() {
     setItems((prev) => prev.filter((i) => !i.done));
   }, []);
 
+  const updateNotes = useCallback((id: string, notes: string) => {
+    setItems((prev) =>
+      prev.map((i) =>
+        i.id === id
+          ? { ...i, notes: notes.trim(), updatedAt: new Date().toISOString() }
+          : i
+      )
+    );
+  }, []);
+
   const hasCompleted = useMemo(() => items.some((i) => i.done), [items]);
 
   return {
@@ -86,6 +97,7 @@ export function useTodo() {
     remove,
     toggle,
     clearCompleted,
+    updateNotes,
     hasCompleted,
   };
 }

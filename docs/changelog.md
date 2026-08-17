@@ -1,3 +1,10 @@
+## 2026-08-17
+
+- **Todo: expandable per-item notes** (2026-08-17)
+  - Each todo row now has a **Notes** button (`StickyNote` icon) that expands an inline textarea below the row; collapsed by default and toggled independently per item.
+  - Added `notes: string` to `TodoItem` (defaults to `''` for existing saved items — no storage version bump) and a new `updateNotes(id, notes)` action in `useTodo`.
+  - **Files affected**: `types/todo.ts`, `utils/todoStorage.ts`, `hooks/useTodo.ts`, `components/todo/TodoView.tsx`, `docs/components.md`, `docs/structure.md`, `docs/changelog.md`
+
 ## 2026-07-14
 
 - **Calendar page: restore vertical scrolling** (2026-07-14)

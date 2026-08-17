@@ -1,13 +1,102 @@
 'use client';
 
 import React, { useState } from 'react';
+import { StickyNote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import { TodoItem } from '@/types/todo';
 import { useTodo } from '@/hooks/useTodo';
 import { cn } from '@/lib/utils';
 
+interface TodoRowProps {
+  item: TodoItem;
+  onToggle: (id: string) => void;
+  onRemove: (id: string) => void;
+  onUpdateNotes: (id: string, notes: string) => void;
+}
+
+function TodoRow({ item, onToggle, onRemove, onUpdateNotes }: TodoRowProps) {
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [notesValue, setNotesValue] = useState(item.notes);
+
+  const handleToggleNotes = () => {
+    if (!notesOpen) setNotesValue(item.notes);
+    setNotesOpen((prev) => !prev);
+  };
+
+  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setNotesValue(e.target.value);
+    onUpdateNotes(item.id, e.target.value);
+  };
+
+  return (
+    <li
+      className={cn(
+        'rounded-md px-2 py-1.5 hover:bg-muted/50',
+        item.done && 'opacity-60'
+      )}
+    >
+      <div className="flex items-center justify-between gap-2 text-sm">
+        <label className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={item.done}
+            onChange={() => onToggle(item.id)}
+            className="shrink-0"
+          />
+          <span
+            className={cn(
+              'truncate',
+              item.done && 'line-through text-muted-foreground'
+            )}
+          >
+            {item.title}
+          </span>
+        </label>
+        <div className="flex items-center gap-1 shrink-0">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleToggleNotes}
+            aria-expanded={notesOpen}
+            aria-label="Notes"
+            title="Notes"
+            className={cn(
+              'text-muted-foreground hover:text-foreground',
+              item.notes && 'text-foreground'
+            )}
+          >
+            <StickyNote className="w-3.5 h-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onRemove(item.id)}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            Remove
+          </Button>
+        </div>
+      </div>
+
+      {notesOpen && (
+        <div className="mt-1.5 pl-6">
+          <Textarea
+            value={notesValue}
+            onChange={handleNotesChange}
+            placeholder="Add notes..."
+            className="text-sm min-h-[60px]"
+          />
+        </div>
+      )}
+    </li>
+  );
+}
+
 export function TodoView() {
-  const { items, hydrated, add, remove, toggle, clearCompleted, hasCompleted } = useTodo();
+  const { items, hydrated, add, remove, toggle, clearCompleted, updateNotes, hasCompleted } = useTodo();
   const [inputValue, setInputValue] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -60,38 +149,13 @@ export function TodoView() {
             ) : (
               <ul className="space-y-1">
                 {items.map((item) => (
-                  <li
+                  <TodoRow
                     key={item.id}
-                    className={cn(
-                      'flex items-center justify-between gap-2 text-sm rounded-md px-2 py-1.5 hover:bg-muted/50',
-                      item.done && 'opacity-60'
-                    )}
-                  >
-                    <label className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={item.done}
-                        onChange={() => toggle(item.id)}
-                        className="shrink-0"
-                      />
-                      <span
-                        className={cn(
-                          'truncate',
-                          item.done && 'line-through text-muted-foreground'
-                        )}
-                      >
-                        {item.title}
-                      </span>
-                    </label>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => remove(item.id)}
-                      className="shrink-0 text-muted-foreground hover:text-foreground"
-                    >
-                      Remove
-                    </Button>
-                  </li>
+                    item={item}
+                    onToggle={toggle}
+                    onRemove={remove}
+                    onUpdateNotes={updateNotes}
+                  />
                 ))}
               </ul>
             )}
