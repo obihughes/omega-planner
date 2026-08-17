@@ -5,8 +5,9 @@ import { cn } from '@/lib/utils';
 import { useDailyLog } from '@/hooks/useDailyLog';
 import { DayOfWeekFilter } from './DayOfWeekFilter';
 import { WeeklyView } from './WeeklyView';
+import { LoggedDaysView } from './LoggedDaysView';
 
-type DailyLogTab = 'grid' | 'day-of-week';
+type DailyLogTab = 'grid' | 'day-of-week' | 'logged-days';
 
 export function DailyLogView() {
   const [activeTab, setActiveTab] = useState<DailyLogTab>('grid');
@@ -58,6 +59,18 @@ export function DailyLogView() {
               >
                 By Day of Week
               </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('logged-days')}
+                className={cn(
+                  'px-4 py-2 rounded-md text-sm font-medium transition-colors',
+                  activeTab === 'logged-days'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
+                )}
+              >
+                Logged Days
+              </button>
             </div>
             <span className="text-xs text-muted-foreground shrink-0">
               {allEntries.length} {allEntries.length === 1 ? 'day' : 'days'} logged
@@ -72,12 +85,20 @@ export function DailyLogView() {
               onSave={upsertEntry}
               onDelete={deleteEntry}
             />
-          ) : (
+          ) : activeTab === 'day-of-week' ? (
             <DayOfWeekFilter
               hydrated={hydrated}
               todayDateKey={todayDateKey}
               getEntry={getEntry}
               getEntriesByDayOfWeek={getEntriesByDayOfWeek}
+              onSave={upsertEntry}
+              onDelete={deleteEntry}
+            />
+          ) : (
+            <LoggedDaysView
+              hydrated={hydrated}
+              allEntries={allEntries}
+              todayDateKey={todayDateKey}
               onSave={upsertEntry}
               onDelete={deleteEntry}
             />

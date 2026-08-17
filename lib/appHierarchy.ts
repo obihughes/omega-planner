@@ -422,7 +422,7 @@ export const appHierarchy: AppMapNode[] = [
     id: 'daily-log',
     label: 'Daily Log',
     kind: 'area',
-    description: 'Main sidebar nav at /daily-log. One text entry per day with weekly and day-of-week comparison views.',
+    description: 'Main sidebar nav at /daily-log. One text entry per day with weekly, day-of-week, and logged-days list views.',
     children: [
       {
         id: 'daily-log-route',
@@ -440,7 +440,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'DailyLogView',
         kind: 'component',
         path: 'components/dailyLog/DailyLogView.tsx',
-        editHint: 'Tabs: 3-Week Grid (7×3 last/this/next week) and By Day of Week (filter same weekday across weeks).',
+        editHint: 'Tabs: 3-Week Grid (7×3 last/this/next week), By Day of Week (filter same weekday across weeks), and Logged Days (month-grouped list of only days with entries).',
         children: [
           {
             id: 'daily-log-weekly',
@@ -459,6 +459,13 @@ export const appHierarchy: AppMapNode[] = [
             label: 'DayOfWeekFilter',
             kind: 'component',
             path: 'components/dailyLog/DayOfWeekFilter.tsx',
+          },
+          {
+            id: 'daily-log-logged-days',
+            label: 'LoggedDaysView',
+            kind: 'component',
+            path: 'components/dailyLog/LoggedDaysView.tsx',
+            editHint: 'Chronological, month-grouped list of allEntries (only days with saved content); blur-to-save rows.',
           },
         ],
       },

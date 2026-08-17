@@ -32,7 +32,7 @@ Current notable feature folders include:
 - `components/goal-hierarchy` – Weekly Overview UI (month goal summary + unified week panel: Week N goal notes, folder-style Week 1–5 tabs, Study Tracker toggle, dynamic week nav label, Open Notes; day grid is two 7-column rows — selected week Mon–Sun + next week Mon–Sun preview; daily goals use shared Weekly Goals storage and `WeeklyGoalsDayColumn`)
 - `components/month-board` – Month board beta (month/week pickers, single-week view with week goal + Mon–Sun rows)
 - `components/todo` – Minimal standalone todo checklist with expandable per-item notes
-- `components/dailyLog` – Daily log (one entry per day; weekly and day-of-week views)
+- `components/dailyLog` – Daily log (one entry per day; weekly, day-of-week, and logged-days list views)
 - `components/ui` – Shared UI primitives (layout, inputs, tabs, etc.)
 
 #### `/lib`
@@ -62,7 +62,7 @@ Additional feature routes in `/app` include:
 - `app/visualizer` — 5-Year Visualizer; main sidebar nav (last item, after Text Documents)
 - `app/app-map` — In-app code hierarchy reference (Settings → Developer → App Map); data in `lib/appHierarchy.ts`
 - `app/todo` — Minimal todo checklist (main sidebar nav)
-- `app/daily-log` — Daily log (one text entry per day; compare same weekday across weeks or browse by week; main sidebar nav)
+- `app/daily-log` — Daily log (one text entry per day; compare same weekday across weeks, browse by week, or review only logged days in a month-grouped list; main sidebar nav)
 
 #### `/planner-backup`
 Backup files for the planner functionality.
