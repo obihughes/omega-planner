@@ -1,5 +1,9 @@
 ## 2026-08-25
 
+- **Todo: active items sort newest-first** (2026-08-25)
+  - Unchecked tasks now appear newest-added first (`createdAt` descending) instead of oldest-first. Completed items are unchanged (newest-checked first by `updatedAt`).
+  - **Files affected**: `hooks/useTodo.ts`, `docs/components.md`, `docs/changelog.md`
+
 - **Navigation: Others group** (2026-08-25)
   - Added an **Others** expander as the last sidebar nav item so the main list stays shorter.
   - Moved **Text Documents** (`/documents`) and **5-Year Visualizer** (`/visualizer`) under Others. Expand/collapse uses the existing `omega-planner-nav-expanded` preference.

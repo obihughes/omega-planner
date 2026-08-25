@@ -12,7 +12,7 @@ Simple daily journal: one text entry per calendar day. Four tabs — **3-Week Gr
 ### TodoView (`components/todo/TodoView.tsx`)
 **Page:** `app/todo/page.tsx`
 
-Minimal standalone checklist: add tasks, toggle done, remove items, clear completed. Active items appear before completed (active oldest-first by `createdAt`; completed newest-first by `updatedAt`, so a just-checked item lands at the top of the checked list). Each row has a **Notes** button (`StickyNote` icon) that expands a per-item textarea below the row; collapsed by default, independent per item. State persists via `utils/todoStorage.ts` (`omega-planner-todo-v1`). Uses `hooks/useTodo.ts` (`updateNotes`).
+Minimal standalone checklist: add tasks, toggle done, remove items, clear completed. Active items appear before completed (active newest-first by `createdAt`; completed newest-first by `updatedAt`, so a just-added item lands at the top of the unchecked list and a just-checked item lands at the top of the checked list). Each row has a **Notes** button (`StickyNote` icon) that expands a per-item textarea below the row; collapsed by default, independent per item. State persists via `utils/todoStorage.ts` (`omega-planner-todo-v1`). Uses `hooks/useTodo.ts` (`updateNotes`).
 
 ## Month board
 

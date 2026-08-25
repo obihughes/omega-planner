@@ -10,11 +10,11 @@ const STORAGE_KEY = 'omega-planner-todo-v1';
 function sortItems(items: TodoItem[]): TodoItem[] {
   const active = items.filter((i) => !i.done);
   const completed = items.filter((i) => i.done);
-  const byCreated = (a: TodoItem, b: TodoItem) =>
-    new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+  const byCreatedDesc = (a: TodoItem, b: TodoItem) =>
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   const byUpdatedDesc = (a: TodoItem, b: TodoItem) =>
     new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-  return [...active.sort(byCreated), ...completed.sort(byUpdatedDesc)];
+  return [...active.sort(byCreatedDesc), ...completed.sort(byUpdatedDesc)];
 }
 
 export function useTodo() {
