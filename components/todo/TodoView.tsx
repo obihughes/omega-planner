@@ -98,7 +98,8 @@ function TodoRow({
             title="Notes"
             className={cn(
               'text-muted-foreground hover:text-foreground',
-              item.notes && 'text-foreground'
+              item.notes && 'text-foreground',
+              !item.notes && !notesOpen && 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'
             )}
           >
             <StickyNote className="w-3.5 h-3.5" />

@@ -57,7 +57,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'Providers',
         kind: 'context',
         path: 'app/providers.tsx',
-        editHint: 'Theme + ViewMode + CalendarView + PlannerProvider. One-time wipe of legacy omega-planner-projects.',
+        editHint: 'Theme + ViewMode + CalendarView. One-time wipe of legacy omega-planner-projects.',
       },
       {
         id: 'shell-root-layout',
@@ -78,7 +78,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'PlannerProvider',
         kind: 'context',
         path: 'app/context/PlannerProvider.tsx',
-        editHint: 'Core tasks, backlog, pinned tasks state.',
+        editHint: 'Unused context/reducer (not mounted in Providers). Live planner state is useDailyPlanner.',
         children: [
           {
             id: 'ctx-planner-reducer',
@@ -189,7 +189,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'useDailyPlannerState',
         kind: 'hook',
         path: 'hooks/useDailyPlannerState.ts',
-        editHint: 'Planner-specific UI state layered on PlannerProvider.',
+        editHint: 'Planner UI state and localStorage persistence. Not layered on PlannerProvider.',
       },
       {
         id: 'dp-hook-modal',
@@ -244,40 +244,53 @@ export const appHierarchy: AppMapNode[] = [
     id: 'calendar',
     label: 'Calendar',
     kind: 'area',
-    description: 'Events calendar, weekly goals, timeline. Default: ?view=monthly.',
+    description: 'Events calendar and URL-only timeline. Default: ?view=monthly.',
     children: [
       {
         id: 'cal-route',
         label: '/calendar',
         kind: 'route',
-        description: '?view=monthly|yearly|timeline|weekly-goals',
+        description: '?view=monthly|yearly|timeline (weekly-goals redirects to /weekly-overview)',
       },
       {
         id: 'cal-page',
         label: 'Calendar page',
         kind: 'page',
         path: 'app/calendar/page.tsx',
-        editHint: 'Switches calendar views; embeds Study Tracker in weekly-goals.',
+        editHint: 'Month/Year toggle; dynamic YearCalendar and timeline wrapper. Weekly-goals redirects to /weekly-overview.',
       },
       {
         id: 'cal-monthly',
         label: 'MonthlyCalendar',
         kind: 'component',
         path: 'components/calendar/MonthlyCalendar.tsx',
-        editHint: 'Default monthly events view.',
+        editHint: 'Default monthly events view. Indexes events by date key; defers off-screen months.',
       },
       {
         id: 'cal-yearly',
         label: 'YearCalendar',
         kind: 'component',
         path: 'components/calendar/YearCalendar.tsx',
+        editHint: 'Year grid; eventsByMonth lookup; deferred month mount; no extra Inter font.',
       },
       {
-        id: 'cal-weekly-goals',
+        id: 'cal-timeline',
+        label: 'MonthlyTimelineView',
+        kind: 'component',
+        path: 'components/calendar/MonthlyTimelineView.tsx',
+        editHint: 'URL-only ?view=timeline. Receives calendarData from page; no nested useCalendarData.',
+      },
+      {
+        id: 'cal-timeline-wrapper',
+        label: 'TimelineViewWrapper',
+        kind: 'component',
+        path: 'components/calendar/TimelineViewWrapper.tsx',
+        editHint: 'Dynamically loaded; owns useDailyPlanner so monthly/yearly do not hydrate planner state.',
+      },
         label: 'WeeklyGoalsCalendarView',
         kind: 'component',
         path: 'components/calendar/WeeklyGoalsCalendarView.tsx',
-        editHint: 'Weekly overview; inline switch to Study Tracker.',
+        editHint: 'Legacy 4-week grid; not mounted from /calendar (redirects to Weekly Overview).',
       },
       {
         id: 'cal-checklist',
@@ -303,6 +316,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'useCalendarData',
         kind: 'hook',
         path: 'hooks/useCalendarData.ts',
+        editHint: 'localStorage omega-calendar-data via useSyncExternalStore; no blocking spinner.',
       },
       {
         id: 'cal-storage',
@@ -527,7 +541,7 @@ export const appHierarchy: AppMapNode[] = [
     id: 'study-tracker',
     label: 'Study Tracker',
     kind: 'area',
-    description: 'Sidebar Others group at /study-tracker. Also a Daily Log Study Tracker tab, or embedded in /calendar weekly-goals.',
+    description: 'Sidebar Others group at /study-tracker. Also a Daily Log Study Tracker tab.',
     children: [
       {
         id: 'st-route',

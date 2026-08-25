@@ -1,15 +1,9 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Inter } from 'next/font/google';
-import { CalendarEvent, CalendarPeriod, CalendarData, CalendarProps, PeriodPosition } from '@/types/calendar';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { CalendarEvent, CalendarPeriod, CalendarProps } from '@/types/calendar';
 import { 
-  getMonthDates, 
-  getDayInfo, 
   getEventsByMonth, 
-  getMonthName, 
-  getWeekDays,
-  getPeriodSegmentsForMonth,
   isSameDay
 } from '@/utils/calendar';
 import { ChevronLeft, ChevronRight, Plus, Edit2, X, Eraser, Trash2 } from 'lucide-react';
@@ -17,10 +11,25 @@ import { Button } from '@/components/ui/button';
 import { EventModal } from './EventModal';
 import { PeriodModal } from './PeriodModal';
 import { cn } from '@/lib/utils';
-// Removed hover-based summary UI in favor of click-to-open details
 import { getContrastColor } from '@/utils/colorUtils';
 
-const inter = Inter({ subsets: ['latin'] });
+const ALL_MONTHS = new Set(Array.from({ length: 12 }, (_, i) => i));
+const EMPTY_EVENTS: CalendarEvent[] = [];
+const EMPTY_PERIODS: CalendarPeriod[] = [];
+
+function hexToRgba(hex: string, alpha: number) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function toLocalDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 interface YearCalendarProps extends CalendarProps {
   className?: string;
@@ -292,6 +301,130 @@ function ActionPopup({
   );
 }
 
+interface YearDayCellProps {
+  date: Date;
+  dateKey: string;
+  isCurrentMonth: boolean;
+  isToday: boolean;
+  isPast: boolean;
+  isSelected: boolean;
+  events: CalendarEvent[];
+  periods: CalendarPeriod[];
+  onDateClick: (date: Date) => void;
+  onDateDoubleClick: (date: Date) => void;
+  onDateMouseDown: (e: React.MouseEvent, date: Date) => void;
+  onDateMouseUp: () => void;
+  onPeriodMouseDown: (e: React.MouseEvent, date: Date, period: CalendarPeriod) => void;
+  onEventClick: (event: CalendarEvent, e: React.MouseEvent) => void;
+}
+
+const YearDayCell = React.memo(function YearDayCell({
+  date,
+  isCurrentMonth,
+  isToday,
+  isPast,
+  isSelected,
+  events,
+  periods,
+  onDateClick,
+  onDateDoubleClick,
+  onDateMouseDown,
+  onDateMouseUp,
+  onPeriodMouseDown,
+  onEventClick,
+}: YearDayCellProps) {
+  const periodStyle: React.CSSProperties = {};
+  if (periods.length === 1) {
+    const period = periods[0];
+    const opacity = isPast ? 0.15 : 0.25;
+    periodStyle.backgroundColor = hexToRgba(period.color, opacity);
+  } else if (periods.length >= 2) {
+    const p1 = periods[0];
+    const p2 = periods[1];
+    const opacity = isPast ? 0.15 : 0.25;
+    periodStyle.background = `linear-gradient(to bottom, ${hexToRgba(p1.color, opacity)} 50%, ${hexToRgba(p2.color, opacity)} 50%)`;
+  }
+
+  return (
+    <div
+      className={cn(
+        "min-h-[80px] border-r border-b border-border/30 last:border-r-0 transition-colors duration-200 cursor-pointer relative group",
+        !isCurrentMonth && "text-muted-foreground/50",
+        isPast && "opacity-50",
+        isToday && "border-primary border-2 bg-primary/10 ring-2 ring-primary/30",
+        isSelected && "border-accent-foreground/60 bg-accent/10"
+      )}
+      style={periodStyle}
+      onClick={() => !isPast && onDateClick(date)}
+      onDoubleClick={() => !isPast && onDateDoubleClick(date)}
+      onMouseDown={(e) => !isPast && periods.length > 0 ? onPeriodMouseDown(e, date, periods[0]) : onDateMouseDown(e, date)}
+      onMouseUp={onDateMouseUp}
+      onMouseLeave={onDateMouseUp}
+    >
+      <div className={cn(
+        "absolute inset-0",
+        !isCurrentMonth && "bg-muted/20",
+        isCurrentMonth && !periodStyle.backgroundColor && "bg-background",
+        isToday && "bg-primary/15"
+      )} />
+
+      <div className="relative z-10 h-full p-1">
+        <div className={cn(
+          "text-xs mb-1 font-medium transition-colors duration-200 relative z-10",
+          !isCurrentMonth && "text-muted-foreground",
+          isToday && "text-primary font-bold"
+        )}>
+          {date.getDate()}
+        </div>
+
+        <div className="space-y-1 relative z-10">
+          {events.slice(0, 2).map(event => {
+            const textColor = getContrastColor(event.color);
+            return (
+              <div
+                key={event.id}
+                className="h-4 px-1.5 py-0.5 text-[9px] cursor-pointer hover:opacity-95 transition-opacity duration-200 border group relative flex items-center rounded-sm truncate"
+                style={{
+                  backgroundColor: event.color,
+                  borderColor: event.color,
+                  color: textColor
+                }}
+                onClick={(e) => onEventClick(event, e)}
+                title={`${event.title}${(event.notes || event.description) ? ` - ${event.notes || event.description}` : ''}`}
+              >
+                <span className="truncate font-semibold text-[9px]"
+                  style={{ color: textColor }}
+                >
+                  {event.title}
+                </span>
+              </div>
+            );
+          })}
+          {events.length > 2 && (
+            <div className="text-[10px] text-muted-foreground px-1 font-medium">
+              +{events.length - 2}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}, (prev, next) => (
+  prev.dateKey === next.dateKey
+  && prev.isCurrentMonth === next.isCurrentMonth
+  && prev.isToday === next.isToday
+  && prev.isPast === next.isPast
+  && prev.isSelected === next.isSelected
+  && prev.events === next.events
+  && prev.periods === next.periods
+  && prev.onDateClick === next.onDateClick
+  && prev.onDateDoubleClick === next.onDateDoubleClick
+  && prev.onDateMouseDown === next.onDateMouseDown
+  && prev.onDateMouseUp === next.onDateMouseUp
+  && prev.onPeriodMouseDown === next.onPeriodMouseDown
+  && prev.onEventClick === next.onEventClick
+));
+
 export function YearCalendar({ 
   year = new Date().getFullYear(),
   data = { events: [], periods: [] },
@@ -320,7 +453,15 @@ export function YearCalendar({
   const [actionPopup, setActionPopup] = useState<{ x: number; y: number; date: Date } | null>(null);
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const longPressTriggered = useRef(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const todayStart = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+  const todayKey = toLocalDateKey(todayStart);
+  const selectedDateKey = selectedDate ? toLocalDateKey(selectedDate) : null;
+  const targetMonth = todayStart.getFullYear() === currentYear ? todayStart.getMonth() : 0;
+  const [mountedMonths, setMountedMonths] = useState<Set<number>>(() => new Set([targetMonth]));
   // Hover state removed; we now use click-to-open only
   
   // Drag state for periods
@@ -328,160 +469,120 @@ export function YearCalendar({
   const [draggedPeriod, setDraggedPeriod] = useState<CalendarPeriod | null>(null);
   const [dragStartDay, setDragStartDay] = useState<Date | null>(null);
 
-  const weekDays = getWeekDays();
   const eventsByMonth = useMemo(() => 
     getEventsByMonth(data.events, currentYear), 
     [data.events, currentYear]
   );
 
-  // Scroll to current month on mount, when year changes, or when component becomes visible
   useEffect(() => {
-    if (!isVisible) return; // Don't scroll if component is not visible
+    const id = requestAnimationFrame(() => {
+      setMountedMonths(ALL_MONTHS);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [currentYear]);
 
-    const today = new Date();
-    const currentMonth = today.getMonth();
-    const actualCurrentYear = today.getFullYear();
+  useEffect(() => {
+    if (!isVisible || mountedMonths.size < 12) return;
 
-    // Only scroll to current month if we're viewing the current year
+    const actualCurrentYear = todayStart.getFullYear();
     if (currentYear === actualCurrentYear) {
-      const currentMonthElement = document.getElementById(`month-${currentMonth}`);
-      if (currentMonthElement) {
-        // Use a small delay to ensure the DOM is fully rendered
-        setTimeout(() => {
-          currentMonthElement.scrollIntoView({
-            behavior: 'auto',
-            block: 'center'
-          });
-        }, 100);
-      }
+      document.getElementById(`month-${todayStart.getMonth()}`)?.scrollIntoView({
+        behavior: 'auto',
+        block: 'center'
+      });
+    } else {
+      document.getElementById('month-0')?.scrollIntoView({
+        behavior: 'auto',
+        block: 'start'
+      });
     }
-  }, [currentYear, isVisible]); // Re-run when currentYear changes or when component becomes visible
+  }, [currentYear, isVisible, mountedMonths, todayStart]);
 
   const navigateYear = (direction: 'prev' | 'next') => {
-    setIsLoading(true);
-    setTimeout(() => {
-      const newYear = currentYear + (direction === 'next' ? 1 : -1);
-      setCurrentYear(newYear);
-      setIsLoading(false);
-      
-      // Small delay to ensure DOM is updated before scrolling
-      setTimeout(() => {
-        const today = new Date();
-        const actualCurrentYear = today.getFullYear();
-        
-        if (newYear === actualCurrentYear) {
-          // If returning to current year, scroll to current month
-          const currentMonth = today.getMonth();
-          const currentMonthElement = document.getElementById(`month-${currentMonth}`);
-          if (currentMonthElement) {
-            currentMonthElement.scrollIntoView({
-              behavior: 'auto',
-              block: 'center'
-            });
-          }
-        } else {
-          // For other years, scroll to January within the calendar scroll container
-          const januaryElement = document.getElementById('month-0');
-          if (januaryElement) {
-            januaryElement.scrollIntoView({
-              behavior: 'auto',
-              block: 'start'
-            });
-          }
-        }
-      }, 150);
-    }, 0);
+    setCurrentYear(prev => prev + (direction === 'next' ? 1 : -1));
   };
 
-  const handleDateClick = (date: Date) => {
+  const handleDateClick = useCallback((date: Date) => {
     if (longPressTriggered.current) return;
-    // Always open day details to show what's scheduled (or empty message)
     setSelectedDate(date);
     setDayDetailsOpen(true);
-  };
+  }, []);
 
-  const handleDateDoubleClick = (date: Date) => {
+  const handleDateDoubleClick = useCallback((date: Date) => {
     setSelectedDate(date);
-    handleAddEvent();
-  };
+    setEditingEvent(null);
+    setEventModalOpen(true);
+  }, []);
 
-  const handleDateMouseDown = (e: React.MouseEvent, date: Date) => {
+  const handleDateMouseDown = useCallback((e: React.MouseEvent, date: Date) => {
     longPressTriggered.current = false;
     const timer = setTimeout(() => {
       longPressTriggered.current = true;
-      handleAddPeriod(date);
-    }, 500); // 500ms for long press
+      setSelectedDate(date);
+      setEditingPeriod(null);
+      setPeriodModalOpen(true);
+    }, 500);
     setLongPressTimer(timer);
-  };
+  }, []);
 
-  const handleDateMouseUp = () => {
-    if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      setLongPressTimer(null);
-    }
-  };
+  const handleDateMouseUp = useCallback(() => {
+    setLongPressTimer((prev) => {
+      if (prev) clearTimeout(prev);
+      return null;
+    });
+  }, []);
 
-  const handlePeriodMouseDown = (e: React.MouseEvent, date: Date, period: CalendarPeriod) => {
+  const handlePeriodMouseDown = useCallback((e: React.MouseEvent, date: Date, period: CalendarPeriod) => {
     e.stopPropagation();
     longPressTriggered.current = false;
-    
+
     const rect = (e.target as HTMLElement).getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const width = rect.width;
     const leftThird = width / 3;
     const rightThird = (width * 2) / 3;
-    
-    // Determine drag mode based on click position and date position within period
+
     const isStartDate = isSameDay(date, period.startDate);
     const isEndDate = isSameDay(date, period.endDate);
     const isSingleDay = isStartDate && isEndDate;
-    
-    let dragMode: 'move' | 'resize-start' | 'resize-end' = 'move';
-    
+
+    let nextDragMode: 'move' | 'resize-start' | 'resize-end' = 'move';
+
     if (isSingleDay) {
-      // Single day period - always move
-      dragMode = 'move';
+      nextDragMode = 'move';
     } else if (isStartDate) {
-      // On start date - left third resizes start, rest moves
-      dragMode = clickX < leftThird ? 'resize-start' : 'move';
+      nextDragMode = clickX < leftThird ? 'resize-start' : 'move';
     } else if (isEndDate) {
-      // On end date - right third resizes end, rest moves
-      dragMode = clickX > rightThird ? 'resize-end' : 'move';
+      nextDragMode = clickX > rightThird ? 'resize-end' : 'move';
+    } else if (clickX < leftThird) {
+      nextDragMode = 'resize-start';
+    } else if (clickX > rightThird) {
+      nextDragMode = 'resize-end';
     } else {
-      // Middle date - left third extends start, right third extends end, middle moves
-      if (clickX < leftThird) {
-        dragMode = 'resize-start';
-      } else if (clickX > rightThird) {
-        dragMode = 'resize-end';
-      } else {
-        dragMode = 'move';
-      }
+      nextDragMode = 'move';
     }
-    
-    // Start drag with determined mode
-    setDragMode(dragMode);
+
+    setDragMode(nextDragMode);
     setDraggedPeriod(period);
     setDragStartDay(date);
-    
+
     const timer = setTimeout(() => {
       longPressTriggered.current = true;
-      // Show period details on long press
       setViewingPeriod(period);
       setDetailsModalOpen(true);
     }, 500);
     setLongPressTimer(timer);
-  };
+  }, []);
 
-  const handleEventClick = (event: CalendarEvent, e: React.MouseEvent) => {
+  const handleEventClick = useCallback((event: CalendarEvent, e: React.MouseEvent) => {
     e.stopPropagation();
     if (eraserMode) {
       onEventDelete?.(event.id);
       return;
     }
-    // Show details instead of directly editing
     setViewingEvent(event);
     setDetailsModalOpen(true);
-  };
+  }, [eraserMode, onEventDelete]);
 
   const handlePeriodClick = (period: CalendarPeriod, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -709,7 +810,6 @@ export function YearCalendar({
   };
 
   const renderMonth = (month: number) => {
-    // Build a 6x7 grid for each month (like monthly calendar)
     const firstOfMonth = new Date(currentYear, month, 1);
     const startDate = new Date(firstOfMonth);
     const firstDayWeekday = firstOfMonth.getDay();
@@ -720,6 +820,18 @@ export function YearCalendar({
       const d = new Date(startDate);
       d.setDate(startDate.getDate() + i);
       days.push(d);
+    }
+
+    const monthEvents = eventsByMonth[month] ?? EMPTY_EVENTS;
+    const eventsByDateKey = new Map<string, CalendarEvent[]>();
+    for (const event of monthEvents) {
+      const key = event.dateKey || toLocalDateKey(event.date);
+      const list = eventsByDateKey.get(key);
+      if (list) {
+        list.push(event);
+      } else {
+        eventsByDateKey.set(key, [event]);
+      }
     }
 
     return (
@@ -759,108 +871,30 @@ export function YearCalendar({
         {/* Days grid */}
         <div className="grid grid-cols-7">
           {days.map((date, index) => {
-            const isCurrentMonth = date.getMonth() === month;
-            const isToday = date.toDateString() === new Date().toDateString();
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const isPast = date < today && !isToday;
-
-            const dayEvents = data.events
-              .filter(event => event.date.toDateString() === date.toDateString())
-              .slice()
-              .sort((a, b) => a.date.getTime() - b.date.getTime());
-
+            const dateKey = toLocalDateKey(date);
+            const isToday = dateKey === todayKey;
             const dayPeriods = data.periods.filter(p =>
               p.startDate <= date && p.endDate >= date
             );
 
-            // Convert hex to rgba for transparency
-            const hexToRgba = (hex: string, alpha: number) => {
-              const r = parseInt(hex.slice(1, 3), 16);
-              const g = parseInt(hex.slice(3, 5), 16);
-              const b = parseInt(hex.slice(5, 7), 16);
-              return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-            };
-
-            const periodStyle: React.CSSProperties = {};
-            if (dayPeriods.length === 1) {
-              const period = dayPeriods[0];
-              const opacity = isPast ? 0.15 : 0.25;
-              periodStyle.backgroundColor = hexToRgba(period.color, opacity);
-            } else if (dayPeriods.length >= 2) {
-              const p1 = dayPeriods[0];
-              const p2 = dayPeriods[1];
-              const opacity = isPast ? 0.15 : 0.25;
-              periodStyle.background = `linear-gradient(to bottom, ${hexToRgba(p1.color, opacity)} 50%, ${hexToRgba(p2.color, opacity)} 50%)`;
-            }
-
             return (
-              <div
+              <YearDayCell
                 key={`${month}-${index}`}
-                className={cn(
-                  "min-h-[80px] border-r border-b border-border/30 last:border-r-0 transition-all duration-200 cursor-pointer relative group",
-                  !isCurrentMonth && "text-muted-foreground/50",
-                  isPast && "opacity-50",
-                  isToday && "border-primary border-2 bg-primary/10 ring-2 ring-primary/30",
-                  selectedDate && date.toDateString() === selectedDate.toDateString() && "border-accent-foreground/60 bg-accent/10"
-                )}
-                style={periodStyle}
-                onClick={() => !isPast && handleDateClick(date)}
-                onDoubleClick={() => !isPast && handleDateDoubleClick(date)}
-                onMouseDown={(e) => !isPast && dayPeriods.length > 0 ? handlePeriodMouseDown(e, date, dayPeriods[0]) : handleDateMouseDown(e, date)}
-                onMouseUp={handleDateMouseUp}
-                onMouseLeave={handleDateMouseUp}
-              >
-                {/* Background */}
-                <div className={cn(
-                  "absolute inset-0",
-                  !isCurrentMonth && "bg-muted/20",
-                  isCurrentMonth && !periodStyle.backgroundColor && "bg-background",
-                  isToday && "bg-primary/15"
-                )} />
-
-                {/* Content */}
-                <div className="relative z-10 h-full p-1">
-                  <div className={cn(
-                    "text-xs mb-1 font-medium transition-colors duration-200 relative z-10",
-                    !isCurrentMonth && "text-muted-foreground",
-                    isToday && "text-primary font-bold"
-                  )}>
-                    {date.getDate()}
-                  </div>
-
-                  {/* Events */}
-                  <div className="space-y-1 relative z-10">
-                    {dayEvents.slice(0, 2).map(event => {
-                      const textColor = getContrastColor(event.color);
-                      return (
-                        <div
-                          key={event.id}
-                          className="h-4 px-1.5 py-0.5 text-[9px] cursor-pointer hover:opacity-95 transition-opacity duration-200 border group relative flex items-center rounded-sm truncate"
-                          style={{
-                            backgroundColor: event.color,
-                            borderColor: event.color,
-                            color: textColor
-                          }}
-                          onClick={(e) => handleEventClick(event, e)}
-                          title={`${event.title}${(event.notes || event.description) ? ` - ${event.notes || event.description}` : ''}`}
-                        >
-                          <span className="truncate font-semibold text-[9px]"
-                            style={{ color: textColor }}
-                          >
-                            {event.title}
-                          </span>
-                        </div>
-                      );
-                    })}
-                    {dayEvents.length > 2 && (
-                      <div className="text-[10px] text-muted-foreground px-1 font-medium">
-                        +{dayEvents.length - 2}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+                date={date}
+                dateKey={dateKey}
+                isCurrentMonth={date.getMonth() === month}
+                isToday={isToday}
+                isPast={date < todayStart && !isToday}
+                isSelected={selectedDateKey === dateKey}
+                events={eventsByDateKey.get(dateKey) ?? EMPTY_EVENTS}
+                periods={dayPeriods.length > 0 ? dayPeriods : EMPTY_PERIODS}
+                onDateClick={handleDateClick}
+                onDateDoubleClick={handleDateDoubleClick}
+                onDateMouseDown={handleDateMouseDown}
+                onDateMouseUp={handleDateMouseUp}
+                onPeriodMouseDown={handlePeriodMouseDown}
+                onEventClick={handleEventClick}
+              />
             );
           })}
         </div>
@@ -940,13 +974,23 @@ export function YearCalendar({
       
       {/* 12-Month Grid - 6 rows x 2 columns */}
       <div className={cn(
-        "grid grid-cols-2 gap-x-3 gap-y-4 transition-all duration-300 pt-16 mt-6 px-0 bg-background/50",
+        "grid grid-cols-2 gap-x-3 gap-y-4 transition-colors duration-300 pt-16 mt-6 px-0 bg-background/50",
         {
           'cursor-crosshair': eraserMode,
-          'opacity-50 pointer-events-none': isLoading
         }
       )}>
-        {Array.from({ length: 12 }, (_, month) => renderMonth(month))}
+        {Array.from({ length: 12 }, (_, month) => (
+          mountedMonths.has(month) ? renderMonth(month) : (
+            <div key={month} id={`month-${month}`} className="bg-card overflow-hidden border border-border/50 rounded-lg">
+              <div className="flex items-center justify-between px-3 py-2 border-b border-border/40 bg-card/70">
+                <span className="text-sm font-bold text-foreground">
+                  {new Date(currentYear, month, 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                </span>
+              </div>
+              <div className="min-h-[480px]" />
+            </div>
+          )
+        ))}
       </div>
 
       {/* Selected Date Info */}

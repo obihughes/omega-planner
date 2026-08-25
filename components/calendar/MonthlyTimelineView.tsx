@@ -10,7 +10,7 @@ import { formatDuration, formatTime } from '@/utils/formatters';
 import { getDateKey } from '@/utils/dateUtils';
 import { MiniDailyTimeline } from '../planner/MiniDailyTimeline';
 import { DailyEventsContainer } from '../planner/DailyEventsContainer';
-import { useCalendarData } from '../../hooks/useCalendarData';
+import { CalendarData } from '@/types/calendar';
 
 interface TaskCardProps {
   task: Task;
@@ -40,6 +40,7 @@ interface TimelineDragContext {
 }
 
 interface MonthlyTimelineViewProps {
+  calendarData: CalendarData;
   poolTasks: Task[];
   scheduledTasks: Map<string, Task[]>;
   pinnedTasks: PinnedTask[];
@@ -178,6 +179,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
 };
 
 export function MonthlyTimelineView({
+  calendarData,
   poolTasks,
   scheduledTasks,
   pinnedTasks,
@@ -196,7 +198,6 @@ export function MonthlyTimelineView({
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [deleteMode, setDeleteMode] = useState<boolean>(false);
-  const { data: calendarData } = useCalendarData();
   // Removed unused state variables for search and filters since we're using mini timeline now
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
@@ -266,37 +267,10 @@ export function MonthlyTimelineView({
       const taskDate = new Date(task.dueDate);
       return taskDate.toDateString() === date.toDateString();
     });
-    
-    // Enhanced debug logging
-    if (scheduled.length > 0 || pool.length > 0 || pinned.length > 0) {
-      console.log(`📅 MONTHLY VIEW DEBUG: Tasks for ${dateKey}:`, {
-        dateKey,
-        scheduled: scheduled.map(t => ({ id: t.id, name: t.name, startHour: t.startHour, baseDate: t.baseDate })),
-        pool: pool.map(t => ({ id: t.id, name: t.name, startHour: t.startHour, baseDate: t.baseDate, poolDate: (t as any).poolDate })),
-        pinned: pinned.map(t => ({ id: t.id, name: t.name, startHour: t.startHour })),
-        scheduledCount: scheduled.length,
-        poolCount: pool.length,
-        pinnedCount: pinned.length
-      });
-    }
-    
-    const allTasks = [...scheduled, ...pool, ...pinned].filter((task, index, self) =>
+
+    return [...scheduled, ...pool, ...pinned].filter((task, index, self) =>
       index === self.findIndex((t) => t.id === task.id)
     );
-    
-    console.log(`📅 MONTHLY VIEW DEBUG: Final tasks for ${dateKey}:`, {
-      totalTasks: allTasks.length,
-      taskBreakdown: allTasks.map(t => ({ 
-        id: t.id, 
-        name: t.name, 
-        startHour: t.startHour, 
-        isScheduled: t.startHour !== undefined,
-        baseDate: t.baseDate,
-        poolDate: (t as any).poolDate
-      }))
-    });
-    
-    return allTasks;
   };
 
   // Drag and drop handlers

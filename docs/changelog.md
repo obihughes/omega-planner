@@ -1,5 +1,18 @@
 ## 2026-08-25
 
+- **Calendar page load speed** (2026-08-25)
+  - Removed unused global `PlannerProvider` (nothing consumed `usePlannerContext`). Planner UI still uses `useDailyPlanner`.
+  - Calendar page no longer blocks on a loading spinner. `useCalendarData` hydrates `omega-calendar-data` with `useSyncExternalStore`.
+  - Default Month view statically imports only `MonthlyCalendar`. Year view and timeline are `next/dynamic`. Timeline's `useDailyPlanner` lives in `TimelineViewWrapper` so it does not run on month/year.
+  - `/calendar?view=weekly-goals` still redirects to `/weekly-overview`; Study Tracker is no longer embedded on the calendar page.
+  - Month and year grids index events by date key, memoize day cells, and mount the current month first (remaining months after `requestAnimationFrame`). `scrollIntoView` runs after those months are mounted.
+  - **Files affected**: `app/providers.tsx`, `app/calendar/page.tsx`, `hooks/useCalendarData.ts`, `components/calendar/MonthlyCalendar.tsx`, `components/calendar/YearCalendar.tsx`, `components/calendar/MonthlyTimelineView.tsx`, `components/calendar/TimelineViewWrapper.tsx`, `lib/appHierarchy.ts`, `docs/*`, `PERFORMANCE.md`
+
+
+- **Todo: hide notes icon unless hover or notes exist** (2026-08-25)
+  - The Notes button is hidden until the row is hovered (or the button is keyboard-focused), unless the item already has notes or the notes field is open.
+  - **Files affected**: `components/todo/TodoView.tsx`, `docs/components.md`, `docs/changelog.md`
+
 - **Navigation: Beta pages, Week, and Daily Log under Others** (2026-08-25)
   - Moved Meals, Study Tracker, and Month Board from Settings → Beta features into the sidebar **Others** group.
   - Moved **Week** (`/?view=weekly`) and **Daily Log** (`/daily-log`) into Others. Daily Planner sidebar now shows Daily and Class Schedule only.

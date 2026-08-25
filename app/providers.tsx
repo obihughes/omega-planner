@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react';
 import { ThemeProvider } from 'next-themes';
-import { PlannerProvider } from '@/app/context/PlannerProvider';
 import { ViewModeProvider } from '@/app/context/ViewModeContext';
 import { CalendarViewProvider } from '@/app/context/CalendarViewContext';
 
@@ -32,9 +31,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     >
       <ViewModeProvider>
         <CalendarViewProvider>
-          <PlannerProvider>
-            {children}
-          </PlannerProvider>
+          {children}
         </CalendarViewProvider>
       </ViewModeProvider>
     </ThemeProvider>

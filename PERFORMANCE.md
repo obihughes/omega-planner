@@ -17,7 +17,8 @@
 
 ### **Bundle Size Reduction**
 - ✅ **Replaced barrel exports** with specific imports to reduce bundle size
-- ✅ **Lazy loading** for heavy components (DailyPlanner)
+- ✅ **Lazy loading** for heavy components (DailyPlanner, YearCalendar, calendar timeline)
+- ✅ **Calendar page** - unused PlannerProvider removed; `useCalendarData` hydrates without a spinner; monthly grid indexes events by date and defers off-screen months
 - ✅ **Code splitting** with React.lazy() and Suspense
 - ✅ **Tree shaking** enabled in webpack configuration
 

@@ -328,4 +328,4 @@ The Monthly and Yearly calendar views are accessible from the main navigation un
 
 Note: Monthly and yearly event calendars share `/calendar`. The sidebar **Calendar** link opens monthly view; use the in-page **Month** / **Year** toggle to switch (sticky at the top while scrolling). Weekly Overview lives at `/weekly-overview`. **5-Year Visualizer** is under sidebar **Others** (after Text Documents). Task timeline (`?view=timeline`) is URL-only.
 
-The calendar page shell uses `flex-1 min-h-0 overflow-y-auto` so long month/year layouts scroll inside `AppLayout` (which clips document scroll). Timeline view fills the viewport and scrolls within its sidebar panels.
+The calendar page shell uses `flex-1 min-h-0 overflow-y-auto` so long month/year layouts scroll inside `AppLayout` (which clips document scroll). Month and year grids mount the focused month first, then the rest of the year, then scroll to that month. Timeline view fills the viewport and scrolls within its sidebar panels. Calendar events load from `omega-calendar-data` without a blocking spinner. Year and timeline views are code-split from the default monthly page.

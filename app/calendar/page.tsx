@@ -1,25 +1,40 @@
 'use client';
 
 import React, { useMemo, useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { AppLayout } from '@/components/ui/AppLayout';
-import { YearCalendar, MonthlyCalendar, MonthlyTimelineView, WeeklyGoalsCalendarView } from '@/components/calendar';
-import { StudyTracker } from '@/components/study-tracker';
-import { StudyTrackerProvider } from '@/app/context/StudyTrackerContext';
+import { MonthlyCalendar } from '@/components/calendar/MonthlyCalendar';
 import { useCalendarData } from '@/hooks/useCalendarData';
 import { CalendarEvent, CalendarPeriod } from '@/types/calendar';
-import { Settings, Download, RefreshCw, Trash2, Target, BookOpen, CalendarRange, CalendarDays } from 'lucide-react';
+import { Settings, Download, RefreshCw, Trash2, CalendarRange, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCalendarView, type CalendarViewMode } from '@/app/context/CalendarViewContext';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useDailyPlanner } from '@/hooks/useDailyPlannerState';
 
-type CalendarView = 'yearly' | 'monthly' | 'timeline' | 'weekly-goals';
-type WeeklyPageMode = 'weekly-overview' | 'study-tracker';
+const YearCalendar = dynamic(
+  () => import('@/components/calendar/YearCalendar').then((m) => ({ default: m.YearCalendar }))
+);
+
+const TimelineViewWrapper = dynamic(
+  () => import('@/components/calendar/TimelineViewWrapper').then((m) => ({ default: m.TimelineViewWrapper }))
+);
+
+function navigateToDaily(date: Date) {
+  try {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    window.location.href = `/?date=${year}-${month}-${day}`;
+  } catch {
+    window.location.href = `/`;
+  }
+}
 
 export default function CalendarPage() {
   const {
     data,
-    isLoading,
     addEvent,
     addPeriod,
     updateEvent,
@@ -31,24 +46,7 @@ export default function CalendarPage() {
     exportData
   } = useCalendarData();
 
-  // Planner state for timeline view
-  const {
-    tasksByDate,
-    poolTasks,
-    pinnedTasks,
-    getPoolTasksForDate,
-    openEditModal,
-    createPoolTask,
-    handleDeleteTask,
-    handleAssignTask,
-    handleUnassignTask,
-    handleRescheduleTask,
-    handleUpdateTask,
-    isClient
-  } = useDailyPlanner();
-
   const [showSettings, setShowSettings] = useState(false);
-  const [weeklyPageMode, setWeeklyPageMode] = useState<WeeklyPageMode>('weekly-overview');
   const { viewMode: currentView, setViewMode: setCurrentView } = useCalendarView();
   const params = useSearchParams();
   const router = useRouter();
@@ -61,7 +59,6 @@ export default function CalendarPage() {
     router.replace(`/calendar?${query.toString()}`);
   };
 
-  // Respect ?view=monthly|yearly|timeline|weekly-goals from query params; default to monthly
   useEffect(() => {
     const v = params?.get('view');
     if (v === 'weekly-goals') {
@@ -78,6 +75,7 @@ export default function CalendarPage() {
     if (dateParam) query.set('date', dateParam);
     router.replace(`/calendar?${query.toString()}`);
   }, [params, setCurrentView, router]);
+
   const initialDateFromQuery = useMemo(() => {
     const d = params?.get('date');
     if (d) {
@@ -103,27 +101,8 @@ export default function CalendarPage() {
     updatePeriod(period.id, period);
   };
 
-  if (isLoading) {
-    return (
-      <AppLayout>
-        <div className="flex flex-col flex-1 min-h-0 h-full">
-          <div className="flex-1 min-h-0 overflow-y-auto scrollbar-overlay">
-            <div className="max-w-7xl mx-auto px-4 py-6">
-              <div className="flex items-center justify-center min-h-[400px]">
-                <div className="text-center">
-                  <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
-                  <p className="text-muted-foreground">Loading calendar...</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </AppLayout>
-    );
-  }
-
   const calendarContent = (
-      <div className={`mx-auto px-4 py-6 ${currentView === 'weekly-goals' ? 'w-full max-w-none' : 'max-w-7xl'}`}>
+      <div className="mx-auto px-4 py-6 max-w-7xl">
         {(currentView === 'monthly' || currentView === 'yearly') && (
           <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border flex items-center gap-1.5 p-3 max-w-5xl mx-auto">
             <Button
@@ -147,7 +126,6 @@ export default function CalendarPage() {
           </div>
         )}
 
-        {/* Calendar Component */}
         {currentView === 'monthly' ? (
           <MonthlyCalendar
             data={data}
@@ -155,69 +133,9 @@ export default function CalendarPage() {
             onEventEdit={handleEventEdit}
             onEventDelete={deleteEvent}
             className="bg-background max-w-5xl mx-auto"
-            onNavigateToDaily={(date) => {
-              // Navigate to home page daily planner with a local-safe YYYY-MM-DD date key
-              try {
-                const d = new Date(date);
-                d.setHours(0, 0, 0, 0);
-                const year = d.getFullYear();
-                const month = String(d.getMonth() + 1).padStart(2, '0');
-                const day = String(d.getDate()).padStart(2, '0');
-                const dateKey = `${year}-${month}-${day}`;
-                window.location.href = `/?date=${dateKey}`;
-              } catch {
-                window.location.href = `/`;
-              }
-            }}
+            onNavigateToDaily={navigateToDaily}
             initialDate={initialDateFromQuery}
           />
-        ) : currentView === 'weekly-goals' ? (
-          <div className="h-full flex flex-col">
-            <div className="flex items-center gap-1.5 px-4 py-3 border-b border-border/50 mb-0">
-              <Button
-                variant={weeklyPageMode === 'weekly-overview' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setWeeklyPageMode('weekly-overview')}
-                className="h-8 px-3 gap-1.5 text-xs"
-              >
-                <Target className="w-3.5 h-3.5" />
-                Weekly Overview
-              </Button>
-              <Button
-                variant={weeklyPageMode === 'study-tracker' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setWeeklyPageMode('study-tracker')}
-                className="h-8 px-3 gap-1.5 text-xs"
-              >
-                <BookOpen className="w-3.5 h-3.5" />
-                Study Tracker
-              </Button>
-            </div>
-            <div className="flex-1 min-h-0">
-              {weeklyPageMode === 'weekly-overview' ? (
-                <WeeklyGoalsCalendarView
-                  calendarData={data}
-                  onNavigateToDaily={(date) => {
-                    try {
-                      const d = new Date(date);
-                      d.setHours(0, 0, 0, 0);
-                      const year = d.getFullYear();
-                      const month = String(d.getMonth() + 1).padStart(2, '0');
-                      const day = String(d.getDate()).padStart(2, '0');
-                      const dateKey = `${year}-${month}-${day}`;
-                      window.location.href = `/?date=${dateKey}`;
-                    } catch {
-                      window.location.href = `/`;
-                    }
-                  }}
-                />
-              ) : (
-                <StudyTrackerProvider>
-                  <StudyTracker />
-                </StudyTrackerProvider>
-              )}
-            </div>
-          </div>
         ) : (
           <YearCalendar
             data={data}
@@ -232,7 +150,6 @@ export default function CalendarPage() {
           />
         )}
 
-        {/* Settings Section */}
         <div className="mt-12 pt-8 border-t">
             <div className="flex justify-center">
                 <Button
@@ -259,7 +176,7 @@ export default function CalendarPage() {
                     <Download className="w-4 h-4" />
                     Export Data
                   </Button>
-                  
+
                   <Button
                     variant="outline"
                     size="sm"
@@ -269,7 +186,7 @@ export default function CalendarPage() {
                     <RefreshCw className="w-4 h-4" />
                     Reset to Default
                   </Button>
-                  
+
                   <Button
                     variant="destructive"
                     size="sm"
@@ -290,26 +207,7 @@ export default function CalendarPage() {
     <AppLayout>
       <div className="flex flex-col flex-1 min-h-0 h-full">
         {currentView === 'timeline' ? (
-          isClient && (
-            <div className="flex-1 min-h-0 h-full">
-              <MonthlyTimelineView
-                poolTasks={poolTasks}
-                scheduledTasks={tasksByDate}
-                pinnedTasks={pinnedTasks}
-                onAssignTask={handleAssignTask}
-                onUnassignTask={handleUnassignTask}
-                onRescheduleTask={handleRescheduleTask}
-                onUpdateTask={handleUpdateTask}
-                onDeleteTask={(task) => handleDeleteTask(task.id)}
-                getPoolTasksForDate={getPoolTasksForDate}
-                openEditModal={openEditModal}
-                createPoolTask={createPoolTask}
-                onNavigateToDaily={() => {
-                  window.location.href = '/';
-                }}
-              />
-            </div>
-          )
+          <TimelineViewWrapper calendarData={data} />
         ) : (
           <div className="flex-1 min-h-0 overflow-y-auto scrollbar-overlay">
             {calendarContent}
@@ -318,4 +216,4 @@ export default function CalendarPage() {
       </div>
     </AppLayout>
   );
-} 
+}

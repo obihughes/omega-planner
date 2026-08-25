@@ -88,6 +88,14 @@ Debounced localStorage map of per-day notes for the Daily Planner weekly timelin
 
 **Storage key:** `daily-planner-day-notes-v1` (`utils/dayNotesStorage.ts`)
 
+### useCalendarData
+
+Shared calendar events/periods store (`omega-calendar-data`) via `useSyncExternalStore`. Hydrates without a blocking spinner. Mutations persist immediately; multiple hook instances share one in-memory snapshot.
+
+**API:** `data`, `isLoading` (always `false`, kept for callers), `addEvent`, `updateEvent`, `deleteEvent`, `addPeriod`, `updatePeriod`, `deletePeriod`, `clearAllData`, `resetToDefault`, `importData`, `exportData`
+
+**Storage key:** `omega-calendar-data`
+
 ### useTheme
 
 Wraps `next-themes` for light, dark, forest, sunset, ocean, and system appearance.

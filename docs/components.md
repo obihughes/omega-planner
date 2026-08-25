@@ -12,7 +12,7 @@ Simple daily journal: one text entry per calendar day. Four tabs — **3-Week Gr
 ### TodoView (`components/todo/TodoView.tsx`)
 **Page:** `app/todo/page.tsx`
 
-Minimal standalone checklist: add tasks, toggle done, remove items, clear completed. Active items appear before completed. Unchecked tasks keep a custom order (drag the grip to rearrange — the grip appears on row hover or keyboard focus; new items prepend to the top). Completed items are newest-first by `updatedAt` and are not draggable; unchecking restores the item to its previous slot among active tasks. Each row has a **Notes** button (`StickyNote` icon) that expands a per-item textarea below the row; collapsed by default, independent per item. State persists via `utils/todoStorage.ts` (`omega-planner-todo-v1`, schema 1.1). Uses `hooks/useTodo.ts` (`updateNotes`, `reorderActive`).
+Minimal standalone checklist: add tasks, toggle done, remove items, clear completed. Active items appear before completed. Unchecked tasks keep a custom order (drag the grip to rearrange — the grip appears on row hover or keyboard focus; new items prepend to the top). Completed items are newest-first by `updatedAt` and are not draggable; unchecking restores the item to its previous slot among active tasks. Each row has a **Notes** button (`StickyNote` icon) that expands a per-item textarea below the row; collapsed by default, independent per item. The icon is hidden until row hover (or keyboard focus) unless the item already has notes, or the notes field is open. State persists via `utils/todoStorage.ts` (`omega-planner-todo-v1`, schema 1.1). Uses `hooks/useTodo.ts` (`updateNotes`, `reorderActive`).
 
 ## Month board
 
@@ -52,10 +52,13 @@ Modal for creating and editing calendar periods. Supports pre-filling both start
 Modal for creating and editing calendar events.
 
 ### YearCalendar (`components/calendar/YearCalendar.tsx`)
-Full year calendar view. Auto-scrolls to the current month (or January when viewing other years) within the calendar page scroll container.
+Full year calendar view. Auto-scrolls to the current month (or January when viewing other years) after deferred month grids have mounted. Events are looked up via `eventsByMonth` then grouped by date key. Day cells are memoized. Off-screen months start as height placeholders and mount on the next animation frame.
 
 ### MonthlyCalendar (`components/calendar/MonthlyCalendar.tsx`)
-Monthly calendar view (12-month vertical layout). Auto-scrolls to the current or `initialDate` month on mount.
+Monthly calendar view (12-month vertical layout). Indexes events by local date key (`YYYY-MM-DD`) instead of filtering the full list per cell. Memoized `DayCell`. Mounts the current (or `initialDate`) month immediately and the other 11 after `requestAnimationFrame`, then `scrollIntoView`s the target month.
+
+### MonthlyTimelineView (`components/calendar/MonthlyTimelineView.tsx`)
+URL-only `/calendar?view=timeline`. Receives `calendarData` from the page (does not call `useCalendarData` itself). Loaded through `TimelineViewWrapper`, which owns `useDailyPlanner`.
 
 ### WeeklyGoalsCalendarView (`components/calendar/WeeklyGoalsCalendarView.tsx`)
 Legacy 4-week weekly goals grid (still available if embedded elsewhere). Primary weekly planning UI is now Weekly Overview at `/weekly-overview`.
