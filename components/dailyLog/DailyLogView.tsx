@@ -3,11 +3,13 @@
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useDailyLog } from '@/hooks/useDailyLog';
+import { StudyTracker } from '@/components/study-tracker';
+import { StudyTrackerProvider } from '@/app/context/StudyTrackerContext';
 import { DayOfWeekFilter } from './DayOfWeekFilter';
 import { WeeklyView } from './WeeklyView';
 import { LoggedDaysView } from './LoggedDaysView';
 
-type DailyLogTab = 'grid' | 'day-of-week' | 'logged-days';
+type DailyLogTab = 'grid' | 'day-of-week' | 'logged-days' | 'study-tracker';
 
 export function DailyLogView() {
   const [activeTab, setActiveTab] = useState<DailyLogTab>('grid');
@@ -71,6 +73,18 @@ export function DailyLogView() {
               >
                 Logged Days
               </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('study-tracker')}
+                className={cn(
+                  'px-4 py-2 rounded-md text-sm font-medium transition-colors',
+                  activeTab === 'study-tracker'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
+                )}
+              >
+                Study Tracker
+              </button>
             </div>
             <span className="text-xs text-muted-foreground shrink-0">
               {allEntries.length} {allEntries.length === 1 ? 'day' : 'days'} logged
@@ -94,7 +108,7 @@ export function DailyLogView() {
               onSave={upsertEntry}
               onDelete={deleteEntry}
             />
-          ) : (
+          ) : activeTab === 'logged-days' ? (
             <LoggedDaysView
               hydrated={hydrated}
               allEntries={allEntries}
@@ -102,6 +116,12 @@ export function DailyLogView() {
               onSave={upsertEntry}
               onDelete={deleteEntry}
             />
+          ) : (
+            <div className="min-h-[480px] rounded-lg border border-border overflow-hidden">
+              <StudyTrackerProvider>
+                <StudyTracker />
+              </StudyTrackerProvider>
+            </div>
           )}
         </div>
       </div>

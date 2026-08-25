@@ -12,7 +12,9 @@ function sortItems(items: TodoItem[]): TodoItem[] {
   const completed = items.filter((i) => i.done);
   const byCreated = (a: TodoItem, b: TodoItem) =>
     new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-  return [...active.sort(byCreated), ...completed.sort(byCreated)];
+  const byUpdatedDesc = (a: TodoItem, b: TodoItem) =>
+    new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+  return [...active.sort(byCreated), ...completed.sort(byUpdatedDesc)];
 }
 
 export function useTodo() {

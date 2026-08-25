@@ -36,7 +36,7 @@ This directory contains all components related to the daily planning functionali
 **Purpose**: Default daily planner layout combining sidebar + full daily timeline panels
 
 **Features:**
-- Left: `SchedulingSidebar` (mini calendar, inbox, bulk-actions popover)
+- Left: `SchedulingSidebar` (collapsible calendar + inbox, bulk-actions popover)
 - Right: Full daily view content (events, pool/pinned bar, dual day panels)
 - **Viewport fill**: Uses `flex-1 min-h-0` to expand to available height from the page shell
 - **Edge scrollbar**: Right panel uses `overflow-y-scroll` with `.scrollbar-overlay` and no right padding so the scrollbar sits flush with the screen edge
@@ -50,8 +50,10 @@ This directory contains all components related to the daily planning functionali
 **Features:**
 - Mini month calendar with task indicators
 - Inbox for unscheduled pool tasks (drag to calendar or timeline)
+- Entire left sidebar is collapsible (calendar + inbox) via the panel-hide button in the Calendar header; collapsed state is a thin rail with an expand control
+- Preference persists in `localStorage` (`daily-planner-scheduling-sidebar-collapsed`)
 - Bulk-actions popover: Delete Mode, Clear Day, Apply/Replace Saved Day
-- Fixed width `w-72` (288px, 10% narrower than prior 320px layout)
+- Fixed expanded width `w-72` (288px); collapsed rail is `w-9` (36px) so the timeline can use the extra space
 
 ### WeeklyView
 **File**: `WeeklyView.tsx`

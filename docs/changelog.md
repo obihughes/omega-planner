@@ -1,3 +1,23 @@
+## 2026-08-25
+
+- **Weekly Overview cleanup; Study Tracker on Daily Log** (2026-08-25)
+  - Month selector, month goal, and week goal are now a single collapsible **Month & Week Goals** section. Collapse preference persists in `localStorage` (`weekly-overview-goals-collapsed`). Goal textareas have no placeholder text.
+  - Removed the Weekly Overview / Study Tracker mode toggle from `/weekly-overview`; the page always shows the 7×2 daily goals grid.
+  - Study Tracker is now a tab on `/daily-log` (alongside 3-Week Grid, By Day of Week, and Logged Days). Standalone `/study-tracker` is unchanged.
+  - **Files affected**: `components/goal-hierarchy/GoalHierarchyView.tsx`, `components/goal-hierarchy/GoalLevelBlock.tsx`, `components/dailyLog/DailyLogView.tsx`, `lib/appHierarchy.ts`, `docs/components.md`, `docs/planner.md`, `docs/structure.md`, `docs/README.md`, `README.md`, `docs/changelog.md`
+
+## 2026-08-24
+
+- **Todo: completed items sort newest-first** (2026-08-24)
+  - Checking a task now places it at the top of the completed list (`updatedAt` descending) instead of the bottom (`createdAt` ascending). Active items still sort oldest-first.
+  - **Files affected**: `hooks/useTodo.ts`, `docs/components.md`, `docs/changelog.md`
+
+- **Daily Planner: collapsible left sidebar** (2026-08-24)
+  - Daily view can hide the whole left panel (mini calendar + inbox), not just the month grid, so the timeline has more room.
+  - Collapse via the panel-hide button in the Calendar header; a thin rail remains to expand it again. Preference persists in `localStorage` (`daily-planner-scheduling-sidebar-collapsed`).
+  - Timeline scale updates automatically when the sidebar width changes (`MergedDailyView` `ResizeObserver`).
+  - **Files affected**: `components/planner/SchedulingSidebar.tsx`, `lib/appHierarchy.ts`, `docs/planner.md`, `components/planner/README.md`, `docs/changelog.md`
+
 ## 2026-08-17
 
 - **Daily Log: Logged Days tab** (2026-08-17)

@@ -173,7 +173,7 @@ npm test
 - **Improved Type Safety**: Enhanced TypeScript type definitions and interfaces
 
 ### Weekly Overview
-- Weekly Overview at `/weekly-overview` (main sidebar nav) — monthly goal summary; week tabs with inline Study Tracker toggle, week nav, and Open Notes; 7×2 weekly goals grid; daily goals use shared Weekly Goals cards
+- Weekly Overview at `/weekly-overview` (main sidebar nav) — collapsible month + week goal summaries; week tabs with week nav and Open Notes; 7×2 weekly goals grid; daily goals use shared Weekly Goals cards
 - Legacy `/goal-hierarchy` and `/calendar?view=weekly-goals` redirect here
 - Persists month/week summaries to `omega-planner-goal-hierarchy-v1` via `utils/goalHierarchyStorage.ts`
 

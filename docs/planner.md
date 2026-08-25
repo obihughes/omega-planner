@@ -64,7 +64,7 @@ Modal for quickly typing tasks (Enter to add) and reviewing a draft list before 
 Unified scheduling layout: `SchedulingSidebar` (left) + full daily timeline panels (right). Used when `viewMode === 'monthly'`. Fills remaining viewport height via flex layout (`flex-1 min-h-0`) from the home page shell. Measures the right-hand content area with `ResizeObserver` and passes scaled `pixelsPerHour` / `columnHeightPx` to timeline panels so they fit beside the sidebar (instead of full-screen 211px/hour density). Scale updates pause during active drag/resize (`timelineInteractionActive`) and flush when the interaction ends. Right content panel scrolls with edge-aligned `.scrollbar-overlay` styling.
 
 ### SchedulingSidebar
-Mini calendar, inbox tasks, and bulk-actions popover (Delete Mode, Clear Day, Apply Saved Day). Sidebar width is `w-72` (288px).
+Mini calendar, inbox tasks, and bulk-actions popover (Delete Mode, Clear Day, Apply Saved Day). Expanded width is `w-72` (288px). The whole left panel (calendar + inbox) collapses to a thin `w-9` rail via the panel-hide button in the Calendar header; click the rail button to restore it. Preference persists in `localStorage` (`daily-planner-scheduling-sidebar-collapsed`). Collapsing the sidebar widens the timeline panel, so `MergedDailyView`'s `ResizeObserver` rescales `pixelsPerHour` / `columnHeightPx`. Date picking on the timeline panel headers still works while the sidebar is collapsed.
 
 ### TaskCard
 Renders individual tasks on the timeline with drag, resize, edit, copy, and view-notes actions. Action button size and layout scale with the timeline row `height` prop (horizontal compact row on short rows, stacked full-size buttons on taller rows).
@@ -311,10 +311,12 @@ The Saved Days feature allows you to save daily task configurations as reusable 
 
 ### Weekly Overview Page (`/weekly-overview`)
 Weekly planning at `/weekly-overview` (main sidebar nav). Legacy `/goal-hierarchy` and `/calendar?view=weekly-goals` redirect here.
+- **Month & Week Goals**: Collapsible as one section (month selector + month goal + week goal textareas). Collapse preference persists in `localStorage` (`weekly-overview-goals-collapsed`).
 - **Weekly Overview**: Two-row 7-column grid (selected week + next week preview) with drag-and-drop, calendar events, and optional Weekly Notes panel.
-- **Study Tracker**: Same Study Planner component as `/study-tracker`, embedded in-place with full subject/task management.
 - **Week navigation**: Prev / Today / Next buttons sync with the week tabs above.
 - **Weekly Notes**: Hidden by default. Click "Open Notes" to reveal the checklist panel; click the close icon to hide it again.
+
+Study Tracker lives on Daily Log (`/daily-log`) as a tab, not on this page.
 
 ### Calendar Views (under Daily Planner)
 The Monthly and Yearly calendar views are accessible from the main navigation under `Daily Planner`:

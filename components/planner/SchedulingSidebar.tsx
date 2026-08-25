@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Task, PinnedTask } from '@/types/planner';
 import {
   ChevronLeft,
@@ -12,12 +12,16 @@ import {
   X,
   CalendarPlus,
   MoreHorizontal,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { formatDuration, formatTime } from '@/utils/formatters';
 import { getDateKey } from '@/utils/dateUtils';
+
+const SCHEDULING_SIDEBAR_COLLAPSED_KEY = 'daily-planner-scheduling-sidebar-collapsed';
 
 interface InboxTaskCardProps {
   task: Task;
@@ -206,9 +210,32 @@ export function SchedulingSidebar({
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
   const [dragOverInbox, setDragOverInbox] = useState(false);
   const [bulkActionsOpen, setBulkActionsOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsedReady, setSidebarCollapsedReady] = useState(false);
   const dragLeaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(SCHEDULING_SIDEBAR_COLLAPSED_KEY);
+      if (saved !== null) {
+        setSidebarCollapsed(JSON.parse(saved) === true);
+      }
+    } catch {
+      // Keep the expanded default if storage is unavailable.
+    }
+    setSidebarCollapsedReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!sidebarCollapsedReady) return;
+    try {
+      localStorage.setItem(SCHEDULING_SIDEBAR_COLLAPSED_KEY, JSON.stringify(sidebarCollapsed));
+    } catch {
+      // Ignore quota / private-mode failures.
+    }
+  }, [sidebarCollapsed, sidebarCollapsedReady]);
+
+  useEffect(() => {
     setCurrentDate((prev) => {
       if (
         prev.getMonth() === selectedDate.getMonth() &&
@@ -361,6 +388,23 @@ export function SchedulingSidebar({
     openEditModal(task, { isFromPool: !isScheduled });
   };
 
+  if (sidebarCollapsed) {
+    return (
+      <div className="w-9 shrink-0 border-r border-border bg-card/30 flex flex-col items-center py-2 h-full">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 p-0"
+          onClick={() => setSidebarCollapsed(false)}
+          title="Show calendar and inbox"
+          aria-label="Expand sidebar"
+        >
+          <PanelLeftOpen className="w-4 h-4" />
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="w-72 shrink-0 border-r border-border bg-card/30 flex flex-col h-full">
       <div className="p-3 border-b border-border">
@@ -372,6 +416,7 @@ export function SchedulingSidebar({
               size="sm"
               onClick={() => navigateMonth('prev')}
               className="h-6 w-6 p-0 hover:bg-accent"
+              title="Previous month"
             >
               <ChevronLeft className="w-3 h-3" />
             </Button>
@@ -380,6 +425,7 @@ export function SchedulingSidebar({
               size="sm"
               onClick={() => navigateMonth('next')}
               className="h-6 w-6 p-0 hover:bg-accent"
+              title="Next month"
             >
               <ChevronRight className="w-3 h-3" />
             </Button>
@@ -450,6 +496,16 @@ export function SchedulingSidebar({
                 </div>
               </PopoverContent>
             </Popover>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSidebarCollapsed(true)}
+              className="h-6 w-6 p-0 hover:bg-accent"
+              title="Hide calendar and inbox"
+              aria-label="Collapse sidebar"
+            >
+              <PanelLeftClose className="w-3.5 h-3.5" />
+            </Button>
           </div>
         </div>
         <h4 className="text-sm font-medium text-center text-muted-foreground">
@@ -459,8 +515,8 @@ export function SchedulingSidebar({
 
       <div className="p-3 border-b border-border">
         <div className="grid grid-cols-7 text-center text-xs font-medium text-muted-foreground mb-2">
-          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day) => (
-            <div key={day} className="py-1">
+          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+            <div key={`${day}-${index}`} className="py-1">
               {day}
             </div>
           ))}

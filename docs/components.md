@@ -5,14 +5,14 @@
 ### DailyLogView (`components/dailyLog/DailyLogView.tsx`)
 **Page:** `app/daily-log/page.tsx`
 
-Simple daily journal: one text entry per calendar day. Three tabs — **3-Week Grid**, **By Day of Week** (both use the same Weekly Overview–style bordered panel, `GridDay` columns, folder tabs, and blur-to-save textareas), and **Logged Days** (`LoggedDaysView.tsx`: chronological, month-grouped list of only the days with saved entries — sourced from `allEntries`, so sparse/irregular logging is easy to review without paging through empty weeks; same blur-to-save editing, clearing a row's textarea deletes that day). State persists via `utils/dailyLogStorage.ts` (`omega-planner-daily-log-v1`). Uses `hooks/useDailyLog.ts`.
+Simple daily journal: one text entry per calendar day. Four tabs — **3-Week Grid**, **By Day of Week** (both use the same Weekly Overview–style bordered panel, `GridDay` columns, folder tabs, and blur-to-save textareas), **Logged Days** (`LoggedDaysView.tsx`: chronological, month-grouped list of only the days with saved entries — sourced from `allEntries`, so sparse/irregular logging is easy to review without paging through empty weeks; same blur-to-save editing, clearing a row's textarea deletes that day), and **Study Tracker** (embeds `StudyTracker` + `StudyTrackerProvider`; same component as `/study-tracker`). Journal state persists via `utils/dailyLogStorage.ts` (`omega-planner-daily-log-v1`). Uses `hooks/useDailyLog.ts`.
 
 ## Todo
 
 ### TodoView (`components/todo/TodoView.tsx`)
 **Page:** `app/todo/page.tsx`
 
-Minimal standalone checklist: add tasks, toggle done, remove items, clear completed. Active items appear before completed. Each row has a **Notes** button (`StickyNote` icon) that expands a per-item textarea below the row; collapsed by default, independent per item. State persists via `utils/todoStorage.ts` (`omega-planner-todo-v1`). Uses `hooks/useTodo.ts` (`updateNotes`).
+Minimal standalone checklist: add tasks, toggle done, remove items, clear completed. Active items appear before completed (active oldest-first by `createdAt`; completed newest-first by `updatedAt`, so a just-checked item lands at the top of the checked list). Each row has a **Notes** button (`StickyNote` icon) that expands a per-item textarea below the row; collapsed by default, independent per item. State persists via `utils/todoStorage.ts` (`omega-planner-todo-v1`). Uses `hooks/useTodo.ts` (`updateNotes`).
 
 ## Month board
 
@@ -76,7 +76,7 @@ Reusable weekly goal UI and colors used by Weekly Overview and legacy Calendar w
 ### Weekly Overview (`components/goal-hierarchy/GoalHierarchyView.tsx`)
 **Page:** `app/weekly-overview/page.tsx`
 
-Multi-level planning: month goal summary, unified week panel (Week N goal notes at top, folder-style Week 1–5 tabs, inline controls for Weekly Overview / Study Tracker / week navigation / Open Notes, plus a two-row 7-column weekly goals grid). Week nav center button shows **This week** / **Next week** / **Previous week** / **In 2 weeks** via `getWeekOffsetLabel`. Day goals use shared `WeeklyGoalsDayColumn` and storage. Legacy `/goal-hierarchy` redirects to this page.
+Multi-level planning: a single collapsible **Month & Week Goals** section (month selector, month goal, and week goal together; collapse state stored in `localStorage` as `weekly-overview-goals-collapsed`), then a unified week panel (folder-style Week 1–5 tabs, week navigation, Open Notes, plus a two-row 7-column weekly goals grid). Week nav center button shows **This week** / **Next week** / **Previous week** / **In 2 weeks** via `getWeekOffsetLabel`. Day goals use shared `WeeklyGoalsDayColumn` and storage. Legacy `/goal-hierarchy` redirects to this page.
 
 ### ChecklistSidebar (`components/calendar/ChecklistSidebar.tsx`)
 Weekly notes checklist panel. Rendered only when opened via "Open Notes" in Weekly Overview.
@@ -86,7 +86,7 @@ Weekly notes checklist panel. Rendered only when opened via "Open Notes" in Week
 ## Study Tracker Components
 
 ### StudyTracker (`components/study-tracker/StudyTracker.tsx`)
-**Pages**: `app/study-tracker/page.tsx`, embedded in `/calendar?view=weekly-goals` via inline switch.
+**Pages**: `app/study-tracker/page.tsx` (Settings → Beta features), embedded as a tab on `/daily-log`, and still available via `/calendar?view=weekly-goals` inline switch.
 
 Study planner with weekly view only: 2-week grid of day cards with tasks. Header matches Weekly Overview for consistent spacing when switching views.
 - **View toggle**: Switch between Weekly and Monthly views.

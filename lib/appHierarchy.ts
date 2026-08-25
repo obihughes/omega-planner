@@ -164,6 +164,13 @@ export const appHierarchy: AppMapNode[] = [
         editHint: 'Main planner UI: scheduling sidebar + timeline panels; weekly view via ?view=weekly.',
         children: [
           {
+            id: 'dp-scheduling-sidebar',
+            label: 'SchedulingSidebar',
+            kind: 'component',
+            path: 'components/planner/SchedulingSidebar.tsx',
+            editHint: 'Daily-view left sidebar: collapsible calendar + inbox (localStorage daily-planner-scheduling-sidebar-collapsed), bulk actions.',
+          },
+          {
             id: 'dp-task-card',
             label: 'TaskCard',
             kind: 'component',
@@ -422,7 +429,7 @@ export const appHierarchy: AppMapNode[] = [
     id: 'daily-log',
     label: 'Daily Log',
     kind: 'area',
-    description: 'Main sidebar nav at /daily-log. One text entry per day with weekly, day-of-week, and logged-days list views.',
+    description: 'Main sidebar nav at /daily-log. One text entry per day with weekly, day-of-week, and logged-days list views, plus a Study Tracker tab.',
     children: [
       {
         id: 'daily-log-route',
@@ -440,7 +447,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'DailyLogView',
         kind: 'component',
         path: 'components/dailyLog/DailyLogView.tsx',
-        editHint: 'Tabs: 3-Week Grid (7×3 last/this/next week), By Day of Week (filter same weekday across weeks), and Logged Days (month-grouped list of only days with entries).',
+        editHint: 'Tabs: 3-Week Grid (7×3 last/this/next week), By Day of Week (filter same weekday across weeks), Logged Days (month-grouped list of only days with entries), and Study Tracker.',
         children: [
           {
             id: 'daily-log-weekly',
@@ -592,7 +599,7 @@ export const appHierarchy: AppMapNode[] = [
     id: 'study-tracker',
     label: 'Study Tracker (hidden nav)',
     kind: 'area',
-    description: 'Not in sidebar — Settings → Beta features, /study-tracker, or embedded in /calendar weekly-goals.',
+    description: 'Not in sidebar — Settings → Beta features, /study-tracker, Daily Log Study Tracker tab, or embedded in /calendar weekly-goals.',
     children: [
       {
         id: 'st-route',
@@ -669,7 +676,7 @@ export const appHierarchy: AppMapNode[] = [
     id: 'weekly-overview',
     label: 'Weekly Overview',
     kind: 'area',
-    description: 'Main sidebar nav at /weekly-overview. Multi-level goals: month goal summary, week tabs with inline controls (Weekly Overview / Study Tracker, week nav, Open Notes), and a two-row 7-column day grid (selected week + next week preview). Daily goals sync with shared weekly goals storage.',
+    description: 'Main sidebar nav at /weekly-overview. Multi-level goals: collapsible month + week goal summaries, week tabs with week nav and Open Notes, and a two-row 7-column day grid (selected week + next week preview). Daily goals sync with shared weekly goals storage.',
     children: [
       {
         id: 'wo-route',
@@ -693,7 +700,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'GoalHierarchyView',
         kind: 'component',
         path: 'components/goal-hierarchy/GoalHierarchyView.tsx',
-        editHint: 'Weekly Overview UI: month tabs, week tabs, weekly panel, two 7-column day rows (selected week + next week preview) with WeeklyGoalsDayColumn, Study Tracker toggle, week nav, and Open Notes.',
+        editHint: 'Weekly Overview UI: collapsible Month & Week Goals (month tabs + month/week goal textareas; localStorage weekly-overview-goals-collapsed), week tabs, two 7-column day rows (selected week + next week preview) with WeeklyGoalsDayColumn, week nav, and Open Notes.',
       },
       {
         id: 'gh-day-column',

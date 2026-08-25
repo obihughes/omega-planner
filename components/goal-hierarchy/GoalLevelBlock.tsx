@@ -53,7 +53,6 @@ export function GoalLevelBlock({
       <AutosizeTextarea
         value={summary}
         onChange={(e) => onSummaryChange(e.target.value)}
-        placeholder={`${label} goal…`}
         className={cn(
           'text-sm bg-background border-border',
           compact && 'text-xs min-h-[2.5rem]'
