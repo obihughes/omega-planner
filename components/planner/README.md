@@ -11,7 +11,7 @@ This directory contains all components related to the daily planning functionali
 **Features:**
 - **Page-Level View Modes**: Advanced scheduling layout (sidebar + timeline) and optional weekly overview
   - **Advanced Daily View** (`viewMode === 'monthly'`): `MergedDailyView` with scheduling sidebar + full timeline panels. Opened from sidebar Daily → **Advanced**, or `/?view=monthly`. Sidebar **Daily** itself is ClassSchedule Daily Tasks (`/class-schedule?showDailyTasks=true`).
-  - **Weekly View** (`viewMode === 'weekly'`): Weekly overview of scheduled and inbox tasks (sidebar: Daily Planner → Week, or `/?view=weekly`)
+  - **Weekly View** (`viewMode === 'weekly'`): Weekly overview of scheduled and inbox tasks (sidebar: Others → Week, or `/?view=weekly`)
 - Timeline visualization across 4 periods (night, morning, afternoon, evening)
 - Dual-day view with independent navigation
 - Task management (create, edit, delete, move, resize)
@@ -57,7 +57,7 @@ This directory contains all components related to the daily planning functionali
 
 ### WeeklyView
 **File**: `WeeklyView.tsx`
-**Purpose**: Weekly timeline overview (sidebar: Daily Planner → Week, or `/?view=weekly`)
+**Purpose**: Weekly timeline overview (sidebar: Others → Week, or `/?view=weekly`)
 
 **Features:**
 - Weekly overview showing scheduled and inbox tasks
@@ -173,7 +173,7 @@ DailyPlanner
 ## Usage Patterns
 
 1. **Daily Planning**: Sidebar **Daily** opens `/class-schedule?showDailyTasks=true` (stacked week of daily tasks). **Advanced** on that page opens the full DailyPlanner at `/?view=monthly`.
-2. **Weekly Overview**: Use Daily Planner → **Week** in the sidebar or `/?view=weekly` to see scheduled and inbox tasks across the week
+2. **Weekly Overview**: Use **Others** → **Week** in the sidebar or `/?view=weekly` to see scheduled and inbox tasks across the week
 3. **Task Assignment**: Use the sidebar mini calendar and inbox to assign pool tasks to dates
 4. **Inbox Management**: Add unscheduled tasks in the sidebar inbox; drag to calendar or timeline
 5. **Task Management**: Edit tasks through modals accessible from all views

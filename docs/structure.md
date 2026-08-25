@@ -53,17 +53,17 @@ Includes storage helpers like:
 Project documentation including setup guides, component documentation, and development guidelines.
 
 Additional feature routes in `/app` include:
-- `app/meals` — Meals page (meal names and ingredients); hidden from main sidebar nav — open via Settings → Beta features or `/meals`. Legacy `/recipes` redirects to `/meals`.
-- `app/study-tracker` — Study Planner (weekly view with day cards + tasks); hidden from main sidebar — open via Settings → Beta features, `/study-tracker`, or Daily Log Study Tracker tab (also embeddable in Calendar weekly view)
-- `app/month-board` — Month board (month/week pickers, week goal + Mon–Sun rows); hidden from main sidebar — open via Settings → Beta features or `/month-board`
+- `app/meals` — Meals page (meal names and ingredients); sidebar **Others** group, or `/meals`. Legacy `/recipes` redirects to `/meals`.
+- `app/study-tracker` — Study Planner (weekly view with day cards + tasks); sidebar **Others** group, `/study-tracker`, or Daily Log Study Tracker tab (also embeddable in Calendar weekly view)
+- `app/month-board` — Month board (month/week pickers, week goal + Mon–Sun rows); sidebar **Others** group or `/month-board`
 - Daily Planner **Daily** view (`/class-schedule?showDailyTasks=true`) — ClassSchedule Daily Tasks mode; **Advanced** opens `/?view=monthly`
-- Daily Planner **Week** view (`/?view=weekly`) — main sidebar subview under Daily Planner (between Daily and Class Schedule)
+- Daily Planner **Week** view (`/?view=weekly`) — sidebar **Others** group
 - `app/weekly-overview` — Weekly Overview (monthly / weekly / daily goals); main sidebar nav. Legacy `/goal-hierarchy` redirects here.
 - `app/visualizer` — 5-Year Visualizer; sidebar **Others** group (after Text Documents)
 - `app/documents` — Text Documents; sidebar **Others** group
-- `app/app-map` — In-app code hierarchy reference (Settings → Developer → App Map); data in `lib/appHierarchy.ts`
+- `app/app-map` — In-app code hierarchy reference (Settings → App Map); data in `lib/appHierarchy.ts`
 - `app/todo` — Minimal todo checklist (main sidebar nav)
-- `app/daily-log` — Daily log (one text entry per day; compare same weekday across weeks, browse by week, review only logged days in a month-grouped list, or open Study Tracker; main sidebar nav)
+- `app/daily-log` — Daily log (one text entry per day; compare same weekday across weeks, browse by week, review only logged days in a month-grouped list, or open Study Tracker; sidebar **Others** group)
 
 #### `/planner-backup`
 Backup files for the planner functionality.

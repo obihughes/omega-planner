@@ -50,7 +50,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'Navigation',
         kind: 'shell',
         path: 'components/ui/Navigation.tsx',
-        editHint: 'Sidebar nav items; settings modal (theme, Beta features dialog for hidden routes, App Map). Daily Planner subviews: Daily (`/class-schedule?showDailyTasks=true`), Week (`/?view=weekly`), Class Schedule (`/class-schedule`). Last item is Others (Text Documents, 5-Year Visualizer; omega-planner-nav-expanded). Hidden routes: lib/hiddenNavItems.ts.',
+        editHint: 'Sidebar nav items; settings modal (theme, App Map). Flattened Daily Planner: Daily (`/class-schedule?showDailyTasks=true`), Class Schedule (`/class-schedule`). Last item is Others (Week `/?view=weekly`, Daily Log, Text Documents, 5-Year Visualizer, Meals, Study Tracker, Month Board; omega-planner-nav-expanded).',
       },
       {
         id: 'shell-providers',
@@ -121,7 +121,7 @@ export const appHierarchy: AppMapNode[] = [
         id: 'dp-home',
         label: '/',
         kind: 'route',
-        description: 'Advanced DailyPlanner (sidebar Daily → Advanced, or /?view=monthly). Week: ?view=weekly. ?date=YYYY-MM-DD. Sidebar Daily is ClassSchedule Daily Tasks, not this route.',
+        description: 'Advanced DailyPlanner (sidebar Daily → Advanced, or /?view=monthly). Week: Others → Week or ?view=weekly. ?date=YYYY-MM-DD. Sidebar Daily is ClassSchedule Daily Tasks, not this route.',
       },
       {
         id: 'dp-page-home',
@@ -147,7 +147,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'DailyPlanner',
         kind: 'component',
         path: 'components/planner/DailyPlanner.tsx',
-        editHint: 'Advanced planner UI: scheduling sidebar + timeline panels. Opened via Daily Tasks → Advanced or /?view=monthly. Weekly view via sidebar Week or /?view=weekly.',
+        editHint: 'Advanced planner UI: scheduling sidebar + timeline panels. Opened via Daily Tasks → Advanced or /?view=monthly. Weekly view via Others → Week or /?view=weekly.',
         children: [
           {
             id: 'dp-scheduling-sidebar',
@@ -168,7 +168,7 @@ export const appHierarchy: AppMapNode[] = [
             label: 'WeeklyView',
             kind: 'component',
             path: 'components/planner/WeeklyView.tsx',
-            editHint: 'Weekly timeline on /. Main sidebar: Daily Planner → Week, or /?view=weekly.',
+            editHint: 'Weekly timeline on /. Sidebar Others → Week, or /?view=weekly.',
           },
           {
             id: 'dp-edit-task',
@@ -357,7 +357,7 @@ export const appHierarchy: AppMapNode[] = [
     id: 'daily-log',
     label: 'Daily Log',
     kind: 'area',
-    description: 'Main sidebar nav at /daily-log. One text entry per day with weekly, day-of-week, and logged-days list views, plus a Study Tracker tab.',
+    description: 'Sidebar Others group at /daily-log. One text entry per day with weekly, day-of-week, and logged-days list views, plus a Study Tracker tab.',
     children: [
       {
         id: 'daily-log-route',
@@ -459,9 +459,9 @@ export const appHierarchy: AppMapNode[] = [
   },
   {
     id: 'meals',
-    label: 'Meals (hidden nav)',
+    label: 'Meals',
     kind: 'area',
-    description: 'Not in sidebar — Settings → Beta features or /meals. Legacy /recipes redirects here.',
+    description: 'Sidebar Others group at /meals. Legacy /recipes redirects here.',
     children: [
       {
         id: 'meals-route',
@@ -525,9 +525,9 @@ export const appHierarchy: AppMapNode[] = [
   },
   {
     id: 'study-tracker',
-    label: 'Study Tracker (hidden nav)',
+    label: 'Study Tracker',
     kind: 'area',
-    description: 'Not in sidebar — Settings → Beta features, /study-tracker, Daily Log Study Tracker tab, or embedded in /calendar weekly-goals.',
+    description: 'Sidebar Others group at /study-tracker. Also a Daily Log Study Tracker tab, or embedded in /calendar weekly-goals.',
     children: [
       {
         id: 'st-route',
@@ -569,9 +569,9 @@ export const appHierarchy: AppMapNode[] = [
   },
   {
     id: 'month-board',
-    label: 'Month Board (hidden nav)',
+    label: 'Month Board',
     kind: 'area',
-    description: 'Not in sidebar — Settings → Beta features or /month-board. Month/week pickers with week goal + Mon–Sun day rows.',
+    description: 'Sidebar Others group at /month-board. Month/week pickers with week goal + Mon–Sun day rows.',
     children: [
       {
         id: 'mb-route',

@@ -3,7 +3,7 @@
 ## Daily Log
 
 ### DailyLogView (`components/dailyLog/DailyLogView.tsx`)
-**Page:** `app/daily-log/page.tsx`
+**Page:** `app/daily-log/page.tsx` (sidebar **Others** group)
 
 Simple daily journal: one text entry per calendar day. Four tabs — **3-Week Grid**, **By Day of Week** (both use the same Weekly Overview–style bordered panel, `GridDay` columns, folder tabs, and blur-to-save textareas), **Logged Days** (`LoggedDaysView.tsx`: chronological, month-grouped list of only the days with saved entries — sourced from `allEntries`, so sparse/irregular logging is easy to review without paging through empty weeks; same blur-to-save editing, clearing a row's textarea deletes that day), and **Study Tracker** (embeds `StudyTracker` + `StudyTrackerProvider`; same component as `/study-tracker`). Journal state persists via `utils/dailyLogStorage.ts` (`omega-planner-daily-log-v1`). Uses `hooks/useDailyLog.ts`.
 
@@ -17,7 +17,7 @@ Minimal standalone checklist: add tasks, toggle done, remove items, clear comple
 ## Month board
 
 ### MonthBoard (`components/month-board/MonthBoard.tsx`)
-**Page:** `app/month-board/page.tsx` (hidden from main sidebar — Settings → Beta features)
+**Page:** `app/month-board/page.tsx` (sidebar **Others** group)
 
 Single-week month planning with three panels: **month picker** (12 months of current year), **week selector** (4–5 weeks per month + Prev/Next), and **main content** (week goal column ~330px + Mon–Sun day rows). One week shown at a time. Week goal notes use `AutosizeTextarea`. Uses `@dnd-kit` with custom collision handling; note bodies use `onPointerDownCapture` stopPropagation. State persists via `MonthBoardStorage` (schema v2.0, weeks keyed by Monday date). Date helpers in `utils/monthBoardDates.ts`.
 
@@ -86,7 +86,7 @@ Weekly notes checklist panel. Rendered only when opened via "Open Notes" in Week
 ## Study Tracker Components
 
 ### StudyTracker (`components/study-tracker/StudyTracker.tsx`)
-**Pages**: `app/study-tracker/page.tsx` (Settings → Beta features), embedded as a tab on `/daily-log`, and still available via `/calendar?view=weekly-goals` inline switch.
+**Pages**: `app/study-tracker/page.tsx` (sidebar **Others** group), embedded as a tab on `/daily-log`, and still available via `/calendar?view=weekly-goals` inline switch.
 
 Study planner with weekly view only: 2-week grid of day cards with tasks. Header matches Weekly Overview for consistent spacing when switching views.
 - **View toggle**: Switch between Weekly and Monthly views.

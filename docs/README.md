@@ -13,7 +13,7 @@ This directory contains documentation for the project. Below is an overview of t
 
 ## Feature Documentation
 - [Daily Planner](planner.md) - Comprehensive guide to the daily planner feature
-- **Month board** - `/month-board` (Settings → Beta features); month/week pickers with week goal + Mon–Sun rows; see [planner.md](planner.md#month-board)
+- **Month board** - `/month-board` (sidebar **Others**); month/week pickers with week goal + Mon–Sun rows; see [planner.md](planner.md#month-board)
 - **Weekly Overview** - `/weekly-overview` (main sidebar); collapsible month + week goals; week tabs with week nav and Open Notes; 7×2 weekly goals grid; see [planner.md](planner.md#weekly-overview-page)
 
 ## Quick Links
@@ -22,7 +22,7 @@ This directory contains documentation for the project. Below is an overview of t
 - [Troubleshooting](troubleshooting.md) - Common issues and their solutions
 
 ## Developer
-- **App Map** (`/app-map`) — In-app code hierarchy (routes → pages → components → hooks → storage). Open from Settings → Developer. Source: `lib/appHierarchy.ts`.
+- **App Map** (`/app-map`) — In-app code hierarchy (routes → pages → components → hooks → storage). Open from Settings. Source: `lib/appHierarchy.ts`.
 
 ## Maintenance
 - [Changelog](changelog.md) - Record of significant changes to the project

@@ -43,7 +43,7 @@ npm run dev:clean
 - **Weekly day notes** on the Daily Planner weekly timeline (`/?view=weekly`): toggle **Day Notes** to overlay per-day scratchpad text on the timeline; saved to `daily-planner-day-notes-v1`
 
 ### Meals
-- Meals page at `/meals` (hidden from main sidebar; open via Settings → Beta features or direct URL)
+- Meals page at `/meals` (sidebar **Others** group, or direct URL)
 - Weekly Overview at `/weekly-overview` (main sidebar nav; monthly → weekly → daily goal planning)
 - Add meals with a name and ingredient list (optional amounts)
 - Left-side free-text **Notes** panel (scratchpad; stacks above the grid on small screens)
@@ -108,7 +108,7 @@ npm test
 ## Recent Changes
 
 ### Weekly Day Notes (Latest)
-- **Day Notes layer** on Daily Planner → Week view: toolbar toggle overlays a textarea on each day's timeline for free-form notes
+- **Day Notes layer** on Daily Planner weekly timeline (Others → Week): toolbar toggle overlays a textarea on each day's timeline for free-form notes
 - Persisted in localStorage via `utils/dayNotesStorage.ts` (`daily-planner-day-notes-v1`)
 
 ### Advanced Task Management System
@@ -171,7 +171,7 @@ npm test
 - Persists month/week summaries to `omega-planner-goal-hierarchy-v1` via `utils/goalHierarchyStorage.ts`
 
 ### Meals Page
-- Meals page at `/meals` (hidden from main sidebar; Settings → Beta features) for meal names and ingredients.
+- Meals page at `/meals` (sidebar **Others** group) for meal names and ingredients.
 - Left **Notes** panel: `components/meals/MealsNotesPanel.tsx` with `hooks/useMealsNotes.ts`.
 - Persistence: `utils/mealsStorage.ts` (`omega-planner-meals-v1`). Legacy recipes import from `omega-planner-recipes` on first load.
 - Notes: `utils/mealsNotesStorage.ts` (`omega-planner-meals-notes-v1`).

@@ -75,7 +75,7 @@ Renders individual tasks on the timeline with drag, resize, edit, copy, and view
 Renders individual timeline sections with tasks and time markers. **Shared** by both Daily view and Scheduling (Monthly) view via `MiniDailyTimeline`, eliminating duplicated timeline logic. Supports read-only mode (e.g. class schedule), drag/resize/copy, and pool drops. When `fillWidth` is true (scheduling view), hour columns use equal flex distribution and percentage-based task/grid positioning so the last hour column matches the rest. Timeline task area uses `overflow-visible` so task action buttons are not clipped by parent containers.
 
 ### WeeklyView
-Displays a 7-day view of scheduled tasks in a horizontal timeline format. Weeks start on Monday and end on Sunday. Available in the main sidebar under Daily Planner → **Week** (`/?view=weekly`). When opening the weekly overview, the view now auto-scrolls to highlight today within the current week by default. Features include:
+Displays a 7-day view of scheduled tasks in a horizontal timeline format. Weeks start on Monday and end on Sunday. Available in the sidebar under **Others** → **Week** (`/?view=weekly`). When opening the weekly overview, the view now auto-scrolls to highlight today within the current week by default. Features include:
 
 - **Enhanced Visual Design**: Modern gradient backgrounds, improved spacing, and better color hierarchy
 - **Smart Time Management**: Focused timeline from 6 AM to 10 PM for optimal productivity planning
@@ -143,7 +143,7 @@ The Class Schedule view (`/class-schedule`) provides a recurring weekly timetabl
 
 ## Month board
 
-**Route:** `/month-board` (Settings → **Beta features** or direct URL).
+**Route:** `/month-board` (sidebar **Others** or direct URL).
 
 Multi-month outline scoped by **month** and **week**: pick a month (Jan–Dec of the current year), choose one of 4–5 weeks in that month, then plan with a week goal column and Mon–Sun day rows. This is **not** the Daily Planner Week view and **not** Calendar Weekly Overview—data is stored separately.
 

@@ -7,37 +7,23 @@ import {
   Calendar, CalendarDays, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
   CalendarRange, ClipboardList, Settings, LayoutGrid, Map, ListTodo,
   NotebookPen, Sun, Moon, Monitor, TreePine, TreeDeciduous, Sparkles, GraduationCap, GanttChart,
-  FlaskConical, ChefHat, BookOpen, type LucideIcon,
+  ChefHat, BookOpen, type LucideIcon,
 } from 'lucide-react';
 import { useTheme, THEME_OPTIONS, THEME_LABELS, type ThemeOption } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
-import { HIDDEN_NAV_ITEMS } from '@/lib/hiddenNavItems';
 import { useViewMode } from '@/app/context/ViewModeContext';
 import { useCalendarView } from '@/app/context/CalendarViewContext';
 import { useSidebar } from '@/app/context/SidebarContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
-const HIDDEN_NAV_ICONS: Record<string, LucideIcon> = {
-  meals: ChefHat,
-  'study-tracker': BookOpen,
-  'month-board': LayoutGrid,
+type OtherNavItem = {
+  key: string;
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  active: boolean;
 };
-
-function isHiddenNavItemActive(
-  pathname: string,
-  searchParams: URLSearchParams,
-  href: string
-): boolean {
-  const [path, query] = href.split('?');
-  if (pathname !== path) return false;
-  if (!query) return true;
-  const expected = new URLSearchParams(query);
-  for (const [key, value] of expected.entries()) {
-    if (searchParams.get(key) !== value) return false;
-  }
-  return true;
-}
 
 export function Navigation() {
   const { isCollapsed, sidebarWidth, toggleSidebar, setSidebarWidth } = useSidebar();
@@ -50,7 +36,6 @@ export function Navigation() {
   const { viewMode: calendarViewMode, setViewMode: setCalendarViewMode } = useCalendarView();
   
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [showBetaModal, setShowBetaModal] = useState(false);
   const [expandedNavItems, setExpandedNavItems] = useState<Set<string>>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('omega-planner-nav-expanded');
@@ -176,7 +161,6 @@ export function Navigation() {
       active: pathname === '/' || pathname === '/class-schedule' || pathname === '/daily-planner',
       subViews: [
         { key: 'planner-daily', label: 'Daily', icon: Sun, href: '/class-schedule?showDailyTasks=true', active: pathname === '/class-schedule' && searchParams.get('showDailyTasks') === 'true' },
-        { key: 'planner-weekly', type: 'planner', mode: 'weekly', label: 'Week', icon: CalendarDays, active: pathname === '/' && plannerViewMode === 'weekly' },
         { key: 'planner-class-schedule', label: 'Class Schedule', icon: GraduationCap, href: '/class-schedule', active: pathname === '/class-schedule' && searchParams.get('showDailyTasks') !== 'true' },
       ]
     },
@@ -205,6 +189,16 @@ export function Navigation() {
       icon: ListTodo,
       active: pathname === '/todo',
       subViews: []
+    }
+  ];
+
+  const otherNavItems: OtherNavItem[] = [
+    {
+      key: 'planner-weekly',
+      href: '/?view=weekly',
+      label: 'Week',
+      icon: CalendarDays,
+      active: pathname === '/' && plannerViewMode === 'weekly',
     },
     {
       key: 'daily-log',
@@ -212,11 +206,7 @@ export function Navigation() {
       label: 'Daily Log',
       icon: BookOpen,
       active: pathname === '/daily-log',
-      subViews: []
-    }
-  ];
-
-  const otherNavItems = [
+    },
     {
       key: 'text-documents',
       href: '/documents',
@@ -230,7 +220,28 @@ export function Navigation() {
       label: '5-Year Visualizer',
       icon: GanttChart,
       active: pathname === '/visualizer',
-    }
+    },
+    {
+      key: 'meals',
+      href: '/meals',
+      label: 'Meals',
+      icon: ChefHat,
+      active: pathname === '/meals',
+    },
+    {
+      key: 'study-tracker',
+      href: '/study-tracker',
+      label: 'Study Tracker',
+      icon: BookOpen,
+      active: pathname === '/study-tracker',
+    },
+    {
+      key: 'month-board',
+      href: '/month-board',
+      label: 'Month Board',
+      icon: LayoutGrid,
+      active: pathname === '/month-board',
+    },
   ];
   const othersExpanded = expandedNavItems.has('others');
   const othersHasActive = otherNavItems.some((item) => item.active);
@@ -551,21 +562,6 @@ export function Navigation() {
 
             <button
               type="button"
-              onClick={() => setShowBetaModal(true)}
-              className="w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-left transition-colors hover:bg-secondary/80"
-            >
-              <FlaskConical className="w-4 h-4 shrink-0 text-muted-foreground" />
-              <div className="min-w-0 flex-1">
-                <p className="font-medium text-sm">Beta features</p>
-                <p className="text-sm text-muted-foreground">
-                  Pages hidden from the sidebar
-                </p>
-              </div>
-              <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground" />
-            </button>
-
-            <button
-              type="button"
               onClick={() => {
                 setShowSettingsModal(false);
                 router.push('/app-map');
@@ -586,57 +582,6 @@ export function Navigation() {
           <div className="flex justify-end">
             <Button onClick={() => setShowSettingsModal(false)}>
               Close
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showBetaModal} onOpenChange={setShowBetaModal}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FlaskConical className="w-5 h-5" />
-              Beta features
-            </DialogTitle>
-            <DialogDescription>
-              Hidden pages — not shown in the sidebar
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-1 py-2">
-            {HIDDEN_NAV_ITEMS.map((item) => {
-              const Icon = HIDDEN_NAV_ICONS[item.key] ?? FlaskConical;
-              const isActive = isHiddenNavItemActive(pathname, searchParams, item.href);
-
-              return (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => {
-                    router.push(item.href);
-                    setShowBetaModal(false);
-                    setShowSettingsModal(false);
-                  }}
-                  className={cn(
-                    'w-full flex items-start gap-3 rounded-md px-3 py-2.5 text-left transition-colors',
-                    isActive
-                      ? 'bg-muted text-foreground'
-                      : 'hover:bg-secondary/80 text-foreground'
-                  )}
-                >
-                  <Icon className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
-                  <div className="min-w-0">
-                    <p className="font-medium text-sm">{item.label}</p>
-                    <p className="text-sm text-muted-foreground">{item.description}</p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setShowBetaModal(false)}>
-              Back
             </Button>
           </div>
         </DialogContent>

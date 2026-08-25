@@ -1,5 +1,11 @@
 ## 2026-08-25
 
+- **Navigation: Beta pages, Week, and Daily Log under Others** (2026-08-25)
+  - Moved Meals, Study Tracker, and Month Board from Settings → Beta features into the sidebar **Others** group.
+  - Moved **Week** (`/?view=weekly`) and **Daily Log** (`/daily-log`) into Others. Daily Planner sidebar now shows Daily and Class Schedule only.
+  - Removed the Settings Beta features dialog and `lib/hiddenNavItems.ts`.
+  - **Files affected**: `components/ui/Navigation.tsx`, `lib/hiddenNavItems.ts`, `lib/appHierarchy.ts`, `docs/*`, `README.md`, `components/planner/README.md`
+
 - **Daily nav uses Class Schedule Daily Tasks** (2026-08-25)
   - Sidebar **Daily** now opens `/class-schedule?showDailyTasks=true` (the stacked week of planner tasks) instead of the full DailyPlanner.
   - Sidebar **Class Schedule** stays `/class-schedule` (recurring classes). The Classes | Daily Tasks toggle updates the URL so nav highlighting stays in sync.
