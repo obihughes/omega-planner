@@ -324,6 +324,6 @@ The Monthly and Yearly calendar views are accessible from the main navigation un
 - Monthly Calendar View: the full calendar page's monthly mode; includes a compact grid and an Events/Periods list under the calendar for the selected month. In the grid, hover an event to reveal a delete icon for quick removal. Deletions prompt for confirmation.
 - Yearly Calendar: the full calendar page's yearly mode
 
-Note: Monthly and yearly event calendars share `/calendar`. The sidebar **Calendar** link opens monthly view; use the in-page **Month** / **Year** toggle to switch (sticky at the top while scrolling). Weekly Overview lives at `/weekly-overview`. **5-Year Visualizer** is a top-level sidebar item at the bottom (after Text Documents). Task timeline (`?view=timeline`) is URL-only.
+Note: Monthly and yearly event calendars share `/calendar`. The sidebar **Calendar** link opens monthly view; use the in-page **Month** / **Year** toggle to switch (sticky at the top while scrolling). Weekly Overview lives at `/weekly-overview`. **5-Year Visualizer** is under sidebar **Others** (after Text Documents). Task timeline (`?view=timeline`) is URL-only.
 
 The calendar page shell uses `flex-1 min-h-0 overflow-y-auto` so long month/year layouts scroll inside `AppLayout` (which clips document scroll). Timeline view fills the viewport and scrolls within its sidebar panels.

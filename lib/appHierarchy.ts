@@ -50,7 +50,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'Navigation',
         kind: 'shell',
         path: 'components/ui/Navigation.tsx',
-        editHint: 'Sidebar nav items; settings modal (theme, Beta features dialog for hidden routes, App Map). Daily Planner subviews: Daily, Week, Class Schedule. Hidden routes: lib/hiddenNavItems.ts.',
+        editHint: 'Sidebar nav items; settings modal (theme, Beta features dialog for hidden routes, App Map). Daily Planner subviews: Daily, Week, Class Schedule. Last item is Others (Text Documents, 5-Year Visualizer; omega-planner-nav-expanded). Hidden routes: lib/hiddenNavItems.ts.',
       },
       {
         id: 'shell-providers',
@@ -390,6 +390,7 @@ export const appHierarchy: AppMapNode[] = [
     id: 'documents',
     label: 'Text Documents',
     kind: 'area',
+    description: 'Sidebar Others group at /documents.',
     children: [
       {
         id: 'doc-route',
@@ -495,7 +496,7 @@ export const appHierarchy: AppMapNode[] = [
     id: 'visualizer',
     label: '5-Year Visualizer',
     kind: 'area',
-    description: 'Main sidebar nav at bottom, after Text Documents.',
+    description: 'Sidebar Others group at /visualizer, after Text Documents.',
     children: [
       {
         id: 'viz-route',

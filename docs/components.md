@@ -25,7 +25,7 @@ Single-week month planning with three panels: **month picker** (12 months of cur
 
 ### FiveYearVisualizer (`components/visualizer/FiveYearVisualizer.tsx`)
 **Location**: `components/visualizer/FiveYearVisualizer.tsx`
-**Page**: `app/visualizer/page.tsx` (main sidebar nav — last item, after Text Documents)
+**Page**: `app/visualizer/page.tsx` (sidebar **Others** group, after Text Documents)
 
 A 5-year high-level visualizer for long-term planning.
 - **5-Year Grid**: Displays 5 years vertically, with months horizontally.

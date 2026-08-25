@@ -59,7 +59,8 @@ Additional feature routes in `/app` include:
 - `app/month-board` — Month board (month/week pickers, week goal + Mon–Sun rows); hidden from main sidebar — open via Settings → Beta features or `/month-board`
 - Daily Planner **Week** view (`/?view=weekly`) — main sidebar subview under Daily Planner (between Daily and Class Schedule)
 - `app/weekly-overview` — Weekly Overview (monthly / weekly / daily goals); main sidebar nav. Legacy `/goal-hierarchy` redirects here.
-- `app/visualizer` — 5-Year Visualizer; main sidebar nav (last item, after Text Documents)
+- `app/visualizer` — 5-Year Visualizer; sidebar **Others** group (after Text Documents)
+- `app/documents` — Text Documents; sidebar **Others** group
 - `app/app-map` — In-app code hierarchy reference (Settings → Developer → App Map); data in `lib/appHierarchy.ts`
 - `app/todo` — Minimal todo checklist (main sidebar nav)
 - `app/daily-log` — Daily log (one text entry per day; compare same weekday across weeks, browse by week, review only logged days in a month-grouped list, or open Study Tracker; main sidebar nav)

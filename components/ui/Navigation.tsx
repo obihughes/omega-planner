@@ -223,14 +223,16 @@ export function Navigation() {
       icon: BookOpen,
       active: pathname === '/daily-log',
       subViews: []
-    },
+    }
+  ];
+
+  const otherNavItems = [
     {
       key: 'text-documents',
       href: '/documents',
       label: 'Text Documents',
       icon: FileText,
       active: pathname === '/documents',
-      subViews: []
     },
     {
       key: 'calendar-visualizer',
@@ -238,9 +240,10 @@ export function Navigation() {
       label: '5-Year Visualizer',
       icon: GanttChart,
       active: pathname === '/visualizer',
-      subViews: []
     }
   ];
+  const othersExpanded = expandedNavItems.has('others');
+  const othersHasActive = otherNavItems.some((item) => item.active);
 
   return (
     <>
@@ -420,6 +423,78 @@ export function Navigation() {
                 </div>
               );
             })}
+
+            {/* Others — last item in the nav list */}
+            <div>
+              <button
+                type="button"
+                onClick={() => toggleNavItem('others')}
+                className={cn(
+                  "w-full flex items-center font-normal transition-all duration-200 group relative",
+                  isCollapsed ? "justify-center" : "space-x-2",
+                  dynamicSizes.mainPadding,
+                  dynamicSizes.mainTextSize,
+                  othersHasActive
+                    ? "bg-muted text-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/80",
+                  !isCollapsed && "pr-8"
+                )}
+                title={isCollapsed ? "Others" : undefined}
+                aria-label="Others"
+                aria-expanded={othersExpanded}
+              >
+                <span className="font-medium tracking-tight truncate text-left">Others</span>
+                {!isCollapsed && (
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 p-1">
+                    {othersExpanded ? (
+                      <ChevronUp className="w-3 h-3 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="w-3 h-3 text-muted-foreground" />
+                    )}
+                  </span>
+                )}
+              </button>
+
+              {othersExpanded && (
+                <div className={cn(
+                  "space-y-0.5",
+                  isCollapsed
+                    ? "border-l border-border/70 ml-6 pl-2"
+                    : "relative pl-4 before:absolute before:left-4 before:top-0 before:h-full before:w-px before:bg-border/70"
+                )}>
+                  {otherNavItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.key}
+                        href={item.href}
+                        className={cn(
+                          "w-full flex items-center font-normal transition-all duration-200 group relative",
+                          isCollapsed ? "justify-center" : "space-x-2",
+                          dynamicSizes.subPadding,
+                          dynamicSizes.subTextSize,
+                          item.active
+                            ? "text-foreground font-medium"
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                        title={isCollapsed ? item.label : undefined}
+                      >
+                        <Icon className={cn(
+                          "flex-shrink-0 transition-all duration-200",
+                          dynamicSizes.subIconSize,
+                          item.active
+                            ? "text-foreground"
+                            : "text-muted-foreground group-hover:text-foreground"
+                        )} />
+                        {!isCollapsed && (
+                          <span className="tracking-tight flex-1 truncate">{item.label}</span>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </nav>

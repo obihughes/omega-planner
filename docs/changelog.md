@@ -1,5 +1,10 @@
 ## 2026-08-25
 
+- **Navigation: Others group** (2026-08-25)
+  - Added an **Others** expander as the last sidebar nav item so the main list stays shorter.
+  - Moved **Text Documents** (`/documents`) and **5-Year Visualizer** (`/visualizer`) under Others. Expand/collapse uses the existing `omega-planner-nav-expanded` preference.
+  - **Files affected**: `components/ui/Navigation.tsx`, `lib/appHierarchy.ts`, `docs/structure.md`, `docs/components.md`, `docs/planner.md`, `docs/changelog.md`
+
 - **Weekly Overview cleanup; Study Tracker on Daily Log** (2026-08-25)
   - Month selector, month goal, and week goal are now a single collapsible **Month & Week Goals** section. Collapse preference persists in `localStorage` (`weekly-overview-goals-collapsed`). Goal textareas have no placeholder text.
   - Removed the Weekly Overview / Study Tracker mode toggle from `/weekly-overview`; the page always shows the 7×2 daily goals grid.
