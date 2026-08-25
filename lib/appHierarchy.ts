@@ -50,7 +50,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'Navigation',
         kind: 'shell',
         path: 'components/ui/Navigation.tsx',
-        editHint: 'Sidebar nav items; settings modal (theme, Beta features dialog for hidden routes, App Map). Daily Planner subviews: Daily, Week, Class Schedule. Last item is Others (Text Documents, 5-Year Visualizer; omega-planner-nav-expanded). Hidden routes: lib/hiddenNavItems.ts.',
+        editHint: 'Sidebar nav items; settings modal (theme, Beta features dialog for hidden routes, App Map). Daily Planner subviews: Daily (`/class-schedule?showDailyTasks=true`), Week (`/?view=weekly`), Class Schedule (`/class-schedule`). Last item is Others (Text Documents, 5-Year Visualizer; omega-planner-nav-expanded). Hidden routes: lib/hiddenNavItems.ts.',
       },
       {
         id: 'shell-providers',
@@ -121,20 +121,20 @@ export const appHierarchy: AppMapNode[] = [
         id: 'dp-home',
         label: '/',
         kind: 'route',
-        description: 'Home route. Default scheduling view; ?view=weekly|monthly (daily aliases to monthly), ?date=YYYY-MM-DD',
+        description: 'Advanced DailyPlanner (sidebar Daily → Advanced, or /?view=monthly). Week: ?view=weekly. ?date=YYYY-MM-DD. Sidebar Daily is ClassSchedule Daily Tasks, not this route.',
       },
       {
         id: 'dp-page-home',
         label: 'Home page',
         kind: 'page',
         path: 'app/page.tsx',
-        editHint: 'Lazy-loads DailyPlanner; syncs view from URL params.',
+        editHint: 'Lazy-loads DailyPlanner; syncs view from URL params. Used by Week nav and Daily Tasks → Advanced.',
       },
       {
         id: 'dp-route-daily-planner',
         label: '/daily-planner',
         kind: 'route',
-        description: 'Alias of / — same DailyPlanner component.',
+        description: 'Alias of / — same advanced DailyPlanner component.',
       },
       {
         id: 'dp-page-daily-planner',
@@ -147,7 +147,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'DailyPlanner',
         kind: 'component',
         path: 'components/planner/DailyPlanner.tsx',
-        editHint: 'Main planner UI: scheduling sidebar + timeline panels; weekly view via ?view=weekly.',
+        editHint: 'Advanced planner UI: scheduling sidebar + timeline panels. Opened via Daily Tasks → Advanced or /?view=monthly. Weekly view via sidebar Week or /?view=weekly.',
         children: [
           {
             id: 'dp-scheduling-sidebar',
@@ -209,25 +209,28 @@ export const appHierarchy: AppMapNode[] = [
         id: 'dp-class-schedule-route',
         label: '/class-schedule',
         kind: 'route',
+        description: 'Sidebar Daily: ?showDailyTasks=true. Sidebar Class Schedule: no param (classes). In-page toggle updates the URL.',
       },
       {
         id: 'dp-class-schedule-page',
         label: 'Class schedule page',
         kind: 'page',
         path: 'app/class-schedule/page.tsx',
+        editHint: 'Reads ?showDailyTasks=true and passes initialShowDailyTasks to ClassSchedule.',
       },
       {
         id: 'dp-class-schedule',
         label: 'ClassSchedule',
         kind: 'component',
         path: 'components/planner/ClassSchedule.tsx',
-        editHint: 'Weekly class grid UI.',
+        editHint: 'Weekly class grid. Sidebar Daily opens Daily Tasks mode; Advanced button opens DailyPlanner. Classes | Daily Tasks toggle syncs ?showDailyTasks=true.',
       },
       {
         id: 'dp-class-hook',
         label: 'useClassScheduleState',
         kind: 'hook',
         path: 'hooks/useClassScheduleState.ts',
+        editHint: 'Optional initialShowDailyTasks from the URL; toggle also persisted in classScheduleStorage.',
       },
       {
         id: 'dp-class-storage',

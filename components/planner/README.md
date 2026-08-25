@@ -9,8 +9,8 @@ This directory contains all components related to the daily planning functionali
 **Purpose**: Main orchestrating component with page-level view mode navigation
 
 **Features:**
-- **Page-Level View Modes**: Default scheduling layout (sidebar + timeline) and optional weekly overview
-  - **Daily View** (default, `viewMode === 'monthly'`): `MergedDailyView` with scheduling sidebar + full timeline panels
+- **Page-Level View Modes**: Advanced scheduling layout (sidebar + timeline) and optional weekly overview
+  - **Advanced Daily View** (`viewMode === 'monthly'`): `MergedDailyView` with scheduling sidebar + full timeline panels. Opened from sidebar Daily → **Advanced**, or `/?view=monthly`. Sidebar **Daily** itself is ClassSchedule Daily Tasks (`/class-schedule?showDailyTasks=true`).
   - **Weekly View** (`viewMode === 'weekly'`): Weekly overview of scheduled and inbox tasks (sidebar: Daily Planner → Week, or `/?view=weekly`)
 - Timeline visualization across 4 periods (night, morning, afternoon, evening)
 - Dual-day view with independent navigation
@@ -172,7 +172,7 @@ DailyPlanner
 
 ## Usage Patterns
 
-1. **Daily Planning**: Home (`/`) opens the scheduling sidebar + timeline for time-based task scheduling
+1. **Daily Planning**: Sidebar **Daily** opens `/class-schedule?showDailyTasks=true` (stacked week of daily tasks). **Advanced** on that page opens the full DailyPlanner at `/?view=monthly`.
 2. **Weekly Overview**: Use Daily Planner → **Week** in the sidebar or `/?view=weekly` to see scheduled and inbox tasks across the week
 3. **Task Assignment**: Use the sidebar mini calendar and inbox to assign pool tasks to dates
 4. **Inbox Management**: Add unscheduled tasks in the sidebar inbox; drag to calendar or timeline
@@ -189,4 +189,4 @@ DailyPlanner
 - Auto-scrolls to today's day card when the view opens.
 - Preserves class CRUD flows (double-click add, card click edit, modal delete) and keeps recurring storage keyed by day-of-week.
 - **Task card actions**: View Notes, Edit, Copy to daily planner pool, drag (same weekday), and resize (edge handles) work on class cards. Uses pointer capture and `timelineDragUtils` for hour snapping; commits via `updateClassTaskTime` in `useClassScheduleState`.
-- **Daily Tasks view**: Header toggle **Classes | Daily Tasks** switches between recurring class schedule and this week's daily planner tasks (exclusive views). Preference persists in `omega-planner-class-schedule-show-daily-tasks`. Daily Tasks mode supports full CRUD, drag, resize, and copy; changes persist to Daily Planner storage. Class mode supports recurring class CRUD, drag, and resize.
+- **Daily Tasks view**: Sidebar **Daily** opens this mode at `/class-schedule?showDailyTasks=true`. Header toggle **Classes | Daily Tasks** switches between recurring class schedule and this week's daily planner tasks (exclusive views) and updates the URL. Preference also persists in `omega-planner-class-schedule-show-daily-tasks`. Daily Tasks mode has an **Advanced** button to the full DailyPlanner (`/?view=monthly`). Daily Tasks supports full CRUD, drag, resize, and copy; changes persist to Daily Planner storage. Class mode supports recurring class CRUD, drag, and resize.

@@ -1,5 +1,11 @@
 ## 2026-08-25
 
+- **Daily nav uses Class Schedule Daily Tasks** (2026-08-25)
+  - Sidebar **Daily** now opens `/class-schedule?showDailyTasks=true` (the stacked week of planner tasks) instead of the full DailyPlanner.
+  - Sidebar **Class Schedule** stays `/class-schedule` (recurring classes). The Classes | Daily Tasks toggle updates the URL so nav highlighting stays in sync.
+  - An **Advanced** button in Daily Tasks mode opens the original DailyPlanner at `/?view=monthly`.
+  - **Files affected**: `components/ui/Navigation.tsx`, `app/class-schedule/page.tsx`, `components/planner/ClassSchedule.tsx`, `hooks/useClassScheduleState.ts`, `lib/appHierarchy.ts`, `docs/*`
+
 - **Removed Projects feature** (2026-08-25)
   - Deleted `/projects` and `/projects/[id]`, the global projects provider/context, `components/projects`, project modals, and related types/helpers (~8,400 lines).
   - Removed the Projects sidebar item. One-time wipe of localStorage key `omega-planner-projects` only (flag `omega-planner-projects-legacy-wiped`); other storage keys untouched.

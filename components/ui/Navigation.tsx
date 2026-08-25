@@ -170,14 +170,14 @@ export function Navigation() {
   const navItems = [
     {
       key: 'daily-planner',
-      href: '/',
+      href: '/class-schedule?showDailyTasks=true',
       label: 'Daily Planner',
       icon: NotebookPen,
-      active: pathname === '/' && !pathname.includes('/calendar'),
+      active: pathname === '/' || pathname === '/class-schedule' || pathname === '/daily-planner',
       subViews: [
-        { key: 'planner-daily', type: 'planner', mode: 'monthly', label: 'Daily', icon: Sun, active: pathname === '/' && plannerViewMode === 'monthly' },
+        { key: 'planner-daily', label: 'Daily', icon: Sun, href: '/class-schedule?showDailyTasks=true', active: pathname === '/class-schedule' && searchParams.get('showDailyTasks') === 'true' },
         { key: 'planner-weekly', type: 'planner', mode: 'weekly', label: 'Week', icon: CalendarDays, active: pathname === '/' && plannerViewMode === 'weekly' },
-        { key: 'planner-class-schedule', label: 'Class Schedule', icon: GraduationCap, href: '/class-schedule', active: pathname === '/class-schedule' },
+        { key: 'planner-class-schedule', label: 'Class Schedule', icon: GraduationCap, href: '/class-schedule', active: pathname === '/class-schedule' && searchParams.get('showDailyTasks') !== 'true' },
       ]
     },
     {

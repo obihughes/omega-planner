@@ -14,6 +14,7 @@ import { EditTaskModal } from "./EditTaskModal";
 import { ViewTaskNotesModal } from "./ViewTaskNotesModal";
 import { EnhancedActiveModalTask } from "@/hooks/useModalManager";
 import { dateFromDateKey } from "@/utils/dateUtils";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/utils/formatters";
@@ -42,6 +43,11 @@ import { MemoizedTaskCard } from "./TaskCard";
 
 type TimelinePeriod = "morning" | "afternoon" | "evening";
 
+interface ClassScheduleProps {
+  /** When set (from /class-schedule?showDailyTasks=true), overrides the stored toggle. */
+  initialShowDailyTasks?: boolean;
+}
+
 interface ClassDraggingTask {
   task: Task;
   offsetX: number;
@@ -59,8 +65,12 @@ interface ClassResizingTask {
   initialPixelsPerHour: number;
 }
 
-export default React.memo(function ClassSchedule() {
+export default React.memo(function ClassSchedule({
+  initialShowDailyTasks,
+}: ClassScheduleProps) {
   console.log('🎨 [ClassSchedule] Component rendering');
+
+  const router = useRouter();
 
   const {
     weekMeta,
@@ -70,7 +80,18 @@ export default React.memo(function ClassSchedule() {
     upsertFromModal,
     deleteTaskById,
     updateClassTaskTime,
-  } = useClassScheduleState();
+  } = useClassScheduleState(initialShowDailyTasks);
+
+  const handleSetShowDailyTasks = useCallback(
+    (value: boolean) => {
+      setShowDailyTasks(value);
+      router.replace(
+        value ? "/class-schedule?showDailyTasks=true" : "/class-schedule",
+        { scroll: false }
+      );
+    },
+    [setShowDailyTasks, router]
+  );
 
   const {
     tasksByDate: dailyTasksByDate,
@@ -865,7 +886,7 @@ export default React.memo(function ClassSchedule() {
             <div className="flex-none flex items-center justify-between px-4 py-2 border-b border-border bg-card/95 backdrop-blur-sm">
               <div className="flex items-center gap-2">
                 <span className="text-foreground font-medium">
-                  Class Schedule
+                  {showDailyTasks ? "Daily Tasks" : "Class Schedule"}
                 </span>
                 <span className="text-xs text-muted-foreground">
                   {showDailyTasks
@@ -881,7 +902,7 @@ export default React.memo(function ClassSchedule() {
                 >
                   <button
                     type="button"
-                    onClick={() => setShowDailyTasks(false)}
+                    onClick={() => handleSetShowDailyTasks(false)}
                     className={cn(
                       "px-2 py-1 text-xs font-medium rounded-l-md transition-colors",
                       !showDailyTasks
@@ -894,7 +915,7 @@ export default React.memo(function ClassSchedule() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setShowDailyTasks(true)}
+                    onClick={() => handleSetShowDailyTasks(true)}
                     className={cn(
                       "px-2 py-1 text-xs font-medium rounded-r-md border-l border-border/60 transition-colors",
                       showDailyTasks
@@ -906,6 +927,17 @@ export default React.memo(function ClassSchedule() {
                     Daily Tasks
                   </button>
                 </div>
+                {showDailyTasks && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="px-3 text-xs h-7"
+                    onClick={() => router.push("/?view=monthly")}
+                    title="Open the full daily planner"
+                  >
+                    Advanced
+                  </Button>
+                )}
                 {!showDailyTasks && (
                   <Button
                     size="sm"

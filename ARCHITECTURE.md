@@ -66,7 +66,10 @@ The application is built with these main components:
   * Separate Calendar section with Monthly and Yearly views
 
 - **DailyPlanner** (`components/planner/DailyPlanner.tsx`): 
-  The main component orchestrating the entire planner interface, including the timeline view.
+  Advanced planner UI (sidebar Daily → **Advanced**, or `/?view=monthly` / Week). Sidebar **Daily** opens ClassSchedule Daily Tasks (`/class-schedule?showDailyTasks=true`).
+
+- **ClassSchedule** (`components/planner/ClassSchedule.tsx`):
+  Stacked 7-day class grid. Default Daily nav view when `?showDailyTasks=true`.
 
 - **TaskCard** (`components/planner/TaskCard.tsx`): 
   Reusable component for rendering individual task cards in the timeline. Handles:

@@ -56,6 +56,7 @@ Additional feature routes in `/app` include:
 - `app/meals` — Meals page (meal names and ingredients); hidden from main sidebar nav — open via Settings → Beta features or `/meals`. Legacy `/recipes` redirects to `/meals`.
 - `app/study-tracker` — Study Planner (weekly view with day cards + tasks); hidden from main sidebar — open via Settings → Beta features, `/study-tracker`, or Daily Log Study Tracker tab (also embeddable in Calendar weekly view)
 - `app/month-board` — Month board (month/week pickers, week goal + Mon–Sun rows); hidden from main sidebar — open via Settings → Beta features or `/month-board`
+- Daily Planner **Daily** view (`/class-schedule?showDailyTasks=true`) — ClassSchedule Daily Tasks mode; **Advanced** opens `/?view=monthly`
 - Daily Planner **Week** view (`/?view=weekly`) — main sidebar subview under Daily Planner (between Daily and Class Schedule)
 - `app/weekly-overview` — Weekly Overview (monthly / weekly / daily goals); main sidebar nav. Legacy `/goal-hierarchy` redirects here.
 - `app/visualizer` — 5-Year Visualizer; sidebar **Others** group (after Text Documents)

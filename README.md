@@ -36,6 +36,7 @@ npm run dev:clean
 - **Theme support** with full consistency across light, dark, forest, sunset, ocean, and system (Settings)
 - **Copy/paste tasks** between dates and time slots
 - **Time-based organization** with timeline views
+- **Daily tasks week view** (sidebar Daily): stacked 7-day Class Schedule in Daily Tasks mode; **Advanced** opens the full planner
 - **Responsive design** for all device sizes
 - **Task inbox** for unscheduled tasks
 - **Pinned tasks** for quick access

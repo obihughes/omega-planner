@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ClassScheduleTask, Task } from '@/types/planner';
 import { ClassScheduleStorage } from '@/utils/classScheduleStorage';
 import { dateFromDateKey, getDateKey } from '@/utils/dateUtils';
@@ -44,8 +44,13 @@ export interface UseClassScheduleStateResult {
  * using ClassScheduleStorage. For rendering, tasks are projected into a
  * Map keyed by reference dates for the current cycle so that existing
  * timeline components can be reused without impacting the main planner.
+ *
+ * `initialShowDailyTasks` (from `/class-schedule?showDailyTasks=true`) overrides
+ * the persisted toggle so Daily vs Class Schedule nav stay distinct.
  */
-export function useClassScheduleState(): UseClassScheduleStateResult {
+export function useClassScheduleState(
+  initialShowDailyTasks?: boolean
+): UseClassScheduleStateResult {
   // Initialize state directly from localStorage to avoid race condition
   const [classTasks, setClassTasks] = useState<ClassScheduleTask[]>(() => {
     console.log('🔄 [useClassScheduleState] Initializing state from storage');
@@ -55,8 +60,17 @@ export function useClassScheduleState(): UseClassScheduleStateResult {
   });
 
   const [showDailyTasks, setShowDailyTasksState] = useState<boolean>(() =>
-    ClassScheduleStorage.getShowDailyTasks()
+    typeof initialShowDailyTasks === 'boolean'
+      ? initialShowDailyTasks
+      : ClassScheduleStorage.getShowDailyTasks()
   );
+
+  // URL / parent intent wins over the last persisted toggle
+  useEffect(() => {
+    if (typeof initialShowDailyTasks !== 'boolean') return;
+    setShowDailyTasksState(initialShowDailyTasks);
+    ClassScheduleStorage.setShowDailyTasks(initialShowDailyTasks);
+  }, [initialShowDailyTasks]);
 
   // Track mount/unmount
   useEffect(() => {

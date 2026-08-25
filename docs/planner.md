@@ -2,6 +2,8 @@
 
 The Daily Planner is the core component for task scheduling and timeline management.
 
+Sidebar **Daily** opens Class Schedule in Daily Tasks mode (`/class-schedule?showDailyTasks=true`). The original scheduling sidebar + timeline lives behind **Advanced** (`/?view=monthly`).
+
 ## Features
 
 ### Drag and Drop
@@ -115,7 +117,7 @@ Modal for editing the details of a task. Includes a "To Inbox" button for schedu
 Modal for viewing the notes of a task.
 
 ### ClassSchedule Page
-The Class Schedule view (`/class-schedule`) provides a recurring weekly timetable where entries are stored by day-of-week instead of a specific date. Implementation is in `components/planner/ClassSchedule.tsx` with state handled by `hooks/useClassScheduleState.ts` and storage handled by `utils/classScheduleStorage.ts`.
+The Class Schedule view (`/class-schedule`) provides a recurring weekly timetable where entries are stored by day-of-week instead of a specific date. Sidebar **Daily** opens the same page in Daily Tasks mode (`?showDailyTasks=true`). Implementation is in `components/planner/ClassSchedule.tsx` with state handled by `hooks/useClassScheduleState.ts` and storage handled by `utils/classScheduleStorage.ts`.
 
 **Import to Daily Planner:** On the Daily view, use **Import Classes** on either day panel to copy that weekday's recurring classes into the planner timeline for the date you're viewing. Overlapping scheduled tasks trigger `ConflictResolutionModal` with skip, replace, or cancel options. Logic lives in `utils/classScheduleUtils.ts` and `hooks/useDailyPlannerState.ts` (`prepareCopyClassesFromSchedule`, `applyPreparedClassCopy`).
 
@@ -126,7 +128,7 @@ The Class Schedule view (`/class-schedule`) provides a recurring weekly timetabl
   - Vertically scrollable when all days do not fit on screen
   - Auto-scrolls to center the current day when the view opens
 - **Add Classes**: Click "+ Add Class" button or double-click timeline to create new recurring classes
-- **Daily Tasks View**: Use the **Classes | Daily Tasks** toggle in the header to switch between recurring classes and this week's daily planner tasks. Only one set is shown at a time. The choice persists across reloads via localStorage. Daily Tasks mode supports drag, resize, edit, delete, copy, and double-click add; changes sync to Daily Planner storage.
+- **Daily Tasks View**: Sidebar **Daily** opens this mode (`/class-schedule?showDailyTasks=true`). Use the **Classes | Daily Tasks** toggle to switch; it updates the URL so nav highlighting stays in sync. Only one set is shown at a time. The choice is also persisted in localStorage. Daily Tasks mode supports drag, resize, edit, delete, copy, and double-click add; changes sync to Daily Planner storage. **Advanced** opens the original DailyPlanner (`/?view=monthly`).
 - **Edit Classes**: Click any existing class card to edit name, time, duration, color, and notes (hover **Edit** button, double-click title, or **View Notes** → Edit)
 - **Task card actions**: Class cards support **View Notes**, **Edit**, **Copy** (to daily planner pool), **drag** (move start time on the same weekday), and **resize** (edge handles). Changes persist to recurring class storage.
 - **Delete Classes**: Delete classes via the edit modal
