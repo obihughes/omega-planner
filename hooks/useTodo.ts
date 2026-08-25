@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { nanoid } from 'nanoid';
+import { arrayMove } from '@dnd-kit/sortable';
 import { TodoItem } from '@/types/todo';
 import { TodoStorage } from '@/utils/todoStorage';
 
@@ -10,11 +11,23 @@ const STORAGE_KEY = 'omega-planner-todo-v1';
 function sortItems(items: TodoItem[]): TodoItem[] {
   const active = items.filter((i) => !i.done);
   const completed = items.filter((i) => i.done);
-  const byCreatedDesc = (a: TodoItem, b: TodoItem) =>
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   const byUpdatedDesc = (a: TodoItem, b: TodoItem) =>
     new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-  return [...active.sort(byCreatedDesc), ...completed.sort(byUpdatedDesc)];
+  return [...active, ...completed.sort(byUpdatedDesc)];
+}
+
+function reorderActiveItems(
+  items: TodoItem[],
+  activeId: string,
+  overId: string
+): TodoItem[] {
+  const activeItems = items.filter((i) => !i.done);
+  const oldIndex = activeItems.findIndex((i) => i.id === activeId);
+  const newIndex = activeItems.findIndex((i) => i.id === overId);
+  if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return items;
+  const reordered = arrayMove(activeItems, oldIndex, newIndex);
+  let next = 0;
+  return items.map((item) => (item.done ? item : reordered[next++]));
 }
 
 export function useTodo() {
@@ -58,7 +71,7 @@ export function useTodo() {
       createdAt: now,
       updatedAt: now,
     };
-    setItems((prev) => [...prev, item]);
+    setItems((prev) => [item, ...prev]);
     return item;
   }, []);
 
@@ -74,6 +87,10 @@ export function useTodo() {
           : i
       )
     );
+  }, []);
+
+  const reorderActive = useCallback((activeId: string, overId: string) => {
+    setItems((prev) => reorderActiveItems(prev, activeId, overId));
   }, []);
 
   const clearCompleted = useCallback(() => {
@@ -98,6 +115,7 @@ export function useTodo() {
     add,
     remove,
     toggle,
+    reorderActive,
     clearCompleted,
     updateNotes,
     hasCompleted,

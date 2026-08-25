@@ -2,7 +2,18 @@ import { nanoid } from 'nanoid';
 import { TodoItem, TodoStorageData } from '@/types/todo';
 
 const STORAGE_KEY = 'omega-planner-todo-v1';
-const STORAGE_VERSION = '1.0';
+const STORAGE_VERSION = '1.1';
+
+function byCreatedDesc(a: TodoItem, b: TodoItem) {
+  return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+}
+
+/** One-time: keep newest-first as the starting custom order for pre-1.1 lists. */
+function migrateToCustomOrder(items: TodoItem[]): TodoItem[] {
+  const active = items.filter((i) => !i.done).sort(byCreatedDesc);
+  const completed = items.filter((i) => i.done);
+  return [...active, ...completed];
+}
 
 export const TodoStorage = {
   load(): TodoItem[] {
@@ -12,7 +23,11 @@ export const TodoStorage = {
     try {
       const data: TodoStorageData = JSON.parse(raw);
       if (!data || !Array.isArray(data.items)) return [];
-      return data.items.map(TodoStorage.clean).filter(TodoStorage.isValid);
+      const items = data.items.map(TodoStorage.clean).filter(TodoStorage.isValid);
+      if (data.version === STORAGE_VERSION) return items;
+      const migrated = migrateToCustomOrder(items);
+      TodoStorage.save(migrated);
+      return migrated;
     } catch {
       return [];
     }

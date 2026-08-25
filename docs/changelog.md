@@ -1,5 +1,14 @@
 ## 2026-08-25
 
+- **Todo: hide reorder grip until hover** (2026-08-25)
+  - The drag handle on unchecked tasks is hidden until the row is hovered, focused, or being dragged (same pattern as project task cards).
+  - **Files affected**: `components/todo/TodoView.tsx`, `docs/components.md`, `docs/changelog.md`
+
+- **Todo: drag to reorder active items** (2026-08-25)
+  - Unchecked tasks can be rearranged with a grip handle (`@dnd-kit`, same pattern as projects). Custom order persists in `omega-planner-todo-v1` (schema 1.1). New items still prepend to the top. Completed items stay newest-checked first and are not draggable; unchecking restores the previous slot.
+  - Pre-1.1 lists migrate once to newest-first by `createdAt` so existing order is not lost.
+  - **Files affected**: `hooks/useTodo.ts`, `components/todo/TodoView.tsx`, `utils/todoStorage.ts`, `docs/components.md`, `docs/structure.md`, `docs/changelog.md`
+
 - **Todo: active items sort newest-first** (2026-08-25)
   - Unchecked tasks now appear newest-added first (`createdAt` descending) instead of oldest-first. Completed items are unchanged (newest-checked first by `updatedAt`).
   - **Files affected**: `hooks/useTodo.ts`, `docs/components.md`, `docs/changelog.md`

@@ -1,7 +1,23 @@
 'use client';
 
-import React, { useState } from 'react';
-import { StickyNote } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { GripVertical, StickyNote } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,9 +30,22 @@ interface TodoRowProps {
   onToggle: (id: string) => void;
   onRemove: (id: string) => void;
   onUpdateNotes: (id: string, notes: string) => void;
+  dragHandle?: React.ReactNode;
+  setNodeRef?: (node: HTMLLIElement | null) => void;
+  style?: React.CSSProperties;
+  isDragging?: boolean;
 }
 
-function TodoRow({ item, onToggle, onRemove, onUpdateNotes }: TodoRowProps) {
+function TodoRow({
+  item,
+  onToggle,
+  onRemove,
+  onUpdateNotes,
+  dragHandle,
+  setNodeRef,
+  style,
+  isDragging,
+}: TodoRowProps) {
   const [notesOpen, setNotesOpen] = useState(false);
   const [notesValue, setNotesValue] = useState(item.notes);
 
@@ -32,12 +61,16 @@ function TodoRow({ item, onToggle, onRemove, onUpdateNotes }: TodoRowProps) {
 
   return (
     <li
+      ref={setNodeRef}
+      style={style}
       className={cn(
-        'rounded-md px-2 py-1.5 hover:bg-muted/50',
-        item.done && 'opacity-60'
+        'group rounded-md px-2 py-1.5 hover:bg-muted/50',
+        item.done && 'opacity-60',
+        isDragging && 'opacity-50 bg-muted/50 z-10'
       )}
     >
       <div className="flex items-center justify-between gap-2 text-sm">
+        {dragHandle ?? <span className="w-4 shrink-0" aria-hidden />}
         <label className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer">
           <input
             type="checkbox"
@@ -95,9 +128,74 @@ function TodoRow({ item, onToggle, onRemove, onUpdateNotes }: TodoRowProps) {
   );
 }
 
+function SortableTodoRow(
+  props: Omit<TodoRowProps, 'dragHandle' | 'setNodeRef' | 'style' | 'isDragging'>
+) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: props.item.id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <TodoRow
+      {...props}
+      setNodeRef={setNodeRef}
+      style={style}
+      isDragging={isDragging}
+      dragHandle={
+        <button
+          type="button"
+          className={cn(
+            'shrink-0 text-muted-foreground cursor-grab active:cursor-grabbing touch-none p-0.5 -ml-0.5 hover:text-foreground',
+            'opacity-0 group-hover:opacity-100 focus-visible:opacity-100',
+            isDragging && 'opacity-100'
+          )}
+          aria-label="Reorder"
+          title="Drag to reorder"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="w-4 h-4" />
+        </button>
+      }
+    />
+  );
+}
+
 export function TodoView() {
-  const { items, hydrated, add, remove, toggle, clearCompleted, updateNotes, hasCompleted } = useTodo();
+  const {
+    items,
+    hydrated,
+    add,
+    remove,
+    toggle,
+    reorderActive,
+    clearCompleted,
+    updateNotes,
+    hasCompleted,
+  } = useTodo();
   const [inputValue, setInputValue] = useState('');
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const activeItems = useMemo(() => items.filter((i) => !i.done), [items]);
+  const completedItems = useMemo(() => items.filter((i) => i.done), [items]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,6 +203,12 @@ export function TodoView() {
     if (!value) return;
     add(value);
     setInputValue('');
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    reorderActive(String(active.id), String(over.id));
   };
 
   return (
@@ -118,7 +222,7 @@ export function TodoView() {
               <span className="text-xs text-muted-foreground">
                 {items.length === 0
                   ? 'No items yet'
-                  : `${items.filter((i) => !i.done).length} active`}
+                  : `${activeItems.length} active`}
               </span>
               {hasCompleted && (
                 <Button variant="ghost" size="sm" onClick={clearCompleted}>
@@ -147,17 +251,37 @@ export function TodoView() {
                 Your list is empty. Add something above.
               </p>
             ) : (
-              <ul className="space-y-1">
-                {items.map((item) => (
-                  <TodoRow
-                    key={item.id}
-                    item={item}
-                    onToggle={toggle}
-                    onRemove={remove}
-                    onUpdateNotes={updateNotes}
-                  />
-                ))}
-              </ul>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <ul className="space-y-1">
+                  <SortableContext
+                    items={activeItems.map((i) => i.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {activeItems.map((item) => (
+                      <SortableTodoRow
+                        key={item.id}
+                        item={item}
+                        onToggle={toggle}
+                        onRemove={remove}
+                        onUpdateNotes={updateNotes}
+                      />
+                    ))}
+                  </SortableContext>
+                  {completedItems.map((item) => (
+                    <TodoRow
+                      key={item.id}
+                      item={item}
+                      onToggle={toggle}
+                      onRemove={remove}
+                      onUpdateNotes={updateNotes}
+                    />
+                  ))}
+                </ul>
+              </DndContext>
             )}
           </CardContent>
         </Card>
