@@ -68,7 +68,7 @@ Legacy 4-week weekly goals grid (still available if embedded elsewhere). Primary
 Reusable weekly goal UI and colors used by Weekly Overview and legacy Calendar weekly view.
 - **`goalColors.ts`** — Color palette for goal cards.
 - **`GoalItem.tsx`** — Draggable goal card with checkbox, edit modal trigger, notes display.
-- **`GoalEditModal.tsx`** — Edit title, type (primary/supporting), color, notes; create task or delete.
+- **`GoalEditModal.tsx`** — Edit title, type (primary/supporting), color, notes; delete.
 - **`WeeklyGoalsAddForm.tsx`** — Inline add form with color picker and goal type toggle.
 - **`WeeklyGoalsDayColumn.tsx`** — Full day column with events, goals, drag/drop, and add form.
 - **Storage**: `utils/goalsStorage.ts` (`omega-planner-weekly-goals-v1`), via `hooks/useWeeklyGoals.ts`.

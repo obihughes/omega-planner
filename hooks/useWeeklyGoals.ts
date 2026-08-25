@@ -127,16 +127,6 @@ export function useWeeklyGoals(dateKeys: string[]) {
     [goalsData]
   );
 
-  const createTaskFromGoal = useCallback((goal: WeeklyGoal, dateKey: string) => {
-    const params = new URLSearchParams({
-      action: 'create',
-      title: goal.title,
-      dueDate: dateKey,
-      notes: `From weekly goal: ${goal.title}`,
-    });
-    window.location.href = `/projects?${params.toString()}`;
-  }, []);
-
   return {
     hydrated,
     getGoalsForDate,
@@ -147,6 +137,5 @@ export function useWeeklyGoals(dateKeys: string[]) {
     updateGoalColor,
     updateGoal,
     moveGoal,
-    createTaskFromGoal,
   };
 }

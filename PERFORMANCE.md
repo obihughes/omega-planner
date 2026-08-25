@@ -10,22 +10,16 @@
 
 ### **Component Performance**
 - ✅ **Text Editor Optimization** - Memoized TextBlockComponent prevents unnecessary re-renders
-- ✅ **React.memo** for TaskItem and ProjectCard components
+- ✅ **React.memo** for frequently rendered planner components
 - ✅ **useMemo** for expensive calculations (task filtering, date formatting)
 - ✅ **useCallback** for event handlers to prevent unnecessary re-renders
 - ✅ **Custom comparison functions** for memo to optimize re-render conditions
 
 ### **Bundle Size Reduction**
 - ✅ **Replaced barrel exports** with specific imports to reduce bundle size
-- ✅ **Lazy loading** for heavy components (DailyPlanner, ProjectFormModal)
+- ✅ **Lazy loading** for heavy components (DailyPlanner)
 - ✅ **Code splitting** with React.lazy() and Suspense
 - ✅ **Tree shaking** enabled in webpack configuration
-
-### **Projects navigation**
-- ✅ **ProjectsProvider** — projects/folders/tasks hydrate from localStorage once per session (no reload on `/projects` ↔ `/projects/[id]`)
-- ✅ **`app/projects/layout.tsx`** — shared `AppLayout` so sidebar and navigation do not remount between list and detail
-- ✅ **No blocking loading screen** on project detail after first hydrate
-- ✅ **Lazy `ProjectsCalendar`** — calendar tab code loads only when the Calendar view is selected
 
 ### **Webpack Optimizations**
 - ✅ **SWC minification** enabled for faster builds
@@ -36,13 +30,9 @@
 
 ### **Before Optimization:**
 - Home page: ~1657 modules (5.2s compile)
-- Projects page: ~1672 modules (618ms compile)
-- Project detail: ~1700 modules (828ms compile)
 
 ### **Expected After Optimization:**
 - Home page: ~800-1000 modules (2-3s compile)
-- Projects page: ~600-800 modules (300-400ms compile)
-- Project detail: ~700-900 modules (400-500ms compile)
 
 ### **Text Editor Performance:**
 - **Before**: All text blocks re-rendered on every edit

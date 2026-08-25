@@ -54,7 +54,6 @@ export function WeeklyGoalsCalendarView({ calendarData, onNavigateToDaily }: Wee
     removeGoal,
     updateGoal,
     moveGoal,
-    createTaskFromGoal,
   } = useWeeklyGoals(dateKeys);
 
   const todayKey = getTodayDateKey();
@@ -150,7 +149,6 @@ export function WeeklyGoalsCalendarView({ calendarData, onNavigateToDaily }: Wee
                   onToggleGoal={(id) => toggleGoal(dateKey, id)}
                   onRemoveGoal={(id) => removeGoal(dateKey, id)}
                   onUpdateGoal={(id, updates) => updateGoal(dateKey, id, updates)}
-                  onCreateTask={(goal) => createTaskFromGoal(goal, dateKey)}
                   onMoveGoal={moveGoal}
                   onNavigateToDaily={onNavigateToDaily}
                   canAddMore={canAddMore(dateKey)}

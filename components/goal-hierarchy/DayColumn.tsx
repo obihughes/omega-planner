@@ -20,7 +20,6 @@ export interface DayColumnProps {
     updates: Partial<Pick<WeeklyGoal, 'title' | 'notes' | 'goalType' | 'color'>>
   ) => void;
   onMoveGoal: (goalId: string, fromDateKey: string, toDateKey: string) => void;
-  onCreateTask: (goal: WeeklyGoal) => void;
   /** Muted styling for Sat–Wed preview row (includes next-week days). */
   isNextWeekPreview?: boolean;
 }
@@ -34,7 +33,6 @@ export function DayColumn({
   onRemoveGoal,
   onUpdateGoal,
   onMoveGoal,
-  onCreateTask,
   isNextWeekPreview = false,
 }: DayColumnProps) {
   const [showInput, setShowInput] = useState(false);
@@ -108,7 +106,6 @@ export function DayColumn({
           onRemoveGoal={onRemoveGoal}
           onUpdateGoal={onUpdateGoal}
           onMoveGoal={onMoveGoal}
-          onCreateTask={onCreateTask}
           compact
         />
       </div>

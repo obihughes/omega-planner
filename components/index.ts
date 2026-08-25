@@ -9,7 +9,6 @@ export { default as DailyPlanner } from './planner/DailyPlanner';
 export { EditTaskModal } from './planner/EditTaskModal';
 
 export * from './ui';
-export * from './projects';
 export * from './planner';
 // No changes to export surface; timeline behavior improved via internal handlers.
 export * from './primitives';

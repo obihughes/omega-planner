@@ -19,7 +19,6 @@ export interface WeeklyGoalsListForDayProps {
     updates: Partial<Pick<WeeklyGoal, 'title' | 'notes' | 'goalType' | 'color'>>
   ) => void;
   onMoveGoal: (goalId: string, fromDateKey: string, toDateKey: string) => void;
-  onCreateTask: (goal: WeeklyGoal) => void;
   compact?: boolean;
 }
 
@@ -34,7 +33,6 @@ export function WeeklyGoalsListForDay({
   onRemoveGoal,
   onUpdateGoal,
   onMoveGoal,
-  onCreateTask,
   compact = false,
 }: WeeklyGoalsListForDayProps) {
   const [isDragOver, setIsDragOver] = useState(false);
@@ -92,7 +90,6 @@ export function WeeklyGoalsListForDay({
             onToggle={() => onToggleGoal(goal.id)}
             onRemove={() => onRemoveGoal(goal.id)}
             onUpdate={(updates) => onUpdateGoal(goal.id, updates)}
-            onCreateTask={() => onCreateTask(goal)}
           />
         ))}
       </div>

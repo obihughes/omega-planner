@@ -12,7 +12,6 @@ export interface GoalItemProps {
   onToggle: () => void;
   onRemove: () => void;
   onUpdate: (updates: Partial<Pick<WeeklyGoal, 'title' | 'notes' | 'goalType' | 'color'>>) => void;
-  onCreateTask: () => void;
   draggable?: boolean;
 }
 
@@ -22,7 +21,6 @@ export function GoalItem({
   onToggle,
   onRemove,
   onUpdate,
-  onCreateTask,
   draggable = true,
 }: GoalItemProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -96,7 +94,6 @@ export function GoalItem({
         onClose={() => setIsEditModalOpen(false)}
         onSave={handleSaveEdit}
         onDelete={onRemove}
-        onCreateTask={onCreateTask}
       />
     </>
   );

@@ -16,7 +16,6 @@ export {
 
 export { useMeals } from './useMeals';
 export { useDayNotes } from './useDayNotes';
-export { useProjects } from './useProjects';
 export {
   useTheme,
   THEME_OPTIONS,

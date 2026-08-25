@@ -1,13 +1,26 @@
 'use client';
 
+import { useEffect } from 'react';
 import { ThemeProvider } from 'next-themes';
 import { PlannerProvider } from '@/app/context/PlannerProvider';
-import { ProjectsProvider } from '@/app/context/ProjectsProvider';
 import { ViewModeProvider } from '@/app/context/ViewModeContext';
-import { ProjectsViewProvider } from '@/app/context/ProjectsViewContext';
 import { CalendarViewProvider } from '@/app/context/CalendarViewContext';
 
+const LEGACY_PROJECTS_KEY = 'omega-planner-projects';
+const LEGACY_PROJECTS_WIPED_FLAG = 'omega-planner-projects-legacy-wiped';
+
 export function Providers({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem(LEGACY_PROJECTS_WIPED_FLAG)) {
+        localStorage.removeItem(LEGACY_PROJECTS_KEY);
+        localStorage.setItem(LEGACY_PROJECTS_WIPED_FLAG, '1');
+      }
+    } catch {
+      // Ignore storage errors (private mode, etc.)
+    }
+  }, []);
+
   return (
     <ThemeProvider
       attribute="class"
@@ -18,16 +31,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
       disableTransitionOnChange
     >
       <ViewModeProvider>
-        <ProjectsViewProvider>
-          <CalendarViewProvider>
-            <PlannerProvider>
-              <ProjectsProvider>
-                {children}
-              </ProjectsProvider>
-            </PlannerProvider>
-          </CalendarViewProvider>
-        </ProjectsViewProvider>
+        <CalendarViewProvider>
+          <PlannerProvider>
+            {children}
+          </PlannerProvider>
+        </CalendarViewProvider>
       </ViewModeProvider>
     </ThemeProvider>
   );
-} 
+}

@@ -16,16 +16,6 @@ export type {
 // Weekly Goals
 export type { WeeklyGoal, ImportantDate, WeekGoals, WeeklyGoalsStorageData } from './goals';
 
-// Export all project-related types including the new SubTask
-export type {
-  Project,
-  ProjectTask,
-  SubTask,
-  ProjectFolder,
-  ProjectsStorageData,
-  ProjectSeries,
-} from './projects';
-
 export type {
   Document,
   DocumentFolder,

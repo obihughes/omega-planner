@@ -122,11 +122,6 @@ Status badges, priorities, task statuses, and calendar event colors use shared C
 - Event cards: Clean rectangular shapes
 - Navigation buttons: Sharp corners
 
-### Project Cards  
-- Main project cards: Sharp aspect-square containers
-- Folder cards: Clean rectangular layout
-- Task cards: Sharp borders, no rounded content
-
 ### Forms & Inputs
 - Input fields: Sharp borders only
 - Select dropdowns: Rectangular appearance

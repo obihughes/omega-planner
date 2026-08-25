@@ -19,7 +19,6 @@ export interface WeeklyGoalsDayColumnProps {
   onToggleGoal: (id: string) => void;
   onRemoveGoal: (id: string) => void;
   onUpdateGoal: (id: string, updates: Partial<Pick<WeeklyGoal, 'title' | 'notes' | 'goalType' | 'color'>>) => void;
-  onCreateTask: (goal: WeeklyGoal) => void;
   onMoveGoal: (goalId: string, fromDateKey: string, toDateKey: string) => void;
   onNavigateToDaily?: (date: Date) => void;
   canAddMore: boolean;
@@ -36,7 +35,6 @@ export function WeeklyGoalsDayColumn({
   onToggleGoal,
   onRemoveGoal,
   onUpdateGoal,
-  onCreateTask,
   onMoveGoal,
   onNavigateToDaily,
   canAddMore,
@@ -140,7 +138,6 @@ export function WeeklyGoalsDayColumn({
             onToggle={() => onToggleGoal(goal.id)}
             onRemove={() => onRemoveGoal(goal.id)}
             onUpdate={(updates) => onUpdateGoal(goal.id, updates)}
-            onCreateTask={() => onCreateTask(goal)}
           />
         ))}
 

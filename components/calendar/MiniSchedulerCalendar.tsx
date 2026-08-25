@@ -4,18 +4,20 @@ import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Calendar, Clock, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { ProjectTask } from '@/types/projects';
 
-interface TaskWithProject extends ProjectTask {
-  projectId: string;
-  projectName: string;
-  projectColor: string;
+interface MiniSchedulerTask {
+  id: string;
+  dueDate?: string;
+  title?: string;
+  projectName?: string;
+  projectColor?: string;
+  priority?: string;
 }
 
 interface MiniSchedulerCalendarProps {
   className?: string;
   onDateDrop?: (date: Date, taskId: string) => void;
-  tasks?: TaskWithProject[];
+  tasks?: MiniSchedulerTask[];
   onDateSelect?: (date: Date) => void;
   hideSelectedTasks?: boolean;
 }

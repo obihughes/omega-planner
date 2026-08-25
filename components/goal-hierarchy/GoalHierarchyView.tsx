@@ -112,7 +112,6 @@ export function GoalHierarchyView() {
     removeGoal,
     updateGoal,
     moveGoal,
-    createTaskFromGoal,
   } = useWeeklyGoals(visibleDateKeys);
 
   const todayKey = getTodayDateKey();
@@ -284,7 +283,6 @@ export function GoalHierarchyView() {
                           onRemoveGoal={(id) => removeGoal(dateKey, id)}
                           onUpdateGoal={(id, updates) => updateGoal(dateKey, id, updates)}
                           onMoveGoal={moveGoal}
-                          onCreateTask={(goal) => createTaskFromGoal(goal, dateKey)}
                           onNavigateToDaily={navigateToDaily}
                           canAddMore={canAddMore(dateKey)}
                         />
@@ -315,7 +313,6 @@ export function GoalHierarchyView() {
                           onRemoveGoal={(id) => removeGoal(dateKey, id)}
                           onUpdateGoal={(id, updates) => updateGoal(dateKey, id, updates)}
                           onMoveGoal={moveGoal}
-                          onCreateTask={(goal) => createTaskFromGoal(goal, dateKey)}
                           onNavigateToDaily={navigateToDaily}
                           canAddMore={canAddMore(dateKey)}
                         />

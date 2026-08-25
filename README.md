@@ -31,9 +31,8 @@ npm run dev:clean
 
 ### Core Functionality
 - **Advanced Task Management**: Multi-criteria sorting, custom order with drag-and-drop
-- **Project Organization**: Task grouping by projects with inline task creation
 - **Smart Sorting**: Sort by multiple fields simultaneously (e.g., completion + title)
-- **Custom Ordering**: Visual drag-and-drop reordering for tasks and projects
+- **Custom Ordering**: Visual drag-and-drop reordering for planner tasks
 - **Theme support** with full consistency across light, dark, forest, sunset, ocean, and system (Settings)
 - **Copy/paste tasks** between dates and time slots
 - **Time-based organization** with timeline views
@@ -116,19 +115,13 @@ npm test
   - Example: Sort by completion status first, then by title alphabetically
   - Configure up to 4 sort criteria with independent ascending/descending order
   - Intuitive UI for adding, removing, and reordering sort criteria
-- **Custom Order with Drag & Drop**: Visual task and project reordering
-  - Drag tasks within projects to set custom order
-  - Drag projects to reorder them globally
+- **Custom Order with Drag & Drop**: Visual task reordering
+  - Drag tasks to set custom order
   - Visual indicators when in custom order mode
   - Persistent ordering across sessions
 - **Enhanced Task Creation**: 
-  - "Add Task" buttons within project groups that pre-select the project
-  - Quick-add interface with project selection
+  - Quick-add interface
   - Full modal for detailed task creation
-- **Improved Projects Interface**:
-  - Sortable projects with multiple criteria (Name, Progress, Updated, Custom Order)
-  - Visual drag-to-reorder indicators
-  - Enhanced view controls with comprehensive sorting options
 
 ### Copy/Paste Rendering Bug Fix
 - **Issue Resolution**: Fixed bug where copied and pasted tasks wouldn't render until page reload or other actions
@@ -166,7 +159,6 @@ npm test
 - **Compact UI**: Reduced modal sizes for better user experience
 
 ### Previous Updates
-- **Project Editing**: Added ability to edit projects directly from the project detail page
 - **Component Extraction**: Extracted `TaskCard` from `DailyPlanner` for better code organization
 - **Modal Management**: Added dedicated `useModalManager` hook to centralize modal state and functions
 - **Documentation**: Added JSDoc comments and README files across the codebase

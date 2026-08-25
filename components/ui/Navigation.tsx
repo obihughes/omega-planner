@@ -4,7 +4,7 @@ import React, { useState, useRef, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
-  Calendar, CalendarDays, FolderKanban, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
+  Calendar, CalendarDays, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
   CalendarRange, ClipboardList, Settings, LayoutGrid, Map, ListTodo,
   NotebookPen, Sun, Moon, Monitor, TreePine, TreeDeciduous, Sparkles, GraduationCap, GanttChart,
   FlaskConical, ChefHat, BookOpen, type LucideIcon,
@@ -13,7 +13,6 @@ import { useTheme, THEME_OPTIONS, THEME_LABELS, type ThemeOption } from '@/hooks
 import { cn } from '@/lib/utils';
 import { HIDDEN_NAV_ITEMS } from '@/lib/hiddenNavItems';
 import { useViewMode } from '@/app/context/ViewModeContext';
-import { useProjectsView } from '@/app/context/ProjectsViewContext';
 import { useCalendarView } from '@/app/context/CalendarViewContext';
 import { useSidebar } from '@/app/context/SidebarContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -48,7 +47,6 @@ export function Navigation() {
   const searchParams = useSearchParams();
   const { theme, setTheme, mounted } = useTheme();
   const { viewMode: plannerViewMode, setViewMode: setPlannerViewMode } = useViewMode();
-  const { viewMode: projectsViewMode, setViewMode: setProjectsViewMode } = useProjectsView();
   const { viewMode: calendarViewMode, setViewMode: setCalendarViewMode } = useCalendarView();
   
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -198,14 +196,6 @@ export function Navigation() {
       label: 'Weekly Overview',
       icon: ClipboardList,
       active: pathname === '/weekly-overview',
-      subViews: []
-    },
-    {
-      key: 'projects',
-      href: '/projects',
-      label: 'Projects',
-      icon: FolderKanban,
-      active: pathname === '/projects' || pathname.startsWith('/projects/'),
       subViews: []
     },
     {

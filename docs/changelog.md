@@ -1,5 +1,11 @@
 ## 2026-08-25
 
+- **Removed Projects feature** (2026-08-25)
+  - Deleted `/projects` and `/projects/[id]`, the global projects provider/context, `components/projects`, project modals, and related types/helpers (~8,400 lines).
+  - Removed the Projects sidebar item. One-time wipe of localStorage key `omega-planner-projects` only (flag `omega-planner-projects-legacy-wiped`); other storage keys untouched.
+  - Removed the buried Create Task action from the weekly-goal edit modal (it linked to `/projects`).
+  - **Files affected**: `app/projects/*`, `app/context/Projects*.tsx`, `app/providers.tsx`, `components/projects/*`, `components/modals/Project*.tsx`, `components/modals/SeriesEditorModal.tsx`, `hooks/useProjects.ts`, `hooks/useWeeklyGoals.ts`, `types/projects.ts`, `utils/seriesGenerator.ts`, `components/ui/Navigation.tsx`, `components/calendar/MiniSchedulerCalendar.tsx`, `components/weekly-goals/*`, `components/goal-hierarchy/*`, `lib/appHierarchy.ts`, `docs/*`, `README.md`, `PERFORMANCE.md`, `hooks/README.md`
+
 - **Todo: hide reorder grip until hover** (2026-08-25)
   - The drag handle on unchecked tasks is hidden until the row is hovered, focused, or being dragged (same pattern as project task cards).
   - **Files affected**: `components/todo/TodoView.tsx`, `docs/components.md`, `docs/changelog.md`

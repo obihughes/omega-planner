@@ -24,7 +24,6 @@ App icon (favicon) is file-based: `app/icon.svg`. Replace this file to change th
 Reusable React components used throughout the application. These components are organized by feature or functionality.
 Current notable feature folders include:
 - `components/planner` – Daily/Weekly scheduling
-- `components/projects` – Project and task management
 - `components/documents` – Text canvas editor
 - `components/calendar` – Calendars and modals
 - `components/meals` – Meals list and ingredient management

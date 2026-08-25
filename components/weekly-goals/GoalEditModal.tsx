@@ -5,7 +5,7 @@ import type { WeeklyGoal } from '@/types/goals';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { ExternalLink, Save, StickyNote, Trash2, X } from 'lucide-react';
+import { Save, StickyNote, Trash2, X } from 'lucide-react';
 import { GOAL_COLORS } from './goalColors';
 
 export interface GoalEditModalProps {
@@ -14,7 +14,6 @@ export interface GoalEditModalProps {
   onClose: () => void;
   onSave: (updates: Partial<Pick<WeeklyGoal, 'title' | 'notes' | 'goalType' | 'color'>>) => void;
   onDelete: () => void;
-  onCreateTask: () => void;
 }
 
 export function GoalEditModal({
@@ -23,7 +22,6 @@ export function GoalEditModal({
   onClose,
   onSave,
   onDelete,
-  onCreateTask,
 }: GoalEditModalProps) {
   const [editedTitle, setEditedTitle] = useState(goal?.title || '');
   const [editedNotes, setEditedNotes] = useState(goal?.notes || '');
@@ -171,18 +169,6 @@ export function GoalEditModal({
         </div>
 
         <div className="flex gap-2 pt-1 border-t border-border/50">
-          <Button
-            onClick={() => {
-              onCreateTask();
-              onClose();
-            }}
-            variant="outline"
-            size="sm"
-            className="flex-1 py-1 text-xs"
-          >
-            <ExternalLink className="w-3 h-3 mr-1" />
-            Create Task
-          </Button>
           <Button
             onClick={() => {
               onDelete();
