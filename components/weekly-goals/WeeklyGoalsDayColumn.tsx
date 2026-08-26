@@ -76,7 +76,7 @@ export function WeeklyGoalsDayColumn({
 
   return (
     <div
-      className={`border flex flex-col min-h-[320px] transition-colors ${
+      className={`border flex flex-col min-h-[280px] transition-colors ${
         isToday
           ? 'border-green-500'
           : isDragOver
@@ -90,7 +90,7 @@ export function WeeklyGoalsDayColumn({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <div className="p-4 border-b flex items-center justify-between gap-3">
+      <div className="p-3 border-b flex items-center justify-between gap-2">
         <div>
           <div className="text-sm font-medium">{date.toLocaleDateString(undefined, { weekday: 'short' })}</div>
           <div className="text-xs text-muted-foreground">
@@ -111,7 +111,7 @@ export function WeeklyGoalsDayColumn({
         </button>
       </div>
 
-      <div className="flex-1 p-4 space-y-3 overflow-visible">
+      <div className="flex-1 p-3 space-y-2 overflow-visible">
         {events.length > 0 && (
           <div className="space-y-1 mb-2">
             {events.slice(0, 2).map((event) => (

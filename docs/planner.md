@@ -314,7 +314,7 @@ The Saved Days feature allows you to save daily task configurations as reusable 
 ### Weekly Overview Page (`/weekly-overview`)
 Weekly planning at `/weekly-overview` (main sidebar nav). Legacy `/goal-hierarchy` and `/calendar?view=weekly-goals` redirect here.
 - **Month & Week Goals**: Collapsible as one section (month selector + month goal + week goal textareas). Collapse preference persists in `localStorage` (`weekly-overview-goals-collapsed`).
-- **Weekly Overview**: Two-row 7-column grid (selected week + next week preview) with drag-and-drop, calendar events, and optional Weekly Notes panel.
+- **Weekly Overview**: Three-row 7-column grid (selected week + next week + two weeks ahead) with drag-and-drop, calendar events, and optional Weekly Notes panel. Preview weeks are muted; day cards match Daily Log height.
 - **Week navigation**: Prev / Today / Next buttons sync with the week tabs above.
 - **Weekly Notes**: Hidden by default. Click "Open Notes" to reveal the checklist panel; click the close icon to hide it again.
 

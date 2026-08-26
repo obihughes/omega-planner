@@ -14,7 +14,7 @@ This directory contains documentation for the project. Below is an overview of t
 ## Feature Documentation
 - [Daily Planner](planner.md) - Comprehensive guide to the daily planner feature
 - **Month board** - `/month-board` (sidebar **Others**); month/week pickers with week goal + Mon–Sun rows; see [planner.md](planner.md#month-board)
-- **Weekly Overview** - `/weekly-overview` (main sidebar); collapsible month + week goals; week tabs with week nav and Open Notes; 7×2 weekly goals grid; see [planner.md](planner.md#weekly-overview-page)
+- **Weekly Overview** - `/weekly-overview` (main sidebar); collapsible month + week goals; week tabs with week nav and Open Notes; 7×3 weekly goals grid (selected + next + two weeks ahead); see [planner.md](planner.md#weekly-overview-page)
 
 ## Quick Links
 - [Getting Started](getting-started.md) - Quick start guide for new developers

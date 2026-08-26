@@ -618,7 +618,7 @@ export const appHierarchy: AppMapNode[] = [
     id: 'weekly-overview',
     label: 'Weekly Overview',
     kind: 'area',
-    description: 'Main sidebar nav at /weekly-overview. Multi-level goals: collapsible month + week goal summaries, week tabs with week nav and Open Notes, and a two-row 7-column day grid (selected week + next week preview). Daily goals sync with shared weekly goals storage.',
+    description: 'Main sidebar nav at /weekly-overview. Multi-level goals: collapsible month + week goal summaries, week tabs with week nav and Open Notes, and a three-row 7-column day grid (selected week + next week + two weeks ahead). Daily goals sync with shared weekly goals storage.',
     children: [
       {
         id: 'wo-route',
@@ -642,7 +642,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'GoalHierarchyView',
         kind: 'component',
         path: 'components/goal-hierarchy/GoalHierarchyView.tsx',
-        editHint: 'Weekly Overview UI: collapsible Month & Week Goals (month tabs + month/week goal textareas; localStorage weekly-overview-goals-collapsed), week tabs, two 7-column day rows (selected week + next week preview) with WeeklyGoalsDayColumn, week nav, and Open Notes.',
+        editHint: 'Weekly Overview UI: collapsible Month & Week Goals (month tabs + month/week goal textareas; localStorage weekly-overview-goals-collapsed), week tabs, three 7-column day rows (selected week + next week + two weeks ahead) with WeeklyGoalsDayColumn, week nav, and Open Notes.',
       },
       {
         id: 'gh-day-column',

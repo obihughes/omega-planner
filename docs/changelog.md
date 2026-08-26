@@ -1,3 +1,10 @@
+## 2026-08-26
+
+- **Weekly Overview: 3-week grid** (2026-08-26)
+  - Day grid is now three 7-column rows: selected week, next week, and two weeks ahead (same layout as Daily Log’s 3-week grid, but looking forward instead of showing the previous week).
+  - Preview weeks stay muted. Day cards are slightly shorter (`min-h-[280px]`, tighter padding) to match Daily Log.
+  - **Files affected**: `components/goal-hierarchy/GoalHierarchyView.tsx`, `components/weekly-goals/WeeklyGoalsDayColumn.tsx`, `lib/appHierarchy.ts`, `docs/*`, `README.md`
+
 ## 2026-08-25
 
 - **Calendar page load speed** (2026-08-25)

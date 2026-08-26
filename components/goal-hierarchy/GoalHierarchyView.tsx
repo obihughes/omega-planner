@@ -1,12 +1,13 @@
 'use client';
 
 /**
- * Weekly Overview page — collapsible month/week goal summaries plus 7×2 daily goals grid.
+ * Weekly Overview page — collapsible month/week goal summaries plus 7×3 daily goals grid.
  * Rendered at `/weekly-overview` via `app/weekly-overview/page.tsx`.
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
+  addDaysToDateKey,
   getDateKey,
   getTodayDateKey,
   dateFromDateKey,
@@ -16,7 +17,6 @@ import {
 } from '@/utils/dateUtils';
 import {
   formatMonthLabel,
-  getNextWeekStartKey,
   getWeekIndexContainingDate,
   getWeekdayDates,
 } from '@/utils/goalHierarchyDates';
@@ -90,18 +90,25 @@ export function GoalHierarchyView() {
 
   const { data: calendarData, isLoading: calendarLoading } = useCalendarData();
 
-  const gridDays = useMemo(() => {
+  const weekRows = useMemo(() => {
     const weekStartKey = currentWeek.weekStartKey;
-    const nextWeekStartKey = getNextWeekStartKey(weekStartKey);
-    const dateKeys = [...getWeekdayDates(weekStartKey), ...getWeekdayDates(nextWeekStartKey)];
-    return dateKeys.map((dateKey) => ({
-      dateKey,
-      date: dateFromDateKey(dateKey),
-      isNextWeekPreview: dateKey >= nextWeekStartKey,
-    }));
+    return [0, 7, 14].map((offset, rowIndex) => {
+      const rowWeekStart = addDaysToDateKey(weekStartKey, offset);
+      return {
+        weekStart: rowWeekStart,
+        days: getWeekdayDates(rowWeekStart).map((dateKey) => ({
+          dateKey,
+          date: dateFromDateKey(dateKey),
+        })),
+        isPreview: rowIndex > 0,
+      };
+    });
   }, [currentWeek.weekStartKey]);
 
-  const visibleDateKeys = useMemo(() => gridDays.map((d) => d.dateKey), [gridDays]);
+  const visibleDateKeys = useMemo(
+    () => weekRows.flatMap((row) => row.days.map((d) => d.dateKey)),
+    [weekRows]
+  );
 
   const {
     hydrated: goalsHydrated,
@@ -260,65 +267,41 @@ export function GoalHierarchyView() {
             <div className="border-t border-border p-4">
               <div className="flex min-h-0 gap-0 -mx-1">
                 <div className="flex-1 min-w-0 space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-                    {gridDays.slice(0, 7).map(({ date, dateKey }) => {
-                      const isToday = dateKey === todayKey;
-                      const dayEvents = calendarData.events.filter((event) => {
-                        const eventDateKey = event.dateKey || getDateKey(event.date);
-                        return eventDateKey === dateKey;
-                      });
+                  {weekRows.map((row) => (
+                    <div
+                      key={row.weekStart}
+                      className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3"
+                    >
+                      {row.days.map(({ date, dateKey }) => {
+                        const isToday = dateKey === todayKey;
+                        const dayEvents = calendarData.events.filter((event) => {
+                          const eventDateKey = event.dateKey || getDateKey(event.date);
+                          return eventDateKey === dateKey;
+                        });
 
-                      return (
-                        <WeeklyGoalsDayColumn
-                          key={dateKey}
-                          date={date}
-                          dateKey={dateKey}
-                          goals={getGoalsForDate(dateKey)}
-                          events={dayEvents}
-                          isToday={isToday}
-                          onAddGoal={(title, color, goalType) =>
-                            addGoal(dateKey, title, color, goalType)
-                          }
-                          onToggleGoal={(id) => toggleGoal(dateKey, id)}
-                          onRemoveGoal={(id) => removeGoal(dateKey, id)}
-                          onUpdateGoal={(id, updates) => updateGoal(dateKey, id, updates)}
-                          onMoveGoal={moveGoal}
-                          onNavigateToDaily={navigateToDaily}
-                          canAddMore={canAddMore(dateKey)}
-                        />
-                      );
-                    })}
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-                    {gridDays.slice(7, 14).map(({ date, dateKey, isNextWeekPreview }) => {
-                      const isToday = dateKey === todayKey;
-                      const dayEvents = calendarData.events.filter((event) => {
-                        const eventDateKey = event.dateKey || getDateKey(event.date);
-                        return eventDateKey === dateKey;
-                      });
-
-                      return (
-                        <WeeklyGoalsDayColumn
-                          key={dateKey}
-                          date={date}
-                          dateKey={dateKey}
-                          goals={getGoalsForDate(dateKey)}
-                          events={dayEvents}
-                          isToday={isToday}
-                          isNextWeekPreview={isNextWeekPreview}
-                          onAddGoal={(title, color, goalType) =>
-                            addGoal(dateKey, title, color, goalType)
-                          }
-                          onToggleGoal={(id) => toggleGoal(dateKey, id)}
-                          onRemoveGoal={(id) => removeGoal(dateKey, id)}
-                          onUpdateGoal={(id, updates) => updateGoal(dateKey, id, updates)}
-                          onMoveGoal={moveGoal}
-                          onNavigateToDaily={navigateToDaily}
-                          canAddMore={canAddMore(dateKey)}
-                        />
-                      );
-                    })}
-                  </div>
+                        return (
+                          <WeeklyGoalsDayColumn
+                            key={dateKey}
+                            date={date}
+                            dateKey={dateKey}
+                            goals={getGoalsForDate(dateKey)}
+                            events={dayEvents}
+                            isToday={isToday}
+                            isNextWeekPreview={row.isPreview}
+                            onAddGoal={(title, color, goalType) =>
+                              addGoal(dateKey, title, color, goalType)
+                            }
+                            onToggleGoal={(id) => toggleGoal(dateKey, id)}
+                            onRemoveGoal={(id) => removeGoal(dateKey, id)}
+                            onUpdateGoal={(id, updates) => updateGoal(dateKey, id, updates)}
+                            onMoveGoal={moveGoal}
+                            onNavigateToDaily={navigateToDaily}
+                            canAddMore={canAddMore(dateKey)}
+                          />
+                        );
+                      })}
+                    </div>
+                  ))}
                 </div>
 
                 {isNotesOpen && (

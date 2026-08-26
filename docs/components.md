@@ -79,7 +79,7 @@ Reusable weekly goal UI and colors used by Weekly Overview and legacy Calendar w
 ### Weekly Overview (`components/goal-hierarchy/GoalHierarchyView.tsx`)
 **Page:** `app/weekly-overview/page.tsx`
 
-Multi-level planning: a single collapsible **Month & Week Goals** section (month selector, month goal, and week goal together; collapse state stored in `localStorage` as `weekly-overview-goals-collapsed`), then a unified week panel (folder-style Week 1–5 tabs, week navigation, Open Notes, plus a two-row 7-column weekly goals grid). Week nav center button shows **This week** / **Next week** / **Previous week** / **In 2 weeks** via `getWeekOffsetLabel`. Day goals use shared `WeeklyGoalsDayColumn` and storage. Legacy `/goal-hierarchy` redirects to this page.
+Multi-level planning: a single collapsible **Month & Week Goals** section (month selector, month goal, and week goal together; collapse state stored in `localStorage` as `weekly-overview-goals-collapsed`), then a unified week panel (folder-style Week 1–5 tabs, week navigation, Open Notes, plus a three-row 7-column weekly goals grid: selected week, next week, and two weeks ahead). Preview weeks are muted; day cards use Daily Log–style height. Week nav center button shows **This week** / **Next week** / **Previous week** / **In 2 weeks** via `getWeekOffsetLabel`. Day goals use shared `WeeklyGoalsDayColumn` and storage. Legacy `/goal-hierarchy` redirects to this page.
 
 ### ChecklistSidebar (`components/calendar/ChecklistSidebar.tsx`)
 Weekly notes checklist panel. Rendered only when opened via "Open Notes" in Weekly Overview.
