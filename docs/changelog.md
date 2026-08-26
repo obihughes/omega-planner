@@ -1,5 +1,9 @@
 ## 2026-08-26
 
+- **Todo: scroll long lists** (2026-08-26)
+  - The item list now scrolls inside the card when it exceeds the remaining viewport. Title, add form, and Clear completed stay pinned so lower items stay reachable.
+  - **Files affected**: `components/todo/TodoView.tsx`, `app/todo/page.tsx`, `docs/components.md`, `docs/changelog.md`
+
 - **Weekly Overview: 3-week grid** (2026-08-26)
   - Day grid is now three 7-column rows: selected week, next week, and two weeks ahead (same layout as Daily Log’s 3-week grid, but looking forward instead of showing the previous week).
   - Preview weeks stay muted. Day cards are slightly shorter (`min-h-[280px]`, tighter padding) to match Daily Log.

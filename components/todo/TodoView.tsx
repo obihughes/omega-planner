@@ -213,13 +213,13 @@ export function TodoView() {
   };
 
   return (
-    <div className="h-full w-full px-6 py-6">
-      <div className="max-w-lg mx-auto">
-        <h1 className="text-2xl font-semibold text-foreground mb-4">Todo</h1>
+    <div className="h-full min-h-0 w-full px-6 py-6 flex flex-col">
+      <div className="max-w-lg mx-auto w-full min-h-0 flex-1 flex flex-col">
+        <h1 className="text-2xl font-semibold text-foreground mb-4 shrink-0">Todo</h1>
 
-        <Card className="border bg-card">
-          <CardContent className="p-4 space-y-3">
-            <div className="flex items-center justify-between">
+        <Card className="border bg-card min-h-0 flex flex-col overflow-hidden hover:translate-y-0">
+          <CardContent className="p-4 flex flex-col gap-3 min-h-0 flex-1 overflow-hidden">
+            <div className="flex items-center justify-between shrink-0">
               <span className="text-xs text-muted-foreground">
                 {items.length === 0
                   ? 'No items yet'
@@ -232,7 +232,7 @@ export function TodoView() {
               )}
             </div>
 
-            <form className="flex gap-2" onSubmit={handleSubmit}>
+            <form className="flex gap-2 shrink-0" onSubmit={handleSubmit}>
               <input
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
@@ -257,7 +257,7 @@ export function TodoView() {
                 collisionDetection={closestCenter}
                 onDragEnd={handleDragEnd}
               >
-                <ul className="space-y-1">
+                <ul className="space-y-1 min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-overlay">
                   <SortableContext
                     items={activeItems.map((i) => i.id)}
                     strategy={verticalListSortingStrategy}

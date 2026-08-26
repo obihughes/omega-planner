@@ -7,7 +7,7 @@ import { TodoView } from '@/components/todo';
 export default function TodoPage() {
   return (
     <AppLayout>
-      <div className="h-full w-full max-w-none">
+      <div className="h-full min-h-0 w-full max-w-none">
         <TodoView />
       </div>
     </AppLayout>
