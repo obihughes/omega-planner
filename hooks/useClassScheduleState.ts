@@ -25,6 +25,8 @@ export interface UseClassScheduleStateResult {
   tasksByDate: Map<string, Task[]>;
   /** Underlying recurring class tasks stored by day-of-week */
   classTasks: ClassScheduleTask[];
+  /** False until localStorage has been read on the client (SSR-safe) */
+  hydrated: boolean;
   /** Whether daily planner tasks are shown as an overlay on the class schedule */
   showDailyTasks: boolean;
   /** Toggle daily planner task overlay visibility (persisted to localStorage) */
@@ -51,25 +53,30 @@ export interface UseClassScheduleStateResult {
 export function useClassScheduleState(
   initialShowDailyTasks?: boolean
 ): UseClassScheduleStateResult {
-  // Initialize state directly from localStorage to avoid race condition
-  const [classTasks, setClassTasks] = useState<ClassScheduleTask[]>(() => {
-    console.log('🔄 [useClassScheduleState] Initializing state from storage');
-    const loaded = ClassScheduleStorage.load();
-    console.log('✅ [useClassScheduleState] Initial state loaded with', loaded.length, 'tasks');
-    return loaded;
-  });
+  // Start empty so SSR and the first client paint match. localStorage is
+  // client-only; reading it in useState caused "0 classes" vs "N classes".
+  const [classTasks, setClassTasks] = useState<ClassScheduleTask[]>([]);
+  const [hydrated, setHydrated] = useState(false);
 
-  const [showDailyTasks, setShowDailyTasksState] = useState<boolean>(() =>
-    typeof initialShowDailyTasks === 'boolean'
-      ? initialShowDailyTasks
-      : ClassScheduleStorage.getShowDailyTasks()
+  const [showDailyTasks, setShowDailyTasksState] = useState<boolean>(
+    typeof initialShowDailyTasks === 'boolean' ? initialShowDailyTasks : false
   );
 
-  // URL / parent intent wins over the last persisted toggle
+  // Load after mount. URL / parent intent wins over the last persisted toggle.
   useEffect(() => {
-    if (typeof initialShowDailyTasks !== 'boolean') return;
-    setShowDailyTasksState(initialShowDailyTasks);
-    ClassScheduleStorage.setShowDailyTasks(initialShowDailyTasks);
+    console.log('🔄 [useClassScheduleState] Loading state from storage');
+    const loaded = ClassScheduleStorage.load();
+    console.log('✅ [useClassScheduleState] Loaded', loaded.length, 'tasks');
+    setClassTasks(loaded);
+
+    if (typeof initialShowDailyTasks === 'boolean') {
+      setShowDailyTasksState(initialShowDailyTasks);
+      ClassScheduleStorage.setShowDailyTasks(initialShowDailyTasks);
+    } else {
+      setShowDailyTasksState(ClassScheduleStorage.getShowDailyTasks());
+    }
+
+    setHydrated(true);
   }, [initialShowDailyTasks]);
 
   // Track mount/unmount
@@ -80,11 +87,12 @@ export function useClassScheduleState(
     };
   }, []);
 
-  // Persist whenever tasks change
+  // Persist after hydration so the initial empty array never wipes storage
   useEffect(() => {
+    if (!hydrated) return;
     console.log('💾 [useClassScheduleState] Tasks changed, saving', classTasks.length, 'tasks');
     ClassScheduleStorage.save(classTasks);
-  }, [classTasks]);
+  }, [classTasks, hydrated]);
 
   // Compute a stable "week" mapping each JS day-of-week to a concrete date
   const weekMeta: ClassScheduleDayMeta[] = useMemo(() => {
@@ -231,6 +239,7 @@ export function useClassScheduleState(
     weekMeta,
     tasksByDate,
     classTasks,
+    hydrated,
     showDailyTasks,
     setShowDailyTasks,
     upsertFromModal,

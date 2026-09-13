@@ -75,6 +75,7 @@ export default React.memo(function ClassSchedule({
   const {
     weekMeta,
     tasksByDate,
+    hydrated,
     showDailyTasks,
     setShowDailyTasks,
     upsertFromModal,
@@ -860,6 +861,16 @@ export default React.memo(function ClassSchedule({
       </div>
     );
   };
+
+  if (!hydrated) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-muted-foreground">
+          Loading class schedule...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col bg-background text-foreground transition-colors">

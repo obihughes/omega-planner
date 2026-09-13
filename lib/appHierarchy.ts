@@ -230,7 +230,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'useClassScheduleState',
         kind: 'hook',
         path: 'hooks/useClassScheduleState.ts',
-        editHint: 'Optional initialShowDailyTasks from the URL; toggle also persisted in classScheduleStorage.',
+        editHint: 'Loads class tasks after mount (hydrated). Optional initialShowDailyTasks from the URL; toggle also persisted in classScheduleStorage.',
       },
       {
         id: 'dp-class-storage',

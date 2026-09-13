@@ -1,3 +1,10 @@
+## 2026-09-13
+
+- **Class Schedule: fix hydration mismatch** (2026-09-13)
+  - `useClassScheduleState` no longer reads localStorage during `useState` init. Server HTML was "0 classes" while the client painted stored counts ("N classes").
+  - Classes load after mount (`hydrated`). The view shows a loading shell until then. Saves run only after hydration so the empty initial array cannot wipe storage.
+  - **Files affected**: `hooks/useClassScheduleState.ts`, `components/planner/ClassSchedule.tsx`, `lib/appHierarchy.ts`, `docs/planner.md`, `docs/utils.md`, `docs/changelog.md`, `components/planner/README.md`, `hooks/README.md`
+
 ## 2026-08-26
 
 - **Todo: scroll long lists** (2026-08-26)

@@ -138,6 +138,8 @@ The Class Schedule view (`/class-schedule`) provides a recurring weekly timetabl
 **Technical Notes:**
 - Classes are stored by day-of-week (0 = Sunday ... 6 = Saturday) rather than specific dates
 - Each class repeats weekly on its assigned day
+- `useClassScheduleState` starts empty and sets `hydrated` after reading localStorage so SSR and the first client paint match (avoids "0 classes" vs "N classes")
+- The schedule view shows a loading shell until `hydrated`; saves run only after that so the empty initial state cannot wipe storage
 - Uses the same task card rendering as the daily planner for consistency
 - Layout uses flex column with `flex-1 min-h-0` so the schedule grid fills the main content area
 

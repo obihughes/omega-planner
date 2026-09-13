@@ -194,7 +194,7 @@ Applies a prepared import plan with `skip`, `replace`, `copy_all`, or `cancel` s
 Persists recurring class schedule tasks and UI preferences for the Class Schedule page.
 
 #### `ClassScheduleStorage.load()` / `save(tasks)`
-Load and save recurring `ClassScheduleTask[]` under `omega-planner-class-schedule`.
+Load and save recurring `ClassScheduleTask[]` under `omega-planner-class-schedule`. Callers must load after mount (`useClassScheduleState` `hydrated`) so SSR does not read a different count than the client.
 
 #### `ClassScheduleStorage.getShowDailyTasks()` / `setShowDailyTasks(value)`
 Persist the **Classes | Daily Tasks** overlay toggle on `/class-schedule` under `omega-planner-class-schedule-show-daily-tasks`.

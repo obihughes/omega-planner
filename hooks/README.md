@@ -96,6 +96,14 @@ Shared calendar events/periods store (`omega-calendar-data`) via `useSyncExterna
 
 **Storage key:** `omega-calendar-data`
 
+### useClassScheduleState
+
+Recurring class timetable for `/class-schedule`, stored by day-of-week. Starts empty and sets `hydrated` after reading localStorage so SSR matches the first client paint. Saves only after `hydrated` so the empty initial state cannot wipe storage. `initialShowDailyTasks` from the URL overrides the persisted Classes | Daily Tasks toggle.
+
+**API:** `weekMeta`, `tasksByDate`, `classTasks`, `hydrated`, `showDailyTasks`, `setShowDailyTasks`, `upsertFromModal`, `deleteTaskById`, `updateClassTaskTime`
+
+**Storage key:** `omega-planner-class-schedule` (`utils/classScheduleStorage.ts`)
+
 ### useTheme
 
 Wraps `next-themes` for light, dark, forest, sunset, ocean, and system appearance.
