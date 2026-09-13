@@ -212,7 +212,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               e.stopPropagation();
               onCopy(task);
             }}
-            title="Copy Task"
+              title="Copy task to pool"
           >
             <Copy className={actionScale.icon} />
           </button>

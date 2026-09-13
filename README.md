@@ -34,7 +34,7 @@ npm run dev:clean
 - **Smart Sorting**: Sort by multiple fields simultaneously (e.g., completion + title)
 - **Custom Ordering**: Visual drag-and-drop reordering for planner tasks
 - **Theme support** with full consistency across light, dark, forest, sunset, ocean, and system (Settings)
-- **Copy/paste tasks** between dates and time slots
+- **Copy tasks to the day pool** from timeline cards (drag onto the timeline to place); edit-modal Copy still click-to-paste
 - **Time-based organization** with timeline views
 - **Daily tasks week view** (sidebar Daily): stacked 7-day Class Schedule in Daily Tasks mode; **Advanced** opens the full planner
 - **Responsive design** for all device sizes

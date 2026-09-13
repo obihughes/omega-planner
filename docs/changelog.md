@@ -1,5 +1,11 @@
 ## 2026-09-13
 
+- **Daily / Class Schedule: fix task-card Copy** (2026-09-13)
+  - Timeline **Copy** was wired to `startCopy` (click-to-paste) on Daily Planner, and Class Schedule copied into the general pool that the day pool bar does not show.
+  - `copyTaskToPool` now accepts a `Task` or id and writes an unscheduled copy to that day's date-specific pool. Daily Planner Copy uses it and expands the pool bar. Class Schedule Copy uses the same helper and shows a confirmation.
+  - Edit-modal **Copy** still enters click-to-paste mode (`startCopy` / `handleDropCopy`).
+  - **Files affected**: `hooks/useDailyPlannerState.ts`, `components/planner/DailyPlanner.tsx`, `components/planner/ClassSchedule.tsx`, `components/planner/TaskCard.tsx`, `lib/appHierarchy.ts`, `docs/planner.md`, `docs/changelog.md`, `components/planner/README.md`, `hooks/README.md`, `README.md`
+
 - **Class Schedule: fix hydration mismatch** (2026-09-13)
   - `useClassScheduleState` no longer reads localStorage during `useState` init. Server HTML was "0 classes" while the client painted stored counts ("N classes").
   - Classes load after mount (`hydrated`). The view shows a loading shell until then. Saves run only after hydration so the empty initial array cannot wipe storage.

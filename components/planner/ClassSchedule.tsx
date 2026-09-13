@@ -96,8 +96,7 @@ export default React.memo(function ClassSchedule({
 
   const {
     tasksByDate: dailyTasksByDate,
-    addPoolTask,
-    getNextId,
+    copyTaskToPool,
     handleAddTask,
     handleUpdateTask,
     handleDeleteTask,
@@ -117,6 +116,7 @@ export default React.memo(function ClassSchedule({
   const [viewingTaskNotes, setViewingTaskNotes] = useState<Task | null>(null);
   const [draggingTask, setDraggingTask] = useState<ClassDraggingTask | null>(null);
   const [resizingTask, setResizingTask] = useState<ClassResizingTask | null>(null);
+  const [copyMessage, setCopyMessage] = useState<string | null>(null);
 
   const lastDoubleClickTimestampRef = useRef<number>(0);
   const dailyScrollRef = useRef<HTMLDivElement>(null);
@@ -138,6 +138,12 @@ export default React.memo(function ClassSchedule({
     );
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    if (!copyMessage) return;
+    const timerId = window.setTimeout(() => setCopyMessage(null), 4000);
+    return () => window.clearTimeout(timerId);
+  }, [copyMessage]);
 
   // Auto-scroll to today's card in 7-day daily view
   useEffect(() => {
@@ -281,15 +287,19 @@ export default React.memo(function ClassSchedule({
 
   const handleCopyTask = useCallback(
     (task: Task) => {
-      const poolTaskCopy: Task = {
-        ...task,
-        id: getNextId(),
-        completed: false,
-        poolDate: undefined,
-      };
-      addPoolTask(poolTaskCopy);
+      const copied = copyTaskToPool(task);
+      if (!copied) return;
+
+      const dateLabel = dateFromDateKey(copied.baseDate).toLocaleDateString(undefined, {
+        weekday: "long",
+        month: "short",
+        day: "numeric",
+      });
+      setCopyMessage(
+        `Copied "${copied.name || "Untitled"}" to the daily planner pool for ${dateLabel}.`
+      );
     },
-    [addPoolTask, getNextId]
+    [copyTaskToPool]
   );
 
   const handleResizeStart = useCallback(
@@ -893,6 +903,11 @@ export default React.memo(function ClassSchedule({
         />
 
         <div className="flex flex-col flex-1 min-h-0 px-6 pb-6 gap-6">
+          {copyMessage && (
+            <div className="rounded-lg border border-border bg-muted/50 px-4 py-2 text-sm text-foreground">
+              {copyMessage}
+            </div>
+          )}
           <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden flex flex-col flex-1 min-h-0">
             <div className="flex-none flex items-center justify-between px-4 py-2 border-b border-border bg-card/95 backdrop-blur-sm">
               <div className="flex items-center gap-2">

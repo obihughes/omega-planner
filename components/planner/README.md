@@ -16,7 +16,7 @@ This directory contains all components related to the daily planning functionali
 - Dual-day view with independent navigation
 - Task management (create, edit, delete, move, resize)
 - Drag and drop functionality between time slots and days
-- Copy/paste tasks across different days
+- Copy a timeline task into that day's unscheduled pool (`copyTaskToPool`); drag the copy onto the timeline to place it. Edit-modal **Copy** still enters click-to-paste mode (`startCopy` / `handleDropCopy`) for placing a duplicate at a chosen time.
 - **Per-panel view toggle**: Each day panel (top and bottom) has a Tasks | Class toggle to switch between scheduled tasks for that date and the recurring class schedule for that weekday. Class schedule view is read-only (view notes only; edit via Class Schedule page).
 - **Import Classes**: Quick action on each day panel copies that weekday's recurring class schedule into the planner timeline for the viewed date, with conflict resolution when times overlap.
 - **Plan Day**: Floating button opens a quick-entry modal to batch-add unscheduled tasks for the viewed day into the pool/pinned bar; tasks can then be dragged onto the timeline.
@@ -100,7 +100,7 @@ This directory contains all components related to the daily planning functionali
 - Past tasks on today are visually muted (`opacity-50`) but remain fully copyable, editable, and draggable
 - Drag handles for repositioning (action buttons and resize handles do not initiate drag)
 - Resize handles for duration adjustment
-- Click actions for editing, copy, and notes
+- Click actions for editing, copy-to-pool, and notes
 - Action buttons scale with timeline row height (compact horizontal row on short rows)
 - `overflow-visible` on card root so hover action buttons are not clipped at the right edge
 - Time conflict indicators
@@ -114,7 +114,7 @@ This directory contains all components related to the daily planning functionali
 - Drop zone for task placement (double-click to create, drop from pool when onDropFromPool provided)
 - Time markers and labels
 - Period-specific styling (night, morning, afternoon, evening)
-- Optional: readOnly (class schedule), drag/resize/copy handlers, onDoubleClickAdd
+- Optional: readOnly (class schedule), drag/resize/copy-to-pool handlers, onDoubleClickAdd
 - **`data-timeline-drop`** on the period container (includes sticky hour headers in drop hit-testing)
 - Drag preview renders with `pointer-events-none` so live pointer tracking hits the timeline beneath
 - Task wrapper uses `onPointerDown` + pointer capture (via `handleDragStart`); skips drag when pointer targets action buttons or resize handles
@@ -188,6 +188,6 @@ DailyPlanner
 - Supports vertical scrolling through all seven day cards.
 - Auto-scrolls to today's day card when the view opens.
 - Preserves class CRUD flows (double-click add, card click edit, modal delete) and keeps recurring storage keyed by day-of-week.
-- **Task card actions**: View Notes, Edit, Copy to daily planner pool, drag (same weekday), and resize (edge handles) work on class cards. Uses pointer capture and `timelineDragUtils` for hour snapping; commits via `updateClassTaskTime` in `useClassScheduleState`.
-- **Daily Tasks view**: Sidebar **Daily** opens this mode at `/class-schedule?showDailyTasks=true`. Header toggle **Classes | Daily Tasks** switches between recurring class schedule and this week's daily planner tasks (exclusive views) and updates the URL. Preference also persists in `omega-planner-class-schedule-show-daily-tasks`. Daily Tasks mode has an **Advanced** button to the full DailyPlanner (`/?view=monthly`). Daily Tasks supports full CRUD, drag, resize, and copy; changes persist to Daily Planner storage. Class mode supports recurring class CRUD, drag, and resize.
+- **Task card actions**: View Notes, Edit, Copy to that day's daily planner pool (`copyTaskToPool` via `useDailyPlanner`), drag (same weekday), and resize (edge handles) work on class cards. Copy shows a brief confirmation; the duplicate is unscheduled so it appears in Advanced Daily's pool bar. Uses pointer capture and `timelineDragUtils` for hour snapping; commits via `updateClassTaskTime` in `useClassScheduleState`.
+- **Daily Tasks view**: Sidebar **Daily** opens this mode at `/class-schedule?showDailyTasks=true`. Header toggle **Classes | Daily Tasks** switches between recurring class schedule and this week's daily planner tasks (exclusive views) and updates the URL. Preference also persists in `omega-planner-class-schedule-show-daily-tasks`. Daily Tasks mode has an **Advanced** button to the full DailyPlanner (`/?view=monthly`). Daily Tasks supports full CRUD, drag, resize, and copy-to-pool; changes persist to Daily Planner storage. Class mode supports recurring class CRUD, drag, resize, and copy-to-pool.
 - **Hydration**: `useClassScheduleState` loads classes after mount (`hydrated`). The view shows "Loading class schedule..." until then so server HTML cannot disagree with localStorage counts.

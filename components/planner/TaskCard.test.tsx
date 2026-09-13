@@ -66,7 +66,7 @@ describe('TaskCard', () => {
     render(<TaskCard {...mockProps} />);
     
     // Find the copy button
-    const copyButton = screen.getByTitle('Copy task to timeline');
+    const copyButton = screen.getByTitle('Copy task to pool');
     expect(copyButton).toBeInTheDocument();
     
     // Click the copy button

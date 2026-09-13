@@ -12,6 +12,7 @@ This directory contains custom React hooks used throughout the application.
 - UI state (active tab, dragging/resizing state, modals)
 - Task manipulation functions (add, delete, update)
 - Batch pool helpers (`addPoolTasksForDate` for Plan Day quick entry)
+- Copy helpers: `copyTaskToPool(task | id)` adds an unscheduled copy to that day's date-specific pool (task-card Copy). `startCopy` / `handleDropCopy` remain for edit-modal click-to-paste.
 - Data persistence via localStorage
 
 **Usage:**

@@ -14,6 +14,7 @@ Sidebar **Daily** opens Class Schedule in Daily Tasks mode (`/class-schedule?sho
 - **Wide-layout drag**: Live drag/resize hour math uses each timeline segment's measured width (same as pool drop and double-click), with pointer capture, header-inclusive drop zones, and preview hit-testing fixes for multi-monitor / stretched layouts. Helpers live in `utils/timelineDragUtils.ts`.
 
 ### Recent Bug Fixes
+- **Fixed Task-Card Copy**: Timeline Copy now calls `copyTaskToPool` (date-specific unscheduled pool) instead of `startCopy`. Class Schedule Copy uses the same helper and shows confirmation. Edit-modal Copy still click-to-paste.
 - **Fixed Copy/Paste Rendering Issue**: Resolved bug where copied tasks wouldn't render until page reload by ensuring consistent YYYY-MM-DD date format in the `handleDropCopy` function
 - **Fixed Date Tracking Issue**: Resolved bug where dragged tasks would be reverted to incorrect dates due to improper original date tracking in conflict resolution
 - **Improved Collision Resolution**: Enhanced the drag and drop system to properly handle conflicts and date consistency
@@ -23,7 +24,7 @@ Sidebar **Daily** opens Class Schedule in Daily Tasks mode (`/class-schedule?sho
 - **Delete Mode**: Toggle via sidebar bulk-actions menu (`…`); shows an X on each scheduled task in the full daily timeline; click to delete quickly.
 - **Clear Day**: Remove all scheduled tasks for the selected date with one action (bulk-actions menu).
 - **Apply Saved Day**: Apply or replace with a saved day template from the bulk-actions menu.
-- **Merged layout**: Scheduling view shows mini calendar + inbox on the left and full dual-day timeline panels on the right (same drag/resize/copy as Daily view).
+- **Merged layout**: Scheduling view shows mini calendar + inbox on the left and full dual-day timeline panels on the right (same drag/resize/copy-to-pool as Daily view).
 
 ### Task Resize
 - **Edge Resizing**: Resize tasks by dragging the start or end edges
@@ -69,10 +70,10 @@ Unified scheduling layout: `SchedulingSidebar` (left) + full daily timeline pane
 Mini calendar, inbox tasks, and bulk-actions popover (Delete Mode, Clear Day, Apply Saved Day). Expanded width is `w-72` (288px). The whole left panel (calendar + inbox) collapses to a thin `w-9` rail via the panel-hide button in the Calendar header; click the rail button to restore it. Preference persists in `localStorage` (`daily-planner-scheduling-sidebar-collapsed`). Collapsing the sidebar widens the timeline panel, so `MergedDailyView`'s `ResizeObserver` rescales `pixelsPerHour` / `columnHeightPx`. Date picking on the timeline panel headers still works while the sidebar is collapsed.
 
 ### TaskCard
-Renders individual tasks on the timeline with drag, resize, edit, copy, and view-notes actions. Action button size and layout scale with the timeline row `height` prop (horizontal compact row on short rows, stacked full-size buttons on taller rows).
+Renders individual tasks on the timeline with drag, resize, edit, copy-to-pool, and view-notes actions. Task-card **Copy** calls `copyTaskToPool` (date-specific unscheduled pool). Edit-modal **Copy** still uses `startCopy` / click-to-paste. Action button size and layout scale with the timeline row `height` prop (horizontal compact row on short rows, stacked full-size buttons on taller rows).
 
 ### TimelineColumn
-Renders individual timeline sections with tasks and time markers. **Shared** by both Daily view and Scheduling (Monthly) view via `MiniDailyTimeline`, eliminating duplicated timeline logic. Supports read-only mode (e.g. class schedule), drag/resize/copy, and pool drops. When `fillWidth` is true (scheduling view), hour columns use equal flex distribution and percentage-based task/grid positioning so the last hour column matches the rest. Timeline task area uses `overflow-visible` so task action buttons are not clipped by parent containers.
+Renders individual timeline sections with tasks and time markers. **Shared** by both Daily view and Scheduling (Monthly) view via `MiniDailyTimeline`, eliminating duplicated timeline logic. Supports read-only mode (e.g. class schedule), drag/resize/copy-to-pool, and pool drops. When `fillWidth` is true (scheduling view), hour columns use equal flex distribution and percentage-based task/grid positioning so the last hour column matches the rest. Timeline task area uses `overflow-visible` so task action buttons are not clipped by parent containers.
 
 ### WeeklyView
 Displays a 7-day view of scheduled tasks in a horizontal timeline format. Weeks start on Monday and end on Sunday. Available in the sidebar under **Others** → **Week** (`/?view=weekly`). When opening the weekly overview, the view now auto-scrolls to highlight today within the current week by default. Features include:
@@ -128,9 +129,9 @@ The Class Schedule view (`/class-schedule`) provides a recurring weekly timetabl
   - Vertically scrollable when all days do not fit on screen
   - Auto-scrolls to center the current day when the view opens
 - **Add Classes**: Click "+ Add Class" button or double-click timeline to create new recurring classes
-- **Daily Tasks View**: Sidebar **Daily** opens this mode (`/class-schedule?showDailyTasks=true`). Use the **Classes | Daily Tasks** toggle to switch; it updates the URL so nav highlighting stays in sync. Only one set is shown at a time. The choice is also persisted in localStorage. Daily Tasks mode supports drag, resize, edit, delete, copy, and double-click add; changes sync to Daily Planner storage. **Advanced** opens the original DailyPlanner (`/?view=monthly`).
+- **Daily Tasks View**: Sidebar **Daily** opens this mode (`/class-schedule?showDailyTasks=true`). Use the **Classes | Daily Tasks** toggle to switch; it updates the URL so nav highlighting stays in sync. Only one set is shown at a time. The choice is also persisted in localStorage. Daily Tasks mode supports drag, resize, edit, delete, copy-to-pool, and double-click add; changes sync to Daily Planner storage. **Advanced** opens the original DailyPlanner (`/?view=monthly`).
 - **Edit Classes**: Click any existing class card to edit name, time, duration, color, and notes (hover **Edit** button, double-click title, or **View Notes** → Edit)
-- **Task card actions**: Class cards support **View Notes**, **Edit**, **Copy** (to daily planner pool), **drag** (move start time on the same weekday), and **resize** (edge handles). Changes persist to recurring class storage.
+- **Task card actions**: Class cards support **View Notes**, **Edit**, **Copy** (to that day's daily planner pool via `copyTaskToPool`, with on-page confirmation), **drag** (move start time on the same weekday), and **resize** (edge handles). Changes persist to recurring class storage.
 - **Delete Classes**: Delete classes via the edit modal
 - **Persistence**: All class schedules are saved to localStorage and persist across sessions
 - **Day Context**: Highlights today and shows per-day class counts in each stacked day card
@@ -184,7 +185,7 @@ The Daily Planner is a core feature that allows users to manage and visualize th
 Main component that handles the planner interface and logic.
 
 #### Features
-- Task management (create, edit, delete, copy)
+- Task management (create, edit, delete, copy-to-pool)
 - Drag-and-drop task positioning
 - Task resizing
 - Dark mode support
@@ -241,7 +242,7 @@ const PIXELS_PER_HOUR = 142;
    
 3. **Moving Tasks**
    - Drag and drop within timeline
-   - Copy tasks between days
+   - Copy a task into that day's pool, then drag it onto the timeline (edit-modal Copy still click-to-paste)
    
 4. **Resizing Tasks**
    - Use left/right handles

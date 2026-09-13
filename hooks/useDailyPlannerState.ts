@@ -432,18 +432,36 @@ export function useDailyPlanner() {
     setPoolTasks(prevPoolTasks => [...prevPoolTasks, newPoolTask]);
   }, [getNextId, setPoolTasks]);
 
-  const copyTaskToPool = useCallback((taskId: string) => {
-    const taskToCopy = tasks.find(t => t.id === taskId);
-    if (taskToCopy) {
-      const poolTaskCopy: Task = {
-        ...taskToCopy,
-        id: getNextId(), // New ID for the copy in the pool
+  /**
+   * Copies a scheduled task (or class) into that day's unscheduled pool.
+   * Accepts a Task or an id so TaskCard's onCopy(task) can call it directly.
+   * Date-specific pool entries show in the daily planner pool bar.
+   */
+  const copyTaskToPool = useCallback((taskOrId: Task | string) => {
+    const sourceTask = typeof taskOrId === 'string'
+      ? tasks.find((t) => t.id === taskOrId)
+      : taskOrId;
+    if (!sourceTask) return null;
 
-        // Keep original startHour and duration as template values
-      };
-      setPoolTasks(prevPoolTasks => [...prevPoolTasks, poolTaskCopy]);
-    }
-  }, [tasks, getNextId, setPoolTasks]);
+    const dateKey = sourceTask.baseDate || getTodayDateKey();
+    const poolTaskCopy: Task = {
+      ...sourceTask,
+      id: getNextId(),
+      startHour: undefined,
+      completed: false,
+      poolDate: dateKey,
+      baseDate: dateKey,
+    };
+
+    setPoolTasksByDate((prev) => {
+      const next = new Map(prev);
+      const existing = next.get(dateKey) || [];
+      next.set(dateKey, [...existing, poolTaskCopy]);
+      return next;
+    });
+
+    return poolTaskCopy;
+  }, [tasks, getNextId]);
 
   // moveTaskFromPool might be handled by the general copy/drop mechanism.
   // For now, let's define a simple version that takes a pool task ID and adds it to main tasks for a default day/time.

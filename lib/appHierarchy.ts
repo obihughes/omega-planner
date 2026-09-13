@@ -147,7 +147,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'DailyPlanner',
         kind: 'component',
         path: 'components/planner/DailyPlanner.tsx',
-        editHint: 'Advanced planner UI: scheduling sidebar + timeline panels. Opened via Daily Tasks → Advanced or /?view=monthly. Weekly view via Others → Week or /?view=weekly.',
+        editHint: 'Advanced planner UI: scheduling sidebar + timeline panels. Task-card Copy uses copyTaskToPool (day pool bar). Opened via Daily Tasks → Advanced or /?view=monthly. Weekly view via Others → Week or /?view=weekly.',
         children: [
           {
             id: 'dp-scheduling-sidebar',
@@ -161,7 +161,7 @@ export const appHierarchy: AppMapNode[] = [
             label: 'TaskCard',
             kind: 'component',
             path: 'components/planner/TaskCard.tsx',
-            editHint: 'Timeline task drag, resize, styling.',
+            editHint: 'Timeline task drag, resize, copy-to-pool, styling.',
           },
           {
             id: 'dp-weekly-view',
@@ -189,7 +189,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'useDailyPlannerState',
         kind: 'hook',
         path: 'hooks/useDailyPlannerState.ts',
-        editHint: 'Planner UI state and localStorage persistence. Not layered on PlannerProvider.',
+        editHint: 'Planner UI state and localStorage persistence. copyTaskToPool writes date-specific pool copies; startCopy is edit-modal click-to-paste. Not layered on PlannerProvider.',
       },
       {
         id: 'dp-hook-modal',
@@ -223,7 +223,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'ClassSchedule',
         kind: 'component',
         path: 'components/planner/ClassSchedule.tsx',
-        editHint: 'Weekly class grid. Sidebar Daily opens Daily Tasks mode; Advanced button opens DailyPlanner. Classes | Daily Tasks toggle syncs ?showDailyTasks=true.',
+        editHint: 'Weekly class grid. Sidebar Daily opens Daily Tasks mode; Advanced button opens DailyPlanner. Classes | Daily Tasks toggle syncs ?showDailyTasks=true. Task-card Copy uses copyTaskToPool (that day\'s unscheduled pool) with on-page confirmation.',
       },
       {
         id: 'dp-class-hook',

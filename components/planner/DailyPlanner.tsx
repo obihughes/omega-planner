@@ -80,7 +80,6 @@ export default function DailyPlanner() {
     handlePinTask,
     handleUnpinTask,
     formatTimeRemaining,
-    startCopy,
     cancelCopy,
     handleDropCopy,
     cloneDayTasks,
@@ -275,6 +274,11 @@ export default function DailyPlanner() {
     prepareCopyClassesFromSchedule,
     showImportClassesFeedback,
   ]);
+
+  const handleCopyTaskToPool = useCallback((task: Task) => {
+    copyTaskToPool(task);
+    setIsTaskPoolOpen(true);
+  }, [copyTaskToPool, setIsTaskPoolOpen]);
 
   const handleClassCopyResolve = useCallback((choice: ClassCopyResolutionChoice) => {
     if (!pendingClassCopyPlan) return;
@@ -1199,7 +1203,7 @@ export default function DailyPlanner() {
                             columnHeightPx={columnHeightPx}
                             readOnly={topDayViewMode === 'class'}
                             onDoubleClickAdd={(date, startHour) => createTimelineTask(date, startHour)}
-                            onCopy={startCopy}
+                            onCopy={handleCopyTaskToPool}
                             onViewNotes={openViewNotesModal}
                             onResizeStart={(task, edge, e) => handleResizeStart(task, edge, e)}
                             onDropFromPool={handleDropFromPool}
@@ -1458,7 +1462,7 @@ export default function DailyPlanner() {
                             columnHeightPx={columnHeightPx}
                             readOnly={bottomDayViewMode === 'class'}
                             onDoubleClickAdd={(date, startHour) => createTimelineTask(date, startHour)}
-                            onCopy={startCopy}
+                            onCopy={handleCopyTaskToPool}
                             onViewNotes={openViewNotesModal}
                             onResizeStart={(task, edge, e) => handleResizeStart(task, edge, e)}
                             onDropFromPool={handleDropFromPool}
