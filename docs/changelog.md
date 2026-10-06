@@ -1,3 +1,12 @@
+## 2026-10-05
+
+- **New Subjects page** (2026-10-05)
+  - Added `/subjects` (sidebar **Others** → Subjects). Two-column layout: subjects on the left, topics for the selected subject on the right.
+  - Topics have a title, status (Not started / In progress / Completed), and notes. Quick-add with Enter, status filter, progress bar, click status icon to cycle.
+  - Separate from Study Tracker: own types (`TopicSubject`, `Topic`) and storage key `omega-planner-subjects-v1`.
+  - Fixed a pre-existing syntax error in `lib/appHierarchy.ts` (the `WeeklyGoalsCalendarView` entry was missing its opening `{ id: 'cal-weekly-goals'`).
+  - **Files affected**: `types/subjects.ts`, `types/index.ts`, `utils/subjectsStorage.ts`, `utils/subjectsStorage.test.ts`, `utils/index.ts`, `hooks/useSubjectsManager.ts`, `hooks/index.ts`, `components/subjects/*`, `app/subjects/page.tsx`, `components/ui/Navigation.tsx`, `lib/appHierarchy.ts`, `docs/components.md`, `docs/structure.md`, `docs/changelog.md`, `hooks/README.md`, `utils/README.md`, `types/README.md`
+
 ## 2026-09-13
 
 - **Daily / Class Schedule: fix task-card Copy** (2026-09-13)

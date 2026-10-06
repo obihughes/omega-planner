@@ -107,3 +107,24 @@ Legacy: one subject row with editable name and 7 day cells. Retired from main la
 
 ### StudyCell (`components/study-tracker/StudyCell.tsx`)
 Legacy: inline-editable cell for topics. Retired from main layout.
+
+## Subjects Components
+
+### SubjectsPage (`components/subjects/SubjectsPage.tsx`)
+**Page**: `app/subjects/page.tsx` (sidebar **Others** group, `/subjects`).
+
+Two-column page for listing topics to cover per subject. Completely separate from Study Tracker (own types and storage).
+- **Hook**: `hooks/useSubjectsManager.ts` (loads after mount; keeps the selected subject, falls back to the first one when it is deleted).
+- **Storage**: LocalStorage via `utils/subjectsStorage.ts` (`omega-planner-subjects-v1`, shape `{ subjects, topics }`). Deleting a subject deletes its topics.
+
+### SubjectsList (`components/subjects/SubjectsList.tsx`)
+Left column. Click to select; **+** adds a subject (Enter to save, Esc to cancel). Hover shows rename/color edit and delete. Each row shows completed/total topics.
+
+### TopicsPanel (`components/subjects/TopicsPanel.tsx`)
+Right column for the selected subject: progress bar, quick-add input (Enter), **Detailed** button (opens `TopicForm`), status filter (All / Not started / In progress / Completed). Clicking a topic's status icon cycles Not started → In progress → Completed; clicking the title opens the edit form. Notes preview shows two lines.
+
+### TopicForm (`components/subjects/TopicForm.tsx`)
+Dialog for creating or editing a topic: title, status, notes.
+
+### SubjectColorPicker (`components/subjects/SubjectColorPicker.tsx`)
+Color dot picker plus `SUBJECT_COLOR_CLASSES` / `subjectColorClass` for Tailwind background classes.

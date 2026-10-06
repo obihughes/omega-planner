@@ -27,6 +27,9 @@ export * from './classScheduleUtils';
 // Study storage
 export { StudyStorage } from './studyStorage';
 
+// Subjects page (subjects + topics)
+export { SubjectsStorage, SUBJECTS_STORAGE_KEY } from './subjectsStorage';
+
 // Weekly day notes
 export {
   DayNotesStorage,

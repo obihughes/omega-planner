@@ -6,6 +6,10 @@ This directory contains TypeScript type definitions used throughout the applicat
 
 Defines `MonthBoardNote`, `MonthBoardWeekSlot`, `MonthBoardState`, and source/target location types for drag-and-drop. Weeks keyed by Monday `weekStartKey`; 7 day rows (Mon–Sun). Exported from `types/index.ts`.
 
+## Subjects (`subjects.ts`)
+
+Defines `TopicSubject` (`id`, `name`, `color`, `order`), `Topic` (`id`, `subjectId`, `title`, `status`, `notes`, `order`, `createdAt`), `TopicStatus` (`not-started` | `in-progress` | `completed`), and `SubjectsStorageData`. Also exports `TOPIC_STATUSES` and `TOPIC_STATUS_LABELS`. Named `TopicSubject` to avoid clashing with Study Tracker's `Subject` in `types/index.ts`.
+
 ## Core Types
 
 ### Task

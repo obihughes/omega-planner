@@ -105,6 +105,16 @@ Recurring class timetable for `/class-schedule`, stored by day-of-week. Starts e
 
 **Storage key:** `omega-planner-class-schedule` (`utils/classScheduleStorage.ts`)
 
+### useSubjectsManager
+
+Subjects and topics for the Subjects page (`/subjects`). Loads after mount and sets `hydrated`. Keeps `selectedSubjectId`; if that subject is deleted (or none is selected) it falls back to the first subject. A newly added subject becomes selected.
+
+**API:** `hydrated`, `subjects`, `topics`, `selectedSubjectId`, `selectedSubject`, `selectedTopics`, `progressBySubject`, `selectSubject`, `addSubject(name, color?)`, `updateSubject`, `removeSubject`, `addTopic(subjectId, title, status?, notes?)`, `updateTopic`, `removeTopic`
+
+**Exports:** `SUBJECT_COLORS`, `TopicProgress`
+
+**Storage key:** `omega-planner-subjects-v1` (`utils/subjectsStorage.ts`)
+
 ### useTheme
 
 Wraps `next-themes` for light, dark, forest, sunset, ocean, and system appearance.

@@ -7,7 +7,7 @@ import {
   Calendar, CalendarDays, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
   CalendarRange, ClipboardList, Settings, LayoutGrid, Map, ListTodo,
   NotebookPen, Sun, Moon, Monitor, TreePine, TreeDeciduous, Sparkles, GraduationCap, GanttChart,
-  ChefHat, BookOpen, type LucideIcon,
+  ChefHat, BookOpen, Layers, type LucideIcon,
 } from 'lucide-react';
 import { useTheme, THEME_OPTIONS, THEME_LABELS, type ThemeOption } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
@@ -234,6 +234,13 @@ export function Navigation() {
       label: 'Study Tracker',
       icon: BookOpen,
       active: pathname === '/study-tracker',
+    },
+    {
+      key: 'subjects',
+      href: '/subjects',
+      label: 'Subjects',
+      icon: Layers,
+      active: pathname === '/subjects',
     },
     {
       key: 'month-board',

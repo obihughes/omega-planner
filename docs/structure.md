@@ -28,6 +28,7 @@ Current notable feature folders include:
 - `components/calendar` – Calendars and modals
 - `components/meals` – Meals list and ingredient management
 - `components/study-tracker` – Study Planner (weekly day cards with tasks, monthly calendar with subject filter)
+- `components/subjects` – Subjects page (two-column: subjects list + topics with status and notes; separate from Study Tracker)
 - `components/goal-hierarchy` – Weekly Overview UI (collapsible month + week goal summaries; unified week panel with folder-style Week 1–5 tabs, dynamic week nav label, Open Notes; day grid is three 7-column rows — selected week Mon–Sun + next week + two weeks ahead; daily goals use shared Weekly Goals storage and `WeeklyGoalsDayColumn`)
 - `components/month-board` – Month board beta (month/week pickers, single-week view with week goal + Mon–Sun rows)
 - `components/todo` – Minimal standalone todo checklist with expandable per-item notes and drag-to-reorder active items
@@ -44,6 +45,7 @@ Helper functions, custom hooks, and utility functions that are used across diffe
 Includes storage helpers like:
 - `utils/mealsStorage.ts` – Meals local storage (migrates legacy recipes on first load)
 - `utils/studyStorage.ts` – Study Planner (subjects, study tasks) local storage
+- `utils/subjectsStorage.ts` – Subjects page (subjects, topics) local storage (`omega-planner-subjects-v1`)
 - `utils/todoStorage.ts` – Minimal todo list local storage (schema 1.1; array order is the active-item order)
 - `utils/dailyLogStorage.ts` – Daily log local storage (`omega-planner-daily-log-v1`)
 - `utils/monthBoardStorage.ts` – Month board local storage (schema v2.0)
@@ -55,6 +57,7 @@ Project documentation including setup guides, component documentation, and devel
 Additional feature routes in `/app` include:
 - `app/meals` — Meals page (meal names and ingredients); sidebar **Others** group, or `/meals`. Legacy `/recipes` redirects to `/meals`.
 - `app/study-tracker` — Study Planner (weekly view with day cards + tasks); sidebar **Others** group, `/study-tracker`, or Daily Log Study Tracker tab (also embeddable in Calendar weekly view)
+- `app/subjects` — Subjects page (subjects on the left, topics to cover with status + notes on the right); sidebar **Others** group or `/subjects`
 - `app/month-board` — Month board (month/week pickers, week goal + Mon–Sun rows); sidebar **Others** group or `/month-board`
 - Daily Planner **Daily** view (`/class-schedule?showDailyTasks=true`) — ClassSchedule Daily Tasks mode; **Advanced** opens `/?view=monthly`
 - Daily Planner **Week** view (`/?view=weekly`) — sidebar **Others** group

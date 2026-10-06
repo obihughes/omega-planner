@@ -42,6 +42,9 @@ export type {
 
 export type { Subject, StudyEntry, StudyStorageData } from './study';
 
+export type { TopicSubject, Topic, TopicStatus, SubjectsStorageData } from './subjects';
+export { TOPIC_STATUSES, TOPIC_STATUS_LABELS } from './subjects';
+
 export type { TodoItem, TodoStorageData } from './todo';
 
 export type { DailyLogEntry, DailyLogData } from './dailyLog';

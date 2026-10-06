@@ -55,6 +55,10 @@ const durationString = formatDuration(1.5); // "1h 30m"
 
 `MonthBoardStorage.load()` / `save(state)` persist the Month board UI (selected month/week, week-goal and Mon–Sun day notes keyed by `weekStartKey`). Key: `omega-planner-month-board-v1` (schema v2.0). Legacy 12-week horizon format migrates on load. Helpers: `createInitialMonthBoardState()`, `getWeekSlot()`, `ensureWeekInState()`. Date helpers: `utils/monthBoardDates.ts`.
 
+### Subjects (`subjectsStorage.ts`)
+
+`SubjectsStorage` persists the Subjects page as `{ subjects, topics }` under `omega-planner-subjects-v1`. Separate from Study Tracker (`studyStorage.ts`). Functions: `loadAll`, `addSubject`, `updateSubject`, `removeSubject` (also deletes its topics), `addTopic`, `updateTopic`, `removeTopic`. Invalid records and topics whose subject no longer exists are dropped on load.
+
 ### Day notes (`dayNotesStorage.ts`)
 
 `DayNotesStorage.load()` / `save(notes)` persist free-form notes for the Daily Planner weekly timeline, keyed by `YYYY-MM-DD`. Key: `daily-planner-day-notes-v1` (schema v1.0). Helper: `loadForDate(dateKey)`.
