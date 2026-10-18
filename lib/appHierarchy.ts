@@ -257,21 +257,21 @@ export const appHierarchy: AppMapNode[] = [
         label: 'Calendar page',
         kind: 'page',
         path: 'app/calendar/page.tsx',
-        editHint: 'Month/Year toggle; dynamic YearCalendar and timeline wrapper. Weekly-goals redirects to /weekly-overview.',
+        editHint: 'Month/Year toggle; dynamic YearCalendar and timeline wrapper. Weekly-goals redirects to /weekly-overview. Merges primary weekly goals (usePrimaryGoalCalendarEvents) into month/year data as read-only events; edit/delete ignore them.',
       },
       {
         id: 'cal-monthly',
         label: 'MonthlyCalendar',
         kind: 'component',
         path: 'components/calendar/MonthlyCalendar.tsx',
-        editHint: 'Default monthly events view. Indexes events by date key; defers off-screen months.',
+        editHint: 'Default monthly events view. Indexes events by date key; defers off-screen months. readOnly (primary goal) events show a target icon and navigate to /weekly-overview on click.',
       },
       {
         id: 'cal-yearly',
         label: 'YearCalendar',
         kind: 'component',
         path: 'components/calendar/YearCalendar.tsx',
-        editHint: 'Year grid; eventsByMonth lookup; deferred month mount; no extra Inter font.',
+        editHint: 'Year grid; eventsByMonth lookup; deferred month mount; no extra Inter font. readOnly (primary goal) events: eraser skips them; details modal hides Edit/Delete.',
       },
       {
         id: 'cal-timeline',
@@ -319,6 +319,13 @@ export const appHierarchy: AppMapNode[] = [
         kind: 'hook',
         path: 'hooks/useCalendarData.ts',
         editHint: 'localStorage omega-calendar-data via useSyncExternalStore; no blocking spinner.',
+      },
+      {
+        id: 'cal-primary-goals-hook',
+        label: 'usePrimaryGoalCalendarEvents',
+        kind: 'hook',
+        path: 'hooks/usePrimaryGoalCalendarEvents.ts',
+        editHint: 'Derives read-only calendar events from Weekly Overview goals with goalType primary (omega-planner-weekly-goals-v1). Not persisted to calendar storage. Reloads on mount, storage event and window focus.',
       },
       {
         id: 'cal-storage',

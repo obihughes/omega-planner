@@ -53,9 +53,11 @@ Modal for creating and editing calendar events.
 
 ### YearCalendar (`components/calendar/YearCalendar.tsx`)
 Full year calendar view. Auto-scrolls to the current month (or January when viewing other years) after deferred month grids have mounted. Events are looked up via `eventsByMonth` then grouped by date key. Day cells are memoized. Off-screen months start as height placeholders and mount on the next animation frame.
+- **Primary goals**: events with `readOnly: true` (Weekly Overview primary goals, merged in by `app/calendar/page.tsx`). Eraser mode skips them. The details modal hides Edit and Delete for them, and the day details list hides their delete button.
 
 ### MonthlyCalendar (`components/calendar/MonthlyCalendar.tsx`)
 Monthly calendar view (12-month vertical layout). Indexes events by local date key (`YYYY-MM-DD`) instead of filtering the full list per cell. Memoized `DayCell`. Mounts the current (or `initialDate`) month immediately and the other 11 after `requestAnimationFrame`, then `scrollIntoView`s the target month.
+- **Primary goals**: events with `readOnly: true` show a target icon. Clicking one navigates to `/weekly-overview` instead of opening `EventModal`, since the goal is edited there.
 
 ### MonthlyTimelineView (`components/calendar/MonthlyTimelineView.tsx`)
 URL-only `/calendar?view=timeline`. Receives `calendarData` from the page (does not call `useCalendarData` itself). Loaded through `TimelineViewWrapper`, which owns `useDailyPlanner`.
@@ -69,9 +71,9 @@ Legacy 4-week weekly goals grid (still available if embedded elsewhere). Primary
 
 ### Shared Weekly Goals (`components/weekly-goals/`)
 Reusable weekly goal UI and colors used by Weekly Overview and legacy Calendar weekly view.
-- **`goalColors.ts`** — Color palette for goal cards.
+- **`goalColors.ts`** — Color palette for goal cards. Also `GOAL_COLOR_HEX` and `getGoalColorHex()` map goal color names to hex (used for calendar events).
 - **`GoalItem.tsx`** — Draggable goal card with checkbox, edit modal trigger, notes display.
-- **`GoalEditModal.tsx`** — Edit title, type (primary/supporting), color, notes; delete.
+- **`GoalEditModal.tsx`** — Edit title, type (primary/supporting), color, notes; delete. Rendered through `createPortal` into `document.body` so its `z-[1000]` overlay is not trapped by ancestor stacking contexts (such as `opacity` on preview columns).
 - **`WeeklyGoalsAddForm.tsx`** — Inline add form with color picker and goal type toggle.
 - **`WeeklyGoalsDayColumn.tsx`** — Full day column with events, goals, drag/drop, and add form.
 - **Storage**: `utils/goalsStorage.ts` (`omega-planner-weekly-goals-v1`), via `hooks/useWeeklyGoals.ts`.

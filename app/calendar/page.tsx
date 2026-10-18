@@ -5,7 +5,8 @@ import dynamic from 'next/dynamic';
 import { AppLayout } from '@/components/ui/AppLayout';
 import { MonthlyCalendar } from '@/components/calendar/MonthlyCalendar';
 import { useCalendarData } from '@/hooks/useCalendarData';
-import { CalendarEvent, CalendarPeriod } from '@/types/calendar';
+import { usePrimaryGoalCalendarEvents, PRIMARY_GOAL_EVENT_PREFIX } from '@/hooks/usePrimaryGoalCalendarEvents';
+import { CalendarData, CalendarEvent, CalendarPeriod } from '@/types/calendar';
 import { Settings, Download, RefreshCw, Trash2, CalendarRange, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCalendarView, type CalendarViewMode } from '@/app/context/CalendarViewContext';
@@ -45,6 +46,17 @@ export default function CalendarPage() {
     resetToDefault,
     exportData
   } = useCalendarData();
+
+  const primaryGoalEvents = usePrimaryGoalCalendarEvents();
+
+  // Primary weekly goals are overlaid at render time; they are never written to calendar storage.
+  const displayData = useMemo<CalendarData>(
+    () => ({
+      events: primaryGoalEvents.length > 0 ? [...data.events, ...primaryGoalEvents] : data.events,
+      periods: data.periods,
+    }),
+    [data.events, data.periods, primaryGoalEvents]
+  );
 
   const [showSettings, setShowSettings] = useState(false);
   const { viewMode: currentView, setViewMode: setCurrentView } = useCalendarView();
@@ -93,8 +105,16 @@ export default function CalendarPage() {
     addPeriod(periodData);
   };
 
+  const isReadOnlyEventId = (eventId: string) => eventId.startsWith(PRIMARY_GOAL_EVENT_PREFIX);
+
   const handleEventEdit = (event: CalendarEvent) => {
+    if (event.readOnly || isReadOnlyEventId(event.id)) return;
     updateEvent(event.id, event);
+  };
+
+  const handleEventDelete = (eventId: string) => {
+    if (isReadOnlyEventId(eventId)) return;
+    deleteEvent(eventId);
   };
 
   const handlePeriodEdit = (period: CalendarPeriod) => {
@@ -128,22 +148,22 @@ export default function CalendarPage() {
 
         {currentView === 'monthly' ? (
           <MonthlyCalendar
-            data={data}
+            data={displayData}
             onEventAdd={handleEventAdd}
             onEventEdit={handleEventEdit}
-            onEventDelete={deleteEvent}
+            onEventDelete={handleEventDelete}
             className="bg-background max-w-5xl mx-auto"
             onNavigateToDaily={navigateToDaily}
             initialDate={initialDateFromQuery}
           />
         ) : (
           <YearCalendar
-            data={data}
+            data={displayData}
             onEventAdd={handleEventAdd}
             onPeriodAdd={handlePeriodAdd}
             onEventEdit={handleEventEdit}
             onPeriodEdit={handlePeriodEdit}
-            onEventDelete={deleteEvent}
+            onEventDelete={handleEventDelete}
             onPeriodDelete={deletePeriod}
             className="bg-background"
             isVisible={currentView === 'yearly'}

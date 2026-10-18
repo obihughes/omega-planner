@@ -9,6 +9,10 @@ export interface CalendarEvent {
   dateKey?: string;
   color: string;
   type: 'event';
+  /** 'primary-goal' for events derived at runtime from Weekly Overview primary goals (never persisted) */
+  source?: 'primary-goal';
+  /** True for runtime-only events that cannot be edited or deleted from the calendar */
+  readOnly?: boolean;
 }
 
 export interface CalendarPeriod {

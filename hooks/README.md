@@ -97,6 +97,16 @@ Shared calendar events/periods store (`omega-calendar-data`) via `useSyncExterna
 
 **Storage key:** `omega-calendar-data`
 
+### usePrimaryGoalCalendarEvents
+
+Builds read-only `CalendarEvent`s from Weekly Overview goals whose `goalType` is `primary`. Reads `omega-planner-weekly-goals-v1` through `GoalsStorage.loadAll()` in an effect, so server and client first paint match. Reloads on mount, on the `storage` event for that key, and on window `focus`. Each event has id `primary-goal:<goalId>`, `source: 'primary-goal'`, `readOnly: true`, and a hex color from `getGoalColorHex`. Goals with empty titles are skipped. Nothing is written to calendar storage. The calendar page merges the result into its display data.
+
+**API:** `usePrimaryGoalCalendarEvents(): CalendarEvent[]`
+
+**Exports:** `PRIMARY_GOAL_EVENT_PREFIX` (`'primary-goal:'`)
+
+**Storage key (read only):** `omega-planner-weekly-goals-v1`
+
 ### useClassScheduleState
 
 Recurring class timetable for `/class-schedule`, stored by day-of-week. Starts empty and sets `hydrated` after reading localStorage so SSR matches the first client paint. Saves only after `hydrated` so the empty initial state cannot wipe storage. `initialShowDailyTasks` from the URL overrides the persisted Classes | Daily Tasks toggle.

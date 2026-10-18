@@ -26,3 +26,32 @@ export type GoalColorValue = (typeof GOAL_COLORS)[number]['value'];
 export function getGoalColorScheme(color?: string) {
   return GOAL_COLORS.find((c) => c.value === color) || GOAL_COLORS[16];
 }
+
+/** Hex values (Tailwind 500 shades) for goal color names, used where a raw CSS color is required (e.g. calendar events). */
+export const GOAL_COLOR_HEX: Record<GoalColorValue, string> = {
+  red: '#ef4444',
+  orange: '#f97316',
+  amber: '#f59e0b',
+  yellow: '#eab308',
+  lime: '#84cc16',
+  green: '#22c55e',
+  emerald: '#10b981',
+  teal: '#14b8a6',
+  cyan: '#06b6d4',
+  blue: '#3b82f6',
+  indigo: '#6366f1',
+  violet: '#8b5cf6',
+  purple: '#a855f7',
+  fuchsia: '#d946ef',
+  pink: '#ec4899',
+  rose: '#f43f5e',
+  gray: '#6b7280',
+  slate: '#64748b',
+  stone: '#78716c',
+  zinc: '#71717a',
+};
+
+/** Resolve a goal color name to a hex color. Unknown or missing names fall back to gray. */
+export function getGoalColorHex(color?: string): string {
+  return (color && (GOAL_COLOR_HEX as Record<string, string>)[color]) || GOAL_COLOR_HEX.gray;
+}

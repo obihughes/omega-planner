@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { WeeklyGoal } from '@/types/goals';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -70,7 +71,7 @@ export function GoalEditModal({
     }
   };
 
-  return (
+  const modal = (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-[1000] p-4">
       <div className="bg-card rounded-xl shadow-2xl p-4 w-full max-w-md border border-border text-foreground flex flex-col gap-3">
         <div className="flex items-center justify-between mb-1">
@@ -185,4 +186,11 @@ export function GoalEditModal({
       </div>
     </div>
   );
+
+  if (typeof document === 'undefined') return null;
+
+  // Render into document.body so the overlay's z-index is not capped by an ancestor's
+  // stacking context (e.g. opacity on next-week preview columns), which let the sidebar
+  // and other fixed layers paint over the modal.
+  return createPortal(modal, document.body);
 }

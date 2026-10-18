@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { CalendarEvent, CalendarProps } from '@/types/calendar';
-import { Plus, CalendarDays } from 'lucide-react';
+import { Plus, CalendarDays, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { EventModal } from './EventModal';
@@ -112,9 +112,18 @@ const DayCell = React.memo(function DayCell({
                   borderLeftColor: textColor === '#000' ? '#000' : '#fff'
                 }}
                 onClick={(e) => onEventClick(event, e)}
-                title={`${event.title}${(event.notes || event.description) ? ` - ${event.notes || event.description}` : ''}`}
+                title={event.readOnly
+                  ? `Primary goal: ${event.title} (open in Weekly Overview to edit)`
+                  : `${event.title}${(event.notes || event.description) ? ` - ${event.notes || event.description}` : ''}`}
               >
                 <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                  {event.readOnly && (
+                    <Target
+                      className={cn("flex-shrink-0", compact ? "w-2.5 h-2.5" : "w-3 h-3")}
+                      style={{ color: textColor }}
+                      aria-label="Primary goal"
+                    />
+                  )}
                   <span className={cn("truncate font-semibold", compact ? "text-[11px]" : "text-sm")}
                     style={{ color: textColor }}
                   >
@@ -301,6 +310,11 @@ export function MonthlyCalendar({
 
   const handleEventClick = useCallback((event: CalendarEvent, e: React.MouseEvent) => {
     e.stopPropagation();
+    // Primary goals are read-only here; they are edited in the Weekly Overview.
+    if (event.readOnly) {
+      window.location.href = '/weekly-overview';
+      return;
+    }
     setEditingEvent(event);
     setShowEventModal(true);
   }, []);

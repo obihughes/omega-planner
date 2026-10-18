@@ -60,6 +60,8 @@ function EventPeriodDetailsModal({
 
   const item = event || period;
   const isEvent = !!event;
+  // Primary goals are read-only on the calendar; they are edited in the Weekly Overview.
+  const isReadOnly = !!event?.readOnly;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -112,10 +114,12 @@ function EventPeriodDetailsModal({
           <Button variant="outline" size="sm" onClick={onClose}>
             Close
           </Button>
-          <Button size="sm" onClick={onEdit}>
-            <Edit2 className="w-4 h-4 mr-2" /> Edit
-          </Button>
-          {event && onDeleteEvent && (
+          {!isReadOnly && (
+            <Button size="sm" onClick={onEdit}>
+              <Edit2 className="w-4 h-4 mr-2" /> Edit
+            </Button>
+          )}
+          {event && onDeleteEvent && !isReadOnly && (
             <Button size="sm" variant="destructive" onClick={() => onDeleteEvent(event.id)}>
               <Trash2 className="w-4 h-4 mr-2" /> Delete
             </Button>
@@ -201,7 +205,7 @@ function DayDetailsModal({
                             <div className="text-sm text-foreground mt-1 p-2 bg-muted/50 rounded-md whitespace-pre-wrap border border-border max-h-24 overflow-y-auto">{event.notes || event.description}</div>
                           )}
                         </div>
-                        {onEventDelete && (
+                        {onEventDelete && !event.readOnly && (
                           <Button variant="destructive" size="sm" onClick={(e) => { e.stopPropagation(); onEventDelete(event.id); }}>
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -577,7 +581,8 @@ export function YearCalendar({
   const handleEventClick = useCallback((event: CalendarEvent, e: React.MouseEvent) => {
     e.stopPropagation();
     if (eraserMode) {
-      onEventDelete?.(event.id);
+      // Read-only primary goals cannot be erased from the calendar.
+      if (!event.readOnly) onEventDelete?.(event.id);
       return;
     }
     setViewingEvent(event);

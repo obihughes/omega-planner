@@ -1,3 +1,19 @@
+## 2026-10-18
+
+- **Calendar: show primary weekly goals** (2026-10-18)
+  - Weekly Overview goals marked **Primary** now appear on the Calendar page (Month and Year views) on their day, as read-only events with a target icon.
+  - Live overlay: primary goals are read from `omega-planner-weekly-goals-v1` and merged into the calendar's events at render time. Nothing is written to `omega-calendar-data`, so Export, Clear and Reset don't touch them.
+  - Edits, deletes, moves and Primary/Supporting changes in Weekly Overview show up on the calendar on the next load or window focus.
+  - Read-only behaviour: clicking one in Month view opens `/weekly-overview`. In Year view it opens the details modal without Edit or Delete, and eraser mode skips it.
+  - Completed primary goals look the same as open ones.
+  - Goal color names map to hex via `GOAL_COLOR_HEX` / `getGoalColorHex` (unknown names fall back to gray).
+  - **Files affected**: `types/calendar.ts`, `types/README.md`, `hooks/usePrimaryGoalCalendarEvents.ts` (new), `hooks/index.ts`, `hooks/README.md`, `components/weekly-goals/goalColors.ts`, `app/calendar/page.tsx`, `components/calendar/MonthlyCalendar.tsx`, `components/calendar/YearCalendar.tsx`, `lib/appHierarchy.ts`, `docs/components.md`, `docs/structure.md`, `docs/changelog.md`
+
+- **Weekly Overview: goal edit modal no longer blocked** (2026-10-18)
+  - The Edit Goal modal was rendered inline inside the goal card. Next-week preview columns use `opacity-90`, which creates a stacking context, so the modal's `z-[1000]` was capped inside that column. The left sidebar and the mobile notes sheet painted over it.
+  - `GoalEditModal` now renders through `createPortal` into `document.body`, so it ranks against the whole page.
+  - **Files affected**: `components/weekly-goals/GoalEditModal.tsx`, `docs/changelog.md`, `docs/components.md`
+
 ## 2026-10-05
 
 - **New Subjects page** (2026-10-05)
