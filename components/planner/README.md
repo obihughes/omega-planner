@@ -186,7 +186,7 @@ DailyPlanner
 **View:**
 - 7 vertically stacked day cards (Monday-first ordering), each rendering morning/afternoon/evening timeline segments at the same scale used by Daily Planner daily mode.
 - Supports vertical scrolling through all seven day cards.
-- Auto-scrolls to today's day card when the view opens.
+- Snaps to today's day card once per visit, after hydration and without animation (`useLayoutEffect` on `hydrated`, instant `scrollTop`). Applies to both Classes and Daily Tasks modes.
 - Preserves class CRUD flows (double-click add, card click edit, modal delete) and keeps recurring storage keyed by day-of-week.
 - **Task card actions**: View Notes, Edit, Copy to that day's daily planner pool (`copyTaskToPool` via `useDailyPlanner`), drag (same weekday), and resize (edge handles) work on class cards. Copy shows a brief confirmation; the duplicate is unscheduled so it appears in Advanced Daily's pool bar. Uses pointer capture and `timelineDragUtils` for hour snapping; commits via `updateClassTaskTime` in `useClassScheduleState`.
 - **Daily Tasks view**: Sidebar **Daily** opens this mode at `/class-schedule?showDailyTasks=true`. Header toggle **Classes | Daily Tasks** switches between recurring class schedule and this week's daily planner tasks (exclusive views) and updates the URL. Preference also persists in `omega-planner-class-schedule-show-daily-tasks`. Daily Tasks mode has an **Advanced** button to the full DailyPlanner (`/?view=monthly`). Daily Tasks supports full CRUD, drag, resize, and copy-to-pool; changes persist to Daily Planner storage. Class mode supports recurring class CRUD, drag, resize, and copy-to-pool.

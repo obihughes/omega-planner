@@ -1,3 +1,10 @@
+## 2026-10-27
+
+- **Class Schedule / Daily: snap to today on open** (2026-10-27)
+  - The initial scroll to today's day card never ran. The view renders a loading placeholder until hydration, so the scroll container did not exist when the effect ran once on mount, and the effect did not re-run after hydration.
+  - The scroll now runs in a layout effect once `hydrated` is true, only once per visit, and jumps instantly. Position is measured with `getBoundingClientRect` instead of `offsetTop`, so it does not depend on the nearest positioned ancestor.
+  - **Files affected**: `components/planner/ClassSchedule.tsx`, `components/planner/README.md`, `docs/planner.md`, `docs/changelog.md`
+
 ## 2026-10-18
 
 - **Calendar: show primary weekly goals** (2026-10-18)

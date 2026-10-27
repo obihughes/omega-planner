@@ -3,6 +3,7 @@
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -145,29 +146,26 @@ export default React.memo(function ClassSchedule({
     return () => window.clearTimeout(timerId);
   }, [copyMessage]);
 
-  // Auto-scroll to today's card in 7-day daily view
-  useEffect(() => {
-    if (!dailyScrollRef.current) return;
+  // Snap to today's card in the 7-day daily view once per visit.
+  // The scroll container is not mounted while loading (hydrated is false),
+  // so wait for hydration instead of running on the first mount.
+  const didInitialTodayScrollRef = useRef(false);
+  useLayoutEffect(() => {
+    if (!hydrated || didInitialTodayScrollRef.current) return;
+    const scrollContainer = dailyScrollRef.current;
+    if (!scrollContainer) return;
+    const currentDayElement = dailyDayRefs.current.get(new Date().getDay());
+    if (!currentDayElement) return;
 
-    const timeoutId = setTimeout(() => {
-      const currentDayOfWeek = new Date().getDay();
-      const currentDayElement = dailyDayRefs.current.get(currentDayOfWeek);
-      const scrollContainer = dailyScrollRef.current;
-      if (!currentDayElement || !scrollContainer) return;
-
-      const cardTop = currentDayElement.offsetTop;
-      const cardHeight = currentDayElement.offsetHeight;
-      const containerHeight = scrollContainer.clientHeight;
-      const scrollTop = cardTop - containerHeight / 2 + cardHeight / 2;
-
-      scrollContainer.scrollTo({
-        top: Math.max(0, scrollTop),
-        behavior: "smooth",
-      });
-    }, 100);
-
-    return () => clearTimeout(timeoutId);
-  }, [weekMeta]);
+    didInitialTodayScrollRef.current = true;
+    const containerRect = scrollContainer.getBoundingClientRect();
+    const cardRect = currentDayElement.getBoundingClientRect();
+    const cardTopInContent =
+      cardRect.top - containerRect.top + scrollContainer.scrollTop;
+    const scrollTop =
+      cardTopInContent - scrollContainer.clientHeight / 2 + cardRect.height / 2;
+    scrollContainer.scrollTop = Math.max(0, scrollTop);
+  }, [hydrated]);
 
   const orderedDayIndices: number[] = useMemo(
     () => [1, 2, 3, 4, 5, 6, 0], // Monday-first ordering

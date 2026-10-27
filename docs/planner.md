@@ -127,7 +127,7 @@ The Class Schedule view (`/class-schedule`) provides a recurring weekly timetabl
   - Uses the same timeline scale as the Daily Planner daily view
   - Uses a centered fixed-size timeline container so zoom does not distort block proportions
   - Vertically scrollable when all days do not fit on screen
-  - Auto-scrolls to center the current day when the view opens
+  - Snaps to center the current day when the view opens (once per visit, after hydration, no animation)
 - **Add Classes**: Click "+ Add Class" button or double-click timeline to create new recurring classes
 - **Daily Tasks View**: Sidebar **Daily** opens this mode (`/class-schedule?showDailyTasks=true`). Use the **Classes | Daily Tasks** toggle to switch; it updates the URL so nav highlighting stays in sync. Only one set is shown at a time. The choice is also persisted in localStorage. Daily Tasks mode supports drag, resize, edit, delete, copy-to-pool, and double-click add; changes sync to Daily Planner storage. **Advanced** opens the original DailyPlanner (`/?view=monthly`).
 - **Edit Classes**: Click any existing class card to edit name, time, duration, color, and notes (hover **Edit** button, double-click title, or **View Notes** → Edit)
