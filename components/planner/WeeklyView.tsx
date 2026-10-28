@@ -17,12 +17,15 @@ import { useDailyPlanner } from '@/hooks/useDailyPlannerState';
 import { useCalendarData } from '@/hooks/useCalendarData';
 import { formatTime } from '@/utils/formatters';
 import { getDateKey } from '@/utils/dateUtils';
+import { resolveCollisionsForResize } from '@/utils/taskUtils';
+import { MIN_TASK_DURATION, TIMELINE_END_HOUR } from '@/lib/constants';
 import { MemoizedWeeklyTaskCard } from './WeeklyTaskCard';
 import { WeeklyEventsDisplay } from './WeeklyEventsDisplay';
 import { EditTaskModal } from './EditTaskModal';
 
 // Weekly view specific constants for row-based layout
-const WEEKLY_PIXELS_PER_HOUR = 80;
+const WEEKLY_MIN_PIXELS_PER_HOUR = 80; // Lower bound; hour width grows to fill wide windows
+const WEEKLY_TIMELINE_LABEL_COLUMNS_WIDTH = 200; // Day column + events column (sticky left)
 const WEEKLY_ROW_HEIGHT = 40; // Reduced height for split rows (AM/PM)
 const WEEKLY_TASK_HEIGHT = 40; 
 const WEEKLY_DAY_COLUMN_WIDTH = 100;
@@ -30,7 +33,20 @@ const WEEKLY_EVENTS_COLUMN_WIDTH = 100; // Slightly wider for events
 const WEEKLY_TIMELINE_HEADER_HEIGHT = 32; 
 const HOURS_PER_ROW = 12; // 12-hour view
 const ROWS_PER_DAY = 2; // AM and PM rows
-const DAYS_TO_DISPLAY = 10; // Show 10 days
+const DAYS_TO_DISPLAY = 10; // Base number of days shown on load
+const LOAD_MORE_CHUNK_DAYS = 7; // Days appended each time the user scrolls near the bottom
+const MAX_DAYS_TO_DISPLAY = 100; // Hard cap on total rendered day rows
+
+/** In-progress drag-to-extend of a task's end edge (preview only until pointer-up) */
+interface WeeklyResizeState {
+  taskId: string;
+  baseDate: string;
+  initialStartHour: number;
+  initialDuration: number;
+  startClientX: number;
+  pixelsPerHour: number; // Captured at drag start so a window resize mid-drag doesn't shift the math
+  previewDuration: number;
+}
 
 interface WeeklyViewProps {}
 
@@ -47,7 +63,8 @@ export default function WeeklyView({}: WeeklyViewProps) {
     handlePinTask,
     pinnedTasks,
     moveTaskToInbox,
-    handleDeleteTask
+    handleDeleteTask,
+    handleUpdateTask,
   } = useDailyPlanner();
 
   // Calendar data for events
@@ -67,8 +84,155 @@ export default function WeeklyView({}: WeeklyViewProps) {
   const [isSameDayView, setIsSameDayView] = useState(false);
   const [selectedDayOfWeek, setSelectedDayOfWeek] = useState(0); // 0 = Sunday, 1 = Monday, etc.
   const [showNotesLayer, setShowNotesLayer] = useState(false);
+  // Extra days loaded beyond the base DAYS_TO_DISPLAY (grows as the user scrolls down)
+  const [extraDays, setExtraDays] = useState(0);
+  const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
   const timelineScrollRef = useRef<HTMLDivElement>(null);
   const didAutoScrollToTodayRef = useRef(false);
+  // Hour width in px: grows to fill the timeline width, never below the minimum
+  const [pixelsPerHour, setPixelsPerHour] = useState(WEEKLY_MIN_PIXELS_PER_HOUR);
+
+  // Measure the timeline container and size each hour so the 12-hour rows fill the width
+  useEffect(() => {
+    const container = timelineScrollRef.current;
+    if (!container) return;
+
+    const updatePixelsPerHour = () => {
+      const available = container.clientWidth - WEEKLY_TIMELINE_LABEL_COLUMNS_WIDTH;
+      // Floor keeps the rows from overflowing by a sub-pixel and creating a horizontal scrollbar
+      const next = Math.max(WEEKLY_MIN_PIXELS_PER_HOUR, Math.floor(available / HOURS_PER_ROW));
+      setPixelsPerHour((prev) => (prev === next ? prev : next));
+    };
+
+    updatePixelsPerHour();
+    const observer = new ResizeObserver(updatePixelsPerHour);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
+  // --- Drag to extend (end edge) ---
+  // The preview lives in state so the card re-renders at its new length (and can cross the 12 PM row
+  // boundary). It is only written to the planner on pointer-up. Snapping to quarter hours means the
+  // state only changes a few times per second while dragging.
+  const [resizeState, setResizeState] = useState<WeeklyResizeState | null>(null);
+  const resizeStateRef = useRef<WeeklyResizeState | null>(null);
+
+  const updateResizeState = useCallback((next: WeeklyResizeState | null) => {
+    resizeStateRef.current = next;
+    setResizeState(next);
+  }, []);
+
+  const finishResize = useCallback((commit: boolean) => {
+    const current = resizeStateRef.current;
+    updateResizeState(null);
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    if (!current) return;
+
+    // The browser fires a click after the release; swallow it so the card does not open the notes view
+    const swallowClick = (e: MouseEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+    };
+    window.addEventListener('click', swallowClick, { capture: true, once: true });
+    window.setTimeout(() => window.removeEventListener('click', swallowClick, { capture: true }), 50);
+
+    if (commit && current.previewDuration !== current.initialDuration) {
+      handleUpdateTask(current.taskId, { duration: current.previewDuration });
+    }
+  }, [handleUpdateTask, updateResizeState]);
+
+  const handleResizeStart = useCallback(
+    (
+      task: { id: string; baseDate: string; startHour: number; duration: number },
+      e: React.PointerEvent<HTMLDivElement>
+    ) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        // Ignore capture failures on unsupported targets
+      }
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      updateResizeState({
+        taskId: task.id,
+        baseDate: task.baseDate,
+        initialStartHour: task.startHour,
+        initialDuration: task.duration,
+        startClientX: e.clientX,
+        pixelsPerHour,
+        previewDuration: task.duration,
+      });
+    },
+    [pixelsPerHour, updateResizeState]
+  );
+
+  const handleResizeMove = useCallback((e: PointerEvent) => {
+    const current = resizeStateRef.current;
+    if (!current) return;
+    e.preventDefault();
+
+    const dHours = (e.clientX - current.startClientX) / current.pixelsPerHour;
+    const snappedEnd = Math.round((current.initialStartHour + current.initialDuration + dHours) * 4) / 4;
+
+    // Keep the end inside the day and the length at or above the minimum
+    const maxDuration = TIMELINE_END_HOUR - current.initialStartHour;
+    const proposedDuration = Math.max(
+      MIN_TASK_DURATION,
+      Math.min(snappedEnd - current.initialStartHour, maxDuration)
+    );
+
+    // Stop at the next task on this day (same collision rule as the daily planner)
+    const resolved = resolveCollisionsForResize(
+      {
+        id: current.taskId,
+        baseDate: current.baseDate,
+        initialStartHour: current.initialStartHour,
+        initialDuration: current.initialDuration,
+      },
+      current.initialStartHour,
+      proposedDuration,
+      tasksByDate.get(current.baseDate) || [],
+      'end'
+    );
+
+    // If the next task leaves less than the minimum length, keep the last valid preview
+    const nextDuration = resolved.duration >= MIN_TASK_DURATION ? resolved.duration : current.previewDuration;
+    if (nextDuration !== current.previewDuration) {
+      updateResizeState({ ...current, previewDuration: nextDuration });
+    }
+  }, [tasksByDate, updateResizeState]);
+
+  const isResizing = resizeState !== null;
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const onPointerMove = (e: PointerEvent) => handleResizeMove(e);
+    const onPointerUp = () => finishResize(true);
+    const onPointerCancel = () => finishResize(false);
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') finishResize(false);
+    };
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerCancel);
+    window.addEventListener('blur', onPointerCancel);
+    window.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerCancel);
+      window.removeEventListener('blur', onPointerCancel);
+      window.removeEventListener('keydown', onKeyDown);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing, handleResizeMove, finishResize]);
 
   // Set initial scroll position to 6am
   useEffect(() => {
@@ -76,7 +240,15 @@ export default function WeeklyView({}: WeeklyViewProps) {
     if (!scrollContainer) return;
 
     // Scroll to 6 (6 AM)
-    scrollContainer.scrollLeft = 6 * WEEKLY_PIXELS_PER_HOUR;
+    scrollContainer.scrollLeft = 6 * pixelsPerHour;
+  }, [weekOffset, isSameDayView, selectedDayOfWeek, pixelsPerHour]);
+
+  // Reset lazily-loaded days and scroll back to top when the range changes
+  useEffect(() => {
+    setExtraDays(0);
+    if (timelineScrollRef.current) {
+      timelineScrollRef.current.scrollTop = 0;
+    }
   }, [weekOffset, isSameDayView, selectedDayOfWeek]);
 
   // Handle mouse wheel for horizontal scrolling with velocity
@@ -106,7 +278,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
   }, []);
 
   // Calculate week dates (Monday to Sunday for the current week)
-  const getWeekDates = (offset: number) => {
+  const getWeekDates = (offset: number, count: number = DAYS_TO_DISPLAY) => {
     const today = new Date();
     today.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
 
@@ -124,8 +296,8 @@ export default function WeeklyView({}: WeeklyViewProps) {
 
     const weekDates = [] as Date[];
 
-    // Add 10 days starting from Monday
-    for (let i = 0; i < DAYS_TO_DISPLAY; i++) {
+    // Add `count` days starting from Monday
+    for (let i = 0; i < count; i++) {
       const date = new Date(monday);
       date.setDate(monday.getDate() + i);
       date.setHours(12, 0, 0, 0);
@@ -136,7 +308,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
   };
 
   // Calculate same day across multiple weeks
-  const getSameDayDates = (dayOfWeek: number, weeksBack: number = 0) => {
+  const getSameDayDates = (dayOfWeek: number, weeksBack: number = 0, count: number = DAYS_TO_DISPLAY) => {
     const today = new Date();
     today.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
     const dates = [];
@@ -166,9 +338,21 @@ export default function WeeklyView({}: WeeklyViewProps) {
       date.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
       dates.unshift(date); // Add to beginning to keep chronological order
     }
+
+    // Lazily-loaded extra weeks go forward in time (appended after the base range)
+    for (let k = 1; k <= count - DAYS_TO_DISPLAY; k++) {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + (k * 7));
+      date.setHours(12, 0, 0, 0);
+      dates.push(date);
+    }
     
     return dates;
   };
+
+  // Total rendered day rows: base range plus lazily-loaded days, capped
+  const totalDays = Math.min(DAYS_TO_DISPLAY + extraDays, MAX_DAYS_TO_DISPLAY);
+  const canLoadMore = totalDays < MAX_DAYS_TO_DISPLAY;
 
   // Initialize selectedDayOfWeek to today's day when switching to same-day view
   React.useEffect(() => {
@@ -179,8 +363,11 @@ export default function WeeklyView({}: WeeklyViewProps) {
   }, [isSameDayView, selectedDayOfWeek]);
 
   const weekDates = isSameDayView 
-    ? getSameDayDates(selectedDayOfWeek, weekOffset)
-    : getWeekDates(weekOffset);
+    ? getSameDayDates(selectedDayOfWeek, weekOffset, totalDays)
+    : getWeekDates(weekOffset, totalDays);
+
+  // Base range (first DAYS_TO_DISPLAY days) drives the header label and stats
+  const baseWeekDates = weekDates.slice(0, DAYS_TO_DISPLAY);
   
     // Auto-scroll vertically to today's row on initial load for current week
   useEffect(() => {
@@ -216,6 +403,25 @@ export default function WeeklyView({}: WeeklyViewProps) {
     didAutoScrollToTodayRef.current = true;
   }, [weekOffset, weekDates]);
 
+  // Load more days when the bottom sentinel approaches the viewport (capped at MAX_DAYS_TO_DISPLAY)
+  useEffect(() => {
+    const root = timelineScrollRef.current;
+    const target = loadMoreSentinelRef.current;
+    if (!root || !target || !canLoadMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setExtraDays((prev) => prev + LOAD_MORE_CHUNK_DAYS);
+        }
+      },
+      { root, rootMargin: '300px 0px' }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [canLoadMore, totalDays]);
+
   // Day names for display (will dynamically show based on actual dates)
   const getDayName = (date: Date) => {
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -237,12 +443,12 @@ export default function WeeklyView({}: WeeklyViewProps) {
   const getWeekRangeString = () => {
     if (isSameDayView) {
       const dayName = getFullDayName(selectedDayOfWeek);
-      const firstDay = weekDates[0];
-      const lastDay = weekDates[weekDates.length - 1];
+      const firstDay = baseWeekDates[0];
+      const lastDay = baseWeekDates[baseWeekDates.length - 1];
       return `${dayName}s: ${firstDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${lastDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
     } else {
-      const firstDay = weekDates[0];
-      const lastDay = weekDates[weekDates.length - 1];
+      const firstDay = baseWeekDates[0];
+      const lastDay = baseWeekDates[baseWeekDates.length - 1];
       return `${firstDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${lastDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
     }
   };
@@ -296,7 +502,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
               <div
                 key={hour}
                 className="flex-none border-r border-border/10 flex items-center justify-start pl-2 bg-card text-xs text-muted-foreground font-medium"
-                style={{ width: `${WEEKLY_PIXELS_PER_HOUR}px` }}
+                style={{ width: `${pixelsPerHour}px` }}
               >
                 {displayHour}
                 <span className="text-[10px] ml-0.5 opacity-50"></span>
@@ -306,13 +512,13 @@ export default function WeeklyView({}: WeeklyViewProps) {
         </div>
       </div>
     );
-  }, []);
+  }, [pixelsPerHour]);
 
   // Handle task creation
   const handleTimelineDoubleClick = (e: React.MouseEvent<HTMLDivElement>, date: Date, hourOffset: number) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    const hourFloat = x / WEEKLY_PIXELS_PER_HOUR;
+    const hourFloat = x / pixelsPerHour;
     const snappedNewStartHour = Math.round(hourFloat * 4) / 4 + hourOffset;
     
     const dayOffset = getDayOffsetFromToday(date);
@@ -338,6 +544,13 @@ export default function WeeklyView({}: WeeklyViewProps) {
     const isScheduled = (t: Task): t is ScheduledTask =>
       typeof t.startHour === 'number' && t.startHour >= 0; 
     const scheduledTasks: ScheduledTask[] = dayTasks.filter(isScheduled);
+
+    // Show the in-progress drag preview on the task being extended
+    const displayTasks: ScheduledTask[] = resizeState
+      ? scheduledTasks.map((t) =>
+          t.id === resizeState.taskId ? { ...t, duration: resizeState.previewDuration } : t
+        )
+      : scheduledTasks;
     
     // Current time marker helper
     const getCurrentTimeMarker = (hourOffset: number) => {
@@ -349,7 +562,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
       // Check if current time is within this row's range
       if (currentHourTotal >= hourOffset && currentHourTotal < hourOffset + HOURS_PER_ROW) {
         const relativeHour = currentHourTotal - hourOffset;
-        const markerLeft = relativeHour * WEEKLY_PIXELS_PER_HOUR;
+        const markerLeft = relativeHour * pixelsPerHour;
         
         return (
           <div 
@@ -370,6 +583,8 @@ export default function WeeklyView({}: WeeklyViewProps) {
       return tasks.map((task) => {
         const taskStartHour: number = task.startHour;
         const taskEndHour = Math.min(24, task.startHour + task.duration);
+        // The drag handle lives on the segment that contains the task's end (only one row per task)
+        const isEndSegment = taskEndHour > hourOffset && taskEndHour <= rowEndHour;
         
         // Check if task overlaps with this row
         const visibleStart = Math.max(taskStartHour, hourOffset);
@@ -377,8 +592,8 @@ export default function WeeklyView({}: WeeklyViewProps) {
         
         if (visibleEnd <= visibleStart) return null;
         
-        const renderLeft = (visibleStart - hourOffset) * WEEKLY_PIXELS_PER_HOUR;
-        const renderWidth = (visibleEnd - visibleStart) * WEEKLY_PIXELS_PER_HOUR;
+        const renderLeft = (visibleStart - hourOffset) * pixelsPerHour;
+        const renderWidth = (visibleEnd - visibleStart) * pixelsPerHour;
         const cardWidth = Math.max(renderWidth - 4, 30);
         
         if (renderWidth <= 0) return null;
@@ -400,6 +615,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
               onStartEdit={(taskToEdit, options) => openEditModal(taskToEdit, options)} 
               onViewNotes={openViewNotesModal}
               currentTime={new Date()}
+              onResizeStart={isEndSegment ? (e) => handleResizeStart(task, e) : undefined}
             />
           </div>
         );
@@ -477,7 +693,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
             {/* AM Row */}
             <div 
                 className="relative border-b border-border/10 flex-1"
-                style={{ width: `${WEEKLY_PIXELS_PER_HOUR * HOURS_PER_ROW}px` }}
+                style={{ width: `${pixelsPerHour * HOURS_PER_ROW}px` }}
                 onDoubleClick={(e) => handleTimelineDoubleClick(e, date, 0)}
             >
                 {/* Row Label (AM) - Absolute positioned on left */}
@@ -490,17 +706,17 @@ export default function WeeklyView({}: WeeklyViewProps) {
                     <div 
                     key={`grid-am-${i}`} 
                     className={`absolute h-full top-0 ${i % 12 === 0 ? 'border-l border-border/30' : 'border-l border-border/10'} pointer-events-none`}
-                    style={{ left: `${i * WEEKLY_PIXELS_PER_HOUR}px` }} 
+                    style={{ left: `${i * pixelsPerHour}px` }} 
                     />
                 ))}
                 {getCurrentTimeMarker(0)}
-                {renderTasksForRow(scheduledTasks, 0)}
+                {renderTasksForRow(displayTasks, 0)}
             </div>
 
             {/* PM Row */}
             <div 
                 className="relative flex-1"
-                style={{ width: `${WEEKLY_PIXELS_PER_HOUR * HOURS_PER_ROW}px` }}
+                style={{ width: `${pixelsPerHour * HOURS_PER_ROW}px` }}
                 onDoubleClick={(e) => handleTimelineDoubleClick(e, date, 12)}
             >
                 {/* Row Label (PM) */}
@@ -513,11 +729,11 @@ export default function WeeklyView({}: WeeklyViewProps) {
                     <div 
                     key={`grid-pm-${i}`} 
                     className={`absolute h-full top-0 ${i % 12 === 0 ? 'border-l border-border/30' : 'border-l border-border/10'} pointer-events-none`}
-                    style={{ left: `${i * WEEKLY_PIXELS_PER_HOUR}px` }} 
+                    style={{ left: `${i * pixelsPerHour}px` }} 
                     />
                 ))}
                 {getCurrentTimeMarker(12)}
-                {renderTasksForRow(scheduledTasks, 12)}
+                {renderTasksForRow(displayTasks, 12)}
             </div>
         </div>
       </div>
@@ -535,6 +751,9 @@ export default function WeeklyView({}: WeeklyViewProps) {
     getNotes,
     setNotes,
     flushNotes,
+    pixelsPerHour,
+    resizeState,
+    handleResizeStart,
   ]);
 
   // Get week statistics
@@ -542,7 +761,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
     let total = 0;
     let completed = 0;
     
-    weekDates.forEach(date => {
+    baseWeekDates.forEach(date => {
       const dateKey = getDateKey(date);
       const dayTasks = tasksByDate.get(dateKey) || [];
       const poolTasks = getPoolTasksForDate(dateKey);
@@ -634,7 +853,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
                   title="Scroll left (earlier times)"
                   onClick={() => {
                     if (timelineScrollRef.current) {
-                      timelineScrollRef.current.scrollLeft -= WEEKLY_PIXELS_PER_HOUR * 3; // Scroll back 3 hours
+                      timelineScrollRef.current.scrollLeft -= pixelsPerHour * 3; // Scroll back 3 hours
                     }
                   }}
                 >
@@ -648,7 +867,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
                   title="Scroll right (later times)"
                   onClick={() => {
                     if (timelineScrollRef.current) {
-                      timelineScrollRef.current.scrollLeft += WEEKLY_PIXELS_PER_HOUR * 3; // Scroll forward 3 hours
+                      timelineScrollRef.current.scrollLeft += pixelsPerHour * 3; // Scroll forward 3 hours
                     }
                   }}
                 >
@@ -714,6 +933,9 @@ export default function WeeklyView({}: WeeklyViewProps) {
             {/* Days Rows */}
             <div className="flex flex-col">
                 {weekDates.map((date, index) => renderDayRow(date, index))}
+                {canLoadMore && (
+                  <div ref={loadMoreSentinelRef} className="h-px w-full" aria-hidden="true" />
+                )}
             </div>
 
             {/* Bottom Timeline Header */}

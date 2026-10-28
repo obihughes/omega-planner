@@ -1,5 +1,25 @@
 ## 2026-10-27
 
+- **Week view: drag to extend tasks** (2026-10-27)
+  - Each scheduled task in the Others → Week timeline has a thin handle on its right edge. Dragging it lengthens or shortens the task in 15-minute steps.
+  - The preview updates while dragging. The change is saved on release. Press Escape or lose pointer focus to cancel.
+  - The handle is only shown on the row that contains the task's end, so a task crossing 12 PM is resized from its end segment. Dragging can extend it across the noon boundary.
+  - Length is clamped to a minimum of 15 minutes and to the end of the day (24:00). It stops at the next task on the same day, using the same collision rule as the daily planner (`resolveCollisionsForResize`).
+  - The click that follows a release is swallowed, so resizing does not open the notes view. The handle also stops double-clicks, so it does not create a new task.
+  - **Files affected**: `components/planner/WeeklyView.tsx`, `components/planner/WeeklyTaskCard.tsx`, `components/planner/README.md`, `docs/planner.md`, `docs/changelog.md`
+
+- **Week view: fill timeline width** (2026-10-27)
+  - The 12-hour AM and PM rows were fixed at 80px per hour (960px), which left a blank area to the right of the "11" column on wide windows.
+  - The hour width is now measured from the timeline container with a `ResizeObserver` (`pixelsPerHour` = `(container width - 200px) / 12`, floored) so each row fills the available width. Minimum stays at 80px per hour (`WEEKLY_MIN_PIXELS_PER_HOUR`), so narrow windows still scroll horizontally.
+  - Header cells, grid lines, task positions, the current-time marker, drag-to-create, and the Timeline scroll buttons all use the measured value.
+  - **Files affected**: `components/planner/WeeklyView.tsx`, `components/planner/README.md`, `docs/planner.md`, `docs/changelog.md`
+
+- **Week view: load more days on scroll** (2026-10-27)
+  - The Others → Week timeline (`/?view=weekly`) still starts with 10 days. Scrolling near the bottom now appends 7 more days at a time, up to 100 total rows (`MAX_DAYS_TO_DISPLAY`).
+  - Loading uses an `IntersectionObserver` sentinel below the last row. Header range label and task/done/rate stats stay on the first 10 days so they don't shift while scrolling.
+  - Same Day mode appends later weeks of the chosen weekday. Changing week or day resets to 10 days and scrolls to top.
+  - **Files affected**: `components/planner/WeeklyView.tsx`, `components/planner/README.md`, `docs/planner.md`, `lib/appHierarchy.ts`, `docs/changelog.md`
+
 - **Class Schedule / Daily: snap to today on open** (2026-10-27)
   - The initial scroll to today's day card never ran. The view renders a loading placeholder until hydration, so the scroll container did not exist when the effect ran once on mount, and the effect did not re-run after hydration.
   - The scroll now runs in a layout effect once `hydrated` is true, only once per visit, and jumps instantly. Position is measured with `getBoundingClientRect` instead of `offsetTop`, so it does not depend on the nearest positioned ancestor.

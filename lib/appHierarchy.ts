@@ -168,7 +168,7 @@ export const appHierarchy: AppMapNode[] = [
             label: 'WeeklyView',
             kind: 'component',
             path: 'components/planner/WeeklyView.tsx',
-            editHint: 'Weekly timeline on /. Sidebar Others → Week, or /?view=weekly.',
+            editHint: 'Weekly timeline on /. Sidebar Others → Week, or /?view=weekly. Starts at 10 days; scroll down loads 7 more at a time, capped at 100 (MAX_DAYS_TO_DISPLAY). Header stats use the first 10 days.',
           },
           {
             id: 'dp-edit-task',

@@ -12,6 +12,8 @@ export interface WeeklyTaskCardProps {
   onStartEdit: (task: Task, options?: { isNew?: boolean, isFromPool?: boolean }) => void;
   onViewNotes: (task: Task) => void;
   currentTime?: Date;
+  /** Pass only on the segment that contains the task's end; renders the drag-to-extend handle */
+  onResizeStart?: (e: React.PointerEvent<HTMLDivElement>) => void;
 }
 
 function truncateWithDot(text: string, maxChars: number): string {
@@ -64,6 +66,7 @@ export const WeeklyTaskCard: React.FC<WeeklyTaskCardProps> = ({
   onStartEdit,
   onViewNotes,
   currentTime,
+  onResizeStart,
 }) => {
   const endTime = task.startHour + Number(task.duration);
   const color = task.color || TASK_COLORS[0];
@@ -174,6 +177,20 @@ export const WeeklyTaskCard: React.FC<WeeklyTaskCardProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Drag-to-extend handle on the right edge (end of the task) */}
+      {onResizeStart && (
+        <div
+          role="separator"
+          aria-label="Drag to change task length"
+          title="Drag to change length"
+          className="absolute right-0 top-0 bottom-0 w-1.5 z-[5] cursor-col-resize hover:bg-black/20 dark:hover:bg-white/30"
+          onPointerDown={onResizeStart}
+          // Keep the press/release from reaching the card's click (notes) or the row's double-click (new task)
+          onClick={(e) => e.stopPropagation()}
+          onDoubleClick={(e) => e.stopPropagation()}
+        />
+      )}
 
       {/* Optional: Duration bar at bottom for visual reference */}
       {showDuration && task.duration > 1 && (

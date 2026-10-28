@@ -61,10 +61,13 @@ This directory contains all components related to the daily planning functionali
 
 **Features:**
 - Weekly overview showing scheduled and inbox tasks
+- Lazy day loading: starts with 10 days; an `IntersectionObserver` sentinel at the bottom of the rows appends 7 days at a time, capped at 100 total (`MAX_DAYS_TO_DISPLAY`). Extra same-day-view weeks are appended forward in time.
 - Narrow blocks use width-aware font sizing and single-dot truncation (`.` instead of `...`) so short-duration tasks show more of the title
 - Separate sections for scheduled tasks and inbox tasks per day
 - Dual timeline headers (top and bottom) for easy time tracking
 - Space-efficient row layout
+- Fill-width timeline: hour width (`pixelsPerHour`) is measured from the container with a `ResizeObserver`, so the 12-hour AM/PM rows span the full width. Minimum 80px per hour (`WEEKLY_MIN_PIXELS_PER_HOUR`) keeps horizontal scrolling on narrow windows.
+- Drag to extend: a handle on the right edge of each task (`WeeklyTaskCard` `onResizeStart`) changes its duration in 15-minute steps. Preview is local state in `WeeklyView` (`resizeState`); the change is committed via `handleUpdateTask` on pointer-up. Escape or blur cancels. Stops at the next task on the same day (`resolveCollisionsForResize`). The handle is only on the segment containing the task's end, so a task crossing 12 PM resizes from its PM segment.
 - **Day notes layer**: Toolbar **Day Notes** toggle shows a semi-transparent text overlay on each day's timeline for free-form notes. Persisted via `utils/dayNotesStorage.ts` (`daily-planner-day-notes-v1`).
 
 ### WeeklyDayNotesPanel
