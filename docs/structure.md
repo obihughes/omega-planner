@@ -23,9 +23,9 @@ App icon (favicon) is file-based: `app/icon.svg`. Replace this file to change th
 #### `/components`
 Reusable React components used throughout the application. These components are organized by feature or functionality.
 Current notable feature folders include:
-- `components/planner` – Daily/Weekly scheduling
+- `components/planner` – Daily/Weekly scheduling (Weekly View left column opens a per-day goals popover via `WeeklyDayGoalsPopover.tsx`)
 - `components/documents` – Text canvas editor
-- `components/calendar` – Calendars and modals (Month/Year views also show read-only primary weekly goals via `hooks/usePrimaryGoalCalendarEvents.ts`)
+- `components/calendar` – Calendars and modals (Month/Year/Timeline views show read-only primary weekly goals via `hooks/useMergedCalendarEvents.ts`, which builds on `hooks/usePrimaryGoalCalendarEvents.ts`)
 - `components/meals` – Meals list and ingredient management
 - `components/study-tracker` – Study Planner (weekly day cards with tasks, monthly calendar with subject filter)
 - `components/subjects` – Subjects page (two-column: subjects list + topics with status and notes; separate from Study Tracker)

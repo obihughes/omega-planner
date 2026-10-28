@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { CalendarEvent } from '@/types/calendar';
-import { GoalsStorage } from '@/utils/goalsStorage';
+import { GoalsStorage, WEEKLY_GOALS_CHANGED_EVENT } from '@/utils/goalsStorage';
 import { dateFromDateKey } from '@/utils/dateUtils';
 import { getGoalColorHex } from '@/components/weekly-goals/goalColors';
 
@@ -56,9 +56,11 @@ export function usePrimaryGoalCalendarEvents(): CalendarEvent[] {
 
     window.addEventListener('storage', handleStorage);
     window.addEventListener('focus', load);
+    window.addEventListener(WEEKLY_GOALS_CHANGED_EVENT, load);
     return () => {
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('focus', load);
+      window.removeEventListener(WEEKLY_GOALS_CHANGED_EVENT, load);
     };
   }, []);
 

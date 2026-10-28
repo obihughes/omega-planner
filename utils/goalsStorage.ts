@@ -4,6 +4,12 @@ const STORAGE_KEY = 'omega-planner-weekly-goals-v1';
 const STORAGE_VERSION = '1.0';
 const MAX_GOALS_PER_DAY = 6;
 
+/**
+ * Same-tab change notification. The native `storage` event only fires in other tabs,
+ * so writes dispatch this window event so hooks in the current tab can reload.
+ */
+export const WEEKLY_GOALS_CHANGED_EVENT = 'omega:weekly-goals-changed';
+
 export const GoalsStorage = {
   loadAll(): WeeklyGoalsStorageData {
     if (typeof window === 'undefined') return { version: STORAGE_VERSION, weeks: {}, lastUpdated: new Date(0).toISOString() };
@@ -39,6 +45,7 @@ export const GoalsStorage = {
         lastUpdated: new Date().toISOString(),
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      window.dispatchEvent(new Event(WEEKLY_GOALS_CHANGED_EVENT));
     } catch (e) {
       console.error('Failed to save weekly goals storage', e);
     }

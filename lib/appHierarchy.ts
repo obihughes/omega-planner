@@ -168,7 +168,14 @@ export const appHierarchy: AppMapNode[] = [
             label: 'WeeklyView',
             kind: 'component',
             path: 'components/planner/WeeklyView.tsx',
-            editHint: 'Weekly timeline on /. Sidebar Others → Week, or /?view=weekly. Starts at 10 days; scroll down loads 7 more at a time, capped at 100 (MAX_DAYS_TO_DISPLAY). Header stats use the first 10 days.',
+            editHint: 'Weekly timeline on /. Sidebar Others → Week, or /?view=weekly. Starts at 10 days; scroll down loads 7 more at a time, capped at 100 (MAX_DAYS_TO_DISPLAY). Header stats use the first 10 days. Left events column shows calendar events and primary weekly goals (useMergedCalendarEvents) and is wrapped in WeeklyDayGoalsPopover.',
+          },
+          {
+            id: 'dp-weekly-day-goals-popover',
+            label: 'WeeklyDayGoalsPopover',
+            kind: 'component',
+            path: 'components/planner/WeeklyDayGoalsPopover.tsx',
+            editHint: 'Click on a day\'s left events cell opens that day\'s Weekly Overview goals (WeeklyGoalsDayColumn: add, toggle, edit, drag-move). Portaled via PopoverPortal so the overflow-hidden column does not clip it. Goal data comes from useWeeklyGoals in WeeklyView.',
           },
           {
             id: 'dp-edit-task',
@@ -257,7 +264,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'Calendar page',
         kind: 'page',
         path: 'app/calendar/page.tsx',
-        editHint: 'Month/Year toggle; dynamic YearCalendar and timeline wrapper. Weekly-goals redirects to /weekly-overview. Merges primary weekly goals (usePrimaryGoalCalendarEvents) into month/year data as read-only events; edit/delete ignore them.',
+        editHint: 'Month/Year toggle; dynamic YearCalendar and timeline wrapper. Weekly-goals redirects to /weekly-overview. Uses useMergedCalendarEvents: mergedData (calendar + primary weekly goals, read-only) feeds month/year/timeline; raw data is used for CRUD and export so goal events are never persisted.',
       },
       {
         id: 'cal-monthly',
@@ -325,7 +332,14 @@ export const appHierarchy: AppMapNode[] = [
         label: 'usePrimaryGoalCalendarEvents',
         kind: 'hook',
         path: 'hooks/usePrimaryGoalCalendarEvents.ts',
-        editHint: 'Derives read-only calendar events from Weekly Overview goals with goalType primary (omega-planner-weekly-goals-v1). Not persisted to calendar storage. Reloads on mount, storage event and window focus.',
+        editHint: 'Derives read-only calendar events from Weekly Overview goals with goalType primary (omega-planner-weekly-goals-v1). Not persisted to calendar storage. Reloads on mount, storage event, window focus and same-tab WEEKLY_GOALS_CHANGED_EVENT (dispatched by goalsStorage saveAll).',
+      },
+      {
+        id: 'cal-merged-events-hook',
+        label: 'useMergedCalendarEvents',
+        kind: 'hook',
+        path: 'hooks/useMergedCalendarEvents.ts',
+        editHint: 'Single merge of calendar events + primary weekly goals. Returns mergedData/events for display and passes through all useCalendarData CRUD. data stays raw so export/import never include derived goal events. Used by /calendar and the Weekly View.',
       },
       {
         id: 'cal-storage',

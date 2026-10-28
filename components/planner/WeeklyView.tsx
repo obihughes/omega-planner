@@ -14,14 +14,23 @@ import { useDayNotes } from '@/hooks/useDayNotes';
 import { WeeklyDayNotesPanel } from './WeeklyDayNotesPanel';
 import { Task } from '@/types';
 import { useDailyPlanner } from '@/hooks/useDailyPlannerState';
-import { useCalendarData } from '@/hooks/useCalendarData';
+import { useMergedCalendarEvents } from '@/hooks/useMergedCalendarEvents';
+import { useWeeklyGoals } from '@/hooks/useWeeklyGoals';
+import type { CalendarEvent } from '@/types/calendar';
 import { formatTime } from '@/utils/formatters';
 import { getDateKey } from '@/utils/dateUtils';
 import { resolveCollisionsForResize } from '@/utils/taskUtils';
 import { MIN_TASK_DURATION, TIMELINE_END_HOUR } from '@/lib/constants';
 import { MemoizedWeeklyTaskCard } from './WeeklyTaskCard';
 import { WeeklyEventsDisplay } from './WeeklyEventsDisplay';
+import { WeeklyDayGoalsPopover } from './WeeklyDayGoalsPopover';
 import { EditTaskModal } from './EditTaskModal';
+
+/** Local-calendar day key (YYYY-MM-DD). Matches how WeeklyEventsDisplay compares event dates. */
+const toLocalDayKey = (input: Date | string): string => {
+  const d = new Date(input);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
 
 // Weekly view specific constants for row-based layout
 const WEEKLY_MIN_PIXELS_PER_HOUR = 80; // Lower bound; hour width grows to fill wide windows
@@ -67,10 +76,8 @@ export default function WeeklyView({}: WeeklyViewProps) {
     handleUpdateTask,
   } = useDailyPlanner();
 
-  // Calendar data for events
-  const {
-    data: calendarData,
-  } = useCalendarData();
+  // Calendar events plus read-only primary weekly goals (never persisted to calendar storage)
+  const { events: mergedEvents } = useMergedCalendarEvents();
 
   const {
     getNotes,
@@ -368,6 +375,25 @@ export default function WeeklyView({}: WeeklyViewProps) {
 
   // Base range (first DAYS_TO_DISPLAY days) drives the header label and stats
   const baseWeekDates = weekDates.slice(0, DAYS_TO_DISPLAY);
+
+  // Weekly Overview goals for every rendered day. The key list is memoized on a string signature:
+  // useWeeklyGoals reloads when its dateKeys identity changes, so a new array each render would loop.
+  const visibleDateKeysSignature = weekDates.map((d) => getDateKey(d)).join('|');
+  const visibleDateKeys = useMemo(() => visibleDateKeysSignature.split('|'), [visibleDateKeysSignature]);
+  const { getGoalsForDate, canAddMore, addGoal, toggleGoal, removeGoal, updateGoal, moveGoal } =
+    useWeeklyGoals(visibleDateKeys);
+
+  // Merged events grouped by local day, so each day row gets its events in O(1)
+  const eventsByLocalDay = useMemo(() => {
+    const map = new Map<string, CalendarEvent[]>();
+    for (const event of mergedEvents) {
+      const key = toLocalDayKey(event.date);
+      const list = map.get(key);
+      if (list) list.push(event);
+      else map.set(key, [event]);
+    }
+    return map;
+  }, [mergedEvents]);
   
     // Auto-scroll vertically to today's row on initial load for current week
   useEffect(() => {
@@ -536,6 +562,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
     const dateKey = getDateKey(date);
     const dayTasks = tasksByDate.get(dateKey) || [];
     const poolTasks = getPoolTasksForDate(dateKey);
+    const dayEventsForRow = eventsByLocalDay.get(toLocalDayKey(date)) ?? [];
     const isCurrentDay = isToday(date);
     const isWeekendDay = isWeekend(date);
     
@@ -670,12 +697,25 @@ export default function WeeklyView({}: WeeklyViewProps) {
                 )}
                 style={{ width: `${WEEKLY_EVENTS_COLUMN_WIDTH}px` }}
             >
-                <div className="absolute inset-1">
+                <WeeklyDayGoalsPopover
+                    className="absolute inset-1"
+                    dateKey={dateKey}
+                    date={date}
+                    isToday={isCurrentDay}
+                    dayEvents={dayEventsForRow}
+                    goals={getGoalsForDate(dateKey)}
+                    canAddMore={canAddMore(dateKey)}
+                    onAddGoal={(title, color, goalType) => addGoal(dateKey, title, color, goalType)}
+                    onToggleGoal={(goalId) => toggleGoal(dateKey, goalId)}
+                    onRemoveGoal={(goalId) => removeGoal(dateKey, goalId)}
+                    onUpdateGoal={(goalId, updates) => updateGoal(dateKey, goalId, updates)}
+                    onMoveGoal={moveGoal}
+                >
                     <WeeklyEventsDisplay
-                    events={calendarData.events}
+                    events={dayEventsForRow}
                     date={date}
                     />
-                </div>
+                </WeeklyDayGoalsPopover>
             </div>
         </div>
 
@@ -745,7 +785,14 @@ export default function WeeklyView({}: WeeklyViewProps) {
     openViewNotesModal,
     isSameDayView,
     selectedDayOfWeek,
-    calendarData.events,
+    eventsByLocalDay,
+    getGoalsForDate,
+    canAddMore,
+    addGoal,
+    toggleGoal,
+    removeGoal,
+    updateGoal,
+    moveGoal,
     showNotesLayer,
     dayNotesHydrated,
     getNotes,

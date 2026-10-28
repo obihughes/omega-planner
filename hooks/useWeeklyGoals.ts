@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { WeekGoals, WeeklyGoal } from '@/types/goals';
-import { GoalsStorage } from '@/utils/goalsStorage';
+import { GoalsStorage, WEEKLY_GOALS_CHANGED_EVENT } from '@/utils/goalsStorage';
 import { getWeekStartKeyFromDateKey } from '@/utils/dateUtils';
 
 const WEEKLY_GOALS_STORAGE_KEY = 'omega-planner-weekly-goals-v1';
@@ -39,7 +39,12 @@ export function useWeeklyGoals(dateKeys: string[]) {
       reload();
     }
     window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+    // Same-tab writes (for example from the Weekly View popover) do not fire `storage`
+    window.addEventListener(WEEKLY_GOALS_CHANGED_EVENT, reload);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener(WEEKLY_GOALS_CHANGED_EVENT, reload);
+    };
   }, [reload]);
 
   const getGoalsForDate = useCallback(

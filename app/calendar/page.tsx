@@ -4,9 +4,9 @@ import React, { useMemo, useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { AppLayout } from '@/components/ui/AppLayout';
 import { MonthlyCalendar } from '@/components/calendar/MonthlyCalendar';
-import { useCalendarData } from '@/hooks/useCalendarData';
-import { usePrimaryGoalCalendarEvents, PRIMARY_GOAL_EVENT_PREFIX } from '@/hooks/usePrimaryGoalCalendarEvents';
-import { CalendarData, CalendarEvent, CalendarPeriod } from '@/types/calendar';
+import { useMergedCalendarEvents } from '@/hooks/useMergedCalendarEvents';
+import { PRIMARY_GOAL_EVENT_PREFIX } from '@/hooks/usePrimaryGoalCalendarEvents';
+import { CalendarEvent, CalendarPeriod } from '@/types/calendar';
 import { Settings, Download, RefreshCw, Trash2, CalendarRange, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCalendarView, type CalendarViewMode } from '@/app/context/CalendarViewContext';
@@ -36,6 +36,7 @@ function navigateToDaily(date: Date) {
 export default function CalendarPage() {
   const {
     data,
+    mergedData: displayData, // Calendar + primary weekly goals (read-only overlay, never persisted)
     addEvent,
     addPeriod,
     updateEvent,
@@ -45,18 +46,7 @@ export default function CalendarPage() {
     clearAllData,
     resetToDefault,
     exportData
-  } = useCalendarData();
-
-  const primaryGoalEvents = usePrimaryGoalCalendarEvents();
-
-  // Primary weekly goals are overlaid at render time; they are never written to calendar storage.
-  const displayData = useMemo<CalendarData>(
-    () => ({
-      events: primaryGoalEvents.length > 0 ? [...data.events, ...primaryGoalEvents] : data.events,
-      periods: data.periods,
-    }),
-    [data.events, data.periods, primaryGoalEvents]
-  );
+  } = useMergedCalendarEvents();
 
   const [showSettings, setShowSettings] = useState(false);
   const { viewMode: currentView, setViewMode: setCurrentView } = useCalendarView();
@@ -227,7 +217,7 @@ export default function CalendarPage() {
     <AppLayout>
       <div className="flex flex-col flex-1 min-h-0 h-full">
         {currentView === 'timeline' ? (
-          <TimelineViewWrapper calendarData={data} />
+          <TimelineViewWrapper calendarData={displayData} />
         ) : (
           <div className="flex-1 min-h-0 overflow-y-auto scrollbar-overlay">
             {calendarContent}

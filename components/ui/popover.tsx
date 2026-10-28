@@ -26,4 +26,7 @@ const PopoverContent = React.forwardRef<
 ))
 PopoverContent.displayName = PopoverPrimitive.Content.displayName
 
-export { Popover, PopoverTrigger, PopoverContent } 
+// Portal escapes clipping/stacking contexts (e.g. overflow-hidden grids). Opt-in so existing usages are unchanged.
+const PopoverPortal = PopoverPrimitive.Portal
+
+export { Popover, PopoverTrigger, PopoverContent, PopoverPortal } 

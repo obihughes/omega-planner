@@ -1,5 +1,14 @@
 ## 2026-10-27
 
+- **Week view: primary goals in the calendar column + day goals popover** (2026-10-27)
+  - Primary Weekly Overview goals now appear in the Weekly View's left events column on their day, as read-only items with a star and no clock time. They are merged with calendar events at render time and never written to calendar storage.
+  - Clicking a day's left cell (including "+N more", or "+ goals" on empty days) opens `WeeklyDayGoalsPopover`. It lists that day's Weekly Overview goals using `WeeklyGoalsDayColumn`: add, toggle, edit, delete, and drag to move. Includes a link to `/weekly-overview`.
+  - The popover is portaled through `PopoverPortal` (new opt-in export in `components/ui/popover.tsx`) so the sticky, `overflow-hidden` column does not clip it.
+  - **Unified merge**: new `hooks/useMergedCalendarEvents.ts` replaces the inline merge in `app/calendar/page.tsx`. It returns `mergedData` (calendar + primary goals) for display and keeps `data` raw, so Export never writes derived goal events into calendar storage. The Calendar timeline view now also shows primary goals.
+  - **Same-tab refresh**: `GoalsStorage.saveAll` dispatches `omega:weekly-goals-changed` (`WEEKLY_GOALS_CHANGED_EVENT`). `usePrimaryGoalCalendarEvents` and `useWeeklyGoals` listen for it, because the native `storage` event does not fire in the writing tab.
+  - `WeeklyView` builds its visible dateKey list from a string signature so `useWeeklyGoals` does not reload in a loop on every render.
+  - **Files affected**: `components/planner/WeeklyView.tsx`, `components/planner/WeeklyEventsDisplay.tsx`, `components/planner/WeeklyDayGoalsPopover.tsx` (new), `components/planner/index.ts`, `components/planner/README.md`, `components/ui/popover.tsx`, `hooks/useMergedCalendarEvents.ts` (new), `hooks/usePrimaryGoalCalendarEvents.ts`, `hooks/useWeeklyGoals.ts`, `hooks/index.ts`, `hooks/README.md`, `utils/goalsStorage.ts`, `app/calendar/page.tsx`, `lib/appHierarchy.ts`, `docs/planner.md`, `docs/structure.md`, `docs/changelog.md`
+
 - **Week view: drag to extend tasks** (2026-10-27)
   - Each scheduled task in the Others → Week timeline has a thin handle on its right edge. Dragging it lengthens or shortens the task in 15-minute steps.
   - The preview updates while dragging. The change is saved on release. Press Escape or lose pointer focus to cancel.

@@ -99,13 +99,27 @@ Shared calendar events/periods store (`omega-calendar-data`) via `useSyncExterna
 
 ### usePrimaryGoalCalendarEvents
 
-Builds read-only `CalendarEvent`s from Weekly Overview goals whose `goalType` is `primary`. Reads `omega-planner-weekly-goals-v1` through `GoalsStorage.loadAll()` in an effect, so server and client first paint match. Reloads on mount, on the `storage` event for that key, and on window `focus`. Each event has id `primary-goal:<goalId>`, `source: 'primary-goal'`, `readOnly: true`, and a hex color from `getGoalColorHex`. Goals with empty titles are skipped. Nothing is written to calendar storage. The calendar page merges the result into its display data.
+Builds read-only `CalendarEvent`s from Weekly Overview goals whose `goalType` is `primary`. Reads `omega-planner-weekly-goals-v1` through `GoalsStorage.loadAll()` in an effect, so server and client first paint match. Reloads on mount, on the `storage` event for that key, on window `focus`, and on the same-tab `WEEKLY_GOALS_CHANGED_EVENT` (`omega:weekly-goals-changed`, dispatched by `GoalsStorage.saveAll`). The `storage` event does not fire in the tab that wrote, so the custom event keeps the Weekly View in sync after edits in its day popover. Each event has id `primary-goal:<goalId>`, `source: 'primary-goal'`, `readOnly: true`, and a hex color from `getGoalColorHex`. Goals with empty titles are skipped. Nothing is written to calendar storage. Consumers should use `useMergedCalendarEvents` rather than merging it themselves.
 
 **API:** `usePrimaryGoalCalendarEvents(): CalendarEvent[]`
 
 **Exports:** `PRIMARY_GOAL_EVENT_PREFIX` (`'primary-goal:'`)
 
 **Storage key (read only):** `omega-planner-weekly-goals-v1`
+
+### useMergedCalendarEvents
+
+Single merge of calendar events and primary weekly goals. Wraps `useCalendarData()` and `usePrimaryGoalCalendarEvents()`. The merged list is memoized.
+
+**Returns:** everything from `useCalendarData()`, plus:
+- `mergedData: CalendarData`: `{ events: [...stored, ...primaryGoalEvents], periods }`. Use for read-only display (calendar month/year/timeline, Weekly View left column).
+- `events: CalendarEvent[]`: `mergedData.events`.
+
+`data` is intentionally the **raw** stored calendar data. `exportData` serializes `data`, so overriding it with merged events would write derived goal events back into calendar storage on export. CRUD (`addEvent`, `updateEvent`, `deleteEvent`) still acts on stored events only, and goal events are blocked by the read-only ID prefix in `app/calendar/page.tsx`.
+
+**API:** `useMergedCalendarEvents(): ReturnType<typeof useCalendarData> & { mergedData: CalendarData; events: CalendarEvent[] }`
+
+**Consumers:** `app/calendar/page.tsx`, `components/planner/WeeklyView.tsx`
 
 ### useClassScheduleState
 

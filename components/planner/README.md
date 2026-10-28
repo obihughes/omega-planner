@@ -69,6 +69,18 @@ This directory contains all components related to the daily planning functionali
 - Fill-width timeline: hour width (`pixelsPerHour`) is measured from the container with a `ResizeObserver`, so the 12-hour AM/PM rows span the full width. Minimum 80px per hour (`WEEKLY_MIN_PIXELS_PER_HOUR`) keeps horizontal scrolling on narrow windows.
 - Drag to extend: a handle on the right edge of each task (`WeeklyTaskCard` `onResizeStart`) changes its duration in 15-minute steps. Preview is local state in `WeeklyView` (`resizeState`); the change is committed via `handleUpdateTask` on pointer-up. Escape or blur cancels. Stops at the next task on the same day (`resolveCollisionsForResize`). The handle is only on the segment containing the task's end, so a task crossing 12 PM resizes from its PM segment.
 - **Day notes layer**: Toolbar **Day Notes** toggle shows a semi-transparent text overlay on each day's timeline for free-form notes. Persisted via `utils/dayNotesStorage.ts` (`daily-planner-day-notes-v1`).
+- **Left events column**: shows calendar events and primary Weekly Overview goals (`useMergedCalendarEvents`). Primary goals render with a star and no clock time. Clicking anywhere in the cell (including "+N more", or "+ goals" on empty days) opens `WeeklyDayGoalsPopover`.
+
+### WeeklyDayGoalsPopover
+**File**: `WeeklyDayGoalsPopover.tsx`
+**Purpose**: Click-to-open popover for one day's Weekly Overview goals, anchored to the Weekly View events cell
+
+**Features:**
+- Wraps the events cell as a Radix `PopoverTrigger`. Content renders through `PopoverPortal` so the sticky, `overflow-hidden` column does not clip it.
+- Body is `WeeklyGoalsDayColumn` (add, toggle, edit, delete, drag-move between days) with that day's goals from `useWeeklyGoals` in `WeeklyView`.
+- Calendar-only events are listed in the day column. Primary-goal events are filtered out there because the goal list already shows them.
+- Footer link **Open in Weekly Overview** goes to `/weekly-overview`.
+- Goal writes dispatch `omega:weekly-goals-changed`, so the left column and the popover update in the same tab.
 
 ### WeeklyDayNotesPanel
 **File**: `WeeklyDayNotesPanel.tsx`
