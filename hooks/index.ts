@@ -27,4 +27,5 @@ export { useGoalHierarchy, type GoalHierarchyLevel, type DayGridSlot } from './u
 export { useWeeklyGoals } from './useWeeklyGoals';
 export { usePrimaryGoalCalendarEvents, PRIMARY_GOAL_EVENT_PREFIX } from './usePrimaryGoalCalendarEvents';
 export { useMergedCalendarEvents } from './useMergedCalendarEvents';
+export { useClassScheduleOverlay, type UseClassScheduleOverlayResult } from './useClassScheduleOverlay';
 export { useSubjectsManager, SUBJECT_COLORS, type TopicProgress } from './useSubjectsManager';

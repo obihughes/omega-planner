@@ -1,3 +1,12 @@
+## 2026-11-02
+
+- **Week view: class schedule overlay + Hide/Show Classes toggle** (2026-11-02)
+  - Recurring classes from `/class-schedule` now appear on the Weekly View's day rows (AM and PM) as dulled, read-only blocks: class color at ~35% opacity, muted name and time, dashed border.
+  - Blocks are `pointer-events-none` and sit below real tasks (z 20 vs 40), so double-click-to-create, task drag/resize, and task stats are unchanged. Classes are not merged into `tasksByDate`.
+  - New header button **Hide Classes** / **Show Classes** (next to **Day Notes**). The choice persists in `omega-planner-weekly-show-classes` (default shown).
+  - New read-only hook `hooks/useClassScheduleOverlay.ts`. It loads classes once after mount and never writes them back, unlike `useClassScheduleState`.
+  - **Files affected**: `components/planner/WeeklyView.tsx`, `components/planner/WeeklyClassBlock.tsx` (new), `components/planner/index.ts`, `components/planner/README.md`, `hooks/useClassScheduleOverlay.ts` (new), `hooks/index.ts`, `hooks/README.md`, `utils/classScheduleStorage.ts`, `docs/planner.md`, `docs/structure.md`, `docs/utils.md`, `docs/changelog.md`
+
 ## 2026-10-27
 
 - **Week view: primary goals in the calendar column + day goals popover** (2026-10-27)

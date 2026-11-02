@@ -198,3 +198,6 @@ Load and save recurring `ClassScheduleTask[]` under `omega-planner-class-schedul
 
 #### `ClassScheduleStorage.getShowDailyTasks()` / `setShowDailyTasks(value)`
 Persist the **Classes | Daily Tasks** overlay toggle on `/class-schedule` under `omega-planner-class-schedule-show-daily-tasks`.
+
+#### `ClassScheduleStorage.getShowWeeklyClasses()` / `setShowWeeklyClasses(value)`
+Persist the Weekly View **Show Classes** / **Hide Classes** toggle under `omega-planner-weekly-show-classes`. Defaults to `true` when unset. Read by `hooks/useClassScheduleOverlay.ts`.

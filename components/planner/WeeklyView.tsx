@@ -9,6 +9,7 @@ import {
   Calendar,
   Plus,
   StickyNote,
+  GraduationCap,
 } from 'lucide-react';
 import { useDayNotes } from '@/hooks/useDayNotes';
 import { WeeklyDayNotesPanel } from './WeeklyDayNotesPanel';
@@ -16,6 +17,7 @@ import { Task } from '@/types';
 import { useDailyPlanner } from '@/hooks/useDailyPlannerState';
 import { useMergedCalendarEvents } from '@/hooks/useMergedCalendarEvents';
 import { useWeeklyGoals } from '@/hooks/useWeeklyGoals';
+import { useClassScheduleOverlay } from '@/hooks/useClassScheduleOverlay';
 import type { CalendarEvent } from '@/types/calendar';
 import { formatTime } from '@/utils/formatters';
 import { getDateKey } from '@/utils/dateUtils';
@@ -24,6 +26,7 @@ import { MIN_TASK_DURATION, TIMELINE_END_HOUR } from '@/lib/constants';
 import { MemoizedWeeklyTaskCard } from './WeeklyTaskCard';
 import { WeeklyEventsDisplay } from './WeeklyEventsDisplay';
 import { WeeklyDayGoalsPopover } from './WeeklyDayGoalsPopover';
+import { WeeklyClassBlock } from './WeeklyClassBlock';
 import { EditTaskModal } from './EditTaskModal';
 
 /** Local-calendar day key (YYYY-MM-DD). Matches how WeeklyEventsDisplay compares event dates. */
@@ -78,6 +81,9 @@ export default function WeeklyView({}: WeeklyViewProps) {
 
   // Calendar events plus read-only primary weekly goals (never persisted to calendar storage)
   const { events: mergedEvents } = useMergedCalendarEvents();
+
+  // Recurring class schedule drawn as a dulled, read-only overlay (toggle persisted)
+  const { getClassesForDate, showClasses, setShowClasses } = useClassScheduleOverlay();
 
   const {
     getNotes,
@@ -563,6 +569,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
     const dayTasks = tasksByDate.get(dateKey) || [];
     const poolTasks = getPoolTasksForDate(dateKey);
     const dayEventsForRow = eventsByLocalDay.get(toLocalDayKey(date)) ?? [];
+    const dayClasses = showClasses ? getClassesForDate(date) : [];
     const isCurrentDay = isToday(date);
     const isWeekendDay = isWeekend(date);
     
@@ -603,6 +610,47 @@ export default function WeeklyView({}: WeeklyViewProps) {
       return null;
     };
     
+    // Render dulled class blocks for a specific row (AM or PM). Sits below real tasks (z 40)
+    // and ignores pointer events so timeline double-click and task interactions are unaffected.
+    const renderClassesForRow = (hourOffset: number) => {
+      if (dayClasses.length === 0) return null;
+      const rowEndHour = hourOffset + HOURS_PER_ROW;
+
+      return dayClasses.map((classTask) => {
+        const classEndHour = classTask.startHour + classTask.duration;
+        const visibleStart = Math.max(classTask.startHour, hourOffset);
+        const visibleEnd = Math.min(Math.min(24, classEndHour), rowEndHour);
+        if (visibleEnd <= visibleStart) return null;
+
+        const renderLeft = (visibleStart - hourOffset) * pixelsPerHour;
+        const renderWidth = (visibleEnd - visibleStart) * pixelsPerHour;
+        const blockWidth = Math.max(renderWidth - 4, 30);
+
+        return (
+          <div
+            key={`class-${classTask.id}-${hourOffset}`}
+            className="absolute pointer-events-none"
+            style={{
+              left: `${renderLeft + 2}px`,
+              width: `${blockWidth}px`,
+              top: '0px',
+              height: `${WEEKLY_TASK_HEIGHT}px`,
+              zIndex: 20,
+            }}
+          >
+            <WeeklyClassBlock
+              name={classTask.name}
+              color={classTask.color}
+              startHour={classTask.startHour}
+              endHour={classEndHour}
+              width={blockWidth}
+              height={WEEKLY_TASK_HEIGHT}
+            />
+          </div>
+        );
+      });
+    };
+
     // Render tasks for a specific row (AM or PM)
     const renderTasksForRow = (tasks: ScheduledTask[], hourOffset: number) => {
       const rowEndHour = hourOffset + HOURS_PER_ROW;
@@ -749,6 +797,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
                     style={{ left: `${i * pixelsPerHour}px` }} 
                     />
                 ))}
+                {renderClassesForRow(0)}
                 {getCurrentTimeMarker(0)}
                 {renderTasksForRow(displayTasks, 0)}
             </div>
@@ -772,6 +821,7 @@ export default function WeeklyView({}: WeeklyViewProps) {
                     style={{ left: `${i * pixelsPerHour}px` }} 
                     />
                 ))}
+                {renderClassesForRow(12)}
                 {getCurrentTimeMarker(12)}
                 {renderTasksForRow(displayTasks, 12)}
             </div>
@@ -801,6 +851,8 @@ export default function WeeklyView({}: WeeklyViewProps) {
     pixelsPerHour,
     resizeState,
     handleResizeStart,
+    getClassesForDate,
+    showClasses,
   ]);
 
   // Get week statistics
@@ -924,6 +976,17 @@ export default function WeeklyView({}: WeeklyViewProps) {
           </div>
 
           <div className="flex items-center gap-4">
+            <Button
+              variant={showClasses ? 'default' : 'outline'}
+              size="sm"
+              className="flex items-center gap-2 h-8"
+              onClick={() => setShowClasses(!showClasses)}
+              title={showClasses ? 'Hide class schedule overlay' : 'Show class schedule overlay'}
+            >
+              <GraduationCap className="w-4 h-4" />
+              {showClasses ? 'Hide Classes' : 'Show Classes'}
+            </Button>
+
             <Button
               variant={showNotesLayer ? 'default' : 'outline'}
               size="sm"

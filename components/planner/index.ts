@@ -10,6 +10,7 @@ export { DailyEventsContainer } from './DailyEventsContainer';
 export { WeeklyEventsDisplay } from './WeeklyEventsDisplay';
 export { WeeklyDayGoalsPopover, type WeeklyDayGoalsPopoverProps } from './WeeklyDayGoalsPopover';
 export { WeeklyDayNotesPanel } from './WeeklyDayNotesPanel';
+export { WeeklyClassBlock, type WeeklyClassBlockProps } from './WeeklyClassBlock';
 export { MiniDailyTimeline } from './MiniDailyTimeline';
 export { ConflictResolutionModal } from './ConflictResolutionModal';
 export { MergedDailyView, type MergedDailyViewRenderOptions } from './MergedDailyView';

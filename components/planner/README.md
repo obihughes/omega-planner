@@ -68,6 +68,7 @@ This directory contains all components related to the daily planning functionali
 - Space-efficient row layout
 - Fill-width timeline: hour width (`pixelsPerHour`) is measured from the container with a `ResizeObserver`, so the 12-hour AM/PM rows span the full width. Minimum 80px per hour (`WEEKLY_MIN_PIXELS_PER_HOUR`) keeps horizontal scrolling on narrow windows.
 - Drag to extend: a handle on the right edge of each task (`WeeklyTaskCard` `onResizeStart`) changes its duration in 15-minute steps. Preview is local state in `WeeklyView` (`resizeState`); the change is committed via `handleUpdateTask` on pointer-up. Escape or blur cancels. Stops at the next task on the same day (`resolveCollisionsForResize`). The handle is only on the segment containing the task's end, so a task crossing 12 PM resizes from its PM segment.
+- **Class schedule overlay**: Recurring classes from `/class-schedule` are drawn on each day row as dulled, read-only blocks (`WeeklyClassBlock`) behind planner tasks. Toolbar **Show Classes** / **Hide Classes** toggles them; the choice persists in `omega-planner-weekly-show-classes`. Blocks ignore pointer events, so double-click-to-create and task drag/resize are unaffected. Classes are not merged into the task list or stats.
 - **Day notes layer**: Toolbar **Day Notes** toggle shows a semi-transparent text overlay on each day's timeline for free-form notes. Persisted via `utils/dayNotesStorage.ts` (`daily-planner-day-notes-v1`).
 - **Left events column**: shows calendar events and primary Weekly Overview goals (`useMergedCalendarEvents`). Primary goals render with a star and no clock time. Clicking anywhere in the cell (including "+N more", or "+ goals" on empty days) opens `WeeklyDayGoalsPopover`.
 
@@ -81,6 +82,16 @@ This directory contains all components related to the daily planning functionali
 - Calendar-only events are listed in the day column. Primary-goal events are filtered out there because the goal list already shows them.
 - Footer link **Open in Weekly Overview** goes to `/weekly-overview`.
 - Goal writes dispatch `omega:weekly-goals-changed`, so the left column and the popover update in the same tab.
+
+### WeeklyClassBlock
+**File**: `WeeklyClassBlock.tsx`
+**Purpose**: Dulled, read-only block for one recurring class on a Weekly View row
+
+**Features:**
+- Class color (`ClassScheduleTask.color`) at ~35% opacity behind muted name and time text, with a dashed border
+- `pointer-events-none` so it never blocks double-click-to-create or task interactions
+- Rendered by `WeeklyView` in both AM and PM rows, clipped to each row like tasks, below real tasks (z 20 vs 40)
+- Data comes from `useClassScheduleOverlay` (`getClassesForDate`), not `tasksByDate`
 
 ### WeeklyDayNotesPanel
 **File**: `WeeklyDayNotesPanel.tsx`

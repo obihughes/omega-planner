@@ -2,6 +2,7 @@ import { ClassScheduleTask, ClassScheduleStorageData } from '@/types/planner';
 
 const STORAGE_KEY = 'omega-planner-class-schedule';
 const SHOW_DAILY_TASKS_KEY = 'omega-planner-class-schedule-show-daily-tasks';
+const SHOW_WEEKLY_CLASSES_KEY = 'omega-planner-weekly-show-classes';
 const STORAGE_VERSION = '1.0';
 
 export const ClassScheduleStorage = {
@@ -110,6 +111,32 @@ export const ClassScheduleStorage = {
     }
 
     localStorage.setItem(SHOW_DAILY_TASKS_KEY, JSON.stringify(value));
+  },
+
+  /** Whether recurring classes are drawn as a dulled overlay on the Weekly View (default true) */
+  getShowWeeklyClasses(): boolean {
+    if (typeof window === 'undefined') {
+      return true;
+    }
+
+    const raw = localStorage.getItem(SHOW_WEEKLY_CLASSES_KEY);
+    if (raw === null) {
+      return true;
+    }
+
+    try {
+      return JSON.parse(raw) !== false;
+    } catch {
+      return true;
+    }
+  },
+
+  setShowWeeklyClasses(value: boolean): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    localStorage.setItem(SHOW_WEEKLY_CLASSES_KEY, JSON.stringify(value));
   },
 
   clean(task: any): ClassScheduleTask {

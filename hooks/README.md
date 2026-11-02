@@ -129,6 +129,16 @@ Recurring class timetable for `/class-schedule`, stored by day-of-week. Starts e
 
 **Storage key:** `omega-planner-class-schedule` (`utils/classScheduleStorage.ts`)
 
+### useClassScheduleOverlay
+
+Read-only view of the recurring class timetable for the Weekly View overlay. Loads classes once after mount via `ClassScheduleStorage.load()` and sets `hydrated`. It never saves classes back, and it does not use the class-schedule page's Classes | Daily Tasks toggle. `getClassesForDate(date)` returns the classes for that date's weekday, sorted by start time. `showClasses` is persisted (default `true`).
+
+**API:** `getClassesForDate(date)`, `showClasses`, `setShowClasses(value)`, `hydrated`
+
+**Storage key (toggle):** `omega-planner-weekly-show-classes` (`utils/classScheduleStorage.ts`, `getShowWeeklyClasses` / `setShowWeeklyClasses`)
+
+**Consumers:** `components/planner/WeeklyView.tsx`
+
 ### useSubjectsManager
 
 Subjects and topics for the Subjects page (`/subjects`). Loads after mount and sets `hydrated`. Keeps `selectedSubjectId`; if that subject is deleted (or none is selected) it falls back to the first subject. A newly added subject becomes selected.

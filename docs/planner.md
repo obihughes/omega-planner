@@ -84,6 +84,7 @@ Displays a scheduled-task timeline in a horizontal layout, one row per day. It s
 - **Fill-Width Timeline**: Hour width is measured from the container (`ResizeObserver`), so each 12-hour AM/PM row fills the available width instead of leaving blank space after the 11 column. Minimum 80px per hour (`WEEKLY_MIN_PIXELS_PER_HOUR`).
 - **Drag to Extend**: Drag the right edge of a task to lengthen or shorten it in 15-minute steps. The preview updates live; the change saves on release. Escape cancels. Clamped to the end of the day and stops at the next task on the same day. Works across the 12 PM row boundary.
 - **Calendar + Goals Column**: The left column per day lists calendar events and primary Weekly Overview goals (starred, no time). Clicking the cell opens a popover with that day's Weekly Overview goals (add, toggle, edit, drag to move) and a link to `/weekly-overview`.
+- **Class Schedule Overlay**: Recurring classes from `/class-schedule` appear on their weekday rows as dulled, read-only blocks. The **Show Classes** / **Hide Classes** toggle in the header hides them (persisted under `omega-planner-weekly-show-classes`). Classes are display-only here; edit them on the Class Schedule page. They do not count toward task stats.
 - **Day Highlighting**: Weekend days with orange accents, today with primary color accent bar
 - **Progress Visualization**: Completion dots in day headers and progress bars in stats
 - **Dual Timeline Headers**: Time markers available at both top and bottom of the view for easy reference
