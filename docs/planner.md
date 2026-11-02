@@ -91,6 +91,7 @@ Displays a scheduled-task timeline in a horizontal layout, one row per day. It s
 - **Current Time Indicator**: Live red line with floating time badge for real-time context
 - **Task Collision Handling**: Automatic lane assignment for overlapping tasks
 - **Inbox Integration**: Separate section for unscheduled tasks with clear visual distinction
+- **Task time range**: Cards tall and wide enough (36px+ high, 70px+ wide) show `start - end` under the task name, like the class blocks. Daily-view `TaskCard` shows `start - end · duration`.
 - **Narrow-block labels**: Short-duration blocks scale font size down and truncate with a single `.` (not `...`) so more of the task name fits
 - **Interactive Elements**: Hover effects, smooth animations, and click-to-add functionality
 - **Enhanced Scrollbar**: Larger, more accessible scrollbar for easier timeline navigation

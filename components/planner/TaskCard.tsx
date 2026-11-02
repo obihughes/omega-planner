@@ -164,8 +164,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               </div>
               {!isCompressed && (
                 <div className="mt-2 cursor-grab active:cursor-grabbing" style={{ pointerEvents: 'auto' }}>
-                  <div className="text-xs font-semibold opacity-90 leading-tight drop-shadow-sm">
-                    {formatDuration(task.duration)}
+                  <div className="text-xs font-semibold opacity-90 leading-tight drop-shadow-sm truncate">
+                    {formatTime(task.startHour)} - {formatTime(endTime)} · {formatDuration(task.duration)}
                   </div>
                 </div>
               )}

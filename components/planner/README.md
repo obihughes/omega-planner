@@ -62,6 +62,7 @@ This directory contains all components related to the daily planning functionali
 **Features:**
 - Weekly overview showing scheduled and inbox tasks
 - Lazy day loading: starts with 10 days; an `IntersectionObserver` sentinel at the bottom of the rows appends 7 days at a time, capped at 100 total (`MAX_DAYS_TO_DISPLAY`). Extra same-day-view weeks are appended forward in time.
+- Task time range: when the card is at least 36px tall and wider than 70px, `WeeklyTaskCard` shows the `start - end` range under the name (10px, 80% opacity, truncated), matching the class blocks. `TaskCard` (daily views) shows `start - end · duration` in place of the duration alone.
 - Narrow blocks use width-aware font sizing and single-dot truncation (`.` instead of `...`) so short-duration tasks show more of the title
 - Separate sections for scheduled tasks and inbox tasks per day
 - Dual timeline headers (top and bottom) for easy time tracking

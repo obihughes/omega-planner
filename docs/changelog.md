@@ -1,5 +1,10 @@
 ## 2026-11-02
 
+- **Task cards: show time range** (2026-11-02)
+  - `WeeklyTaskCard` now shows the `start - end` time under the task name when the card is at least 36px tall and wider than 70px (previously the time was only a tooltip). Narrower cards keep the name-only layout.
+  - `TaskCard` (Daily Tasks and the Advanced planner) shows `start - end · duration` instead of the duration alone, truncating if the card is narrow.
+  - **Files affected**: `components/planner/WeeklyTaskCard.tsx`, `components/planner/TaskCard.tsx`, `components/planner/README.md`, `docs/planner.md`, `docs/changelog.md`
+
 - **Weekly Overview: opens on previous week** (2026-11-02)
   - On each visit, `/weekly-overview` starts on the previous week so it can be compared with the current one. The grid shows the previous week at full strength, with the current and next weeks as muted preview rows (existing layout).
   - **This week** still returns to the current week. The mount logic lives in `useGoalHierarchy`, which resolves the month and week index with a new `resolveWeekPosition` helper.

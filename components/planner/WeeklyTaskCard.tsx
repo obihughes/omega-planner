@@ -87,6 +87,11 @@ export const WeeklyTaskCard: React.FC<WeeklyTaskCardProps> = ({
 
   const timeLabel = `${formatTime(task.startHour)}${showDuration ? ` - ${formatTime(endTime)}` : ''}`;
 
+  // Second line with the full start - end range (same look as the class blocks).
+  // Needs enough height for two lines and enough width to be readable.
+  const rangeLabel = `${formatTime(task.startHour)} - ${formatTime(endTime)}`;
+  const showTimeLine = height >= 36 && (typeof width !== 'number' || width > 70);
+
   const handleEditClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -150,8 +155,16 @@ export const WeeklyTaskCard: React.FC<WeeklyTaskCardProps> = ({
           >
             {displayName}
           </div>
-          
-
+          {showTimeLine && (
+            <div
+              className={cn(
+                'text-[10px] leading-tight font-medium opacity-80 truncate mt-0.5',
+                !textLayout && isSquareFormat && 'text-center'
+              )}
+            >
+              {rangeLabel}
+            </div>
+          )}
         </div>
 
         {/* Action Buttons - Position based on format */}
