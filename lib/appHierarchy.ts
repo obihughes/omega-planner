@@ -734,7 +734,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'GoalHierarchyView',
         kind: 'component',
         path: 'components/goal-hierarchy/GoalHierarchyView.tsx',
-        editHint: 'Weekly Overview UI: collapsible Month & Week Goals (month tabs + month/week goal textareas; localStorage weekly-overview-goals-collapsed), week tabs, three 7-column day rows (selected week + next week + two weeks ahead) with WeeklyGoalsDayColumn, week nav, and Open Notes.',
+        editHint: 'Weekly Overview UI: collapsible Month & Week Goals (month tabs + month/week goal textareas; localStorage weekly-overview-goals-collapsed), week tabs, three 7-column day rows (selected week + next week + two weeks ahead) with WeeklyGoalsDayColumn, week nav, and Open Notes. Opens on the previous week (initial state set in hooks/useGoalHierarchy.ts).',
       },
       {
         id: 'gh-day-column',

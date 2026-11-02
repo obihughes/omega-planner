@@ -322,7 +322,7 @@ The Saved Days feature allows you to save daily task configurations as reusable 
 Weekly planning at `/weekly-overview` (main sidebar nav). Legacy `/goal-hierarchy` and `/calendar?view=weekly-goals` redirect here.
 - **Month & Week Goals**: Collapsible as one section (month selector + month goal + week goal textareas). Collapse preference persists in `localStorage` (`weekly-overview-goals-collapsed`).
 - **Weekly Overview**: Three-row 7-column grid (selected week + next week + two weeks ahead) with drag-and-drop, calendar events, and optional Weekly Notes panel. Preview weeks are muted; day cards match Daily Log height.
-- **Week navigation**: Prev / Today / Next buttons sync with the week tabs above.
+- **Week navigation**: Prev / Today / Next buttons sync with the week tabs above. On each visit the page opens on the previous week (current week shown as a muted preview row for comparison); the center button returns to the current week.
 - **Weekly Notes**: Hidden by default. Click "Open Notes" to reveal the checklist panel; click the close icon to hide it again.
 
 Study Tracker lives on Daily Log (`/daily-log`) as a tab, not on this page.

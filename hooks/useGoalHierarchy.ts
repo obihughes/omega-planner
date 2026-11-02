@@ -20,13 +20,27 @@ import {
   GOAL_HIERARCHY_STORAGE_KEY,
   GoalHierarchyStorage,
 } from '@/utils/goalHierarchyStorage';
-import { getTodayDateKey } from '@/utils/dateUtils';
+import { addDaysToDateKey, getTodayDateKey, getWeekStartKeyFromDateKey } from '@/utils/dateUtils';
 import {
   GOAL_HIERARCHY_PRIMARY_ROW_COUNT,
   GOAL_HIERARCHY_PREVIEW_ROW_COUNT,
 } from '@/types/goalHierarchy';
 
 const SAVE_DEBOUNCE_MS = 300;
+
+/**
+ * Month key + week index for the week starting on `weekStartKey`.
+ * Prefers `preferredMonthKey` when that month's week grid contains the week,
+ * so a week shared across a month boundary stays under the current month tab.
+ */
+function resolveWeekPosition(
+  weekStartKey: string,
+  preferredMonthKey: string
+): { monthKey: string; weekIndex: number } {
+  const match = getWeeksInMonth(preferredMonthKey).find((w) => w.weekStartKey === weekStartKey);
+  if (match) return { monthKey: preferredMonthKey, weekIndex: match.weekIndex };
+  return getWeekContextForDate(weekStartKey);
+}
 
 type Level = 'month' | 'week' | 'day';
 
@@ -117,10 +131,13 @@ export function useGoalHierarchy() {
 
   useEffect(() => {
     setData(GoalHierarchyStorage.load());
+    // Open on the previous week so it can be compared against the current week.
     const today = getTodayDateKey();
-    const monthKey = today.slice(0, 7);
+    const todayMonthKey = today.slice(0, 7);
+    const previousWeekStartKey = addDaysToDateKey(getWeekStartKeyFromDateKey(today), -7);
+    const { monthKey, weekIndex } = resolveWeekPosition(previousWeekStartKey, todayMonthKey);
     setSelectedMonthKey(monthKey);
-    setSelectedWeekIndex(getWeekIndexContainingDate(monthKey, today));
+    setSelectedWeekIndex(weekIndex);
     setHydrated(true);
   }, []);
 
@@ -216,34 +233,27 @@ export function useGoalHierarchy() {
     setSelectedWeekIndex(weekIndex);
   }, []);
 
+  // Step by date rather than by index: weeks that straddle a month boundary
+  // appear in both months' grids, so index arithmetic can land on the same week.
   const goToPreviousWeek = useCallback(() => {
-    const currentIdx = weeksInMonth.findIndex((w) => w.weekIndex === selectedWeekIndex);
-    if (currentIdx > 0) {
-      setSelectedWeekIndex(weeksInMonth[currentIdx - 1].weekIndex);
-      return;
-    }
-    const tabIdx = monthTabs.indexOf(selectedMonthKey);
-    if (tabIdx > 0) {
-      const prevMonthKey = monthTabs[tabIdx - 1];
-      const prevWeeks = getWeeksInMonth(prevMonthKey);
-      setSelectedMonthKey(prevMonthKey);
-      setSelectedWeekIndex(prevWeeks[prevWeeks.length - 1]?.weekIndex ?? 0);
-    }
-  }, [weeksInMonth, selectedWeekIndex, monthTabs, selectedMonthKey]);
+    const target = resolveWeekPosition(
+      addDaysToDateKey(currentWeek.weekStartKey, -7),
+      selectedMonthKey
+    );
+    if (!monthTabs.includes(target.monthKey)) return;
+    setSelectedMonthKey(target.monthKey);
+    setSelectedWeekIndex(target.weekIndex);
+  }, [currentWeek.weekStartKey, monthTabs, selectedMonthKey]);
 
   const goToNextWeek = useCallback(() => {
-    const currentIdx = weeksInMonth.findIndex((w) => w.weekIndex === selectedWeekIndex);
-    if (currentIdx >= 0 && currentIdx < weeksInMonth.length - 1) {
-      setSelectedWeekIndex(weeksInMonth[currentIdx + 1].weekIndex);
-      return;
-    }
-    const tabIdx = monthTabs.indexOf(selectedMonthKey);
-    if (tabIdx >= 0 && tabIdx < monthTabs.length - 1) {
-      const nextMonthKey = monthTabs[tabIdx + 1];
-      setSelectedMonthKey(nextMonthKey);
-      setSelectedWeekIndex(0);
-    }
-  }, [weeksInMonth, selectedWeekIndex, monthTabs, selectedMonthKey]);
+    const target = resolveWeekPosition(
+      addDaysToDateKey(currentWeek.weekStartKey, 7),
+      selectedMonthKey
+    );
+    if (!monthTabs.includes(target.monthKey)) return;
+    setSelectedMonthKey(target.monthKey);
+    setSelectedWeekIndex(target.weekIndex);
+  }, [currentWeek.weekStartKey, monthTabs, selectedMonthKey]);
 
   const goToCurrentWeek = useCallback(() => {
     const today = getTodayDateKey();

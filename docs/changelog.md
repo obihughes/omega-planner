@@ -1,5 +1,11 @@
 ## 2026-11-02
 
+- **Weekly Overview: opens on previous week** (2026-11-02)
+  - On each visit, `/weekly-overview` starts on the previous week so it can be compared with the current one. The grid shows the previous week at full strength, with the current and next weeks as muted preview rows (existing layout).
+  - **This week** still returns to the current week. The mount logic lives in `useGoalHierarchy`, which resolves the month and week index with a new `resolveWeekPosition` helper.
+  - **Fixed previous/next week buttons**: they now step by date instead of by week index. Weeks that straddle a month boundary (e.g. Oct 26–Nov 1 is both Oct Week 5 and Nov Week 1) used to produce a no-op click.
+  - **Files affected**: `hooks/useGoalHierarchy.ts`, `lib/appHierarchy.ts`, `components/goal-hierarchy`-related docs (`docs/components.md`, `docs/planner.md`, `docs/README.md`), `docs/changelog.md`
+
 - **Daily view: class overlay + nav cleanup** (2026-11-02)
   - Daily Tasks mode (`/class-schedule?showDailyTasks=true`, sidebar **Daily**) now draws recurring classes behind the day's tasks as dulled, read-only blocks (`WeeklyClassBlock`, `pointer-events-none`, z 20 under tasks at z 50). Class data comes from the existing `useClassScheduleState` projection, so no new data source.
   - New header button **Hide Classes** / **Show Classes** (before **Advanced**), persisted in `omega-planner-daily-show-classes` (default shown). New `ClassScheduleStorage.getShowDailyClasses` / `setShowDailyClasses`.

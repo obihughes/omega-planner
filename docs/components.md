@@ -65,7 +65,7 @@ URL-only `/calendar?view=timeline`. Receives `calendarData` from the page (does 
 ### WeeklyGoalsCalendarView (`components/calendar/WeeklyGoalsCalendarView.tsx`)
 Legacy 4-week weekly goals grid (still available if embedded elsewhere). Primary weekly planning UI is now Weekly Overview at `/weekly-overview`.
 - **Toolbar**: Compact header with week navigation and Open Notes only (no title or helper text).
-- **Week nav label**: Center button shows **This week** / **Next week** / **Previous week** / **In 2 weeks** based on `weekOffset`; click returns to the current week.
+- **Week nav label**: Center button shows **This week** / **Next week** / **Previous week** / **In 2 weeks** based on `weekOffset`; click returns to the current week. The page opens on the previous week (see `useGoalHierarchy`); prev/next step by date, so week tabs that straddle a month boundary don't produce no-op clicks.
 - **Day grid panel**: `bg-background` bordered container wrapping the 7-column grid.
 - **Shared data**: Uses `hooks/useWeeklyGoals.ts` and `components/weekly-goals/*`; day goals sync with Weekly Overview.
 
