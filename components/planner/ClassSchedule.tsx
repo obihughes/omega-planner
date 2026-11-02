@@ -41,6 +41,9 @@ import {
   type TimelinePeriod as DragTimelinePeriod,
 } from "@/utils/timelineDragUtils";
 import { MemoizedTaskCard } from "./TaskCard";
+import { WeeklyClassBlock } from "./WeeklyClassBlock";
+import { ClassScheduleStorage } from "@/utils/classScheduleStorage";
+import { GraduationCap } from "lucide-react";
 
 type TimelinePeriod = "morning" | "afternoon" | "evening";
 
@@ -83,6 +86,19 @@ export default React.memo(function ClassSchedule({
     deleteTaskById,
     updateClassTaskTime,
   } = useClassScheduleState(initialShowDailyTasks);
+
+  // Dulled, read-only class overlay shown behind daily tasks (Daily Tasks mode only).
+  // Loaded after mount so SSR and the first client paint match.
+  const [showClassOverlay, setShowClassOverlay] = useState<boolean>(true);
+  useEffect(() => {
+    setShowClassOverlay(ClassScheduleStorage.getShowDailyClasses());
+  }, []);
+
+  const handleToggleClassOverlay = useCallback(() => {
+    const next = !showClassOverlay;
+    setShowClassOverlay(next);
+    ClassScheduleStorage.setShowDailyClasses(next);
+  }, [showClassOverlay]);
 
   const handleSetShowDailyTasks = useCallback(
     (value: boolean) => {
@@ -858,6 +874,42 @@ export default React.memo(function ClassSchedule({
           {Array.from({ length: endHour - startHour }, (_, i) => (
             <div key={`grid-${i}`} className={`absolute h-full ${i % 6 === 0 ? 'border-l border-border/30' : 'border-l border-border/10'}`} style={{ left: `${i * PIXELS_PER_HOUR}px`, top: '0', bottom: '0' }} />
           ))}
+          {showDailyTasks &&
+            showClassOverlay &&
+            tasksToRender.map((classTask) => {
+              const classStart = classTask.startHour as number;
+              const classEnd = classStart + classTask.duration;
+              const visibleStart = Math.max(classStart, startHour);
+              const visibleEnd = Math.min(classEnd, endHour);
+              if (visibleEnd <= visibleStart) return null;
+
+              const overlayWidth = (visibleEnd - visibleStart) * PIXELS_PER_HOUR;
+              const overlayHeight =
+                TIMELINE_COLUMN_HEIGHT - TASK_BASE_TOP - TASK_BASE_BOTTOM_PADDING;
+
+              return (
+                <div
+                  key={`class-overlay-${classTask.id}`}
+                  className="absolute pointer-events-none"
+                  style={{
+                    left: `${(visibleStart - startHour) * PIXELS_PER_HOUR}px`,
+                    width: `${overlayWidth}px`,
+                    top: `${TASK_BASE_TOP}px`,
+                    height: `${overlayHeight}px`,
+                    zIndex: 20,
+                  }}
+                >
+                  <WeeklyClassBlock
+                    name={classTask.name}
+                    color={classTask.color ?? "bg-blue-500"}
+                    startHour={classStart}
+                    endHour={classEnd}
+                    width={overlayWidth}
+                    height={overlayHeight}
+                  />
+                </div>
+              );
+            })}
           {showDailyTasks
             ? dailyTasksToRender.map((task) =>
                 renderTaskCard(getDisplayTask(task), startHour, endHour)
@@ -951,6 +1003,22 @@ export default React.memo(function ClassSchedule({
                     Daily Tasks
                   </button>
                 </div>
+                {showDailyTasks && (
+                  <Button
+                    size="sm"
+                    variant={showClassOverlay ? "default" : "outline"}
+                    className="px-3 text-xs h-7 gap-1"
+                    onClick={handleToggleClassOverlay}
+                    title={
+                      showClassOverlay
+                        ? "Hide class schedule overlay"
+                        : "Show class schedule overlay"
+                    }
+                  >
+                    <GraduationCap className="w-3.5 h-3.5" />
+                    {showClassOverlay ? "Hide Classes" : "Show Classes"}
+                  </Button>
+                )}
                 {showDailyTasks && (
                   <Button
                     size="sm"

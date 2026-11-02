@@ -60,7 +60,7 @@ Additional feature routes in `/app` include:
 - `app/subjects` — Subjects page (subjects on the left, topics to cover with status + notes on the right); sidebar **Others** group or `/subjects`
 - `app/month-board` — Month board (month/week pickers, week goal + Mon–Sun rows); sidebar **Others** group or `/month-board`
 - Daily Planner **Daily** view (`/class-schedule?showDailyTasks=true`) — ClassSchedule Daily Tasks mode; **Advanced** opens `/?view=monthly`
-- Daily Planner **Week** view (`/?view=weekly`) — sidebar **Others** group
+- Daily Planner **Week** view (`/?view=weekly`) — sidebar **Daily Planner** group, under **Daily**. Class Schedule has no sidebar entry; use the **Classes | Daily Tasks** toggle on the Daily page
 - `app/weekly-overview` — Weekly Overview (monthly / weekly / daily goals); main sidebar nav. Legacy `/goal-hierarchy` redirects here.
 - `app/visualizer` — 5-Year Visualizer; sidebar **Others** group (after Text Documents)
 - `app/documents` — Text Documents; sidebar **Others** group

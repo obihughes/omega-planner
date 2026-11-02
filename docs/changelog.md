@@ -1,5 +1,12 @@
 ## 2026-11-02
 
+- **Daily view: class overlay + nav cleanup** (2026-11-02)
+  - Daily Tasks mode (`/class-schedule?showDailyTasks=true`, sidebar **Daily**) now draws recurring classes behind the day's tasks as dulled, read-only blocks (`WeeklyClassBlock`, `pointer-events-none`, z 20 under tasks at z 50). Class data comes from the existing `useClassScheduleState` projection, so no new data source.
+  - New header button **Hide Classes** / **Show Classes** (before **Advanced**), persisted in `omega-planner-daily-show-classes` (default shown). New `ClassScheduleStorage.getShowDailyClasses` / `setShowDailyClasses`.
+  - Sidebar: removed the **Class Schedule** entry from **Daily Planner**. The page and URL are unchanged; switch to classes with the in-page **Classes | Daily Tasks** toggle. **Daily** now stays highlighted for the whole `/class-schedule` page.
+  - Sidebar: **Week** moved from **Others** to **Daily Planner** (under **Daily**), same route `/?view=weekly`.
+  - **Files affected**: `components/planner/ClassSchedule.tsx`, `components/ui/Navigation.tsx`, `utils/classScheduleStorage.ts`, `lib/appHierarchy.ts`, `components/planner/README.md`, `docs/planner.md`, `docs/structure.md`, `docs/utils.md`, `README.md`, `docs/changelog.md`
+
 - **Week view: class schedule overlay + Hide/Show Classes toggle** (2026-11-02)
   - Recurring classes from `/class-schedule` now appear on the Weekly View's day rows (AM and PM) as dulled, read-only blocks: class color at ~35% opacity, muted name and time, dashed border.
   - Blocks are `pointer-events-none` and sit below real tasks (z 20 vs 40), so double-click-to-create, task drag/resize, and task stats are unchanged. Classes are not merged into `tasksByDate`.

@@ -50,7 +50,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'Navigation',
         kind: 'shell',
         path: 'components/ui/Navigation.tsx',
-        editHint: 'Sidebar nav items; settings modal (theme, App Map). Flattened Daily Planner: Daily (`/class-schedule?showDailyTasks=true`), Class Schedule (`/class-schedule`). Last item is Others (Week `/?view=weekly`, Daily Log, Text Documents, 5-Year Visualizer, Meals, Study Tracker, Subjects, Month Board; omega-planner-nav-expanded).',
+        editHint: 'Sidebar nav items; settings modal (theme, App Map). Flattened Daily Planner: Daily (`/class-schedule?showDailyTasks=true`), Week (`/?view=weekly`). Class Schedule has no nav entry; reach it with the Classes | Daily Tasks toggle on the Daily page. Last item is Others (Daily Log, Text Documents, 5-Year Visualizer, Meals, Study Tracker, Subjects, Month Board; omega-planner-nav-expanded).',
       },
       {
         id: 'shell-providers',
@@ -121,7 +121,7 @@ export const appHierarchy: AppMapNode[] = [
         id: 'dp-home',
         label: '/',
         kind: 'route',
-        description: 'Advanced DailyPlanner (sidebar Daily → Advanced, or /?view=monthly). Week: Others → Week or ?view=weekly. ?date=YYYY-MM-DD. Sidebar Daily is ClassSchedule Daily Tasks, not this route.',
+        description: 'Advanced DailyPlanner (sidebar Daily → Advanced, or /?view=monthly). Week: Daily Planner → Week or ?view=weekly. ?date=YYYY-MM-DD. Sidebar Daily is ClassSchedule Daily Tasks, not this route.',
       },
       {
         id: 'dp-page-home',
@@ -147,7 +147,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'DailyPlanner',
         kind: 'component',
         path: 'components/planner/DailyPlanner.tsx',
-        editHint: 'Advanced planner UI: scheduling sidebar + timeline panels. Task-card Copy uses copyTaskToPool (day pool bar). Opened via Daily Tasks → Advanced or /?view=monthly. Weekly view via Others → Week or /?view=weekly.',
+        editHint: 'Advanced planner UI: scheduling sidebar + timeline panels. Task-card Copy uses copyTaskToPool (day pool bar). Opened via Daily Tasks → Advanced or /?view=monthly. Weekly view via Daily Planner → Week or /?view=weekly.',
         children: [
           {
             id: 'dp-scheduling-sidebar',
@@ -168,7 +168,7 @@ export const appHierarchy: AppMapNode[] = [
             label: 'WeeklyView',
             kind: 'component',
             path: 'components/planner/WeeklyView.tsx',
-            editHint: 'Weekly timeline on /. Sidebar Others → Week, or /?view=weekly. Starts at 10 days; scroll down loads 7 more at a time, capped at 100 (MAX_DAYS_TO_DISPLAY). Header stats use the first 10 days. Left events column shows calendar events and primary weekly goals (useMergedCalendarEvents) and is wrapped in WeeklyDayGoalsPopover.',
+            editHint: 'Weekly timeline on /. Sidebar Daily Planner → Week, or /?view=weekly. Shows recurring classes as dulled read-only WeeklyClassBlock overlays (useClassScheduleOverlay) with a Hide/Show Classes toggle. Starts at 10 days; scroll down loads 7 more at a time, capped at 100 (MAX_DAYS_TO_DISPLAY). Header stats use the first 10 days. Left events column shows calendar events and primary weekly goals (useMergedCalendarEvents) and is wrapped in WeeklyDayGoalsPopover.',
           },
           {
             id: 'dp-weekly-day-goals-popover',
@@ -216,7 +216,7 @@ export const appHierarchy: AppMapNode[] = [
         id: 'dp-class-schedule-route',
         label: '/class-schedule',
         kind: 'route',
-        description: 'Sidebar Daily: ?showDailyTasks=true. Sidebar Class Schedule: no param (classes). In-page toggle updates the URL.',
+        description: 'Sidebar Daily: ?showDailyTasks=true. No param = classes mode (no sidebar entry; use the in-page Classes | Daily Tasks toggle, which updates the URL).',
       },
       {
         id: 'dp-class-schedule-page',
@@ -230,7 +230,7 @@ export const appHierarchy: AppMapNode[] = [
         label: 'ClassSchedule',
         kind: 'component',
         path: 'components/planner/ClassSchedule.tsx',
-        editHint: 'Weekly class grid. Sidebar Daily opens Daily Tasks mode; Advanced button opens DailyPlanner. Classes | Daily Tasks toggle syncs ?showDailyTasks=true. Task-card Copy uses copyTaskToPool (that day\'s unscheduled pool) with on-page confirmation.',
+        editHint: 'Weekly class grid. Sidebar Daily opens Daily Tasks mode; Advanced button opens DailyPlanner. Classes | Daily Tasks toggle syncs ?showDailyTasks=true. Daily Tasks mode draws classes as dulled read-only WeeklyClassBlock overlays with a Hide/Show Classes toggle (omega-planner-daily-show-classes). Task-card Copy uses copyTaskToPool (that day\'s unscheduled pool) with on-page confirmation.',
       },
       {
         id: 'dp-class-hook',

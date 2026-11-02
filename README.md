@@ -108,7 +108,7 @@ npm test
 ## Recent Changes
 
 ### Weekly Day Notes (Latest)
-- **Day Notes layer** on Daily Planner weekly timeline (Others → Week): toolbar toggle overlays a textarea on each day's timeline for free-form notes
+- **Day Notes layer** on Daily Planner weekly timeline (Daily Planner → Week): toolbar toggle overlays a textarea on each day's timeline for free-form notes
 - Persisted in localStorage via `utils/dayNotesStorage.ts` (`daily-planner-day-notes-v1`)
 
 ### Advanced Task Management System

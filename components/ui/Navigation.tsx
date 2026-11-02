@@ -6,7 +6,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   Calendar, CalendarDays, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
   CalendarRange, ClipboardList, Settings, LayoutGrid, Map, ListTodo,
-  NotebookPen, Sun, Moon, Monitor, TreePine, TreeDeciduous, Sparkles, GraduationCap, GanttChart,
+  NotebookPen, Sun, Moon, Monitor, TreePine, TreeDeciduous, Sparkles, GanttChart,
   ChefHat, BookOpen, Layers, type LucideIcon,
 } from 'lucide-react';
 import { useTheme, THEME_OPTIONS, THEME_LABELS, type ThemeOption } from '@/hooks/useTheme';
@@ -160,8 +160,9 @@ export function Navigation() {
       icon: NotebookPen,
       active: pathname === '/' || pathname === '/class-schedule' || pathname === '/daily-planner',
       subViews: [
-        { key: 'planner-daily', label: 'Daily', icon: Sun, href: '/class-schedule?showDailyTasks=true', active: pathname === '/class-schedule' && searchParams.get('showDailyTasks') === 'true' },
-        { key: 'planner-class-schedule', label: 'Class Schedule', icon: GraduationCap, href: '/class-schedule', active: pathname === '/class-schedule' && searchParams.get('showDailyTasks') !== 'true' },
+        // Daily stays highlighted for the whole /class-schedule page (Classes mode is reached via the in-page toggle)
+        { key: 'planner-daily', label: 'Daily', icon: Sun, href: '/class-schedule?showDailyTasks=true', active: pathname === '/class-schedule' },
+        { key: 'planner-weekly', label: 'Week', icon: CalendarDays, href: '/?view=weekly', active: pathname === '/' && plannerViewMode === 'weekly' },
       ]
     },
     {
@@ -193,13 +194,6 @@ export function Navigation() {
   ];
 
   const otherNavItems: OtherNavItem[] = [
-    {
-      key: 'planner-weekly',
-      href: '/?view=weekly',
-      label: 'Week',
-      icon: CalendarDays,
-      active: pathname === '/' && plannerViewMode === 'weekly',
-    },
     {
       key: 'daily-log',
       href: '/daily-log',
